@@ -73,7 +73,7 @@ const Nations = () => {
                             mr: 4,
                         }}
                     >
-                        <List dense disableGutters sx={{ maxHeight: "95%" }}>
+                        <List dense sx={{ maxHeight: "95%" }}>
                             {nationList.map((nation) => (
                                 <ListItem key={nation.id} sx={{ height: "3vh" }}>
                                     <ListItemButton>
@@ -184,7 +184,7 @@ const Nations = () => {
                                     </Grid>
                                     <Grid item xs={1}>
                                         <Button
-                                            sx={{ height: "50%", width: "50%", mt: 2, ml: 1 }}
+                                            sx={{ height: "50%", width: "50%", mt: 2, mx: 1 }}
                                             variant="contained"
                                             id="btnAdd1"
                                         >
@@ -236,7 +236,7 @@ const Nations = () => {
                                     </Grid>
                                     <Grid item xs={1}>
                                         <Button
-                                            sx={{ height: "50%", width: "50%", mt: 2, ml: 1 }}
+                                            sx={{ height: "50%", width: "50%", mt: 2, mx: 1 }}
                                             variant="contained"
                                             id="btnAdd2"
                                         >
@@ -272,7 +272,7 @@ const Nations = () => {
                                     </Grid>
                                     <Grid item xs={1}>
                                         <Button
-                                            sx={{ height: "50%", mt: 2, width: "50%", ml: 1 }}
+                                            sx={{ height: "50%", mt: 2, width: "50%", mx: 1 }}
                                             variant="contained"
                                             id="btnTerrAdd2"
                                         >
@@ -289,8 +289,8 @@ const Nations = () => {
                                             -
                                         </Button>
                                     </Grid>
-                                    <Grid item spacing={1} xs={2}></Grid>
-                                    <Grid item spacing={1} xs={8}>
+                                    <Grid item xs={2}></Grid>
+                                    <Grid item xs={8}>
                                         <TextField
                                             focused
                                             color="white"
@@ -319,7 +319,7 @@ const Nations = () => {
                                             -
                                         </Button>
                                     </Grid>
-                                    <Grid item spacing={1} xs={2}></Grid>
+                                    <Grid item xs={2}></Grid>
                                 </Grid>
                             </Box>
                         </Grid>
