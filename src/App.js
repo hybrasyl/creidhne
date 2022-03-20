@@ -155,7 +155,7 @@ export default function App() {
                     <DrawerHeader sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Box display="flex" flexDirection="row" alignItems="center">
                             <IconButton key="home" to="/" component={Link}>
-                                <HomeIcon sx={{ color: "white" }} />
+                                <HomeIcon sx={{ color: "#FFFFFF" }} />
                             </IconButton>
                             <Typography>Navigation</Typography>
                         </Box>
@@ -167,73 +167,73 @@ export default function App() {
                     <List dense={true}>
                         <ListItem button key="castables" to="/castables" component={Link}>
                             <ListItemIcon>
-                                <AutoAwesomeIcon sx={{ color: "white" }} />
+                                <AutoAwesomeIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Castables" />
                         </ListItem>
                         <ListItem button key="items" to="/items" component={Link}>
                             <ListItemIcon>
-                                <ColorizeIcon sx={{ color: "white" }} />
+                                <ColorizeIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Items" />
                         </ListItem>
                         <ListItem button key="statuses" to="/statuses" component={Link}>
                             <ListItemIcon>
-                                <SentimentDissatisfiedIcon sx={{ color: "white" }} />
+                                <SentimentDissatisfiedIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Statuses" />
                         </ListItem>
                         <ListItem button key="npcs" to="/npcs" component={Link}>
                             <ListItemIcon>
-                                <GroupsIcon sx={{ color: "white" }} />
+                                <GroupsIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="NPCs" />
                         </ListItem>
                         <ListItem button key="creatures" to="/creatures" component={Link}>
                             <ListItemIcon>
-                                <PetsIcon sx={{ color: "white" }} />
+                                <PetsIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Creatures" />
                         </ListItem>
                         <ListItem button key="behaviors" to="/behaviorsets" component={Link}>
                             <ListItemIcon>
-                                <QuestionMarkIcon sx={{ color: "white" }} />
+                                <QuestionMarkIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Behavior Sets" />
                         </ListItem>
                         <ListItem button key="nations" to="/nations" component={Link}>
                             <ListItemIcon>
-                                <FortIcon sx={{ color: "white" }} />
+                                <FortIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Nations" />
                         </ListItem>
                         <ListItem button key="loot" to="/lootsets" component={Link}>
                             <ListItemIcon>
-                                <PaidIcon sx={{ color: "white" }} />
+                                <PaidIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Loot Sets" />
                         </ListItem>
                         <ListItem button key="variants" to="/variants" component={Link}>
                             <ListItemIcon>
-                                <AutoAwesomeMotionIcon sx={{ color: "white" }} />
+                                <AutoAwesomeMotionIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Item Variants" />
                         </ListItem>
                         <ListItem button key="recipes" to="/recipes" component={Link}>
                             <ListItemIcon>
-                                <OutdoorGrillIcon sx={{ color: "white" }} />
+                                <OutdoorGrillIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Recipes" />
                         </ListItem>
                         <ListItem button key="elements" to="/elements" component={Link}>
                             <ListItemIcon>
-                                <LocalFireDepartmentIcon sx={{ color: "white" }} />
+                                <LocalFireDepartmentIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Element Table" />
                         </ListItem>
                         <ListItem button key="spawns" to="/spawngroups" component={Link}>
                             <ListItemIcon>
-                                <PeopleOutlineIcon sx={{ color: "white" }} />
+                                <PeopleOutlineIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Spawn Groups" />
                         </ListItem>
@@ -242,19 +242,19 @@ export default function App() {
                     <List dense={true}>
                         <ListItem button key="formulas" to="/formulas" component={Link}>
                             <ListItemIcon>
-                                <ScienceIcon sx={{ color: "white" }} />
+                                <ScienceIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Formulas" />
                         </ListItem>
                         <ListItem button key="settingsserver" to="/settingsserver" component={Link}>
                             <ListItemIcon>
-                                <DisplaySettingsIcon sx={{ color: "white" }} />
+                                <DisplaySettingsIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Server Settings" />
                         </ListItem>
                         <ListItem button key="strings" to="/strings" component={Link}>
                             <ListItemIcon>
-                                <RecordVoiceOverIcon sx={{ color: "white" }} />
+                                <RecordVoiceOverIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Strings" />
                         </ListItem>
@@ -263,7 +263,7 @@ export default function App() {
                     <List dense={true}>
                         <ListItem button key="maps" to="/maps" component={Link}>
                             <ListItemIcon>
-                                <MapIcon sx={{ color: "white" }} />
+                                <MapIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Maps" />
                         </ListItem>
@@ -272,7 +272,7 @@ export default function App() {
                     <List dense={true}>
                         <ListItem button key="scripting" to="/scripting" component={Link}>
                             <ListItemIcon>
-                                <CreateIcon sx={{ color: "white" }} />
+                                <CreateIcon sx={{ color: "#FFFFFF" }} />
                             </ListItemIcon>
                             <ListItemText primary="Scripting" />
                         </ListItem>

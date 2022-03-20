@@ -18,6 +18,9 @@ const darkTheme = responsiveFontSizes(
             text: {
                 primary: "#f1eeee",
             },
+            white: {
+                main: "#FFFFFF"
+            }
         },
         typography: {
             fontFamily: "Barlow",
