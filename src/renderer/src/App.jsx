@@ -1,60 +1,100 @@
-import Button from '@mui/material/Button';
-import LandscapeIcon from '@mui/icons-material/Landscape';
-import FileOpenIcon from '@mui/icons-material/FileOpen';
-import { AppBar, Box, Container, CssBaseline, IconButton, Toolbar, Typography } from '@mui/material';
-import ImageFilter from 'react-image-filter';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import lightTheme from './themes/light';
+import darkTheme from './themes/dark';
+import MainLayout from './components/MainLayout';
+import DashboardPage from './pages/DashboardPage';
+import CastablesPage from './pages/CastablesPage';
+import VariantsPage from './pages/VariantsPage';
+import StringsPage from './pages/StringsPage';
+import StatusesPage from './pages/StatusesPage';
+import SpawngroupsPage from './pages/SpawngroupsPage';
+import SettingsPage from './pages/SettingsPage';
+import RecipesPage from './pages/RecipesPage';
+import NPCsPage from './pages/NPCsPage';
+import LootPage from './pages/LootPage';
+import ItemsPage from './pages/ItemsPage';
+import HelpersPage from './pages/HelpersPage';
+import FormulasPage from './pages/FormulasPage';
+import ElementsPage from './pages/ElementsPage';
+import CreaturesPage from './pages/CreaturesPage';
+import BehaviorsPage from './pages/BehaviorsPage';
+import { loadSettings, saveSettings } from './helpers/settingsHelper';
 
 function App() {
-  const [imageFilter, setImageFilter] = useState(undefined);
-  const [imageUrl, setImageUrl] = useState('https://placehold.co/600x400');
+  const [theme, setTheme] = useState(lightTheme);
+  const [libraries, setLibraries] = useState([]);
 
-  async function onOpenFileClick() {
-    const filePath = await window.electronAPI.openFile();
-    setImageUrl(filePath);
+  // Load settings on mount
+  useEffect(() => {
+    async function fetchSettings() {
+      const settings = await loadSettings();
+      setTheme(settings.theme === 'dark' ? darkTheme : lightTheme);
+      setLibraries(settings.libraries || []);
+    }
+
+    fetchSettings();
+  }, []);
+
+  // Save settings whenever theme or libraries change
+  useEffect(() => {
+    saveSettings({ theme: theme === darkTheme ? 'dark' : 'light', libraries });
+  }, [theme, libraries]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => (prevTheme === lightTheme ? darkTheme : lightTheme));
+  };
+
+  const handleAddLibrary = async () => {
+    const directoryPath = await window.electronAPI.openDirectory();
+    if (directoryPath && !libraries.includes(directoryPath)) {
+      setLibraries(prevLibraries => [...prevLibraries, directoryPath]);
+    }
+  };
+
+  const handleRemoveLibrary = (library) => {
+    setLibraries(prevLibraries => prevLibraries.filter(lib => lib !== library));
   };
 
   return (
-    <>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{
-        flexGrow: 1,
-        whiteSpace: 'nowrap',
-        button: {
-          color: 'inherit',
-        }
-      }}>
-        <AppBar position="static">
-          <Container>
-            <Toolbar>
-              <LandscapeIcon sx={{ mr: 1 }} />
-              <Typography sx={{
-                mr: '0.5em',
-                fontSize: '1.4em',
-                flexGrow: 1
-              }}>Image Filter</Typography>
-              <Button onClick={() => setImageFilter(undefined)}>Original</Button>
-              <Button onClick={() => setImageFilter('invert')}>Invert</Button>
-              <Button onClick={() => setImageFilter('sepia')}>Sepia</Button>
-              <Button onClick={() => setImageFilter('duotone')}>Neon</Button>
-              <IconButton type='button' color='inherit' onClick={onOpenFileClick}>
-                <FileOpenIcon />
-              </IconButton>
-            </Toolbar>
-          </Container>
-        </AppBar>
-      </Box>
-      <Box sx={{ textAlign: 'center' }}>
-        <ImageFilter
-          image={imageUrl}
-          alt="image to be styled"
-          filter={imageFilter}
-          colorOne={[104, 255, 0]}
-          colorTwo={[255, 0, 92]}
-          style={{ margin: '2em' }}
-        />
-      </Box>
-    </>
+      <Router>
+        <MainLayout onToggleTheme={toggleTheme}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/npcs" element={<NPCsPage />} />
+            <Route
+              path="/settings"
+              element={
+                <SettingsPage
+                  onToggleTheme={toggleTheme}
+                  isDarkMode={theme === darkTheme}
+                  libraries={libraries}
+                  onAddLibrary={handleAddLibrary}
+                  onRemoveLibrary={handleRemoveLibrary}
+                />
+              }
+            />
+            <Route path="/elements" element={<ElementsPage />} />
+            <Route path="/formulas" element={<FormulasPage />} />
+            <Route path="/helpers" element={<HelpersPage />} />
+            <Route path="/items" element={<ItemsPage />} />
+            <Route path="/loot" element={<LootPage />} />
+            <Route path="/recipes" element={<RecipesPage />} />
+            <Route path="/spawngroups" element={<SpawngroupsPage />} />
+            <Route path="/statuses" element={<StatusesPage />} />
+            <Route path="/strings" element={<StringsPage />} />
+            <Route path="/variants" element={<VariantsPage />} />
+            <Route path="/behaviors" element={<BehaviorsPage />} />
+            <Route path="/castables" element={<CastablesPage />} />
+            <Route path="/creatures" element={<CreaturesPage />} />
+          </Routes>
+        </MainLayout>
+      </Router>
+    </ThemeProvider>
   );
 }
 
