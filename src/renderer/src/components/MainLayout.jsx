@@ -17,98 +17,367 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'
 import SettingsIcon from '@mui/icons-material/Settings'
 import Brightness4Icon from '@mui/icons-material/Brightness4'
+import MinimizeIcon from '@mui/icons-material/Minimize'
+import CloseIcon from '@mui/icons-material/Close'
+import MaximizeIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 
-function MainLayout({ children, onToggleTheme }) {
+function MainLayout({ children, onToggleTheme, navigate }) {
+  const handleMinimize = () => {
+    window.electronAPI.minimizeWindow() // IPC call to minimize window
+  }
+
+  const handleMaximize = () => {
+    window.electronAPI.maximizeWindow() // IPC call to maximize/restore window
+  }
+
+  const handleClose = () => {
+    window.electronAPI.closeWindow() // IPC call to close window
+  }
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh'
+      }}
+    >
+      <AppBar
+        position="static"
+        sx={{
+          WebkitAppRegion: 'drag', // Makes the component draggable
+          userSelect: 'none' // Forbids text selection
+        }}
+      >
+        <Toolbar sx={{ bgcolor: 'secondary.main' }}>
+          <Typography variant="h5" sx={{ flexGrow: 1, ml: -2, fontWeight: 'bold' }}>
             Creidhne: XML Forge
           </Typography>
-          <Tooltip title="Settings">
-            <IconButton color="inherit" href="/dashboard">
+          <Tooltip title="Dashboard">
+            <IconButton
+              onClick={() => navigate('dashboard')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <DashboardIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Castables">
-            <IconButton color="inherit" href="/castables">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('castables')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <AutoAwesomeIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Formulas">
-            <IconButton color="inherit" href="/formulas">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('formulas')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <CalculateIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Items">
-            <IconButton color="inherit" href="/items">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('items')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <InventoryIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Statuses">
-            <IconButton color="inherit" href="/statuses">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('statuses')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <PsychologyIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="NPCs">
-            <IconButton color="inherit" href="/npcs">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('npcs')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <AccessibilityNewIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Creatures">
-            <IconButton color="inherit" href="/creatures">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('creatures')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <PetsIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Behavior Sets">
-            <IconButton color="inherit" href="/behaviors">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('behaviors')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <CelebrationIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Spawngroups">
-            <IconButton color="inherit" href="/spawngroups">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('spawngroups')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <GroupsIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Loot Sets">
-            <IconButton color="inherit" href="/loot">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('loot')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <RedeemIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Variants">
-            <IconButton color="inherit" href="/variants">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('variants')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <BubbleChartIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Elements">
-            <IconButton color="inherit" href="/elements">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('elements')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <ElectricBoltIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Recipes">
-            <IconButton color="inherit" href="/recipes">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('recipes')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <ScienceIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Strings">
-            <IconButton color="inherit" href="/strings">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('strings')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <TextFieldsIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Lua Helpers">
-            <IconButton color="inherit" href="/helpers">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('helpers')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
               <IntegrationInstructionsIcon />
             </IconButton>
           </Tooltip>
-          <IconButton color="inherit" href="/npcs">
-            <AccessibilityNewIcon />
-          </IconButton>
-          <IconButton color="inherit" href="/settings">
-            <SettingsIcon />
-          </IconButton>
-          <IconButton color="inherit" onClick={onToggleTheme}>
+          <Tooltip title="Settings">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('settings')}
+              sx={{
+                WebkitAppRegion: 'no-drag',
+                mx: -0.5,
+                color: 'text.button',
+                '&:hover': {
+                  backgroundColor: 'info.main', // Background color on hover,
+                  color: 'text.dark'
+                }
+              }}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
+          <IconButton
+            color="inherit"
+            onClick={onToggleTheme}
+            sx={{
+              WebkitAppRegion: 'no-drag',
+              mx: -0.5,
+              color: 'text.button',
+              '&:hover': {
+                backgroundColor: 'info.main', // Background color on hover,
+                color: 'text.dark'
+              }
+            }}
+          >
             <Brightness4Icon />
+          </IconButton>
+          <IconButton
+            size="small"
+            sx={{
+              WebkitAppRegion: 'no-drag',
+              ml: 2,
+              mb: 3,
+              color: 'text.button',
+              '&:hover': {
+                backgroundColor: 'info.main', // Background color on hover,
+                color: 'text.dark'
+              }
+            }}
+            onClick={handleMinimize}
+          >
+            <MinimizeIcon />
+          </IconButton>
+          <IconButton
+            size="small"
+            sx={{ WebkitAppRegion: 'no-drag', mx: -1, mb: 3,
+              color: 'text.button',
+              '&:hover': {
+                backgroundColor: 'info.main', // Background color on hover,
+                color: 'text.dark'
+              }}}
+            onClick={handleMaximize}
+          >
+            <MaximizeIcon />
+          </IconButton>
+          <IconButton
+            size="small"
+            sx={{ WebkitAppRegion: 'no-drag', mr: -3, mb: 3,
+              color: 'text.button',
+              '&:hover': {
+                backgroundColor: 'info.main', // Background color on hover,
+                color: 'warning.main'
+              } }}
+            onClick={handleClose}
+          >
+            <CloseIcon />
           </IconButton>
         </Toolbar>
       </AppBar>

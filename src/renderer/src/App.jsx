@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import lightTheme from './themes/light';
 import darkTheme from './themes/dark';
 import MainLayout from './components/MainLayout';
@@ -20,16 +19,16 @@ import FormulasPage from './pages/FormulasPage';
 import ElementsPage from './pages/ElementsPage';
 import CreaturesPage from './pages/CreaturesPage';
 import BehaviorsPage from './pages/BehaviorsPage';
-import { loadSettings, saveSettings } from './helpers/settingsHelper';
 
 function App() {
   const [theme, setTheme] = useState(lightTheme);
   const [libraries, setLibraries] = useState([]);
+  const [currentPage, setCurrentPage] = useState('dashboard'); // State to track the current page
 
   // Load settings on mount
   useEffect(() => {
     async function fetchSettings() {
-      const settings = await loadSettings();
+      const settings = await window.electronAPI.loadSettings(); // Use IPC call to load settings
       setTheme(settings.theme === 'dark' ? darkTheme : lightTheme);
       setLibraries(settings.libraries || []);
     }
@@ -39,7 +38,11 @@ function App() {
 
   // Save settings whenever theme or libraries change
   useEffect(() => {
-    saveSettings({ theme: theme === darkTheme ? 'dark' : 'light', libraries });
+    window.electronAPI.saveSettings({
+      libraries,
+      activeLibrary: null,
+      theme: theme === darkTheme ? 'dark' : 'light',
+    });
   }, [theme, libraries]);
 
   const toggleTheme = () => {
@@ -47,7 +50,7 @@ function App() {
   };
 
   const handleAddLibrary = async () => {
-    const directoryPath = await window.electronAPI.openDirectory();
+    const directoryPath = await window.electronAPI.openDirectory(); // Use IPC call to open directory
     if (directoryPath && !libraries.includes(directoryPath)) {
       setLibraries(prevLibraries => [...prevLibraries, directoryPath]);
     }
@@ -57,43 +60,60 @@ function App() {
     setLibraries(prevLibraries => prevLibraries.filter(lib => lib !== library));
   };
 
+  // Function to render the correct page based on currentPage state
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <DashboardPage />;
+      case 'castables':
+        return <CastablesPage />;
+      case 'variants':
+        return <VariantsPage />;
+      case 'strings':
+        return <StringsPage />;
+      case 'statuses':
+        return <StatusesPage />;
+      case 'spawngroups':
+        return <SpawngroupsPage />;
+      case 'settings':
+        return (
+          <SettingsPage
+            onToggleTheme={toggleTheme}
+            isDarkMode={theme === darkTheme}
+            libraries={libraries}
+            onAddLibrary={handleAddLibrary}
+            onRemoveLibrary={handleRemoveLibrary}
+          />
+        );
+      case 'recipes':
+        return <RecipesPage />;
+      case 'npcs':
+        return <NPCsPage />;
+      case 'loot':
+        return <LootPage />;
+      case 'items':
+        return <ItemsPage />;
+      case 'helpers':
+        return <HelpersPage />;
+      case 'formulas':
+        return <FormulasPage />;
+      case 'elements':
+        return <ElementsPage />;
+      case 'creatures':
+        return <CreaturesPage />;
+      case 'behaviors':
+        return <BehaviorsPage />;
+      default:
+        return <DashboardPage />;
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <MainLayout onToggleTheme={toggleTheme}>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/npcs" element={<NPCsPage />} />
-            <Route
-              path="/settings"
-              element={
-                <SettingsPage
-                  onToggleTheme={toggleTheme}
-                  isDarkMode={theme === darkTheme}
-                  libraries={libraries}
-                  onAddLibrary={handleAddLibrary}
-                  onRemoveLibrary={handleRemoveLibrary}
-                />
-              }
-            />
-            <Route path="/elements" element={<ElementsPage />} />
-            <Route path="/formulas" element={<FormulasPage />} />
-            <Route path="/helpers" element={<HelpersPage />} />
-            <Route path="/items" element={<ItemsPage />} />
-            <Route path="/loot" element={<LootPage />} />
-            <Route path="/recipes" element={<RecipesPage />} />
-            <Route path="/spawngroups" element={<SpawngroupsPage />} />
-            <Route path="/statuses" element={<StatusesPage />} />
-            <Route path="/strings" element={<StringsPage />} />
-            <Route path="/variants" element={<VariantsPage />} />
-            <Route path="/behaviors" element={<BehaviorsPage />} />
-            <Route path="/castables" element={<CastablesPage />} />
-            <Route path="/creatures" element={<CreaturesPage />} />
-          </Routes>
-        </MainLayout>
-      </Router>
+      <MainLayout onToggleTheme={toggleTheme} navigate={setCurrentPage}>
+        {renderPage()}
+      </MainLayout>
     </ThemeProvider>
   );
 }

@@ -10,11 +10,17 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
+    base: './',  // Ensure the base URL is relative
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react()]
+    plugins: [react()],
+    build: {
+      outDir: 'out/renderer', // Output directory for your renderer build
+      rollupOptions: {
+      },
+    },
   }
 })

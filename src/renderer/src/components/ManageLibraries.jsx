@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -16,34 +16,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HelpIcon from '@mui/icons-material/Help';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { loadSettings, saveSettings } from '../helpers/settingsHelper';
 
-const ManageLibraries = () => {
-  const [libraries, setLibraries] = useState([]);
+const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [selectedLibrary, setSelectedLibrary] = useState('');
   const [activeLibrary, setActiveLibrary] = useState(null);
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    async function fetchSettings() {
-      const settings = await loadSettings();
-      setLibraries(settings.libraries);
-      setActiveLibrary(settings.activeLibrary);
-    }
-
-    fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    saveSettings(libraries, activeLibrary);
-  }, [libraries, activeLibrary]);
-
-  const handleAddLibrary = async () => {
-    const newLibrary = await window.electronAPI.openDirectory();
-    if (newLibrary && !libraries.includes(newLibrary)) {
-      setLibraries([...libraries, newLibrary]);
-    }
-  };
 
   const handleRemoveLibrary = () => {
     setOpen(true);
@@ -52,7 +29,7 @@ const ManageLibraries = () => {
   const handleClose = (confirmed) => {
     setOpen(false);
     if (confirmed) {
-      setLibraries(libraries.filter((library) => library !== selectedLibrary));
+      onRemoveLibrary(selectedLibrary);
       if (selectedLibrary === activeLibrary) {
         setActiveLibrary(null);
       }
@@ -67,21 +44,21 @@ const ManageLibraries = () => {
   return (
     <Box sx={{ mt: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-        <Typography variant="h6" sx={{ textAlign: 'center' }}>
+        <Typography variant="h6" sx={{ textAlign: 'center', color: "text.button", fontWeight: 'bold' }}>
           Manage Libraries
         </Typography>
         <Tooltip
           title="Make sure to add the root directory of your repo. If you are working with Ceridwen, you would select '/path-to/Ceridwen', not '/path-to/Ceridwen/xml'. This tool requires that your xml directories match the structure in Ceridwen - please review the repo for help on getting your directories in order."
           placement="top"
         >
-          <IconButton sx={{ ml: 1 }}>
+          <IconButton sx={{ ml: 1, color: "text.button" }}>
             <HelpIcon />
           </IconButton>
         </Tooltip>
       </Box>
 
       <Tooltip title="Add the root directory of your repo">
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddLibrary}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={onAddLibrary}>
           Add
         </Button>
       </Tooltip>
@@ -103,7 +80,7 @@ const ManageLibraries = () => {
         <span>
           <Button
             variant="contained"
-            color="primary"
+            color="success"
             onClick={handleUseLibrary}
             disabled={!selectedLibrary}
             sx={{ ml: 2 }}
@@ -120,7 +97,7 @@ const ManageLibraries = () => {
             selected={selectedLibrary === library}
             onClick={() => setSelectedLibrary(library)}
           >
-            <Typography variant="body2">{library}</Typography>
+            <Typography variant="body2" sx={{ color: "text.button"}}>{library}</Typography>
             {library === activeLibrary && <CheckCircleIcon color="success" sx={{ ml: 1 }} />}
           </ListItem>
         ))}

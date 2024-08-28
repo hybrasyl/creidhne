@@ -30,15 +30,12 @@
     "axios": "^1.7.5",
     "electron-settings": "^4.0.4",
     "react-image-filter": "^0.1.2",
-    "react-router-dom": "^6.26.1",
-    "settings": "^0.1.1",
     "unzipper": "^0.12.3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",
     "@electron-toolkit/eslint-config-prettier": "^2.0.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "electron": "^31.4.0",
     "electron-builder": "^24.13.3",
     "electron-vite": "^2.3.0",
     "eslint": "^8.57.0",
