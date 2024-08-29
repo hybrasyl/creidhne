@@ -16,7 +16,8 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
-    "fetch-xsd": "node scripts/downloadXSD.js"
+    "fetch-xsd": "node scripts/downloadXSD.js",
+    "convert-xsd": "node scripts/convertXsdToJson.js"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -29,8 +30,12 @@
     "@mui/material": "^5.16.7",
     "axios": "^1.7.5",
     "electron-settings": "^4.0.4",
+    "fs-extra": "^11.2.0",
+    "path": "^0.12.7",
     "react-image-filter": "^0.1.2",
-    "unzipper": "^0.12.3"
+    "recoil": "^0.7.7",
+    "unzipper": "^0.12.3",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",

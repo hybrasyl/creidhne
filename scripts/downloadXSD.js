@@ -6,7 +6,7 @@ const unzipper = require('unzipper');
 const downloadAndExtractLatestXSD = async () => {
   const repoOwner = 'hybrasyl'; // Replace with the repository owner
   const repoName = 'xml'; // Replace with the repository name
-  const outputDir = path.join(__dirname, '../src/xsd'); // Directory to place the XSD files
+  const outputDir = path.join(__dirname, '..', 'xsd'); // Directory to place the XSD files
   const tempZipPath = path.join(outputDir, 'latest_xsd.zip');
 
   try {

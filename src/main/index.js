@@ -3,6 +3,18 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
+// Determine the path to use based on the operating system
+let userDataPath;
+
+if (process.platform === 'win32') {
+  userDataPath = join(app.getPath('home'), 'AppData', 'Local', 'Erisco', 'Creidhne');
+} else {
+  userDataPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
+}
+
+// Set the userData path
+app.setPath('userData', userDataPath);
+
 // Get the path to the icon based on the environment
 const iconPath = join(
   __dirname,
@@ -12,7 +24,7 @@ const iconPath = join(
 // Configuration for electron-settings
 settings.configure({
   atomicSave: true,
-  dir: join(app.getPath('appData'), 'Erisco', 'Creidhne'),
+  //dir: join(app.getPath('userData'), 'Erisco', 'Creidhne'),
   fileName: 'settings.json',
   numSpaces: 2,
   prettify: true
@@ -28,7 +40,7 @@ function createWindow() {
     minHeight: 768,
     show: false,
     autoHideMenuBar: true,
-    // frame: false,
+//    frame: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false

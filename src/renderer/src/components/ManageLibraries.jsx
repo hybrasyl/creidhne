@@ -16,11 +16,13 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HelpIcon from '@mui/icons-material/Help';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { useRecoilState } from 'recoil';
+import { activeLibraryState } from '../recoil/atoms';
 
 const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [selectedLibrary, setSelectedLibrary] = useState('');
-  const [activeLibrary, setActiveLibrary] = useState(null);
   const [open, setOpen] = useState(false);
+  const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState);
 
   const handleRemoveLibrary = () => {
     setOpen(true);
