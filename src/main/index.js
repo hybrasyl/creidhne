@@ -3,6 +3,7 @@ import { join, dirname } from 'path'
 import { promises as fs } from 'fs'
 import { createHash } from 'crypto'
 import { parseItemXml, serializeItemXml } from './itemXml'
+import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -17,12 +18,6 @@ if (process.platform === 'win32') {
 
 // Set the userData path
 app.setPath('userData', userDataPath);
-
-// Get the path to the icon based on the environment
-const iconPath = join(
-  __dirname,
-  process.env.NODE_ENV === 'production' ? '../resources/icon.png' : '../../resources/icon.png'
-)
 
 // Configuration for electron-settings
 settings.configure({
@@ -128,6 +123,16 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
+  ipcMain.handle('xml:loadRecipe', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseRecipeXml(xml)
+  })
+
+  ipcMain.handle('xml:saveRecipe', async (_, filePath, recipeData) => {
+    const xml = serializeRecipeXml(recipeData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
   ipcMain.handle('fs:moveFile', async (_, src, dest) => {
     try {
       await fs.access(dest)
@@ -153,7 +158,7 @@ app.whenReady().then(() => {
     }
   })
 
-  ipcMain.handle('settings:save', async (event, data) => {
+  ipcMain.handle('settings:save', async (_, data) => {
     try {
       await settings.set('libraries', data.libraries)
       await settings.set('activeLibrary', data.activeLibrary)
@@ -171,10 +176,22 @@ app.whenReady().then(() => {
 
   const INDEX_DIRS = [
     'castables', 'creatures', 'creaturebehaviorsets', 'elementtables', 'items',
-    'localizations', 'lootsets', 'maps', 'nations', 'npcs',
+    'localizations', 'lootsets', 'maps', 'nations', 'npcs', 'recipes',
     'serverconfigs', 'spawngroups', 'statuses', 'variantgroups', 'worldmaps',
   ]
-  const NAME_REGEX = /<Name>([^<]+)<\/Name>/g
+  // Types that store the identifier as an attribute on the root element.
+  // Value is the attribute name to extract. All others use <Name> child element.
+  const ATTR_NAME_MAP = {
+    statuses:             'Name',
+    creatures:            'Name',
+    creaturebehaviorsets: 'Name',
+    elementtables:        'Name',
+    lootsets:             'Name',
+    serverconfigs:        'Name',
+    spawngroups:          'Name',
+    localizations:        'Locale',
+  }
+  const ELEM_NAME_REGEX = /<Name>([^<]+)<\/Name>/g
 
   const getIndexDir = () => join(app.getPath('userData'), 'indexes')
   const getIndexPath = (libraryPath) => {
@@ -202,15 +219,24 @@ app.whenReady().then(() => {
     for (const type of INDEX_DIRS) {
       const dirPath = join(libraryPath, type)
       const names = []
+      const attrName = ATTR_NAME_MAP[type]
       try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true })
         for (const file of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
           const content = await fs.readFile(join(dirPath, file.name), 'utf-8')
-          NAME_REGEX.lastIndex = 0
-          let match
-          while ((match = NAME_REGEX.exec(content)) !== null) {
-            const name = match[1].trim()
-            if (name && !names.includes(name)) names.push(name)
+          if (attrName) {
+            const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
+            if (match) {
+              const name = match[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+            }
+          } else {
+            ELEM_NAME_REGEX.lastIndex = 0
+            let match
+            while ((match = ELEM_NAME_REGEX.exec(content)) !== null) {
+              const name = match[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+            }
           }
         }
         names.sort()

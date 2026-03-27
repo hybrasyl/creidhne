@@ -12,7 +12,7 @@ import GroupsIcon from '@mui/icons-material/Groups'
 import RedeemIcon from '@mui/icons-material/Redeem'
 import BubbleChartIcon from '@mui/icons-material/BubbleChart'
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt'
-import ScienceIcon from '@mui/icons-material/Science'
+import ArticleIcon from '@mui/icons-material/Article'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'
 import SettingsIcon from '@mui/icons-material/Settings'
@@ -255,7 +255,7 @@ const MainToolbar = ({ navigate }) => {
       }
     }}
   >
-    <ScienceIcon />
+    <ArticleIcon />
   </IconButton>
 </Tooltip>
 <Tooltip title="Strings">
