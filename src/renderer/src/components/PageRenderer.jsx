@@ -10,6 +10,7 @@ import SpawngroupsPage from '../pages/SpawngroupsPage';
 import SettingsPage from '../pages/SettingsPage';
 import RecipesPage from '../pages/RecipesPage';
 import NPCsPage from '../pages/NPCsPage';
+import NationsPage from '../pages/NationsPage';
 import LootPage from '../pages/LootPage';
 import ItemsPage from '../pages/ItemsPage';
 import HelpersPage from '../pages/HelpersPage';
@@ -46,6 +47,8 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       return <RecipesPage />;
     case 'npcs':
       return <NPCsPage />;
+    case 'nations':
+      return <NationsPage />;
     case 'loot':
       return <LootPage />;
     case 'items':

@@ -5,6 +5,7 @@ import { createHash } from 'crypto'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
 import { parseNpcXml, serializeNpcXml } from './npcXml'
+import { parseNationXml, serializeNationXml } from './nationXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -141,6 +142,16 @@ app.whenReady().then(() => {
 
   ipcMain.handle('xml:saveNpc', async (_, filePath, npcData) => {
     const xml = serializeNpcXml(npcData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadNation', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseNationXml(xml)
+  })
+
+  ipcMain.handle('xml:saveNation', async (_, filePath, nationData) => {
+    const xml = serializeNationXml(nationData)
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 

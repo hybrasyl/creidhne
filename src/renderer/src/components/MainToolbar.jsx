@@ -9,6 +9,7 @@ import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew'
 import PetsIcon from '@mui/icons-material/Pets'
 import CelebrationIcon from '@mui/icons-material/Celebration'
 import GroupsIcon from '@mui/icons-material/Groups'
+import PublicIcon from '@mui/icons-material/Public'
 import RedeemIcon from '@mui/icons-material/Redeem'
 import BubbleChartIcon from '@mui/icons-material/BubbleChart'
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt'
@@ -171,6 +172,23 @@ const MainToolbar = ({ navigate }) => {
     }}
   >
     <CelebrationIcon />
+  </IconButton>
+</Tooltip>
+<Tooltip title="Nations">
+  <IconButton
+    color="inherit"
+    onClick={() => navigate('nations')}
+    sx={{
+      WebkitAppRegion: 'no-drag',
+      mx: -0.5,
+      color: 'text.button',
+      '&:hover': {
+        backgroundColor: 'info.main',
+        color: 'text.dark'
+      }
+    }}
+  >
+    <PublicIcon />
   </IconButton>
 </Tooltip>
 <Tooltip title="Spawngroups">
