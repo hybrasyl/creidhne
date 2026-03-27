@@ -15,7 +15,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
   maximizeWindow: () => ipcRenderer.send('maximize-window'),
-  closeWindow: () => ipcRenderer.send('close-window')
+  closeWindow: () => ipcRenderer.send('close-window'),
+  listDir: (dirPath) => ipcRenderer.invoke('fs:listDir', dirPath),
+  readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+  writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
+  loadItem: (filePath) => ipcRenderer.invoke('xml:loadItem', filePath),
+  saveItem: (filePath, itemData) => ipcRenderer.invoke('xml:saveItem', filePath, itemData),
+  moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
+  buildLibraryIndex: (libraryPath) => ipcRenderer.invoke('library:buildIndex', libraryPath),
 });
 
 // If context isolation is disabled, add to the DOM global directly

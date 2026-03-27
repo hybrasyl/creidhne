@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { useRecoilState } from 'recoil';
-import { themeState, librariesState, currentPageState, activeLibraryState } from './recoil/atoms'; // Import Recoil atoms
+import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState } from './recoil/atoms'; // Import Recoil atoms
 import lightTheme from './themes/light';
 import darkTheme from './themes/dark';
 import MainLayout from './components/MainLayout';
@@ -12,6 +12,7 @@ function App() {
   const [libraries, setLibraries] = useRecoilState(librariesState);
   const [currentPage, setCurrentPage] = useRecoilState(currentPageState); // Manage current page with Recoil
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState);
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
 
   // Load settings on mount
   useEffect(() => {
@@ -24,6 +25,12 @@ function App() {
 
     fetchSettings();
   }, [setTheme, setLibraries, setActiveLibrary]);
+
+  // Build library name index whenever active library changes
+  useEffect(() => {
+    if (!activeLibrary) { setLibraryIndex({}); return; }
+    window.electronAPI.buildLibraryIndex(activeLibrary).then(setLibraryIndex);
+  }, [activeLibrary, setLibraryIndex]);
 
   // Save settings whenever theme or libraries change
   useEffect(() => {

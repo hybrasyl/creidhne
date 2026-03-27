@@ -20,7 +20,7 @@ function MainLayout({ children, navigate }) {
       >
         <MainToolbar navigate={navigate} />
       </AppBar>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
     </Box>

@@ -26,3 +26,8 @@ export const librariesState = atom({
   key: 'librariesState',
   default: [],
 });
+
+export const libraryIndexState = atom({
+  key: 'libraryIndexState',
+  default: {},
+});
