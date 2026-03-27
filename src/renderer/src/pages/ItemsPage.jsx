@@ -10,6 +10,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import { activeLibraryState } from '../recoil/atoms';
 import ItemEditor from '../components/items/ItemEditor';
 import { DEFAULT_ITEM } from '../data/itemConstants';
+import { validateItem } from '../data/itemValidation';
 
 const ITEMS_SUBDIR = 'items';
 const IGNORE_SUBDIR = 'items/.ignore';
@@ -133,6 +134,8 @@ function ItemsPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [editWarnings, setEditWarnings] = useState([]);
   const [snackbar, setSnackbar] = useState(null); // { message, severity }
 
   const loadActiveFiles = async (library) => {
@@ -167,16 +170,23 @@ function ItemsPage() {
 
   const handleNew = () => {
     setSelectedFile(null);
+    setLoadError(null);
+    setEditWarnings([]);
     setEditingItem(JSON.parse(JSON.stringify(DEFAULT_ITEM)));
   };
 
   const handleSelect = async (file) => {
     setSelectedFile(file);
+    setLoadError(null);
+    setEditWarnings([]);
     try {
       const item = await window.electronAPI.loadItem(file.path);
       setEditingItem(item);
+      setEditWarnings(validateItem(item));
     } catch (err) {
       console.error('Failed to load item:', err);
+      setEditingItem(null);
+      setLoadError(err?.message || 'Failed to parse XML.');
     }
   };
 
@@ -242,12 +252,17 @@ function ItemsPage() {
       />
 
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {editingItem ? (
+        {loadError ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <strong>Failed to load item:</strong> {loadError}
+          </Alert>
+        ) : editingItem ? (
           <ItemEditor
             item={editingItem}
             initialFileName={selectedFile?.name ?? null}
             isArchived={isArchived}
             isExisting={!!selectedFile}
+            warnings={editWarnings}
             onSave={handleSave}
             onArchive={handleArchive}
             onUnarchive={handleUnarchive}

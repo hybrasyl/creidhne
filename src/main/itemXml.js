@@ -46,6 +46,7 @@ export function parseItemXml(xmlString) {
 function mapXmlToItem(result) {
   const root = result.Item;
   const props = first(root.Properties, {});
+  const statModifiers = parseStatModifiers(first(props.StatModifiers));
   return {
     name: first(root.Name, ''),
     unidentifiedName: first(root.UnidentifiedName, ''),
@@ -58,7 +59,7 @@ function mapXmlToItem(result) {
       physical: parsePhysical(first(props.Physical)),
       categories: parseCategories(first(props.Categories)),
       equipment: parseEquipment(first(props.Equipment)),
-      statModifiers: parseStatModifiers(first(props.StatModifiers)),
+      statModifiers,
       flags: spaceList(first(props.Flags, '')),
       variants: parseVariants(first(props.Variants)),
       vendor: parseVendor(first(props.Vendor)),
@@ -68,6 +69,9 @@ function mapXmlToItem(result) {
       motions: parseMotions(props.Motion || props.Motions),
       castModifiers: parseCastModifiers(first(props.CastModifiers)),
       procs: parseProcs(first(props.Procs)),
+    },
+    _diagnostics: {
+      unknownStatKeys: statModifiers.unknownStatKeys,
     },
   };
 }
@@ -106,18 +110,21 @@ function parseEquipment(node) {
 }
 
 function parseStatModifiers(node) {
-  if (!node) return { rows: [], elementalModifiers: [] };
+  if (!node) return { rows: [], elementalModifiers: [], unknownStatKeys: [] };
   const attrs = node.$ || {};
-  const rows = Object.entries(attrs)
-    .filter(([k]) => STAT_KEYS.has(k))
-    .map(([key, value]) => ({ key, value }));
+  const rows = [];
+  const unknownStatKeys = [];
+  for (const [k, v] of Object.entries(attrs)) {
+    if (STAT_KEYS.has(k)) rows.push({ key: k, value: v });
+    else unknownStatKeys.push(k);
+  }
   const emList = first(node.ElementalModifiers, {});
   const elementalModifiers = (emList.ElementalModifier || []).map((em) => ({
     type: a(em, 'Type', 'Augment'),
     element: a(em, 'Element', 'None'),
     modifier: a(em, 'Modifier', '1'),
   }));
-  return { rows, elementalModifiers };
+  return { rows, elementalModifiers, unknownStatKeys };
 }
 
 function parseVariants(node) {
@@ -186,8 +193,7 @@ function parseRestrictions(node) {
   const cast = first(node.Castables);
   const slots = first(node.SlotRestrictions);
   const rawClass = first(node.Class, '');
-  // Multi-word class = all classes
-  const parsedClass = rawClass.includes(' ') ? 'All' : (rawClass || 'All');
+  const parsedClass = rawClass || 'All';
   return {
     level: { min: a(lev, 'Min', '1'), max: a(lev, 'Max', '99') },
     ab: ab ? { min: a(ab, 'Min', '0'), max: a(ab, 'Max', '255') } : null,

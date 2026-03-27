@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveItem: (filePath, itemData) => ipcRenderer.invoke('xml:saveItem', filePath, itemData),
   loadRecipe: (filePath) => ipcRenderer.invoke('xml:loadRecipe', filePath),
   saveRecipe: (filePath, recipeData) => ipcRenderer.invoke('xml:saveRecipe', filePath, recipeData),
+  loadNpc: (filePath) => ipcRenderer.invoke('xml:loadNpc', filePath),
+  saveNpc: (filePath, npcData) => ipcRenderer.invoke('xml:saveNpc', filePath, npcData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
   loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),

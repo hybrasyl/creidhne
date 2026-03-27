@@ -4,6 +4,7 @@ import { promises as fs } from 'fs'
 import { createHash } from 'crypto'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
+import { parseNpcXml, serializeNpcXml } from './npcXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -133,6 +134,16 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
+  ipcMain.handle('xml:loadNpc', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseNpcXml(xml)
+  })
+
+  ipcMain.handle('xml:saveNpc', async (_, filePath, npcData) => {
+    const xml = serializeNpcXml(npcData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
   ipcMain.handle('fs:moveFile', async (_, src, dest) => {
     try {
       await fs.access(dest)
@@ -224,7 +235,21 @@ app.whenReady().then(() => {
         const entries = await fs.readdir(dirPath, { withFileTypes: true })
         for (const file of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
           const content = await fs.readFile(join(dirPath, file.name), 'utf-8')
-          if (attrName) {
+          if (type === 'castables') {
+            // Extract first <Name> element and root Class attribute per file
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !names.includes(name)) {
+                names.push(name)
+                const classMatch = /<Castable[^>]+Class="([^"]*)"/.exec(content)
+                if (classMatch) {
+                  if (!index.castableClasses) index.castableClasses = {}
+                  index.castableClasses[name] = classMatch[1].trim()
+                }
+              }
+            }
+          } else if (attrName) {
             const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
             if (match) {
               const name = match[1].trim()

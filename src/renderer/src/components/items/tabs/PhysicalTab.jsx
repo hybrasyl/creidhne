@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Box, TextField, FormControlLabel, Checkbox, Select, MenuItem,
+  Box, TextField, Switch, Select, MenuItem,
   FormControl, InputLabel, Typography, Paper, Divider,
 } from '@mui/material';
 import { EQUIPMENT_SLOTS, WEAPON_TYPES } from '../../../data/itemConstants';
@@ -72,16 +72,10 @@ function PhysicalTab({ data, onChange }) {
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={data.equipment !== null}
-              onChange={toggleEquipment}
-              size="small"
-            />
-          }
-          label={<Typography variant="subtitle2">Equipment</Typography>}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>Equipment</Typography>
+          <Switch size="small" checked={data.equipment !== null} onChange={toggleEquipment} />
+        </Box>
         {data.equipment !== null && (
           <>
             <Divider sx={{ my: 1 }} />
@@ -117,16 +111,10 @@ function PhysicalTab({ data, onChange }) {
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={data.damage !== null}
-              onChange={toggleDamage}
-              size="small"
-            />
-          }
-          label={<Typography variant="subtitle2">Damage</Typography>}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>Damage</Typography>
+          <Switch size="small" checked={data.damage !== null} onChange={toggleDamage} />
+        </Box>
         {data.damage !== null && (
           <>
             <Divider sx={{ my: 1 }} />

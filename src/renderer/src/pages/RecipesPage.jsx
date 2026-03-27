@@ -107,6 +107,7 @@ function RecipesPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
 
   const loadActiveFiles = async (library) => {
@@ -135,16 +136,20 @@ function RecipesPage() {
 
   const handleNew = () => {
     setSelectedFile(null);
+    setLoadError(null);
     setEditingRecipe({ ...DEFAULT_RECIPE });
   };
 
   const handleSelect = async (file) => {
     setSelectedFile(file);
+    setLoadError(null);
     try {
       const recipe = await window.electronAPI.loadRecipe(file.path);
       setEditingRecipe(recipe);
     } catch (err) {
       console.error('Failed to load recipe:', err);
+      setEditingRecipe(null);
+      setLoadError(err?.message || 'Failed to parse XML.');
     }
   };
 
@@ -195,7 +200,11 @@ function RecipesPage() {
         showArchived={showArchived} onToggleArchived={handleToggleArchived}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {editingRecipe ? (
+        {loadError ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <strong>Failed to load recipe:</strong> {loadError}
+          </Alert>
+        ) : editingRecipe ? (
           <RecipeEditor
             recipe={editingRecipe}
             initialFileName={selectedFile?.name ?? null}

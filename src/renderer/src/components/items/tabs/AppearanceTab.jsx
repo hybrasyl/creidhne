@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Box, TextField, FormControlLabel, Checkbox, Select, MenuItem,
+  Box, TextField, Switch, Select, MenuItem,
   FormControl, InputLabel, Typography, Paper, Divider,
 } from '@mui/material';
 import { ITEM_BODY_STYLES, ITEM_COLORS } from '../../../data/itemConstants';
@@ -53,10 +53,10 @@ function AppearanceTab({ data, onChange }) {
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <FormControlLabel
-          control={<Checkbox checked={data.styleEnabled} onChange={toggleStyle} size="small" />}
-          label={<Typography variant="subtitle2">Style</Typography>}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>Style</Typography>
+          <Switch size="small" checked={data.styleEnabled} onChange={toggleStyle} />
+        </Box>
 
         {data.styleEnabled && (
           <>
