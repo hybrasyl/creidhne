@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveLoot: (filePath, lootData) => ipcRenderer.invoke('xml:saveLoot', filePath, lootData),
   loadVariantGroup: (filePath) => ipcRenderer.invoke('xml:loadVariantGroup', filePath),
   saveVariantGroup: (filePath, variantGroupData) => ipcRenderer.invoke('xml:saveVariantGroup', filePath, variantGroupData),
+  loadLocalization: (filePath) => ipcRenderer.invoke('xml:loadLocalization', filePath),
+  saveLocalization: (filePath, localizationData) => ipcRenderer.invoke('xml:saveLocalization', filePath, localizationData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
   loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),

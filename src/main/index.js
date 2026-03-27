@@ -8,6 +8,7 @@ import { parseNpcXml, serializeNpcXml } from './npcXml'
 import { parseNationXml, serializeNationXml } from './nationXml'
 import { parseLootXml, serializeLootXml } from './lootXml'
 import { parseVariantXml, serializeVariantXml } from './variantXml'
+import { parseLocalizationXml, serializeLocalizationXml } from './localizationXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -174,6 +175,16 @@ app.whenReady().then(() => {
 
   ipcMain.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
     const xml = serializeVariantXml(variantGroupData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadLocalization', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseLocalizationXml(xml)
+  })
+
+  ipcMain.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
+    const xml = serializeLocalizationXml(localizationData)
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
