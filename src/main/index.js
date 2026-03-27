@@ -6,6 +6,8 @@ import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
 import { parseNpcXml, serializeNpcXml } from './npcXml'
 import { parseNationXml, serializeNationXml } from './nationXml'
+import { parseLootXml, serializeLootXml } from './lootXml'
+import { parseVariantXml, serializeVariantXml } from './variantXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -152,6 +154,26 @@ app.whenReady().then(() => {
 
   ipcMain.handle('xml:saveNation', async (_, filePath, nationData) => {
     const xml = serializeNationXml(nationData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadLoot', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseLootXml(xml)
+  })
+
+  ipcMain.handle('xml:saveLoot', async (_, filePath, lootData) => {
+    const xml = serializeLootXml(lootData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadVariantGroup', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseVariantXml(xml)
+  })
+
+  ipcMain.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
+    const xml = serializeVariantXml(variantGroupData)
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
