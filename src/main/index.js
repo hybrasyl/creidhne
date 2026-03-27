@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, dirname } from 'path'
 import { promises as fs } from 'fs'
+import { createHash } from 'crypto'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
@@ -166,22 +167,44 @@ app.whenReady().then(() => {
     return app.getPath('userData')
   })
 
-  const LIBRARY_INDEX_DIRS = [
+  // --- Library index (persistent, per-library) ---
+
+  const INDEX_DIRS = [
     'castables', 'creatures', 'creaturebehaviorsets', 'elementtables', 'items',
     'localizations', 'lootsets', 'maps', 'nations', 'npcs',
     'serverconfigs', 'spawngroups', 'statuses', 'variantgroups', 'worldmaps',
   ]
   const NAME_REGEX = /<Name>([^<]+)<\/Name>/g
 
-  ipcMain.handle('library:buildIndex', async (_, libraryPath) => {
-    const result = {}
-    for (const type of LIBRARY_INDEX_DIRS) {
+  const getIndexDir = () => join(app.getPath('userData'), 'indexes')
+  const getIndexPath = (libraryPath) => {
+    const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
+    return join(getIndexDir(), `${hash}.json`)
+  }
+
+  async function walkDir(dir, ext, base, results = []) {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true })
+      for (const e of entries) {
+        const full = join(dir, e.name)
+        if (e.isDirectory()) await walkDir(full, ext, base, results)
+        else if (e.isFile() && e.name.endsWith(ext)) {
+          results.push(full.slice(base.length + 1).replace(/\\/g, '/').replace(/\.[^.]+$/, ''))
+        }
+      }
+    } catch { /* dir may not exist */ }
+    return results
+  }
+
+  ipcMain.handle('index:build', async (_, libraryPath) => {
+    const index = { libraryPath, builtAt: new Date().toISOString() }
+
+    for (const type of INDEX_DIRS) {
       const dirPath = join(libraryPath, type)
       const names = []
       try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true })
-        const xmlFiles = entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))
-        for (const file of xmlFiles) {
+        for (const file of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
           const content = await fs.readFile(join(dirPath, file.name), 'utf-8')
           NAME_REGEX.lastIndex = 0
           let match
@@ -192,9 +215,38 @@ app.whenReady().then(() => {
         }
         names.sort()
       } catch { /* dir may not exist */ }
-      result[type] = names
+      index[type] = names
     }
-    return result
+
+    const scriptsDir = join(libraryPath, '..', 'scripts')
+    index.scripts = (await walkDir(scriptsDir, '.lua', scriptsDir)).sort()
+
+    await fs.mkdir(getIndexDir(), { recursive: true })
+    await fs.writeFile(getIndexPath(libraryPath), JSON.stringify(index, null, 2), 'utf-8')
+    return { success: true, builtAt: index.builtAt }
+  })
+
+  ipcMain.handle('index:load', async (_, libraryPath) => {
+    try {
+      const content = await fs.readFile(getIndexPath(libraryPath), 'utf-8')
+      return JSON.parse(content)
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle('index:status', async (_, libraryPath) => {
+    try {
+      const content = await fs.readFile(getIndexPath(libraryPath), 'utf-8')
+      const { builtAt } = JSON.parse(content)
+      return { exists: true, builtAt }
+    } catch {
+      return { exists: false }
+    }
+  })
+
+  ipcMain.handle('index:delete', async (_, libraryPath) => {
+    try { await fs.unlink(getIndexPath(libraryPath)) } catch { /* may not exist */ }
   })
 
   createWindow()

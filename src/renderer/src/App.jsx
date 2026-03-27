@@ -26,10 +26,10 @@ function App() {
     fetchSettings();
   }, [setTheme, setLibraries, setActiveLibrary]);
 
-  // Build library name index whenever active library changes
+  // Load persisted index from disk whenever active library changes
   useEffect(() => {
     if (!activeLibrary) { setLibraryIndex({}); return; }
-    window.electronAPI.buildLibraryIndex(activeLibrary).then(setLibraryIndex);
+    window.electronAPI.loadIndex(activeLibrary).then((index) => setLibraryIndex(index || {}));
   }, [activeLibrary, setLibraryIndex]);
 
   // Save settings whenever theme or libraries change

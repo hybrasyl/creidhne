@@ -22,7 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadItem: (filePath) => ipcRenderer.invoke('xml:loadItem', filePath),
   saveItem: (filePath, itemData) => ipcRenderer.invoke('xml:saveItem', filePath, itemData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
-  buildLibraryIndex: (libraryPath) => ipcRenderer.invoke('library:buildIndex', libraryPath),
+  buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
+  loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),
+  getIndexStatus: (libraryPath) => ipcRenderer.invoke('index:status', libraryPath),
+  deleteIndex: (libraryPath) => ipcRenderer.invoke('index:delete', libraryPath),
 });
 
 // If context isolation is disabled, add to the DOM global directly
