@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch,
@@ -63,7 +63,7 @@ function MapPicker({ label, value, onChange, sx }) {
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive }) {
+function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data, setData] = useState(nation);
   const [fileName, setFileName] = useState(initialFileName || computeNationFilename(nation.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
@@ -71,28 +71,41 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
   const [openSpawnPoints, setOpenSpawnPoints] = useState(nation.spawnPoints.length > 0);
   const [openTerritory, setOpenTerritory] = useState(nation.territory !== null);
 
+  const isDirtyRef = useRef(false);
+
   useEffect(() => {
     setData(nation);
     setFileName(initialFileName || computeNationFilename(nation.name));
     setFileNameEdited(!!initialFileName);
     setOpenSpawnPoints(nation.spawnPoints.length > 0);
     setOpenTerritory(nation.territory !== null);
-  }, [nation, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [nation, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
 
   const updateData = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(computeNationFilename(next.name));
       return next;
     });
-  }, [fileNameEdited]);
+  }, [fileNameEdited, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
 
   const handleRegenerate = () => {
+    markDirtyLocal();
     setFileName(computeNationFilename(data.name));
     setFileNameEdited(false);
   };
+
+  // Keep saveRef current so the unsaved-changes dialog can trigger a save.
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   // ── Spawn points ──────────────────────────────────────────────────────────
   const addSpawnPoint = () =>
@@ -147,7 +160,7 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TextField
             size="small" label="Filename" value={fileName}
-            onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
             sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
           />
           <Tooltip title="Regenerate from name">

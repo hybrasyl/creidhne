@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
   TextField, InputAdornment, IconButton, Snackbar, Alert,
@@ -7,8 +7,10 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import { activeLibraryState } from '../recoil/atoms';
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import RecipeEditor from '../components/recipes/RecipeEditor';
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const RECIPES_SUBDIR = 'recipes';
 const IGNORE_SUBDIR = 'recipes/.ignore';
@@ -102,6 +104,7 @@ function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, sh
 
 function RecipesPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [files, setFiles] = useState([]);
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -109,6 +112,9 @@ function RecipesPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
+
+  const { markDirty, markClean, saveRef, guard, dialogOpen,
+    handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Recipe');
 
   const loadActiveFiles = async (library) => {
     if (!library) { setFiles([]); return; }
@@ -134,13 +140,14 @@ function RecipesPage() {
     if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
   };
 
-  const handleNew = () => {
+  const doNew = () => {
     setSelectedFile(null);
     setLoadError(null);
     setEditingRecipe({ ...DEFAULT_RECIPE });
   };
+  const handleNew = () => guard(doNew);
 
-  const handleSelect = async (file) => {
+  const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
     try {
@@ -152,6 +159,7 @@ function RecipesPage() {
       setLoadError(err?.message || 'Failed to parse XML.');
     }
   };
+  const handleSelect = (file) => guard(() => doSelect(file));
 
   const handleSave = async (data, fileName) => {
     try {
@@ -159,7 +167,12 @@ function RecipesPage() {
         ? selectedFile.path
         : `${activeLibrary}/${RECIPES_SUBDIR}/${fileName}`;
       await window.electronAPI.saveRecipe(filePath, data);
+      markClean();
       if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (activeLibrary) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, RECIPES_SUBDIR);
+        setLibraryIndex((prev) => ({ ...prev, ...section }));
+      }
     } catch (err) {
       console.error('Failed to save recipe:', err);
     }
@@ -172,6 +185,7 @@ function RecipesPage() {
       `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
     );
     if (result?.conflict) { setSnackbar({ message: 'An archived recipe with this name already exists.', severity: 'error' }); return; }
+    markClean();
     setSelectedFile(null); setEditingRecipe(null);
     await loadActiveFiles(activeLibrary);
     if (showArchived) await loadArchivedFiles(activeLibrary);
@@ -187,10 +201,13 @@ function RecipesPage() {
       setSnackbar({ message: 'An active recipe with this name already exists. Rename the archived recipe before unarchiving.', severity: 'error' });
       return;
     }
+    markClean();
     setSelectedFile(null); setEditingRecipe(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
   };
+
+  const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -213,6 +230,8 @@ function RecipesPage() {
             onSave={handleSave}
             onArchive={handleArchive}
             onUnarchive={handleUnarchive}
+            onDirtyChange={handleDirtyChange}
+            saveRef={saveRef}
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -227,6 +246,10 @@ function RecipesPage() {
           {snackbar?.message}
         </Alert>
       </Snackbar>
+      <UnsavedChangesDialog
+        open={dialogOpen} label="Recipe"
+        onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
+      />
     </Box>
   );
 }

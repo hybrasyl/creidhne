@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete,
@@ -18,7 +18,7 @@ function computeRecipeFilename(name) {
   return `recipe_${safe}.xml`;
 }
 
-function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive }) {
+function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const itemNames = libraryIndex.items || [];
 
@@ -26,26 +26,38 @@ function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave,
   const [fileName, setFileName] = useState(initialFileName || computeRecipeFilename(recipe.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
+  const isDirtyRef = useRef(false);
+
   useEffect(() => {
     setData(recipe);
     setFileName(initialFileName || computeRecipeFilename(recipe.name));
     setFileNameEdited(!!initialFileName);
-  }, [recipe, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [recipe, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const updateData = (updater) => {
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
+
+  const updateData = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(computeRecipeFilename(next.name));
       return next;
     });
-  };
+  }, [fileNameEdited, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
 
   const handleRegenerate = () => {
+    markDirtyLocal();
     setFileName(computeRecipeFilename(data.name));
     setFileNameEdited(false);
   };
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   const addIngredient = () =>
     updateData((d) => ({ ...d, ingredients: [...d.ingredients, { name: '', quantity: '1' }] }));
@@ -92,7 +104,7 @@ function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave,
             size="small"
             label="Filename"
             value={fileName}
-            onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
             sx={{ flex: 1 }}
             inputProps={{ spellCheck: false }}
           />

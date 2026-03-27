@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
   TextField, InputAdornment, IconButton, Snackbar, Alert,
@@ -7,8 +7,10 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import { activeLibraryState } from '../recoil/atoms';
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import NPCEditor from '../components/npcs/NPCEditor';
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const NPCS_SUBDIR = 'npcs';
 const IGNORE_SUBDIR = 'npcs/.ignore';
@@ -117,6 +119,7 @@ function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, sh
 
 function NPCsPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [files, setFiles] = useState([]);
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -124,6 +127,9 @@ function NPCsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
+
+  const { markDirty, markClean, saveRef, guard, dialogOpen,
+    handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('NPC');
 
   const loadActiveFiles = async (library) => {
     if (!library) { setFiles([]); return; }
@@ -149,13 +155,14 @@ function NPCsPage() {
     if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
   };
 
-  const handleNew = () => {
+  const doNew = () => {
     setSelectedFile(null);
     setLoadError(null);
     setEditingNpc({ ...DEFAULT_NPC, roles: { ...DEFAULT_NPC.roles } });
   };
+  const handleNew = () => guard(doNew);
 
-  const handleSelect = async (file) => {
+  const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
     try {
@@ -167,6 +174,7 @@ function NPCsPage() {
       setLoadError(err?.message || 'Failed to parse XML.');
     }
   };
+  const handleSelect = (file) => guard(() => doSelect(file));
 
   const handleSave = async (data, fileName) => {
     try {
@@ -174,7 +182,12 @@ function NPCsPage() {
         ? selectedFile.path
         : `${activeLibrary}/${NPCS_SUBDIR}/${fileName}`;
       await window.electronAPI.saveNpc(filePath, data);
+      markClean();
       if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (activeLibrary) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, NPCS_SUBDIR);
+        setLibraryIndex((prev) => ({ ...prev, ...section }));
+      }
     } catch (err) {
       console.error('Failed to save NPC:', err);
     }
@@ -187,6 +200,7 @@ function NPCsPage() {
       `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
     );
     if (result?.conflict) { setSnackbar({ message: 'An archived NPC with this name already exists.', severity: 'error' }); return; }
+    markClean();
     setSelectedFile(null); setEditingNpc(null);
     await loadActiveFiles(activeLibrary);
     if (showArchived) await loadArchivedFiles(activeLibrary);
@@ -202,10 +216,13 @@ function NPCsPage() {
       setSnackbar({ message: 'An active NPC with this name already exists. Rename the archived NPC before unarchiving.', severity: 'error' });
       return;
     }
+    markClean();
     setSelectedFile(null); setEditingNpc(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
   };
+
+  const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -228,6 +245,8 @@ function NPCsPage() {
             onSave={handleSave}
             onArchive={handleArchive}
             onUnarchive={handleUnarchive}
+            onDirtyChange={handleDirtyChange}
+            saveRef={saveRef}
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -237,6 +256,10 @@ function NPCsPage() {
           </Box>
         )}
       </Box>
+      <UnsavedChangesDialog
+        open={dialogOpen} label="NPC"
+        onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
+      />
       <Snackbar open={!!snackbar} autoHideDuration={6000} onClose={() => setSnackbar(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snackbar?.severity ?? 'info'} onClose={() => setSnackbar(null)} sx={{ width: '100%' }}>
           {snackbar?.message}

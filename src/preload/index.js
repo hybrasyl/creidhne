@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveLocalization: (filePath, localizationData) => ipcRenderer.invoke('xml:saveLocalization', filePath, localizationData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
+  buildIndexSection: (libraryPath, section) => ipcRenderer.invoke('index:buildSection', libraryPath, section),
   loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),
   getIndexStatus: (libraryPath) => ipcRenderer.invoke('index:status', libraryPath),
   deleteIndex: (libraryPath) => ipcRenderer.invoke('index:delete', libraryPath),

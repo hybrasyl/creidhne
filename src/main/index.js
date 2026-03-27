@@ -293,6 +293,39 @@ app.whenReady().then(() => {
                 }
               }
             }
+          } else if (type === 'localizations') {
+            // Extract Locale name for the names list
+            const localeMatch = /\bLocale="([^"]+)"/.exec(content)
+            if (localeMatch) {
+              const name = localeMatch[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+            }
+            // Extract NPC response call → response text map
+            const npcCallRegex = /<Response[^>]+Call="([^"]+)"[^>]*>([^<]*)<\/Response>/g
+            let callMatch
+            while ((callMatch = npcCallRegex.exec(content)) !== null) {
+              const call = callMatch[1].trim()
+              const response = callMatch[2].trim()
+              if (call) {
+                if (!index.npcResponseCalls) index.npcResponseCalls = {}
+                index.npcResponseCalls[call] = response
+              }
+            }
+            // Extract string keys from Common, Merchant, MonsterSpeak
+            if (!index.npcStringKeys) index.npcStringKeys = []
+            for (const [tag, label] of [['Common', 'Common'], ['Merchant', 'Merchant'], ['MonsterSpeak', 'Monster']]) {
+              const sectionMatch = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`).exec(content)
+              if (!sectionMatch) continue
+              const strRegex = /<String[^>]+Key="([^"]+)"[^>]*>([^<]*)<\/String>/g
+              let sm
+              while ((sm = strRegex.exec(sectionMatch[0])) !== null) {
+                const key = sm[1].trim()
+                const message = sm[2].trim()
+                if (key && !index.npcStringKeys.some((s) => s.key === key && s.category === label)) {
+                  index.npcStringKeys.push({ key, message, category: label })
+                }
+              }
+            }
           } else if (attrName) {
             const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
             if (match) {
@@ -319,6 +352,92 @@ app.whenReady().then(() => {
     await fs.mkdir(getIndexDir(), { recursive: true })
     await fs.writeFile(getIndexPath(libraryPath), JSON.stringify(index, null, 2), 'utf-8')
     return { success: true, builtAt: index.builtAt }
+  })
+
+  ipcMain.handle('index:buildSection', async (_, libraryPath, section) => {
+    const attrName = ATTR_NAME_MAP[section]
+    const dirPath = join(libraryPath, section)
+    const names = []
+    const result = {}
+
+    try {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true })
+      for (const file of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+        const content = await fs.readFile(join(dirPath, file.name), 'utf-8')
+        if (section === 'castables') {
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !names.includes(name)) {
+              names.push(name)
+              const classMatch = /<Castable[^>]+Class="([^"]*)"/.exec(content)
+              if (classMatch) {
+                if (!result.castableClasses) result.castableClasses = {}
+                result.castableClasses[name] = classMatch[1].trim()
+              }
+            }
+          }
+        } else if (section === 'localizations') {
+          const localeMatch = /\bLocale="([^"]+)"/.exec(content)
+          if (localeMatch) {
+            const name = localeMatch[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+          }
+          const npcCallRegex = /<Response[^>]+Call="([^"]+)"[^>]*>([^<]*)<\/Response>/g
+          let callMatch
+          while ((callMatch = npcCallRegex.exec(content)) !== null) {
+            const call = callMatch[1].trim()
+            const response = callMatch[2].trim()
+            if (call) {
+              if (!result.npcResponseCalls) result.npcResponseCalls = {}
+              result.npcResponseCalls[call] = response
+            }
+          }
+          // Extract string keys from Common, Merchant, MonsterSpeak
+          if (!result.npcStringKeys) result.npcStringKeys = []
+          for (const [tag, label] of [['Common', 'Common'], ['Merchant', 'Merchant'], ['MonsterSpeak', 'Monster']]) {
+            const sectionMatch = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`).exec(content)
+            if (!sectionMatch) continue
+            const strRegex = /<String[^>]+Key="([^"]+)"[^>]*>([^<]*)<\/String>/g
+            let sm
+            while ((sm = strRegex.exec(sectionMatch[0])) !== null) {
+              const key = sm[1].trim()
+              const message = sm[2].trim()
+              if (key && !result.npcStringKeys.some((s) => s.key === key && s.category === label)) {
+                result.npcStringKeys.push({ key, message, category: label })
+              }
+            }
+          }
+        } else if (attrName) {
+          const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
+          if (match) {
+            const name = match[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+          }
+        } else {
+          ELEM_NAME_REGEX.lastIndex = 0
+          let match
+          while ((match = ELEM_NAME_REGEX.exec(content)) !== null) {
+            const name = match[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+          }
+        }
+      }
+      names.sort()
+    } catch { /* dir may not exist */ }
+
+    result[section] = names
+
+    // Merge into persisted index so Dashboard stats stay current
+    try {
+      const indexPath = getIndexPath(libraryPath)
+      let existing = {}
+      try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
+      await fs.mkdir(getIndexDir(), { recursive: true })
+      await fs.writeFile(indexPath, JSON.stringify({ ...existing, ...result }, null, 2), 'utf-8')
+    } catch { /* persist failure is non-fatal */ }
+
+    return result
   })
 
   ipcMain.handle('index:load', async (_, libraryPath) => {

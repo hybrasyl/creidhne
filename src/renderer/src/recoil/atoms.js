@@ -31,3 +31,8 @@ export const libraryIndexState = atom({
   key: 'libraryIndexState',
   default: {},
 });
+
+export const dirtyEditorState = atom({
+  key: 'dirtyEditorState',
+  default: null, // null | { label: string, onSave: () => Promise<void> }
+});

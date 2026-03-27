@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
   TextField, InputAdornment, IconButton, Snackbar, Alert,
@@ -7,10 +7,12 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import { activeLibraryState } from '../recoil/atoms';
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import ItemEditor from '../components/items/ItemEditor';
 import { DEFAULT_ITEM } from '../data/itemConstants';
 import { validateItem } from '../data/itemValidation';
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const ITEMS_SUBDIR = 'items';
 const IGNORE_SUBDIR = 'items/.ignore';
@@ -129,6 +131,7 @@ function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, sh
 
 function ItemsPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [files, setFiles] = useState([]);
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -137,6 +140,9 @@ function ItemsPage() {
   const [loadError, setLoadError] = useState(null);
   const [editWarnings, setEditWarnings] = useState([]);
   const [snackbar, setSnackbar] = useState(null); // { message, severity }
+
+  const { markDirty, markClean, saveRef, guard, dialogOpen,
+    handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Item');
 
   const loadActiveFiles = async (library) => {
     if (!library) { setFiles([]); return; }
@@ -168,14 +174,15 @@ function ItemsPage() {
     if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
   };
 
-  const handleNew = () => {
+  const doNew = () => {
     setSelectedFile(null);
     setLoadError(null);
     setEditWarnings([]);
     setEditingItem(JSON.parse(JSON.stringify(DEFAULT_ITEM)));
   };
+  const handleNew = () => guard(doNew);
 
-  const handleSelect = async (file) => {
+  const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
     setEditWarnings([]);
@@ -189,6 +196,7 @@ function ItemsPage() {
       setLoadError(err?.message || 'Failed to parse XML.');
     }
   };
+  const handleSelect = (file) => guard(() => doSelect(file));
 
   const handleSave = async (data, fileName) => {
     try {
@@ -196,8 +204,11 @@ function ItemsPage() {
         ? selectedFile.path
         : `${activeLibrary}/${ITEMS_SUBDIR}/${fileName}`;
       await window.electronAPI.saveItem(filePath, data);
-      if (!selectedFile && activeLibrary) {
-        await loadActiveFiles(activeLibrary);
+      markClean();
+      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (activeLibrary) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, ITEMS_SUBDIR);
+        setLibraryIndex((prev) => ({ ...prev, ...section }));
       }
     } catch (err) {
       console.error('Failed to save item:', err);
@@ -213,6 +224,7 @@ function ItemsPage() {
       setSnackbar({ message: 'An archived item with this name already exists.', severity: 'error' });
       return;
     }
+    markClean();
     setSelectedFile(null);
     setEditingItem(null);
     await loadActiveFiles(activeLibrary);
@@ -231,12 +243,14 @@ function ItemsPage() {
       });
       return;
     }
+    markClean();
     setSelectedFile(null);
     setEditingItem(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
   };
 
+  const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
   const isArchived = selectedFile?.archived === true;
 
   return (
@@ -266,6 +280,8 @@ function ItemsPage() {
             onSave={handleSave}
             onArchive={handleArchive}
             onUnarchive={handleUnarchive}
+            onDirtyChange={handleDirtyChange}
+            saveRef={saveRef}
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -286,6 +302,10 @@ function ItemsPage() {
           {snackbar?.message}
         </Alert>
       </Snackbar>
+      <UnsavedChangesDialog
+        open={dialogOpen} label="Item"
+        onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
+      />
     </Box>
   );
 }

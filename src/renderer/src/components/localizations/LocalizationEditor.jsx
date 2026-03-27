@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Collapse, Drawer, List, ListItem, ListItemText,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -92,7 +94,7 @@ function ResponseRow({ call, response, onChangeCall, onChangeResponse, onDelete 
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function LocalizationEditor({ localization, initialFileName, isExisting, onSave }) {
+function LocalizationEditor({ localization, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data, setData] = useState(localization);
   const [fileName, setFileName] = useState(initialFileName || computeFileName(localization.locale));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
@@ -102,6 +104,8 @@ function LocalizationEditor({ localization, initialFileName, isExisting, onSave 
   const [openMonster, setOpenMonster] = useState(localization.monsterSpeak.length > 0);
   const [openNpc, setOpenNpc] = useState(localization.npcResponses.length > 0);
 
+  const isDirtyRef = useRef(false);
+
   useEffect(() => {
     setData(localization);
     setFileName(initialFileName || computeFileName(localization.locale));
@@ -110,15 +114,24 @@ function LocalizationEditor({ localization, initialFileName, isExisting, onSave 
     setOpenMerchant(localization.merchant.length > 0);
     setOpenMonster(localization.monsterSpeak.length > 0);
     setOpenNpc(localization.npcResponses.length > 0);
-  }, [localization, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [localization, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
 
   const update = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(computeFileName(next.locale));
       return next;
     });
-  }, [fileNameEdited]);
+  }, [fileNameEdited, markDirtyLocal]);
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   // ── Common ────────────────────────────────────────────────────────────────
   const addCommon    = () => update((d) => ({ ...d, common: [...d.common, { key: '', message: '' }] }));
@@ -156,7 +169,7 @@ function LocalizationEditor({ localization, initialFileName, isExisting, onSave 
         />
         <TextField
           size="small" label="Filename" value={fileName}
-          onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+          onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
           sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
         />
         <Tooltip title="View $ variables">
@@ -164,6 +177,16 @@ function LocalizationEditor({ localization, initialFileName, isExisting, onSave 
             Variables
           </Button>
         </Tooltip>
+        {isExisting && !isArchived && (
+          <Tooltip title="Archive localization">
+            <IconButton size="small" onClick={onArchive} sx={{ mt: 0.5 }}><ArchiveIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        )}
+        {isExisting && isArchived && (
+          <Tooltip title="Unarchive localization">
+            <IconButton size="small" onClick={onUnarchive} sx={{ mt: 0.5 }}><UnarchiveIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        )}
         <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)} sx={{ mt: 0.5 }}>
           Save
         </Button>

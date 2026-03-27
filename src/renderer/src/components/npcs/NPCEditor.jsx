@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch, FormControlLabel, Checkbox,
@@ -64,11 +64,14 @@ function NationPicker({ label, value, onChange, sx }) {
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive }) {
+function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const itemNames = libraryIndex.items || [];
   const castableNames = libraryIndex.castables || [];
   const castableClasses = libraryIndex.castableClasses || {};
+  const npcResponseCalls = libraryIndex.npcResponseCalls || {};
+  const npcCallOptions = Object.keys(npcResponseCalls).sort();
+  const npcStringKeys = libraryIndex.npcStringKeys || [];
 
   const [data, setData] = useState(npc);
   const [prefix, setPrefix] = useState('');
@@ -83,6 +86,8 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   const [openVend, setOpenVend] = useState(npc.roles.vend !== null);
   const [openTrain, setOpenTrain] = useState(npc.roles.train !== null);
 
+  const isDirtyRef = useRef(false);
+
   useEffect(() => {
     setData(npc);
     setPrefix('');
@@ -95,28 +100,38 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
     setOpenRepair(npc.roles.repair !== null);
     setOpenVend(npc.roles.vend !== null);
     setOpenTrain(npc.roles.train !== null);
-  }, [npc, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [npc, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Regenerate filename when prefix changes (if not manually edited)
   useEffect(() => {
     if (!fileNameEdited) setFileName(computeNpcFilename(prefix, data.name));
   }, [prefix]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
+
   const updateData = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(computeNpcFilename(prefix, next.name));
       return next;
     });
-  }, [fileNameEdited, prefix]);
+  }, [fileNameEdited, prefix, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
   const setRole = (field) => (e) => updateData((d) => ({ ...d, roles: { ...d.roles, [field]: e.target.value } }));
 
   const handleRegenerate = () => {
+    markDirtyLocal();
     setFileName(computeNpcFilename(prefix, data.name));
     setFileNameEdited(false);
   };
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   // ── Role enable/disable ───────────────────────────────────────────────────
   const enableRole = (roleKey, defaultVal) => (checked) => {
@@ -235,7 +250,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TextField
             size="small" label="Filename" value={fileName}
-            onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
             sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
           />
           <Tooltip title="Regenerate from name">
@@ -297,15 +312,25 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         <Section title="Responses" open={openResponses} onToggle={() => setOpenResponses((v) => !v)}>
           {data.responses.map((r, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
-              <TextField
-                label="Call" value={r.call}
-                onChange={(e) => setResponse(i, 'call', e.target.value)}
-                size="small" sx={{ width: 180 }} inputProps={{ maxLength: 128 }}
+              <Autocomplete
+                freeSolo options={npcCallOptions} value={r.call}
+                onInputChange={(_, val) => {
+                  const resolved = npcResponseCalls[val] ?? '';
+                  updateData((d) => ({
+                    ...d,
+                    responses: d.responses.map((resp, idx) =>
+                      idx === i ? { call: val, response: resolved || (val ? resp.response : '') } : resp
+                    ),
+                  }));
+                }}
+                size="small" sx={{ width: 220 }}
+                renderInput={(params) => <TextField {...params} label="Call" inputProps={{ ...params.inputProps, maxLength: 128 }} />}
               />
               <TextField
-                label="Response" value={r.response}
-                onChange={(e) => setResponse(i, 'response', e.target.value)}
-                size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 1024 }}
+                label="Response" size="small" sx={{ flex: 1 }}
+                value={npcResponseCalls[r.call] ?? r.response}
+                disabled
+                inputProps={{ maxLength: 1024 }}
               />
               <IconButton size="small" color="error" onClick={() => removeResponse(i)} sx={{ mt: 0.5 }}>
                 <DeleteIcon fontSize="small" />
@@ -319,15 +344,30 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         <Section title="Strings" open={openStrings} onToggle={() => setOpenStrings((v) => !v)}>
           {data.strings.map((s, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
-              <TextField
-                label="Key" value={s.key}
-                onChange={(e) => setString(i, 'key', e.target.value)}
-                size="small" sx={{ width: 180 }} inputProps={{ maxLength: 128 }}
+              <Autocomplete
+                freeSolo
+                options={npcStringKeys}
+                groupBy={(opt) => opt.category}
+                getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.key}
+                value={s.key}
+                onInputChange={(_, val) => {
+                  const found = npcStringKeys.find((sk) => sk.key === val);
+                  updateData((d) => ({
+                    ...d,
+                    strings: d.strings.map((str, idx) =>
+                      idx === i ? { key: val, message: found ? found.message : (val ? str.message : '') } : str
+                    ),
+                  }));
+                }}
+                size="small" sx={{ width: 220 }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Key" inputProps={{ ...params.inputProps, maxLength: 128 }} />
+                )}
               />
               <TextField
-                label="Message" value={s.message}
-                onChange={(e) => setString(i, 'message', e.target.value)}
-                size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 1024 }}
+                label="Message" size="small" sx={{ flex: 1 }}
+                value={npcStringKeys.find((sk) => sk.key === s.key)?.message ?? s.message}
+                disabled
               />
               <IconButton size="small" color="error" onClick={() => removeString(i)} sx={{ mt: 0.5 }}>
                 <DeleteIcon fontSize="small" />
@@ -514,7 +554,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                           train: {
                             ...d.roles.train,
                             castables: d.roles.train.castables.map((entry, idx) =>
-                              idx === i ? { ...entry, name: val, class: autoClass || entry.class } : entry
+                              idx === i ? { ...entry, name: val, class: autoClass || (val ? entry.class : '') } : entry
                             ),
                           },
                         },

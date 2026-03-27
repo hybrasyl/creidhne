@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Alert, Collapse, Paper,
   Switch, Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox, Autocomplete, Chip,
@@ -64,7 +64,7 @@ function deriveFilename(data) {
   );
 }
 
-function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = [], onSave, onArchive, onUnarchive }) {
+function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = [], onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const castableNames = libraryIndex.castables || [];
 
@@ -79,21 +79,30 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
   const [openUse, setOpenUse] = useState(item.properties.use !== null);
   const [openVendor, setOpenVendor] = useState(true);
 
+  const isDirtyRef = useRef(false);
+
   useEffect(() => {
     setData(item);
     setFileName(initialFileName || deriveFilename(item));
     setFileNameEdited(!!initialFileName);
     setWarningsDismissed(false);
     setOpenUse(item.properties.use !== null);
-  }, [item, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [item, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
 
   const updateData = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(deriveFilename(next));
       return next;
     });
-  }, [fileNameEdited]);
+  }, [fileNameEdited, markDirtyLocal]);
 
   const updateProperties = (slice) =>
     updateData((d) => ({ ...d, properties: { ...d.properties, ...slice } }));
@@ -105,9 +114,12 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
     }));
 
   const handleRegenerate = () => {
+    markDirtyLocal();
     setFileName(deriveFilename(data));
     setFileNameEdited(false);
   };
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   const enableEquipment = (checked) =>
     updateProperties({ equipment: checked ? { ...DEFAULT_EQUIPMENT } : null });
@@ -181,7 +193,7 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TextField
             size="small" label="Filename" value={fileName}
-            onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
             sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
           />
           <Tooltip title="Regenerate from name / slot / vendor">

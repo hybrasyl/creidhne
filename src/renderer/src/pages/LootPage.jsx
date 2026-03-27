@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
   TextField, InputAdornment, IconButton, Snackbar, Alert,
@@ -7,8 +7,10 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import { activeLibraryState } from '../recoil/atoms';
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import LootEditor from '../components/loot/LootEditor';
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const LOOT_SUBDIR = 'lootsets';
 const IGNORE_SUBDIR = 'lootsets/.ignore';
@@ -106,6 +108,7 @@ function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, sh
 
 function LootPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [files, setFiles] = useState([]);
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -113,6 +116,9 @@ function LootPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
+
+  const { markDirty, markClean, saveRef, guard, dialogOpen,
+    handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Loot Set');
 
   const loadActiveFiles = async (library) => {
     if (!library) { setFiles([]); return; }
@@ -138,13 +144,14 @@ function LootPage() {
     if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
   };
 
-  const handleNew = () => {
+  const doNew = () => {
     setSelectedFile(null);
     setLoadError(null);
     setEditingLoot({ ...DEFAULT_LOOT, table: { ...DEFAULT_LOOT.table, items: { ...DEFAULT_LOOT.table.items, entries: [] } } });
   };
+  const handleNew = () => guard(doNew);
 
-  const handleSelect = async (file) => {
+  const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
     try {
@@ -156,6 +163,7 @@ function LootPage() {
       setLoadError(err?.message || 'Failed to parse XML.');
     }
   };
+  const handleSelect = (file) => guard(() => doSelect(file));
 
   const handleSave = async (data, fileName) => {
     try {
@@ -163,7 +171,12 @@ function LootPage() {
         ? selectedFile.path
         : `${activeLibrary}/${LOOT_SUBDIR}/${fileName}`;
       await window.electronAPI.saveLoot(filePath, data);
+      markClean();
       if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (activeLibrary) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, LOOT_SUBDIR);
+        setLibraryIndex((prev) => ({ ...prev, ...section }));
+      }
     } catch (err) {
       console.error('Failed to save loot set:', err);
     }
@@ -176,6 +189,7 @@ function LootPage() {
       `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
     );
     if (result?.conflict) { setSnackbar({ message: 'An archived loot set with this name already exists.', severity: 'error' }); return; }
+    markClean();
     setSelectedFile(null); setEditingLoot(null);
     await loadActiveFiles(activeLibrary);
     if (showArchived) await loadArchivedFiles(activeLibrary);
@@ -191,10 +205,13 @@ function LootPage() {
       setSnackbar({ message: 'An active loot set with this name already exists. Rename the archived file before unarchiving.', severity: 'error' });
       return;
     }
+    markClean();
     setSelectedFile(null); setEditingLoot(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
   };
+
+  const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -217,6 +234,8 @@ function LootPage() {
             onSave={handleSave}
             onArchive={handleArchive}
             onUnarchive={handleUnarchive}
+            onDirtyChange={handleDirtyChange}
+            saveRef={saveRef}
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -226,6 +245,10 @@ function LootPage() {
           </Box>
         )}
       </Box>
+      <UnsavedChangesDialog
+        open={dialogOpen} label="Loot Set"
+        onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
+      />
       <Snackbar open={!!snackbar} autoHideDuration={6000} onClose={() => setSnackbar(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert severity={snackbar?.severity ?? 'info'} onClose={() => setSnackbar(null)} sx={{ width: '100%' }}>
           {snackbar?.message}

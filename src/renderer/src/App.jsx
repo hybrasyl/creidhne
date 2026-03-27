@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { useRecoilState } from 'recoil';
-import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState } from './recoil/atoms'; // Import Recoil atoms
+import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState, dirtyEditorState } from './recoil/atoms'; // Import Recoil atoms
 import lightTheme from './themes/light';
 import darkTheme from './themes/dark';
 import MainLayout from './components/MainLayout';
 import PageRenderer from './components/PageRenderer';
+import UnsavedChangesDialog from './components/UnsavedChangesDialog';
 
 function App() {
   const [theme, setTheme] = useRecoilState(themeState);
@@ -13,6 +14,9 @@ function App() {
   const [currentPage, setCurrentPage] = useRecoilState(currentPageState); // Manage current page with Recoil
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState);
   const [, setLibraryIndex] = useRecoilState(libraryIndexState);
+  const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState);
+  const [pendingNav, setPendingNav] = useState(null);
+  const [navDialogOpen, setNavDialogOpen] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -41,6 +45,41 @@ function App() {
     });
   }, [theme, libraries, activeLibrary]);
 
+  const handleNavigate = useCallback((page) => {
+    if (dirtyEditor) {
+      setPendingNav(page);
+      setNavDialogOpen(true);
+    } else {
+      setCurrentPage(page);
+    }
+  }, [dirtyEditor, setCurrentPage]);
+
+  const handleNavSave = useCallback(async () => {
+    const page = pendingNav;
+    setNavDialogOpen(false);
+    setPendingNav(null);
+    try {
+      await dirtyEditor?.onSave();
+      // markClean is called inside the editor's save handler; navigate after
+      setCurrentPage(page);
+    } catch {
+      // save failed — stay on current page
+    }
+  }, [pendingNav, dirtyEditor, setCurrentPage]);
+
+  const handleNavDiscard = useCallback(() => {
+    const page = pendingNav;
+    setNavDialogOpen(false);
+    setPendingNav(null);
+    setDirtyEditor(null);
+    setCurrentPage(page);
+  }, [pendingNav, setCurrentPage, setDirtyEditor]);
+
+  const handleNavCancel = useCallback(() => {
+    setNavDialogOpen(false);
+    setPendingNav(null);
+  }, []);
+
   const handleAddLibrary = async () => {
     const directoryPath = await window.electronAPI.openDirectory(); // Use IPC call to open directory
     if (directoryPath && !libraries.includes(directoryPath)) {
@@ -55,13 +94,20 @@ function App() {
   return (
     <ThemeProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
       <CssBaseline />
-      <MainLayout navigate={setCurrentPage}> {/* Use setCurrentPage from Recoil */}
+      <MainLayout navigate={handleNavigate}>
         <PageRenderer
           libraries={libraries}
           onAddLibrary={handleAddLibrary}
           onRemoveLibrary={handleRemoveLibrary}
         />
       </MainLayout>
+      <UnsavedChangesDialog
+        open={navDialogOpen}
+        label={dirtyEditor?.label}
+        onSave={handleNavSave}
+        onDiscard={handleNavDiscard}
+        onCancel={handleNavCancel}
+      />
     </ThemeProvider>
   );
 }

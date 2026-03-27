@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Collapse, Switch, Checkbox, FormControlLabel, Chip, Autocomplete,
@@ -269,29 +269,41 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive }) {
+function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data, setData] = useState(variantGroup);
   const [fileName, setFileName] = useState(initialFileName || computeVariantFilename(variantGroup.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
+
+  const isDirtyRef = useRef(false);
 
   useEffect(() => {
     setData(variantGroup);
     setFileName(initialFileName || computeVariantFilename(variantGroup.name));
     setFileNameEdited(!!initialFileName);
-  }, [variantGroup, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [variantGroup, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
 
   const updateData = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(computeVariantFilename(next.name));
       return next;
     });
-  }, [fileNameEdited]);
+  }, [fileNameEdited, markDirtyLocal]);
 
   const handleRegenerate = () => {
+    markDirtyLocal();
     setFileName(computeVariantFilename(data.name));
     setFileNameEdited(false);
   };
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   const addVariant = () =>
     updateData((d) => ({ ...d, variants: [...d.variants, makeDefaultVariant()] }));
@@ -329,7 +341,7 @@ function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TextField
             size="small" label="Filename" value={fileName}
-            onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
             sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
           />
           <Tooltip title="Regenerate from name">

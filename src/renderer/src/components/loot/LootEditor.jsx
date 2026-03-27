@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch, Checkbox, FormControlLabel,
@@ -40,7 +40,7 @@ function Section({ title, open, onToggle, children }) {
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive }) {
+function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const itemNames = libraryIndex.items || [];
   const variantNames = libraryIndex.variantgroups || [];
@@ -51,24 +51,36 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
   const [openTable, setOpenTable] = useState(true);
   const [openItems, setOpenItems] = useState(true);
 
+  const isDirtyRef = useRef(false);
+
   useEffect(() => {
     setData(loot);
     setFileName(initialFileName || computeLootFilename(loot.name));
     setFileNameEdited(!!initialFileName);
-  }, [loot, initialFileName]);
+    isDirtyRef.current = false;
+    onDirtyChange?.(false);
+  }, [loot, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markDirtyLocal = useCallback(() => {
+    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
+  }, [onDirtyChange]);
 
   const updateData = useCallback((updater) => {
+    markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       if (!fileNameEdited) setFileName(computeLootFilename(next.name));
       return next;
     });
-  }, [fileNameEdited]);
+  }, [fileNameEdited, markDirtyLocal]);
 
   const handleRegenerate = () => {
+    markDirtyLocal();
     setFileName(computeLootFilename(data.name));
     setFileNameEdited(false);
   };
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   const setTable = (field, val) =>
     updateData((d) => ({ ...d, table: { ...d.table, [field]: val } }));
@@ -145,7 +157,7 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <TextField
             size="small" label="Filename" value={fileName}
-            onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); }}
+            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
             sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
           />
           <Tooltip title="Regenerate from name">
