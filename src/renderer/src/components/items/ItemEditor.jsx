@@ -426,7 +426,8 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
                           onChange={(e) => setCastModifier(cmIdx, 'group', e.target.value)} inputProps={{ maxLength: 255 }} />
                         <Autocomplete
                           freeSolo options={castableNames} value={cm.castable}
-                          onInputChange={(_, val) => setCastModifier(cmIdx, 'castable', val)}
+                          onInputChange={(_, val, reason) => { if (reason === 'input') setCastModifier(cmIdx, 'castable', val); }}
+                          onChange={(_, val) => setCastModifier(cmIdx, 'castable', val ?? '')}
                           size="small" sx={{ flex: 1, minWidth: 160 }}
                           renderInput={(params) => <TextField {...params} label="Castable" />}
                         />

@@ -48,7 +48,7 @@ export function serializeNationXml(nation) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(nation));
+  return builder.buildObject(buildXmlObject(nation)) + '\n';
 }
 
 function buildXmlObject(nation) {

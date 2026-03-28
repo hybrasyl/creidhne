@@ -95,7 +95,7 @@ export function serializeNpcXml(npc) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(npc));
+  return builder.buildObject(buildXmlObject(npc)) + '\n';
 }
 
 function buildXmlObject(npc) {

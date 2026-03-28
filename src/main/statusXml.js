@@ -311,5 +311,5 @@ export function serializeStatusXml(status) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(status));
+  return builder.buildObject(buildXmlObject(status)) + '\n';
 }

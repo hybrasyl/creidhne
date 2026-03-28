@@ -59,7 +59,8 @@ function RestrictionRow({ restriction, itemNames, messageOptions, onChange, onRe
         freeSolo
         options={messageOptions}
         value={restriction.message || ''}
-        onInputChange={(_, val) => set('message', val)}
+        onInputChange={(_, val, reason) => { if (reason === 'input') set('message', val); }}
+        onChange={(_, val) => set('message', val ?? '')}
         size="small"
         sx={{ width: 200 }}
         renderInput={(params) => <TextField {...params} label="Message" />}
@@ -69,7 +70,8 @@ function RestrictionRow({ restriction, itemNames, messageOptions, onChange, onRe
         freeSolo
         options={itemNames}
         value={restriction.itemName || ''}
-        onInputChange={(_, val) => set('itemName', val)}
+        onInputChange={(_, val, reason) => { if (reason === 'input') set('itemName', val); }}
+        onChange={(_, val) => set('itemName', val ?? '')}
         size="small"
         sx={{ flex: 1, minWidth: 160 }}
         renderInput={(params) => <TextField {...params} label="Item" />}

@@ -109,7 +109,8 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
               <Autocomplete
                 freeSolo options={npcStringKeys}
                 value={req.prerequisites?.forbidMessage || ''}
-                onInputChange={(_, val) => setPr('forbidMessage', val)}
+                onInputChange={(_, val, reason) => { if (reason === 'input') setPr('forbidMessage', val); }}
+                onChange={(_, val) => setPr('forbidMessage', val ?? '')}
                 size="small" sx={{ width: 220 }}
                 renderInput={(params) => <TextField {...params} label="Forbid Message" />}
               />
@@ -121,7 +122,8 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
               <Autocomplete
                 freeSolo options={npcStringKeys}
                 value={req.prerequisites?.requireMessage || ''}
-                onInputChange={(_, val) => setPr('requireMessage', val)}
+                onInputChange={(_, val, reason) => { if (reason === 'input') setPr('requireMessage', val); }}
+                onChange={(_, val) => setPr('requireMessage', val ?? '')}
                 size="small" sx={{ width: 220 }}
                 renderInput={(params) => <TextField {...params} label="Require Message" />}
               />
@@ -131,7 +133,8 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
                 <Autocomplete
                   freeSolo options={castableNames}
                   value={c.name || ''}
-                  onInputChange={(_, val) => updateCastable(i, { ...c, name: val })}
+                  onInputChange={(_, val, reason) => { if (reason === 'input') updateCastable(i, { ...c, name: val }); }}
+                  onChange={(_, val) => updateCastable(i, { ...c, name: val ?? '' })}
                   size="small" sx={{ flex: 1, minWidth: 160 }}
                   renderInput={(params) => <TextField {...params} label="Castable" />}
                 />
@@ -157,7 +160,8 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
                 <Autocomplete
                   freeSolo options={itemNames}
                   value={item.itemName || ''}
-                  onInputChange={(_, val) => updateItem(i, { ...item, itemName: val })}
+                  onInputChange={(_, val, reason) => { if (reason === 'input') updateItem(i, { ...item, itemName: val }); }}
+                  onChange={(_, val) => updateItem(i, { ...item, itemName: val ?? '' })}
                   size="small" sx={{ flex: 1, minWidth: 160 }}
                   renderInput={(params) => <TextField {...params} label="Item" />}
                 />

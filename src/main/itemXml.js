@@ -249,7 +249,7 @@ export function serializeItemXml(item) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(item));
+  return builder.buildObject(buildXmlObject(item)) + '\n';
 }
 
 function buildXmlObject(item) {

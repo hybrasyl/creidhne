@@ -82,5 +82,5 @@ export function serializeElementTableXml(tableData) {
     xml = xml.replace(/(<ElementTable[^>]*>)/, `$1\n  <!-- Comment: ${comment} -->`);
   }
 
-  return xml;
+  return xml + '\n';
 }

@@ -144,7 +144,8 @@ function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave,
                 freeSolo
                 options={itemNames}
                 value={data.produces}
-                onInputChange={(_, val) => updateData((d) => ({ ...d, produces: val }))}
+                onInputChange={(_, val, reason) => { if (reason === 'input') updateData((d) => ({ ...d, produces: val })); }}
+                onChange={(_, val) => updateData((d) => ({ ...d, produces: val ?? '' }))}
                 size="small"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} label="Produces (Item)" required />}
@@ -169,7 +170,8 @@ function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave,
                 freeSolo
                 options={itemNames}
                 value={ing.name}
-                onInputChange={(_, val) => setIngredient(index, 'name', val)}
+                onInputChange={(_, val, reason) => { if (reason === 'input') setIngredient(index, 'name', val); }}
+                onChange={(_, val) => setIngredient(index, 'name', val ?? '')}
                 size="small"
                 sx={{ flex: 1 }}
                 renderInput={(params) => <TextField {...params} label="Item" />}

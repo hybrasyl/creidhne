@@ -334,7 +334,8 @@ function StatusStatModContent({ sm, onChange }) {
             </FormControl>
             <Autocomplete
               freeSolo options={elementNames} value={em.element}
-              onInputChange={(_, val) => setElem(i, 'element', val)}
+              onInputChange={(_, val, reason) => { if (reason === 'input') setElem(i, 'element', val); }}
+              onChange={(_, val) => setElem(i, 'element', val ?? '')}
               size="small" sx={{ flex: 1, minWidth: 140 }}
               renderInput={(params) => <TextField {...params} label="Element" />}
             />
@@ -434,7 +435,8 @@ function ConditionsContent({ conds, onChange }) {
             </Select>
           </FormControl>
           <Autocomplete freeSolo options={CONDITIONS} value={row.value}
-            onInputChange={(_, val) => updateRow(i, 'value', val)}
+            onInputChange={(_, val, reason) => { if (reason === 'input') updateRow(i, 'value', val); }}
+            onChange={(_, val) => updateRow(i, 'value', val ?? '')}
             size="small" sx={{ flex: 1 }}
             renderInput={(params) => <TextField {...params} label="Condition" />}
           />

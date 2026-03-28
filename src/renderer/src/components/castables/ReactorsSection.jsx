@@ -24,7 +24,8 @@ function ReactorRow({ reactor, index, scriptNames, statusNames, onChange, onRemo
           freeSolo
           options={scriptNames}
           value={reactor.script || ''}
-          onInputChange={(_, val) => set('script', val)}
+          onInputChange={(_, val, reason) => { if (reason === 'input') set('script', val); }}
+          onChange={(_, val) => set('script', val ?? '')}
           size="small"
           sx={{ flex: 1, minWidth: 200 }}
           renderInput={(params) => (
@@ -62,7 +63,8 @@ function ReactorRow({ reactor, index, scriptNames, statusNames, onChange, onRemo
           freeSolo
           options={statusNames}
           value={reactor.displayStatus || ''}
-          onInputChange={(_, val) => set('displayStatus', val)}
+          onInputChange={(_, val, reason) => { if (reason === 'input') set('displayStatus', val); }}
+          onChange={(_, val) => set('displayStatus', val ?? '')}
           size="small"
           sx={{ width: 200 }}
           renderInput={(params) => <TextField {...params} label="Show if Status" />}

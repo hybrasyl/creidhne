@@ -45,7 +45,7 @@ export function serializeRecipeXml(recipe) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(recipe));
+  return builder.buildObject(buildXmlObject(recipe)) + '\n';
 }
 
 function buildXmlObject(recipe) {

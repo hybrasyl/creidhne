@@ -56,7 +56,8 @@ function NationPicker({ label, value, onChange, sx }) {
   return (
     <Autocomplete
       freeSolo options={nationNames} value={value}
-      onInputChange={(_, val) => onChange(val)}
+      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      onChange={(_, val) => onChange(val ?? '')}
       size="small" sx={sx}
       renderInput={(params) => <TextField {...params} label={label} />}
     />
@@ -314,12 +315,23 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
               <Autocomplete
                 freeSolo options={npcCallOptions} value={r.call}
-                onInputChange={(_, val) => {
+                onInputChange={(_, val, reason) => {
+                  if (reason !== 'input') return;
                   const resolved = npcResponseCalls[val] ?? '';
                   updateData((d) => ({
                     ...d,
                     responses: d.responses.map((resp, idx) =>
                       idx === i ? { call: val, response: resolved || (val ? resp.response : '') } : resp
+                    ),
+                  }));
+                }}
+                onChange={(_, val) => {
+                  const v = val ?? '';
+                  const resolved = npcResponseCalls[v] ?? '';
+                  updateData((d) => ({
+                    ...d,
+                    responses: d.responses.map((resp, idx) =>
+                      idx === i ? { call: v, response: resolved || (v ? resp.response : '') } : resp
                     ),
                   }));
                 }}
@@ -350,12 +362,23 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 groupBy={(opt) => opt.category}
                 getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.key}
                 value={s.key}
-                onInputChange={(_, val) => {
+                onInputChange={(_, val, reason) => {
+                  if (reason !== 'input') return;
                   const found = npcStringKeys.find((sk) => sk.key === val);
                   updateData((d) => ({
                     ...d,
                     strings: d.strings.map((str, idx) =>
                       idx === i ? { key: val, message: found ? found.message : (val ? str.message : '') } : str
+                    ),
+                  }));
+                }}
+                onChange={(_, val) => {
+                  const v = typeof val === 'string' ? val : (val?.key ?? '');
+                  const found = npcStringKeys.find((sk) => sk.key === v);
+                  updateData((d) => ({
+                    ...d,
+                    strings: d.strings.map((str, idx) =>
+                      idx === i ? { key: v, message: found ? found.message : (v ? str.message : '') } : str
                     ),
                   }));
                 }}
@@ -502,7 +525,8 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <Autocomplete
                     freeSolo options={itemNames} value={item.name}
-                    onInputChange={(_, val) => setVendItem(i, 'name', val)}
+                    onInputChange={(_, val, reason) => { if (reason === 'input') setVendItem(i, 'name', val); }}
+                    onChange={(_, val) => setVendItem(i, 'name', val ?? '')}
                     size="small" sx={{ flex: 1 }}
                     renderInput={(params) => <TextField {...params} label="Item" />}
                   />
@@ -545,7 +569,8 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <Autocomplete
                     freeSolo options={castableNames} value={c.name}
-                    onInputChange={(_, val) => {
+                    onInputChange={(_, val, reason) => {
+                      if (reason !== 'input') return;
                       const autoClass = castableClasses[val] || '';
                       updateData((d) => ({
                         ...d,
@@ -555,6 +580,22 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                             ...d.roles.train,
                             castables: d.roles.train.castables.map((entry, idx) =>
                               idx === i ? { ...entry, name: val, class: autoClass || (val ? entry.class : '') } : entry
+                            ),
+                          },
+                        },
+                      }));
+                    }}
+                    onChange={(_, val) => {
+                      const v = val ?? '';
+                      const autoClass = castableClasses[v] || '';
+                      updateData((d) => ({
+                        ...d,
+                        roles: {
+                          ...d.roles,
+                          train: {
+                            ...d.roles.train,
+                            castables: d.roles.train.castables.map((entry, idx) =>
+                              idx === i ? { ...entry, name: v, class: autoClass || (v ? entry.class : '') } : entry
                             ),
                           },
                         },

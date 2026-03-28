@@ -137,7 +137,8 @@ function RestrictionsTab({ data, onChange }) {
         <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
           <Autocomplete
             freeSolo options={castableNames} value={castable}
-            onInputChange={(_, val) => setCastable(index, val)}
+            onInputChange={(_, val, reason) => { if (reason === 'input') setCastable(index, val); }}
+            onChange={(_, val) => setCastable(index, val ?? '')}
             size="small" sx={{ flex: 1 }}
             renderInput={(params) => (
               <TextField {...params} label={`Castable ${index + 1}`} inputProps={{ ...params.inputProps, maxLength: 255 }} />

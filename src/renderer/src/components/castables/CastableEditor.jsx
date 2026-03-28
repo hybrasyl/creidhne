@@ -431,7 +431,8 @@ function CastableEditor({
                     freeSolo
                     options={libraryIndex.items || []}
                     value={cost.itemName || ''}
-                    onInputChange={(_, val) => setCastCost(i, 'itemName', val)}
+                    onInputChange={(_, val, reason) => { if (reason === 'input') setCastCost(i, 'itemName', val); }}
+                    onChange={(_, val) => setCastCost(i, 'itemName', val ?? '')}
                     size="small" sx={{ flex: 1, minWidth: 160 }}
                     renderInput={(params) => <TextField {...params} label="Item Name" />}
                   />
@@ -507,7 +508,8 @@ function CastableEditor({
                 freeSolo
                 options={scriptNames}
                 value={data.script || ''}
-                onInputChange={(_, val) => updateData((d) => ({ ...d, script: val }))}
+                onInputChange={(_, val, reason) => { if (reason === 'input') updateData((d) => ({ ...d, script: val })); }}
+                onChange={(_, val) => updateData((d) => ({ ...d, script: val ?? '' }))}
                 size="small"
                 renderInput={(params) => (
                   <TextField

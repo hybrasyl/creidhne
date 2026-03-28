@@ -218,7 +218,8 @@ function UseTab({ data, onChange }) {
           </FormControl>
           <Autocomplete
             freeSolo options={castableNames} value={proc.castable}
-            onInputChange={(_, val) => setProc(index, 'castable', val)}
+            onInputChange={(_, val, reason) => { if (reason === 'input') setProc(index, 'castable', val); }}
+            onChange={(_, val) => setProc(index, 'castable', val ?? '')}
             size="small" sx={{ flex: 1, minWidth: 140 }}
             renderInput={(params) => <TextField {...params} label="Castable" />}
           />

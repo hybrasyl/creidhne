@@ -146,7 +146,7 @@ export function serializeVariantXml(variantGroup) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(variantGroup));
+  return builder.buildObject(buildXmlObject(variantGroup)) + '\n';
 }
 
 function buildXmlObject(vg) {

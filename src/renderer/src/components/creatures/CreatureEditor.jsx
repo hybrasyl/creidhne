@@ -66,7 +66,8 @@ function BehaviorSetPicker({ value, onChange, sx }) {
   return (
     <Autocomplete
       freeSolo options={options} value={value}
-      onInputChange={(_, val) => onChange(val)}
+      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      onChange={(_, val) => onChange(val ?? '')}
       size="small" sx={sx}
       renderInput={(params) => <TextField {...params} label="Behavior Set" />}
     />
@@ -80,7 +81,8 @@ function LootSetPicker({ value, onChange, sx }) {
   return (
     <Autocomplete
       freeSolo options={options} value={value}
-      onInputChange={(_, val) => onChange(val)}
+      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      onChange={(_, val) => onChange(val ?? '')}
       size="small" sx={sx}
       renderInput={(params) => <TextField {...params} label="Loot Set" />}
     />

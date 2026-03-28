@@ -20,7 +20,8 @@ function AddStatusRow({ entry, statusNames, onChange, onRemove }) {
         freeSolo
         options={statusNames}
         value={entry.name || ''}
-        onInputChange={(_, val) => set('name', val)}
+        onInputChange={(_, val, reason) => { if (reason === 'input') set('name', val); }}
+        onChange={(_, val) => set('name', val ?? '')}
         size="small"
         sx={{ flex: 1, minWidth: 160 }}
         renderInput={(params) => <TextField {...params} label="Status" />}
@@ -63,7 +64,8 @@ function RemoveStatusRow({ entry, statusNames, onChange, onRemove }) {
           freeSolo
           options={statusNames}
           value={entry.name || ''}
-          onInputChange={(_, val) => set('name', val)}
+          onInputChange={(_, val, reason) => { if (reason === 'input') set('name', val); }}
+          onChange={(_, val) => set('name', val ?? '')}
           size="small"
           sx={{ flex: 1, minWidth: 160 }}
           renderInput={(params) => <TextField {...params} label="Status" />}

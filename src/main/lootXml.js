@@ -60,7 +60,7 @@ export function serializeLootXml(loot) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(loot));
+  return builder.buildObject(buildXmlObject(loot)) + '\n';
 }
 
 function buildXmlObject(loot) {

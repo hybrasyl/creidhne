@@ -83,7 +83,7 @@ export const DEFAULT_CASTABLE = {
       target: { id:'', speed:'' },
     },
     onEnd: {
-      player: { peasant:{id:'1',speed:'20'}, warrior:{id:'1',speed:'20'}, wizard:{id:'1',speed:'20'}, priest:{id:'1',speed:'20'}, rogue:{id:'1',speed:'20'}, monk:{id:'1',speed:'20'} },
+      player: { peasant:{id:'',speed:''}, warrior:{id:'',speed:''}, wizard:{id:'',speed:''}, priest:{id:'',speed:''}, rogue:{id:'',speed:''}, monk:{id:'',speed:''} },
       target: { id:'', speed:'' },
     },
   },

@@ -55,7 +55,8 @@ function MapPicker({ label, value, onChange, sx }) {
   return (
     <Autocomplete
       freeSolo options={mapNames} value={value}
-      onInputChange={(_, val) => onChange(val)}
+      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      onChange={(_, val) => onChange(val ?? '')}
       size="small" sx={sx}
       renderInput={(params) => <TextField {...params} label={label} />}
     />

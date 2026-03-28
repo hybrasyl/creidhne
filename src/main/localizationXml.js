@@ -48,7 +48,7 @@ export function serializeLocalizationXml(loc) {
     xmldec: { version: '1.0', encoding: 'utf-8' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(loc));
+  return builder.buildObject(buildXmlObject(loc)) + '\n';
 }
 
 function buildXmlObject(loc) {

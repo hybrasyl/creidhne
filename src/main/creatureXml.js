@@ -109,7 +109,7 @@ export function serializeCreatureXml(creature) {
     xml = xml.replace(/(<Creature[^>]*>)/, `$1\n  <!-- Comment: ${creature.comment} -->`);
   }
 
-  return xml;
+  return xml + '\n';
 }
 
 function buildLoot(lootArr) {

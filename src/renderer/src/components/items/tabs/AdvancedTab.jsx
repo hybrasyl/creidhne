@@ -194,7 +194,8 @@ function AdvancedTab({ data, onChange }) {
                   freeSolo
                   options={castableNames}
                   value={cm.castable}
-                  onInputChange={(_, val) => setCastModifier(cmIdx, 'castable', val)}
+                  onInputChange={(_, val, reason) => { if (reason === 'input') setCastModifier(cmIdx, 'castable', val); }}
+                  onChange={(_, val) => setCastModifier(cmIdx, 'castable', val ?? '')}
                   size="small"
                   sx={{ flex: 1, minWidth: 160 }}
                   renderInput={(params) => <TextField {...params} label="Castable" />}
@@ -259,7 +260,8 @@ function AdvancedTab({ data, onChange }) {
               freeSolo
               options={castableNames}
               value={proc.castable}
-              onInputChange={(_, val) => setProc(index, 'castable', val)}
+              onInputChange={(_, val, reason) => { if (reason === 'input') setProc(index, 'castable', val); }}
+              onChange={(_, val) => setProc(index, 'castable', val ?? '')}
               size="small"
               sx={{ flex: 1, minWidth: 140 }}
               renderInput={(params) => <TextField {...params} label="Castable" />}

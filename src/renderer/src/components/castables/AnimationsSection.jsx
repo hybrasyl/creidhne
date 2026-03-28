@@ -62,7 +62,7 @@ function AnimationGroup({ group, onChange }) {
 
 function AnimationsSection({ sound, animations, onSoundChange, onAnimationsChange }) {
   const onCast = animations?.onCast || DEFAULT_GROUP;
-  const onEnd  = animations?.onEnd  || DEFAULT_GROUP;
+  const onEnd  = animations?.onEnd  || {};
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

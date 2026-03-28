@@ -240,7 +240,8 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
                 <Autocomplete
                   freeSolo options={itemNames} value={entry.name}
-                  onInputChange={(_, val) => setEntry(i, 'name', val)}
+                  onInputChange={(_, val, reason) => { if (reason === 'input') setEntry(i, 'name', val); }}
+                  onChange={(_, val) => { if (val !== null) setEntry(i, 'name', val); }}
                   size="small" sx={{ flex: 1 }}
                   renderInput={(params) => <TextField {...params} label="Item" />}
                 />

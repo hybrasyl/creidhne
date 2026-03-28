@@ -250,19 +250,26 @@ const DEFAULT_PLAYER = {
   wizard:  { ...DEFAULT_PLAYER_MOTION }, priest:  { ...DEFAULT_PLAYER_MOTION },
   rogue:   { ...DEFAULT_PLAYER_MOTION }, monk:    { ...DEFAULT_PLAYER_MOTION },
 };
+const EMPTY_PLAYER = {
+  peasant: { ...DEFAULT_MOTION }, warrior: { ...DEFAULT_MOTION },
+  wizard:  { ...DEFAULT_MOTION }, priest:  { ...DEFAULT_MOTION },
+  rogue:   { ...DEFAULT_MOTION }, monk:    { ...DEFAULT_MOTION },
+};
 const DEFAULT_GROUP = { player: { ...DEFAULT_PLAYER }, target: { ...DEFAULT_MOTION } };
+const EMPTY_GROUP   = { player: { ...EMPTY_PLAYER },   target: { ...DEFAULT_MOTION } };
 
-function mapAnimationGroup(groupArr) {
+function mapAnimationGroup(groupArr, emptyDefaults = false) {
   const group = first(groupArr);
-  if (!group) return { ...DEFAULT_GROUP };
+  if (!group) return emptyDefaults ? { ...EMPTY_GROUP } : { ...DEFAULT_GROUP };
 
-  const player = { ...DEFAULT_PLAYER };
+  const player = emptyDefaults ? { ...EMPTY_PLAYER } : { ...DEFAULT_PLAYER };
+  const fallbackMotion = emptyDefaults ? DEFAULT_MOTION : DEFAULT_PLAYER_MOTION;
   const playerNode = first(group.Player);
   if (playerNode) {
     for (const motion of (playerNode.Motion || [])) {
       const cls = a(motion, 'Class', '').toLowerCase();
       if (cls && cls in player) {
-        player[cls] = { id: a(motion, 'Id', '1'), speed: a(motion, 'Speed', '20') };
+        player[cls] = { id: a(motion, 'Id', fallbackMotion.id), speed: a(motion, 'Speed', fallbackMotion.speed) };
       }
     }
   }
@@ -277,12 +284,12 @@ function mapAnimationGroup(groupArr) {
 
 function mapAnimations(effectsNode) {
   const ew = first(effectsNode);
-  if (!ew) return { onCast: { ...DEFAULT_GROUP }, onEnd: { ...DEFAULT_GROUP } };
+  if (!ew) return { onCast: { ...DEFAULT_GROUP }, onEnd: { ...EMPTY_GROUP } };
   const animNode = first(ew.Animations);
-  if (!animNode) return { onCast: { ...DEFAULT_GROUP }, onEnd: { ...DEFAULT_GROUP } };
+  if (!animNode) return { onCast: { ...DEFAULT_GROUP }, onEnd: { ...EMPTY_GROUP } };
   return {
     onCast: mapAnimationGroup(animNode.OnCast),
-    onEnd:  mapAnimationGroup(animNode.OnEnd),
+    onEnd:  mapAnimationGroup(animNode.OnEnd, true),
   };
 }
 
@@ -742,5 +749,5 @@ export function serializeCastableXml(castable) {
       xml = _replaceNth(xml, '    </Requirement>', comment + '\n    </Requirement>', i);
     });
   }
-  return xml;
+  return xml + '\n';
 }
