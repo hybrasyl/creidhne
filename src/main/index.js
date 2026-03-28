@@ -12,6 +12,7 @@ import { parseLocalizationXml, serializeLocalizationXml } from './localizationXm
 import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
 import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
 import { parseStatusXml, serializeStatusXml } from './statusXml'
+import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -222,6 +223,16 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
+  ipcMain.handle('xml:loadCastable', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseCastableXml(xml)
+  })
+
+  ipcMain.handle('xml:saveCastable', async (_, filePath, castableData) => {
+    const xml = serializeCastableXml(castableData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
   ipcMain.handle('fs:moveFile', async (_, src, dest) => {
     try {
       await fs.access(dest)
@@ -232,6 +243,26 @@ app.whenReady().then(() => {
     await fs.mkdir(dirname(dest), { recursive: true })
     await fs.rename(src, dest)
     return { success: true }
+  })
+
+  ipcMain.handle('fs:archiveFile', async (_, src, archiveDir) => {
+    const baseName = src.split(/[\\/]/).pop()
+    const ext  = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
+    const stem = ext ? baseName.slice(0, -ext.length) : baseName
+    await fs.mkdir(archiveDir, { recursive: true })
+    let dest = join(archiveDir, baseName)
+    let counter = 1
+    while (true) {
+      try {
+        await fs.access(dest)
+        dest = join(archiveDir, `${stem}_${counter}${ext}`)
+        counter++
+      } catch {
+        break
+      }
+    }
+    await fs.rename(src, dest)
+    return { success: true, archivedAs: dest.split(/[\\/]/).pop() }
   })
 
   // Handling settings load and save
