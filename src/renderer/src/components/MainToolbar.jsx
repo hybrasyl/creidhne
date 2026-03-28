@@ -20,8 +20,6 @@ import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstruct
 import SettingsIcon from '@mui/icons-material/Settings'
 import StorageIcon from '@mui/icons-material/Storage'
 import TuneIcon from '@mui/icons-material/Tune'
-import MapIcon from '@mui/icons-material/Map'
-import LayersIcon from '@mui/icons-material/Layers'
 import MinimizeIcon from '@mui/icons-material/Minimize'
 import CloseIcon from '@mui/icons-material/Close'
 import MaximizeIcon from '@mui/icons-material/CheckBoxOutlineBlank'
@@ -129,16 +127,6 @@ const MainToolbar = ({ navigate }) => {
       <Tooltip title="Strings">
         <IconButton onClick={() => navigate('strings')} sx={btnSx}>
           <TextFieldsIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="World Map">
-        <IconButton onClick={() => navigate('worldmap')} sx={btnSx}>
-          <MapIcon />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Maps">
-        <IconButton onClick={() => navigate('maps')} sx={btnSx}>
-          <LayersIcon />
         </IconButton>
       </Tooltip>
       <Tooltip title="Server Config">

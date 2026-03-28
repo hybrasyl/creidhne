@@ -41,6 +41,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveStatus: (filePath, statusData) => ipcRenderer.invoke('xml:saveStatus', filePath, statusData),
   loadCastable: (filePath) => ipcRenderer.invoke('xml:loadCastable', filePath),
   saveCastable: (filePath, castableData) => ipcRenderer.invoke('xml:saveCastable', filePath, castableData),
+  loadBehaviorSet: (filePath) => ipcRenderer.invoke('xml:loadBehaviorSet', filePath),
+  saveBehaviorSet: (filePath, bvsData) => ipcRenderer.invoke('xml:saveBehaviorSet', filePath, bvsData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   archiveFile: (src, archiveDir) => ipcRenderer.invoke('fs:archiveFile', src, archiveDir),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),

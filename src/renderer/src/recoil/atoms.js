@@ -36,3 +36,11 @@ export const dirtyEditorState = atom({
   key: 'dirtyEditorState',
   default: null, // null | { label: string, onSave: () => Promise<void> }
 });
+
+export const recentPagesState = atom({
+  key: 'recentPagesState',
+  default: (() => {
+    try { return JSON.parse(localStorage.getItem('recentPages') || '[]'); }
+    catch { return []; }
+  })(),
+});

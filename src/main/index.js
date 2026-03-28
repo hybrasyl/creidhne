@@ -13,6 +13,7 @@ import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
 import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
+import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -230,6 +231,16 @@ app.whenReady().then(() => {
 
   ipcMain.handle('xml:saveCastable', async (_, filePath, castableData) => {
     const xml = serializeCastableXml(castableData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadBehaviorSet', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseBehaviorSetXml(xml)
+  })
+
+  ipcMain.handle('xml:saveBehaviorSet', async (_, filePath, bvsData) => {
+    const xml = serializeBehaviorSetXml(bvsData)
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
