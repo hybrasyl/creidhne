@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveCreature: (filePath, creatureData) => ipcRenderer.invoke('xml:saveCreature', filePath, creatureData),
   loadElementTable: (filePath) => ipcRenderer.invoke('xml:loadElementTable', filePath),
   saveElementTable: (filePath, tableData) => ipcRenderer.invoke('xml:saveElementTable', filePath, tableData),
+  loadStatus: (filePath) => ipcRenderer.invoke('xml:loadStatus', filePath),
+  saveStatus: (filePath, statusData) => ipcRenderer.invoke('xml:saveStatus', filePath, statusData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
   buildIndexSection: (libraryPath, section) => ipcRenderer.invoke('index:buildSection', libraryPath, section),

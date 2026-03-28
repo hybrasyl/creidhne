@@ -11,6 +11,7 @@ import { parseVariantXml, serializeVariantXml } from './variantXml'
 import { parseLocalizationXml, serializeLocalizationXml } from './localizationXml'
 import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
 import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
+import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -211,6 +212,16 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
+  ipcMain.handle('xml:loadStatus', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseStatusXml(xml)
+  })
+
+  ipcMain.handle('xml:saveStatus', async (_, filePath, statusData) => {
+    const xml = serializeStatusXml(statusData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
   ipcMain.handle('fs:moveFile', async (_, src, dest) => {
     try {
       await fs.access(dest)
@@ -376,6 +387,22 @@ app.whenReady().then(() => {
       index[type] = names
     }
 
+    // Collect element row names from all element table files
+    const elementNamesSet = new Set()
+    try {
+      const etDir = join(libraryPath, 'elementtables')
+      const etEntries = await fs.readdir(etDir, { withFileTypes: true })
+      for (const file of etEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+        const content = await fs.readFile(join(etDir, file.name), 'utf-8')
+        const elemRegex = /<Source[^>]+Element="([^"]+)"/g
+        let m
+        while ((m = elemRegex.exec(content)) !== null) {
+          if (m[1].trim()) elementNamesSet.add(m[1].trim())
+        }
+      }
+    } catch { /* dir may not exist */ }
+    index.elementnames = [...elementNamesSet].sort()
+
     const scriptsDir = join(libraryPath, '..', 'scripts')
     index.scripts = (await walkDir(scriptsDir, '.lua', scriptsDir)).sort()
 
@@ -438,6 +465,20 @@ app.whenReady().then(() => {
               }
             }
           }
+        } else if (section === 'elementtables') {
+          // Extract table Name attribute
+          const match = /\bName="([^"]+)"/.exec(content)
+          if (match) {
+            const name = match[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+          }
+          // Also collect element row names for the elementnames index key
+          if (!result.elementnames) result.elementnames = []
+          const elemRegex = /<Source[^>]+Element="([^"]+)"/g
+          let em
+          while ((em = elemRegex.exec(content)) !== null) {
+            if (em[1].trim() && !result.elementnames.includes(em[1].trim())) result.elementnames.push(em[1].trim())
+          }
         } else if (attrName) {
           const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
           if (match) {
@@ -463,6 +504,7 @@ app.whenReady().then(() => {
     } catch { /* dir may not exist */ }
 
     result[section] = names
+    if (result.elementnames) result.elementnames.sort()
 
     // Merge into persisted index so Dashboard stats stay current
     try {
