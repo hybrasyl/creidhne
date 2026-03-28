@@ -67,6 +67,7 @@ function deriveFilename(data) {
 function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = [], onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const castableNames = libraryIndex.castables || [];
+  const variantGroupNames = libraryIndex.variantgroups || [];
 
   const [data, setData] = useState(item);
   const [fileName, setFileName] = useState(initialFileName || deriveFilename(item));
@@ -505,8 +506,12 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
               <Typography variant="subtitle2" gutterBottom>Variant Groups</Typography>
               {p.variants.groups.map((group, index) => (
                 <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                  <TextField label="Group Name" value={group} size="small" sx={{ flex: 1 }}
-                    onChange={(e) => setVariantGroup(index, e.target.value)} inputProps={{ maxLength: 255 }} />
+                  <Autocomplete
+                    options={variantGroupNames} value={group || null}
+                    onChange={(_, val) => setVariantGroup(index, val || '')}
+                    size="small" sx={{ flex: 1 }}
+                    renderInput={(params) => <TextField {...params} label="Group Name" />}
+                  />
                   <IconButton size="small" color="error" onClick={() => removeVariantGroup(index)}>
                     <DeleteIcon fontSize="small" />
                   </IconButton>

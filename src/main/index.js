@@ -9,6 +9,8 @@ import { parseNationXml, serializeNationXml } from './nationXml'
 import { parseLootXml, serializeLootXml } from './lootXml'
 import { parseVariantXml, serializeVariantXml } from './variantXml'
 import { parseLocalizationXml, serializeLocalizationXml } from './localizationXml'
+import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
+import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -44,6 +46,7 @@ function createWindow() {
     show: false,
     autoHideMenuBar: true,
     frame: false,
+    icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -185,6 +188,26 @@ app.whenReady().then(() => {
 
   ipcMain.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
     const xml = serializeLocalizationXml(localizationData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadCreature', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseCreatureXml(xml)
+  })
+
+  ipcMain.handle('xml:saveCreature', async (_, filePath, creatureData) => {
+    const xml = serializeCreatureXml(creatureData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadElementTable', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseElementTableXml(xml)
+  })
+
+  ipcMain.handle('xml:saveElementTable', async (_, filePath, tableData) => {
+    const xml = serializeElementTableXml(tableData)
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
@@ -332,6 +355,13 @@ app.whenReady().then(() => {
               const name = match[1].trim()
               if (name && !names.includes(name)) names.push(name)
             }
+          } else if (type === 'variantgroups') {
+            // Only the first <Name> is the group name; nested <Variant><Name> are variant names
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+            }
           } else {
             ELEM_NAME_REGEX.lastIndex = 0
             let match
@@ -412,6 +442,12 @@ app.whenReady().then(() => {
           const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
           if (match) {
             const name = match[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+          }
+        } else if (section === 'variantgroups') {
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
             if (name && !names.includes(name)) names.push(name)
           }
         } else {

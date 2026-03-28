@@ -10,7 +10,7 @@ import { CLASS_TYPES, GENDERS, SLOT_RESTRICTION_TYPES, EQUIPMENT_SLOTS } from '.
 import { libraryIndexState } from '../../../recoil/atoms';
 
 const ALL_CLASS_OPTIONS = CLASS_TYPES.filter((c) => c !== 'All');
-const DEFAULT_AB = { min: '0', max: '255' };
+const DEFAULT_AB = { min: '1', max: '99' };
 
 function RestrictionsTab({ data, onChange }) {
   const libraryIndex = useRecoilValue(libraryIndexState);

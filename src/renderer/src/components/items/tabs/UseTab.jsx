@@ -21,13 +21,13 @@ const DEFAULT_PROC = { type: 'OnUse', castable: '', script: '', chance: '0' };
 function UseTab({ data, onChange }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const castableNames = libraryIndex.castables || [];
+  const scriptNames = libraryIndex.scripts || [];
+  const mapNames = libraryIndex.maps || [];
+  const statusNames = libraryIndex.statuses || [];
 
   const u = data.use;
 
   // ── Use effect helpers ──────────────────────────────────────────────────────
-  const setUse = (field) => (e) =>
-    onChange({ ...data, use: { ...u, [field]: e.target.value } });
-
   const toggleSub = (key, def) => (e) =>
     onChange({ ...data, use: { ...u, [key]: e.target.checked ? { ...def } : null } });
 
@@ -72,8 +72,12 @@ function UseTab({ data, onChange }) {
       {/* Use effect content — only when use is enabled */}
       {u !== null && (
         <>
-          <TextField label="Script" value={u.script} onChange={setUse('script')}
-            size="small" fullWidth sx={{ mb: 2 }} />
+          <Autocomplete
+            options={scriptNames} value={u.script || null}
+            onChange={(_, val) => onChange({ ...data, use: { ...u, script: val || '' } })}
+            size="small" fullWidth sx={{ mb: 2 }}
+            renderInput={(params) => <TextField {...params} label="Script" />}
+          />
 
           {/* Teleport */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: u.teleport !== null ? 1 : 2 }}>
@@ -82,8 +86,12 @@ function UseTab({ data, onChange }) {
           </Box>
           {u.teleport !== null && (
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', pl: 2, mb: 2 }}>
-              <TextField label="Map" value={u.teleport.map} onChange={setSubField('teleport', 'map')}
-                size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ maxLength: 255 }} />
+              <Autocomplete
+                options={mapNames} value={u.teleport.map || null}
+                onChange={(_, val) => onChange({ ...data, use: { ...u, teleport: { ...u.teleport, map: val || '' } } })}
+                size="small" sx={{ flex: 1, minWidth: 160 }}
+                renderInput={(params) => <TextField {...params} label="Map" />}
+              />
               <TextField label="X" type="number" value={u.teleport.x} onChange={setSubField('teleport', 'x')}
                 inputProps={{ min: 0, max: 255 }} size="small" sx={{ width: 100 }} />
               <TextField label="Y" type="number" value={u.teleport.y} onChange={setSubField('teleport', 'y')}
@@ -122,8 +130,12 @@ function UseTab({ data, onChange }) {
           <Typography variant="subtitle2" gutterBottom>Add Statuses</Typography>
           {u.statuses.add.map((s, index) => (
             <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
-              <TextField label="Status Name" value={s.name} size="small" sx={{ flex: 1, minWidth: 140 }}
-                onChange={(e) => setAddStatus(index, 'name', e.target.value)} inputProps={{ maxLength: 255 }} />
+              <Autocomplete
+                options={statusNames} value={s.name || null}
+                onChange={(_, val) => setAddStatus(index, 'name', val || '')}
+                size="small" sx={{ flex: 1, minWidth: 140 }}
+                renderInput={(params) => <TextField {...params} label="Status Name" />}
+              />
               <TextField label="Duration" type="number" value={s.duration} size="small" sx={{ width: 100 }}
                 onChange={(e) => setAddStatus(index, 'duration', e.target.value)} />
               <TextField label="Intensity" type="number" value={s.intensity} size="small" sx={{ width: 100 }}
@@ -149,8 +161,12 @@ function UseTab({ data, onChange }) {
           <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>Remove Statuses</Typography>
           {u.statuses.remove.map((s, index) => (
             <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
-              <TextField label="Status Name" value={s.name} size="small" sx={{ flex: 1, minWidth: 140 }}
-                onChange={(e) => setRemoveStatus(index, 'name', e.target.value)} inputProps={{ maxLength: 255 }} />
+              <Autocomplete
+                options={statusNames} value={s.name || null}
+                onChange={(_, val) => setRemoveStatus(index, 'name', val || '')}
+                size="small" sx={{ flex: 1, minWidth: 140 }}
+                renderInput={(params) => <TextField {...params} label="Status Name" />}
+              />
               <TextField label="Quantity" type="number" value={s.quantity} size="small" sx={{ width: 100 }}
                 onChange={(e) => setRemoveStatus(index, 'quantity', e.target.value)} inputProps={{ min: 1 }} />
               <FormControlLabel
@@ -206,8 +222,12 @@ function UseTab({ data, onChange }) {
             size="small" sx={{ flex: 1, minWidth: 140 }}
             renderInput={(params) => <TextField {...params} label="Castable" />}
           />
-          <TextField label="Script" value={proc.script} size="small" sx={{ flex: 1, minWidth: 120 }}
-            onChange={(e) => setProc(index, 'script', e.target.value)} />
+          <Autocomplete
+            options={scriptNames} value={proc.script || null}
+            onChange={(_, val) => setProc(index, 'script', val || '')}
+            size="small" sx={{ flex: 1, minWidth: 120 }}
+            renderInput={(params) => <TextField {...params} label="Script" />}
+          />
           <TextField label="Chance" type="number" value={proc.chance} size="small" sx={{ width: 100 }}
             onChange={(e) => setProc(index, 'chance', e.target.value)}
             inputProps={{ min: 0, max: 1, step: 0.01 }} />

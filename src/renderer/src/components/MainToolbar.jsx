@@ -1,5 +1,6 @@
 import React from 'react';
-import { Toolbar, IconButton, Typography, Tooltip } from '@mui/material';
+import creidhneLogo from '../assets/creidhne.svg';
+import { Toolbar, IconButton, Typography, Tooltip, Divider } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import CalculateIcon from '@mui/icons-material/Calculate'
@@ -17,6 +18,7 @@ import ArticleIcon from '@mui/icons-material/Article'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'
 import SettingsIcon from '@mui/icons-material/Settings'
+import StorageIcon from '@mui/icons-material/Storage'
 import MinimizeIcon from '@mui/icons-material/Minimize'
 import CloseIcon from '@mui/icons-material/Close'
 import MaximizeIcon from '@mui/icons-material/CheckBoxOutlineBlank'
@@ -36,7 +38,8 @@ const MainToolbar = ({ navigate }) => {
 
   return (
 <Toolbar sx={{ bgcolor: 'secondary.main' }}>
-<Typography variant="h5" sx={{ flexGrow: 1, ml: -2, fontWeight: 'bold' }}>
+<img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
+<Typography variant="h5" sx={{ flexGrow: 1, ml: -.5, fontWeight: 'bold' }}>
   Creidhne: XML Forge
 </Typography>
 <Tooltip title="Dashboard">
@@ -310,6 +313,24 @@ const MainToolbar = ({ navigate }) => {
     <IntegrationInstructionsIcon />
   </IconButton>
 </Tooltip>
+<Tooltip title="Server Config">
+  <IconButton
+    color="inherit"
+    onClick={() => navigate('serverconfig')}
+    sx={{
+      WebkitAppRegion: 'no-drag',
+      mx: -0.5,
+      color: 'text.button',
+      '&:hover': {
+        backgroundColor: 'info.main',
+        color: 'text.dark'
+      }
+    }}
+  >
+    <StorageIcon />
+  </IconButton>
+</Tooltip>
+<Divider orientation="vertical" flexItem sx={{ mx: 1, borderColor: 'rgba(255,255,255,0.2)' }} />
 <Tooltip title="Settings">
   <IconButton
     color="inherit"
@@ -319,7 +340,7 @@ const MainToolbar = ({ navigate }) => {
       mx: -0.5,
       color: 'text.button',
       '&:hover': {
-        backgroundColor: 'info.main', // Background color on hover,
+        backgroundColor: 'info.main',
         color: 'text.dark'
       }
     }}
@@ -327,46 +348,63 @@ const MainToolbar = ({ navigate }) => {
     <SettingsIcon />
   </IconButton>
 </Tooltip>
-<IconButton
-  size="small"
-  sx={{
-    WebkitAppRegion: 'no-drag',
-    ml: 2,
-    mb: 3,
-    color: 'text.button',
-    '&:hover': {
-      backgroundColor: 'info.main', // Background color on hover,
-      color: 'text.dark'
-    }
-  }}
-  onClick={handleMinimize}
->
-  <MinimizeIcon />
-</IconButton>
-<IconButton
-  size="small"
-  sx={{ WebkitAppRegion: 'no-drag', mx: -1, mb: 3,
-    color: 'text.button',
-    '&:hover': {
-      backgroundColor: 'info.main', // Background color on hover,
-      color: 'text.dark'
-    }}}
-  onClick={handleMaximize}
->
-  <MaximizeIcon />
-</IconButton>
-<IconButton
-  size="small"
-  sx={{ WebkitAppRegion: 'no-drag', mr: -3, mb: 3,
-    color: 'text.button',
-    '&:hover': {
-      backgroundColor: 'info.main', // Background color on hover,
-      color: 'warning.main'
-    } }}
-  onClick={handleClose}
->
-  <CloseIcon />
-</IconButton>
+<Divider orientation="vertical" flexItem sx={{ mx: 1, borderColor: 'rgba(255,255,255,0.2)' }} />
+<Tooltip title="Minimize">
+  <IconButton
+    size="small"
+    sx={{
+      WebkitAppRegion: 'no-drag',
+      mb: 3,
+      color: 'text.button',
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      '&:hover': {
+        backgroundColor: 'info.main',
+        color: 'text.dark'
+      }
+    }}
+    onClick={handleMinimize}
+  >
+    <MinimizeIcon sx={{ fontSize: 'large' }} />
+  </IconButton>
+</Tooltip>
+<Tooltip title="Maximize">
+  <IconButton
+    size="small"
+    sx={{
+      WebkitAppRegion: 'no-drag',
+      mx: 0.5,
+      mb: 3,
+      color: 'text.button',
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      '&:hover': {
+        backgroundColor: 'info.main',
+        color: 'text.dark'
+      }
+    }}
+    onClick={handleMaximize}
+  >
+    <MaximizeIcon sx={{ fontSize: 'large' }} />
+  </IconButton>
+</Tooltip>
+<Tooltip title="Close">
+  <IconButton
+    size="small"
+    sx={{
+      WebkitAppRegion: 'no-drag',
+      mr: -3,
+      mb: 3,
+      color: 'text.button',
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      '&:hover': {
+        backgroundColor: 'info.main',
+        color: 'warning.main'
+      }
+    }}
+    onClick={handleClose}
+  >
+    <CloseIcon />
+  </IconButton>
+</Tooltip>
 </Toolbar>
   );
 };
