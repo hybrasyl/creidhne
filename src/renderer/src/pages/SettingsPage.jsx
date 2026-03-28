@@ -1,30 +1,37 @@
 import React from 'react';
-import { Box, Typography, Switch, FormControlLabel, Tooltip } from '@mui/material';
+import { Box, Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { themeState } from '../recoil/atoms';
-import ManageLibraries from '../components/ManageLibraries'; 
+import ManageLibraries from '../components/ManageLibraries';
+
+const THEMES = [
+  { value: 'hybrasyl', label: 'Hybrasyl' },
+  { value: 'chadul',   label: 'Chadul' },
+  { value: 'danaan',   label: 'Danaan' },
+  { value: 'grinneal', label: 'Grinneal' },
+];
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
-  // Use Recoil state for managing theme
-  const [isDarkMode, setIsDarkMode] = useRecoilState(themeState);
-
-  const handleToggleTheme = () => {
-    setIsDarkMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-  };
+  const [theme, setTheme] = useRecoilState(themeState);
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: "text.button", fontWeight: 'bold' }}>
+      <Typography variant="h4" gutterBottom sx={{ color: 'text.button', fontWeight: 'bold' }}>
         Settings
       </Typography>
-      <Tooltip title="Toggle between Light and Dark Mode">
-        <FormControlLabel
-          control={<Switch checked={isDarkMode === 'dark'} onChange={handleToggleTheme} color="secondary" />}
-          label={isDarkMode === 'dark' ? 'Dark Mode' : 'Light Mode'}
-          sx={{ color: "text.button" }}
-        />
-      </Tooltip>
-      <ManageLibraries 
+      <FormControl size="small" sx={{ minWidth: 280, mb: 3 }}>
+        <InputLabel>Theme</InputLabel>
+        <Select
+          value={theme}
+          label="Theme"
+          onChange={(e) => setTheme(e.target.value)}
+        >
+          {THEMES.map((t) => (
+            <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <ManageLibraries
         libraries={libraries}
         onAddLibrary={onAddLibrary}
         onRemoveLibrary={onRemoveLibrary}

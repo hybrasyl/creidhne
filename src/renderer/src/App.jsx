@@ -2,8 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState, dirtyEditorState } from './recoil/atoms'; // Import Recoil atoms
-import lightTheme from './themes/light';
-import darkTheme from './themes/dark';
+import hybrasylTheme from './themes/hybrasyl';
+import chadulTheme from './themes/chadul';
+import danaanTheme from './themes/danaan';
+import grinnealTheme from './themes/grinneal';
+
+const themes = {
+  hybrasyl: hybrasylTheme,
+  chadul:   chadulTheme,
+  danaan:   danaanTheme,
+  grinneal: grinnealTheme,
+};
 import MainLayout from './components/MainLayout';
 import PageRenderer from './components/PageRenderer';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
@@ -22,7 +31,7 @@ function App() {
   useEffect(() => {
     async function fetchSettings() {
       const settings = await window.electronAPI.loadSettings(); // Use IPC call to load settings
-      setTheme(settings.theme === 'dark' ? 'dark' : 'light');
+      setTheme(themes[settings.theme] ? settings.theme : 'hybrasyl');
       setLibraries(settings.libraries || []);
       setActiveLibrary(settings.activeLibrary || null);
     }
@@ -92,7 +101,7 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
+    <ThemeProvider theme={themes[theme] ?? hybrasylTheme}>
       <CssBaseline />
       <MainLayout navigate={handleNavigate}>
         <PageRenderer

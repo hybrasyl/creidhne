@@ -18,6 +18,8 @@ import FormulasPage from '../pages/FormulasPage';
 import ElementsPage from '../pages/ElementsPage';
 import CreaturesPage from '../pages/CreaturesPage';
 import BehaviorsPage from '../pages/BehaviorsPage';
+import WorldMapPage from '../pages/WorldMapPage';
+import MapsPage from '../pages/MapsPage';
 
 const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const currentPage = useRecoilValue(currentPageState);
@@ -63,6 +65,10 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       return <CreaturesPage />;
     case 'behaviors':
       return <BehaviorsPage />;
+    case 'worldmap':
+      return <WorldMapPage />;
+    case 'maps':
+      return <MapsPage />;
     default:
       return <DashboardPage />;
   }
