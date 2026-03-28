@@ -19,6 +19,7 @@ import TextFieldsIcon from '@mui/icons-material/TextFields'
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'
 import SettingsIcon from '@mui/icons-material/Settings'
 import StorageIcon from '@mui/icons-material/Storage'
+import TuneIcon from '@mui/icons-material/Tune'
 import MapIcon from '@mui/icons-material/Map'
 import LayersIcon from '@mui/icons-material/Layers'
 import MinimizeIcon from '@mui/icons-material/Minimize'
@@ -140,6 +141,11 @@ const MainToolbar = ({ navigate }) => {
           <LayersIcon />
         </IconButton>
       </Tooltip>
+      <Tooltip title="Server Config">
+        <IconButton onClick={() => navigate('serverconfig')} sx={btnSx}>
+          <StorageIcon />
+        </IconButton>
+      </Tooltip>
 
       {/* Formulas & Lua Helpers */}
       <Divider orientation="vertical" flexItem sx={dividerSx} />
@@ -156,9 +162,9 @@ const MainToolbar = ({ navigate }) => {
 
       {/* Settings */}
       <Divider orientation="vertical" flexItem sx={dividerSx} />
-      <Tooltip title="Server Config">
-        <IconButton onClick={() => navigate('serverconfig')} sx={btnSx}>
-          <StorageIcon />
+      <Tooltip title="Constants">
+        <IconButton onClick={() => navigate('constants')} sx={btnSx}>
+          <TuneIcon />
         </IconButton>
       </Tooltip>
       <Tooltip title="Settings">
