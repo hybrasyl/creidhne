@@ -10,6 +10,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CommentField from '../shared/CommentField';
 
 function computeFileName(name) {
   const safe = (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
@@ -210,10 +211,9 @@ function ElementTableEditor({
           onChange={(e) => handleNameChange(e.target.value)}
           sx={{ width: 200 }} inputProps={{ maxLength: 128 }}
         />
-        <TextField
-          label="Comment" size="small" value={comment}
+        <CommentField value={comment}
           onChange={(e) => { setComment(e.target.value); markDirty(); }}
-          sx={{ flex: 1 }} inputProps={{ maxLength: 512 }}
+          sx={{ flex: 1 }}
         />
       </Box>
 

@@ -14,6 +14,7 @@ import { parseElementTableXml, serializeElementTableXml } from './elementTableXm
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
+import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -244,6 +245,16 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
+  ipcMain.handle('xml:loadSpawngroup', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseSpawngroupXml(xml)
+  })
+
+  ipcMain.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
+    const xml = serializeSpawngroupXml(sgData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
   ipcMain.handle('fs:moveFile', async (_, src, dest) => {
     try {
       await fs.access(dest)
@@ -402,6 +413,19 @@ app.whenReady().then(() => {
                 }
               }
             }
+          } else if (type === 'creatures') {
+            const nameMatch = /\bName="([^"]+)"/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+            }
+            if (!index.creatureTypes) index.creatureTypes = []
+            const typeRegex = /<Type[^>]+Name="([^"]+)"/g
+            let tm
+            while ((tm = typeRegex.exec(content)) !== null) {
+              const tn = tm[1].trim()
+              if (tn && !index.creatureTypes.includes(tn)) index.creatureTypes.push(tn)
+            }
           } else if (attrName) {
             const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
             if (match) {
@@ -520,6 +544,19 @@ app.whenReady().then(() => {
           let em
           while ((em = elemRegex.exec(content)) !== null) {
             if (em[1].trim() && !result.elementnames.includes(em[1].trim())) result.elementnames.push(em[1].trim())
+          }
+        } else if (section === 'creatures') {
+          const nameMatch = /\bName="([^"]+)"/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+          }
+          if (!result.creatureTypes) result.creatureTypes = []
+          const typeRegex = /<Type[^>]+Name="([^"]+)"/g
+          let tm
+          while ((tm = typeRegex.exec(content)) !== null) {
+            const tn = tm[1].trim()
+            if (tn && !result.creatureTypes.includes(tn)) result.creatureTypes.push(tn)
           }
         } else if (attrName) {
           const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)

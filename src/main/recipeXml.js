@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -13,19 +14,21 @@ const omitEmpty = (obj) =>
 
 export function parseRecipeXml(xmlString) {
   return new Promise((resolve, reject) => {
+    const comment = extractComment(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToRecipe(result)); }
+      try { resolve(mapXmlToRecipe(result, comment)); }
       catch (e) { reject(e); }
     });
   });
 }
 
-function mapXmlToRecipe(result) {
+function mapXmlToRecipe(result, comment) {
   const root = result.Recipe;
   const ingredientsNode = first(root.Ingredients, {});
   return {
     name: first(root.Name, ''),
+    comment,
     description: first(root.Description, ''),
     produces: a(first(root.Item), 'Name', ''),
     duration: a(first(root.Duration), 'Length', ''),
@@ -45,7 +48,8 @@ export function serializeRecipeXml(recipe) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(recipe)) + '\n';
+  const xml = injectComment(builder.buildObject(buildXmlObject(recipe)), recipe.comment, 'Recipe');
+  return xml + '\n';
 }
 
 function buildXmlObject(recipe) {

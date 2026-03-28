@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -13,8 +14,7 @@ const omitEmpty = (obj) =>
 
 export function parseCreatureXml(xmlString) {
   return new Promise((resolve, reject) => {
-    const commentMatch = /<!--\s*Comment:\s*(.*?)\s*-->/.exec(xmlString);
-    const comment = commentMatch ? commentMatch[1] : '';
+    const comment = extractComment(xmlString);
 
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
@@ -105,9 +105,7 @@ export function serializeCreatureXml(creature) {
 
   let xml = builder.buildObject(buildXmlObject(creature));
 
-  if (creature.comment) {
-    xml = xml.replace(/(<Creature[^>]*>)/, `$1\n  <!-- Comment: ${creature.comment} -->`);
-  }
+  xml = injectComment(xml, creature.comment, 'Creature');
 
   return xml + '\n';
 }

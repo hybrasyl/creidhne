@@ -17,6 +17,7 @@ const IGNORE_SUBDIR = 'nations/.ignore';
 
 const DEFAULT_NATION = {
   name: '',
+  comment: '',
   description: '',
   flag: '',
   spawnPoints: [],

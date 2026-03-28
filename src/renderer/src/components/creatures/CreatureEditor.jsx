@@ -13,6 +13,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import CommentField from '../shared/CommentField';
 
 function computeCreatureFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -483,12 +484,7 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
               onChange={set('description')}
               inputProps={{ maxLength: 1024 }}
             />
-            <TextField
-              label="Comment" size="small" multiline minRows={2}
-              value={data.comment}
-              onChange={set('comment')}
-              inputProps={{ maxLength: 500 }}
-            />
+            <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
         </Paper>
 

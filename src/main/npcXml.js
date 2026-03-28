@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -15,15 +16,16 @@ const omitEmpty = (obj) =>
 
 export function parseNpcXml(xmlString) {
   return new Promise((resolve, reject) => {
+    const comment = extractComment(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToNpc(result)); }
+      try { resolve(mapXmlToNpc(result, comment)); }
       catch (e) { reject(e); }
     });
   });
 }
 
-function mapXmlToNpc(result) {
+function mapXmlToNpc(result, comment) {
   const root = result.Npc;
   const appearance = first(root.Appearance);
   const roles = first(root.Roles);
@@ -34,7 +36,7 @@ function mapXmlToNpc(result) {
   return {
     name: first(root.Name, ''),
     displayName: first(root.DisplayName, ''),
-    comment: first(root.Comment, ''),
+    comment,
     sprite: a(appearance, 'Sprite', ''),
     portrait: a(appearance, 'Portrait', ''),
     allowDead: toBool(first(root.AllowDead, 'false')),
@@ -95,14 +97,14 @@ export function serializeNpcXml(npc) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(npc)) + '\n';
+  const xml = injectComment(builder.buildObject(buildXmlObject(npc)), npc.comment, 'Npc');
+  return xml + '\n';
 }
 
 function buildXmlObject(npc) {
   const root = { $: { xmlns: XMLNS } };
 
   root.Name = [npc.name];
-  if (npc.comment) root.Comment = [npc.comment];
   root.DisplayName = [npc.displayName || npc.name];
   root.Appearance = [{ $: omitEmpty({ Sprite: npc.sprite, Portrait: npc.portrait }) }];
   if (npc.allowDead) root.AllowDead = ['true'];

@@ -17,6 +17,7 @@ const IGNORE_SUBDIR = 'lootsets/.ignore';
 
 const DEFAULT_LOOT = {
   name: '',
+  comment: '',
   prefix: '',
   table: {
     rolls: '',

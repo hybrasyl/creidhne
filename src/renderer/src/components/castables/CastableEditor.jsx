@@ -26,6 +26,7 @@ import FormulasSection from './FormulasSection';
 import AnimationsSection from './AnimationsSection';
 import RequirementsSection from './RequirementsSection';
 import { ELEMENT_TYPES } from '../../data/itemConstants';
+import CommentField from '../shared/CommentField';
 
 const ALL_CLASS_SET = new Set(ALL_CASTABLE_CLASSES);
 function isAllClasses(classStr) {
@@ -331,6 +332,8 @@ function CastableEditor({
                 sx={{ m: 0 }}
               />
             </Box>
+
+            <CommentField value={data.comment} onChange={set('comment')} />
 
           </Box>
         </Paper>

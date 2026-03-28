@@ -20,6 +20,7 @@ import {
   DEFAULT_CASTING_SET, DEFAULT_CASTING_SET_CASTABLE, DEFAULT_COOKIE,
   computeBehaviorSetFilename,
 } from '../../data/behaviorSetConstants';
+import CommentField from '../shared/CommentField';
 import StatsTab from '../items/tabs/StatsTab';
 
 const DEFAULT_PREFIX = 'bvs';
@@ -470,6 +471,8 @@ function BehaviorSetEditor({
                 <HelpOutlineIcon fontSize="small" color="action" sx={{ cursor: 'help', flexShrink: 0 }} />
               </Tooltip>
             </Box>
+
+            <CommentField value={data.comment} onChange={set('comment')} />
 
           </Box>
         </Paper>

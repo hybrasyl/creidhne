@@ -17,6 +17,7 @@ import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import { ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants';
 import { DAMAGE_FLAGS, CONDITIONS, DAMAGE_TYPES } from '../../data/statusConstants';
+import CommentField from '../shared/CommentField';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -715,6 +716,7 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
             </Box>
             <TextField label="Prohibited Message" size="small" value={data.prohibitedMessage}
               onChange={set('prohibitedMessage')} inputProps={{ maxLength: 255 }} />
+            <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
         </Paper>
 

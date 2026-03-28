@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -11,8 +12,7 @@ const a = (node, key, def = '') => node?.$?.[key] ?? def;
 
 export function parseElementTableXml(xmlString) {
   return new Promise((resolve, reject) => {
-    const commentMatch = /<!--\s*Comment:\s*(.*?)\s*-->/.exec(xmlString);
-    const comment = commentMatch ? commentMatch[1] : '';
+    const comment = extractComment(xmlString);
 
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
@@ -78,9 +78,7 @@ export function serializeElementTableXml(tableData) {
 
   let xml = builder.buildObject(obj);
 
-  if (comment) {
-    xml = xml.replace(/(<ElementTable[^>]*>)/, `$1\n  <!-- Comment: ${comment} -->`);
-  }
+  xml = injectComment(xml, comment, 'ElementTable');
 
   return xml + '\n';
 }

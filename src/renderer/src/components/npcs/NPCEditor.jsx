@@ -13,6 +13,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import CommentField from '../shared/CommentField';
 
 function computeNpcFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -302,10 +303,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 label={<Typography variant="body2">Allow Dead</Typography>}
               />
             </Box>
-            <TextField
-              label="Comment" value={data.comment} onChange={set('comment')}
-              size="small" multiline minRows={2} inputProps={{ maxLength: 500 }}
-            />
+            <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
         </Paper>
 

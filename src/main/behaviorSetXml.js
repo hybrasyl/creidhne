@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -98,11 +99,12 @@ function mapBehavior(behaviorNode) {
   return { castingSets, hostility, cookies };
 }
 
-function mapXmlToBehaviorSet(result) {
+function mapXmlToBehaviorSet(result, comment) {
   const root = result.BehaviorSet;
   const { castingSets, hostility, cookies } = mapBehavior(root.Behavior);
   return {
     name:          a(root, 'Name', ''),
+    comment,
     import:        a(root, 'Import', ''),
     statAlloc:     first(root.StatAlloc, ''),
     castingSets,
@@ -115,9 +117,10 @@ function mapXmlToBehaviorSet(result) {
 
 export function parseBehaviorSetXml(xmlString) {
   return new Promise((resolve, reject) => {
+    const comment = extractComment(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToBehaviorSet(result)); }
+      try { resolve(mapXmlToBehaviorSet(result, comment)); }
       catch (e) { reject(e); }
     });
   });
@@ -249,5 +252,6 @@ export function serializeBehaviorSetXml(bvs) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(bvs)) + '\n';
+  const xml = injectComment(builder.buildObject(buildXmlObject(bvs)), bvs.comment, 'BehaviorSet');
+  return xml + '\n';
 }

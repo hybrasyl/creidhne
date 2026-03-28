@@ -38,6 +38,7 @@ export const DEFAULT_CASTING_SET = {
 
 export const DEFAULT_BEHAVIOR_SET = {
   name:          '',
+  comment:       '',
   import:        '',
   statAlloc:     '',
   castingSets:   [],

@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 const first = (arr, def = undefined) => (Array.isArray(arr) && arr.length ? arr[0] : def);
@@ -15,20 +16,22 @@ const strList = (node) =>
 
 export function parseLocalizationXml(xmlString) {
   return new Promise((resolve, reject) => {
+    const comment = extractComment(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToLocalization(result)); }
+      try { resolve(mapXmlToLocalization(result, comment)); }
       catch (e) { reject(e); }
     });
   });
 }
 
-function mapXmlToLocalization(result) {
+function mapXmlToLocalization(result, comment) {
   const root = result?.Localization ?? {};
   const locale = root?.$?.Locale ?? '';
 
   return {
     locale,
+    comment,
     common:       strList(first(root.Common)),
     merchant:     strList(first(root.Merchant)),
     monsterSpeak: strList(first(root.MonsterSpeak)),
@@ -48,7 +51,8 @@ export function serializeLocalizationXml(loc) {
     xmldec: { version: '1.0', encoding: 'utf-8' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(loc)) + '\n';
+  const xml = injectComment(builder.buildObject(buildXmlObject(loc)), loc.comment, 'Localization');
+  return xml + '\n';
 }
 
 function buildXmlObject(loc) {

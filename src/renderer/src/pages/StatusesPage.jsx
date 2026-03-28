@@ -21,6 +21,7 @@ function makeDefaultEffectBlock() {
 
 const DEFAULT_STATUS = {
   name:             '',
+  comment:          '',
   icon:             '',
   duration:         '',
   tick:             '',

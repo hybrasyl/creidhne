@@ -61,6 +61,7 @@ export const DEFAULT_REQUIREMENT = {
 
 export const DEFAULT_CASTABLE = {
   name: '',
+  comment: '',
   lines: '',
   cooldown: '',
   icon: '',

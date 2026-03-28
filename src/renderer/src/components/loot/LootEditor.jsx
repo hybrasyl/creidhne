@@ -13,6 +13,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import CommentField from '../shared/CommentField';
 
 function computeLootFilename(name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -172,17 +173,20 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Basic info */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              label="Name" value={data.name} size="small" required
-              onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
-              sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
-            />
-            <TextField
-              label="Prefix" value={data.prefix} size="small"
-              onChange={(e) => updateData((d) => ({ ...d, prefix: e.target.value }))}
-              sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
-            />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Name" value={data.name} size="small" required
+                onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
+                sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
+              />
+              <TextField
+                label="Prefix" value={data.prefix} size="small"
+                onChange={(e) => updateData((d) => ({ ...d, prefix: e.target.value }))}
+                sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
+              />
+            </Box>
+            <CommentField value={data.comment} onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))} />
           </Box>
         </Paper>
 

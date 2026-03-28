@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -141,11 +142,12 @@ function mapEffectBlock(blockNode) {
   };
 }
 
-function mapXmlToStatus(result) {
+function mapXmlToStatus(result, comment) {
   const root    = result.Status;
   const effects = first(root.Effects);
   return {
     name:             a(root, 'Name',          ''),
+    comment,
     icon:             a(root, 'Icon',          ''),
     duration:         a(root, 'Duration',      ''),
     tick:             a(root, 'Tick',          ''),
@@ -166,9 +168,10 @@ function mapXmlToStatus(result) {
 
 export function parseStatusXml(xmlString) {
   return new Promise((resolve, reject) => {
+    const comment = extractComment(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToStatus(result)); }
+      try { resolve(mapXmlToStatus(result, comment)); }
       catch (e) { reject(e); }
     });
   });
@@ -311,5 +314,6 @@ export function serializeStatusXml(status) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(status)) + '\n';
+  const xml = injectComment(builder.buildObject(buildXmlObject(status)), status.comment, 'Status');
+  return xml + '\n';
 }

@@ -1,4 +1,5 @@
 import xml2js from 'xml2js';
+import { extractComment, injectComment } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -13,21 +14,23 @@ const omitEmpty = (obj) =>
 
 export function parseNationXml(xmlString) {
   return new Promise((resolve, reject) => {
+    const comment = extractComment(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToNation(result)); }
+      try { resolve(mapXmlToNation(result, comment)); }
       catch (e) { reject(e); }
     });
   });
 }
 
-function mapXmlToNation(result) {
+function mapXmlToNation(result, comment) {
   const root = result.Nation;
   const spawnPoints = first(root.SpawnPoints);
   const territory = first(root.Territory);
 
   return {
     name: first(root.Name, ''),
+    comment,
     description: first(root.Description, ''),
     flag: a(root, 'Flag', ''),
     spawnPoints: (spawnPoints?.SpawnPoint || []).map((sp) => ({
@@ -48,7 +51,8 @@ export function serializeNationXml(nation) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  return builder.buildObject(buildXmlObject(nation)) + '\n';
+  const xml = injectComment(builder.buildObject(buildXmlObject(nation)), nation.comment, 'Nation');
+  return xml + '\n';
 }
 
 function buildXmlObject(nation) {

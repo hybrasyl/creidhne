@@ -17,6 +17,7 @@ const IGNORE_SUBDIR = 'recipes/.ignore';
 
 const DEFAULT_RECIPE = {
   name: '',
+  comment: '',
   description: '',
   produces: '',
   duration: '',

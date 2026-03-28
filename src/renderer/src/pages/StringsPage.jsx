@@ -17,6 +17,7 @@ const IGNORE_SUBDIR = 'localizations/.ignore';
 
 const DEFAULT_LOCALIZATION = {
   locale: '',
+  comment: '',
   common: [],
   merchant: [],
   monsterSpeak: [],

@@ -11,6 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import CommentField from '../shared/CommentField';
 
 function computeRecipeFilename(name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -159,6 +160,7 @@ function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave,
                 inputProps={{ maxLength: 64 }}
               />
             </Box>
+            <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
         </Paper>
 

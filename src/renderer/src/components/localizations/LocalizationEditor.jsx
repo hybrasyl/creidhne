@@ -12,6 +12,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
+import CommentField from '../shared/CommentField';
 
 // TODO: Fill in variable descriptions for each $ variable
 const KNOWN_VARIABLES = [
@@ -191,6 +192,8 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
           Save
         </Button>
       </Box>
+
+      <CommentField value={data.comment} onChange={(e) => update((d) => ({ ...d, comment: e.target.value }))} sx={{ mb: 1, flexShrink: 0 }} />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 

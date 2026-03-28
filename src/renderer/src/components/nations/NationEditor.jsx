@@ -13,6 +13,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import CommentField from '../shared/CommentField';
 
 function computeNationFilename(name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -185,6 +186,7 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
               label="Description" value={data.description} onChange={set('description')}
               size="small" multiline minRows={2} inputProps={{ maxLength: 1000 }}
             />
+            <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
         </Paper>
 
