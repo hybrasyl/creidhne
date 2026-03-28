@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveBehaviorSet: (filePath, bvsData) => ipcRenderer.invoke('xml:saveBehaviorSet', filePath, bvsData),
   loadSpawngroup: (filePath) => ipcRenderer.invoke('xml:loadSpawngroup', filePath),
   saveSpawngroup: (filePath, sgData) => ipcRenderer.invoke('xml:saveSpawngroup', filePath, sgData),
+  loadServerConfig: (filePath) => ipcRenderer.invoke('xml:loadServerConfig', filePath),
+  saveServerConfig: (filePath, cfgData) => ipcRenderer.invoke('xml:saveServerConfig', filePath, cfgData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   archiveFile: (src, archiveDir) => ipcRenderer.invoke('fs:archiveFile', src, archiveDir),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),

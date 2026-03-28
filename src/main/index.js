@@ -15,6 +15,7 @@ import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
+import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import settings from 'electron-settings'
 
@@ -252,6 +253,16 @@ app.whenReady().then(() => {
 
   ipcMain.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
     const xml = serializeSpawngroupXml(sgData)
+    await fs.writeFile(filePath, xml, 'utf-8')
+  })
+
+  ipcMain.handle('xml:loadServerConfig', async (_, filePath) => {
+    const xml = await fs.readFile(filePath, 'utf-8')
+    return parseServerConfigXml(xml)
+  })
+
+  ipcMain.handle('xml:saveServerConfig', async (_, filePath, cfgData) => {
+    const xml = serializeServerConfigXml(cfgData)
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
