@@ -27,10 +27,10 @@ const hybrasylTheme = responsiveFontSizes(createTheme({
       dark:      '#0c1018',
     },
     divider: 'rgba(58,158,144,0.22)',
-    error:   { main: '#c0392b' },
-    warning: { main: '#d4a843' },
-    info:    { main: '#3a9e90' },
-    success: { main: '#3a9e90' },
+    error:   { main: '#ff0000' },
+    warning: { main: '#FFFF00' },
+    info:    { main: '#6de7f7' },
+    success: { main: '#38ff4f' },
   },
 
   typography: {

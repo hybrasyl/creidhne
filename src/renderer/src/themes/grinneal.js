@@ -27,10 +27,10 @@ const grinnealTheme = responsiveFontSizes(createTheme({
       dark:      '#1a1408',
     },
     divider: 'rgba(122,106,80,0.25)',
-    error:   { main: '#a05030' },
-    warning: { main: '#907858' },
-    info:    { main: '#6a7a50' },
-    success: { main: '#6a7a50' },
+    error:   { main: '#ff0000' },
+    warning: { main: '#FFFF00' },
+    info:    { main: '#6de7f7' },
+    success: { main: '#38ff4f' },
   },
 
   typography: {

@@ -27,10 +27,10 @@ const chadulTheme = responsiveFontSizes(createTheme({
       dark:      '#020804',
     },
     divider: 'rgba(46,122,58,0.28)',
-    error:   { main: '#6aff30' },
-    warning: { main: '#2e7a3a' },
-    info:    { main: '#4ab858' },
-    success: { main: '#4ab858' },
+    error:   { main: '#ff0000' },
+    warning: { main: '#FFFF00' },
+    info:    { main: '#6de7f7' },
+    success: { main: '#38ff4f' },
   },
 
   typography: {

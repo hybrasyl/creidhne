@@ -27,10 +27,10 @@ const danaanTheme = responsiveFontSizes(createTheme({
       dark:      '#1a1008',
     },
     divider: 'rgba(184,146,42,0.3)',
-    error:   { main: '#a83232' },
-    warning: { main: '#b8922a' },
-    info:    { main: '#b8922a' },
-    success: { main: '#4a7a28' },
+    error:   { main: '#ff0000' },
+    warning: { main: '#FFFF00' },
+    info:    { main: '#6de7f7' },
+    success: { main: '#38ff4f' },
   },
 
   typography: {
