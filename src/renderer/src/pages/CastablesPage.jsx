@@ -11,7 +11,7 @@ import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import CastableEditor from '../components/castables/CastableEditor';
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
-import { DEFAULT_CASTABLE, ALL_CASTABLE_CLASSES, derivePrefix, computeCastableFilename } from '../data/castableConstants';
+import { DEFAULT_CASTABLE, derivePrefix, computeCastableFilename } from '../data/castableConstants';
 
 const SUBDIR        = 'castables';
 const IGNORE_SUBDIR = 'castables/.ignore';
@@ -96,10 +96,7 @@ function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, sh
 }
 
 function makeDefaultCastable() {
-  return {
-    ...DEFAULT_CASTABLE,
-    class: ALL_CASTABLE_CLASSES.join(' '),
-  };
+  return { ...DEFAULT_CASTABLE };
 }
 
 function CastablesPage() {
@@ -131,7 +128,7 @@ function CastablesPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingCastable(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
@@ -151,7 +148,16 @@ function CastablesPage() {
     setSelectedFile(file);
     setLoadError(null);
     try {
-      const c = await window.electronAPI.loadCastable(file.path);
+      let c = await window.electronAPI.loadCastable(file.path);
+      // Infer meta override flag from filename for files that predate the meta comment
+      if (!c.meta?.isTest && !c.meta?.isGM && !c.meta?.deprecated) {
+        const base = file.name.toLowerCase();
+        const inferred = base.startsWith('1test') ? { isTest: true, isGM: false, deprecated: false }
+          : base.startsWith('3gm')   ? { isTest: false, isGM: true,  deprecated: false }
+          : base.startsWith('2arch') ? { isTest: false, isGM: false, deprecated: true  }
+          : null;
+        if (inferred) c = { ...c, meta: { ...c.meta, ...inferred } };
+      }
       setEditingCastable(c);
     } catch (err) {
       console.error('Failed to load castable:', err);
@@ -205,7 +211,9 @@ function CastablesPage() {
     markClean();
     setSelectedFile(null); setEditingCastable(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -222,6 +230,8 @@ function CastablesPage() {
     setSelectedFile(null); setEditingCastable(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);

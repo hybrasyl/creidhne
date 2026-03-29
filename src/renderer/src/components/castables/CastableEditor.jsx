@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
@@ -6,7 +6,7 @@ import ScriptAutocomplete from '../common/ScriptAutocomplete';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox,
-  Autocomplete, Chip, Collapse,
+  Autocomplete, Chip, Collapse, Snackbar, Alert,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -18,7 +18,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import {
   CASTABLE_BOOKS, CASTABLE_DESCRIPTION_CLASSES, CASTABLE_COST_TYPES,
-  ALL_CASTABLE_CLASSES, computeCastableFilename, derivePrefix, MASTERY_MODIFIERS,
+  ALL_CASTABLE_CLASSES, computeCastableFilename, derivePrefix, MASTERY_MODIFIERS, BOOK_ABBREVS,
 } from '../../data/castableConstants';
 import IntentsSection from './IntentsSection';
 import RestrictionsSection from './RestrictionsSection';
@@ -34,6 +34,16 @@ const ALL_CLASS_SET = new Set(ALL_CASTABLE_CLASSES);
 function isAllClasses(classStr) {
   const parts = (classStr || '').split(' ').filter(Boolean);
   return parts.length === ALL_CLASS_SET.size && parts.every((c) => ALL_CLASS_SET.has(c));
+}
+
+function deriveMetaPrefix(meta, book) {
+  let tag = null;
+  if (meta?.isTest) tag = '1test';
+  else if (meta?.isGM) tag = '3gm';
+  else if (meta?.deprecated) tag = '2arch';
+  if (!tag) return null;
+  const bookPart = BOOK_ABBREVS[book] || '';
+  return bookPart ? `${tag}_${bookPart}` : tag;
 }
 
 // ── Section wrapper ─────────────────────────────────────────────────────────
@@ -64,12 +74,14 @@ function CastableEditor({
 }) {
   const [data, setData] = useState(castable);
   const [prefix, setPrefix] = useState(
-    () => (initialFileName ? '' : derivePrefix(castable.class, castable.book))
+    () => deriveMetaPrefix(castable.meta, castable.book) ?? derivePrefix(castable.class, castable.book)
   );
   const [prefixEdited, setPrefixEdited] = useState(false);
-  const [fileName, setFileName] = useState(
-    () => initialFileName || computeCastableFilename(derivePrefix(castable.class, castable.book), castable.name)
-  );
+  const [fileName, setFileName] = useState(() => {
+    if (initialFileName) return initialFileName;
+    const p = deriveMetaPrefix(castable.meta, castable.book) ?? derivePrefix(castable.class, castable.book);
+    return computeCastableFilename(p, castable.name);
+  });
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
   const [openDescriptions, setOpenDescriptions] = useState(true);
@@ -90,14 +102,40 @@ function CastableEditor({
 
   const isDirtyRef = useRef(false);
 
+  // ── Duplicate detection ────────────────────────────────────────────────────
+
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    // Don't flag the castable's own current saved name
+    const originalName = isExisting ? (castable.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.castables || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedCastables || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, castable.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const prevDupStatusRef = useRef(null);
   useEffect(() => {
-    const derivedPrefix = initialFileName ? '' : derivePrefix(castable.class, castable.book);
+    if (dupStatus && !prevDupStatusRef.current) setDupSnack(dupStatus);
+    prevDupStatusRef.current = dupStatus;
+  }, [dupStatus]);
+
+  useEffect(() => {
+    const derivedPrefix = deriveMetaPrefix(castable.meta, castable.book) ?? derivePrefix(castable.class, castable.book);
     setData(castable);
     setPrefix(derivedPrefix);
     setPrefixEdited(false);
     setFileName(initialFileName || computeCastableFilename(derivedPrefix, castable.name));
     setFileNameEdited(!!initialFileName);
     isDirtyRef.current = false;
+    prevDupStatusRef.current = null;
     onDirtyChange?.(false);
   }, [castable, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -119,6 +157,21 @@ function CastableEditor({
   const setMeta = (field) => (e) => updateData((d) => ({ ...d, meta: { ...d.meta, [field]: e.target.checked } }));
   const setMetaText = (field) => (e) => updateData((d) => ({ ...d, meta: { ...d.meta, [field]: e.target.value } }));
 
+  const handleMetaOverrideChange = (field) => (e) => {
+    const checked = e.target.checked;
+    const newMeta = {
+      ...data.meta,
+      isTest: false, isGM: false, deprecated: false,
+      [field]: checked,
+    };
+    const overridePrefix = deriveMetaPrefix(newMeta, data.book);
+    const newPrefix = overridePrefix ?? derivePrefix(data.class, data.book);
+    setPrefix(newPrefix);
+    if (overridePrefix !== null) setPrefixEdited(false);
+    if (!fileNameEdited) setFileName(computeCastableFilename(newPrefix, data.name));
+    updateData((d) => ({ ...d, meta: newMeta }));
+  };
+
   // ── Class multiselect ──────────────────────────────────────────────────────
 
   const selectedClasses = (data.class || '').split(' ').filter(Boolean);
@@ -126,11 +179,12 @@ function CastableEditor({
   const handleClassChange = (_, newVal) => {
     let joined;
     if (newVal.includes('All')) {
-      joined = ALL_CASTABLE_CLASSES.join(' ');
+      // Toggle: if all classes are already present, clear; otherwise select all
+      joined = isAllClasses(data.class) ? '' : ALL_CASTABLE_CLASSES.join(' ');
     } else {
-      joined = newVal.join(' ') || ALL_CASTABLE_CLASSES.join(' ');
+      joined = newVal.join(' ');
     }
-    if (!prefixEdited) {
+    if (!prefixEdited && !deriveMetaPrefix(data.meta, data.book)) {
       const derived = derivePrefix(joined, data.book);
       setPrefix(derived);
       if (!fileNameEdited) setFileName(computeCastableFilename(derived, data.name));
@@ -217,14 +271,41 @@ function CastableEditor({
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirty(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from prefix + name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
+          {(() => {
+            const computedFileName = computeCastableFilename(prefix, data.name);
+            const recyclePending = !!initialFileName && fileName !== computedFileName;
+            const willRename     = !!initialFileName && fileName !== initialFileName;
+            const fileNameWarn   = recyclePending || willRename;
+            const helperText     = willRename
+              ? `Saving will create "${fileName}" and archive "${initialFileName}"`
+              : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
+            const recycleDisabled = fileName === computedFileName;
+            return (
+              <>
+                <TextField
+                  size="small" label="Filename" value={fileName}
+                  onChange={(e) => { markDirty(); setFileName(e.target.value); setFileNameEdited(true); }}
+                  inputProps={{ spellCheck: false }}
+                  sx={{
+                    flex: 1,
+                    ...(fileNameWarn && {
+                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                      '& .MuiFormHelperText-root': { color: 'warning.main' },
+                    }),
+                  }}
+                  helperText={helperText}
+                />
+                <Tooltip title={recycleDisabled ? 'Filename is auto-computed' : willRename ? 'Reset to computed filename' : 'Apply computed filename'}>
+                  <span>
+                    <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled}>
+                      <AutorenewIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            );
+          })()}
         </Box>
       </Box>
 
@@ -239,7 +320,21 @@ function CastableEditor({
             {/* Line 1: Name + Prefix */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <TextField
-                label="Name" required size="small" sx={{ flex: 1, minWidth: 160 }}
+                label="Name" required size="small"
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
                 value={data.name} onChange={set('name')} inputProps={{ maxLength: 255 }}
               />
               <TextField
@@ -273,9 +368,9 @@ function CastableEditor({
                   onChange={(e) => {
                     const newBook = e.target.value;
                     if (!prefixEdited) {
-                      const derived = derivePrefix(data.class, newBook);
-                      setPrefix(derived);
-                      if (!fileNameEdited) setFileName(computeCastableFilename(derived, data.name));
+                      const newPrefix = deriveMetaPrefix(data.meta, newBook) ?? derivePrefix(data.class, newBook);
+                      setPrefix(newPrefix);
+                      if (!fileNameEdited) setFileName(computeCastableFilename(newPrefix, data.name));
                     }
                     updateData((d) => ({ ...d, book: newBook }));
                   }}
@@ -340,13 +435,18 @@ function CastableEditor({
             {/* Line 5: Export metadata */}
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <FormControlLabel
-                control={<Checkbox size="small" checked={!!data.meta?.isTest} onChange={setMeta('isTest')} />}
+                control={<Checkbox size="small" checked={!!data.meta?.isTest} onChange={handleMetaOverrideChange('isTest')} />}
                 label={<Typography variant="body2">Test Ability</Typography>}
                 sx={{ m: 0 }}
               />
               <FormControlLabel
-                control={<Checkbox size="small" checked={!!data.meta?.isGM} onChange={setMeta('isGM')} />}
+                control={<Checkbox size="small" checked={!!data.meta?.isGM} onChange={handleMetaOverrideChange('isGM')} />}
                 label={<Typography variant="body2">GM Ability</Typography>}
+                sx={{ m: 0 }}
+              />
+              <FormControlLabel
+                control={<Checkbox size="small" checked={!!data.meta?.deprecated} onChange={handleMetaOverrideChange('deprecated')} />}
+                label={<Typography variant="body2">Deprecated</Typography>}
                 sx={{ m: 0 }}
               />
               <FormControlLabel
@@ -657,6 +757,19 @@ function CastableEditor({
         </Section>
 
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

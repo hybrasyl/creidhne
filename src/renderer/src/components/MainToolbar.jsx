@@ -17,6 +17,7 @@ import ElectricBoltIcon from '@mui/icons-material/ElectricBolt'
 import ArticleIcon from '@mui/icons-material/Article'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import SettingsIcon from '@mui/icons-material/Settings'
 import StorageIcon from '@mui/icons-material/Storage'
 import TuneIcon from '@mui/icons-material/Tune'
@@ -145,6 +146,11 @@ const MainToolbar = ({ navigate }) => {
       <Tooltip title="Lua Helpers">
         <IconButton onClick={() => navigate('helpers')} sx={btnSx}>
           <IntegrationInstructionsIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Exports">
+        <IconButton onClick={() => navigate('exports')} sx={btnSx}>
+          <FileDownloadIcon />
         </IconButton>
       </Tooltip>
 

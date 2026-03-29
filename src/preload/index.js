@@ -61,6 +61,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanCookies: (libraryPath) => ipcRenderer.invoke('constants:scanCookies', libraryPath),
   loadUserConstants: (libraryPath) => ipcRenderer.invoke('constants:loadUserConstants', libraryPath),
   saveUserConstants: (libraryPath, data) => ipcRenderer.invoke('constants:saveUserConstants', libraryPath, data),
+  exportCastablesCSV: (libraryPath) => ipcRenderer.invoke('export:castablesCSV', libraryPath),
+  saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
 });
 
 // If context isolation is disabled, add to the DOM global directly

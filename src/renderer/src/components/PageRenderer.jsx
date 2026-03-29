@@ -20,6 +20,7 @@ import CreaturesPage from '../pages/CreaturesPage';
 import BehaviorsPage from '../pages/BehaviorsPage';
 import ConstantsPage from '../pages/ConstantsPage';
 import ServerConfigPage from '../pages/ServerConfigPage';
+import ExportsPage from '../pages/ExportsPage';
 
 const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const currentPage = useRecoilValue(currentPageState);
@@ -69,6 +70,8 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       return <ConstantsPage />;
     case 'serverconfig':
       return <ServerConfigPage />;
+    case 'exports':
+      return <ExportsPage />;
     default:
       return <DashboardPage />;
   }

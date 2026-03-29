@@ -13,6 +13,7 @@ import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
 import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
+import { extractMeta } from './xmlCommentUtils.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
@@ -525,6 +526,23 @@ app.whenReady().then(() => {
         names.sort()
       } catch { /* dir may not exist */ }
       index[type] = names
+
+      if (type === 'castables') {
+        const archivedNames = []
+        try {
+          const archivedDirPath = join(dirPath, '.ignore')
+          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !archivedNames.includes(name)) archivedNames.push(name)
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        index.archivedCastables = archivedNames.sort()
+      }
     }
 
     // Collect element row names from all element table files
@@ -769,6 +787,23 @@ app.whenReady().then(() => {
     result[section] = names
     if (result.elementnames) result.elementnames.sort()
 
+    if (section === 'castables') {
+      const archivedNames = []
+      try {
+        const archivedDirPath = join(dirPath, '.ignore')
+        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !archivedNames.includes(name)) archivedNames.push(name)
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      result.archivedCastables = archivedNames.sort()
+    }
+
     // Merge into persisted index so Dashboard stats stay current
     try {
       const indexPath = getIndexPath(libraryPath)
@@ -977,6 +1012,135 @@ app.whenReady().then(() => {
     if (!libraryPath) return
     const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
     await settings.set(`constants_${hash}`, data)
+  })
+
+  ipcMain.handle('dialog:saveFile', async (_, defaultName, content) => {
+    const window = BrowserWindow.getFocusedWindow()
+    const { canceled, filePath } = await dialog.showSaveDialog(window, {
+      defaultPath: defaultName,
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }],
+    })
+    if (canceled || !filePath) return { canceled: true }
+    await fs.writeFile(filePath, content, 'utf-8')
+    return { canceled: false, filePath }
+  })
+
+  ipcMain.handle('export:castablesCSV', async (_, libraryPath) => {
+    const castDir = join(libraryPath, 'castables')
+
+    let castableTrainers = {}
+    try {
+      const content = await fs.readFile(getIndexPath(libraryPath), 'utf-8')
+      castableTrainers = JSON.parse(content).castableTrainers || {}
+    } catch { /* no index — trainers will be empty */ }
+
+    const ALL_CLASSES = ['Warrior', 'Wizard', 'Priest', 'Rogue', 'Monk', 'Peasant']
+
+    function deriveIcon(book, icon) {
+      const isSpell = book.includes('Spell')
+      return isSpell ? `spell${icon}.png` : `skill${icon}.png`
+    }
+
+    function deriveType(book) {
+      switch (book) {
+        case 'PrimarySkill':   case 'SecondarySkill':  return 'Skill'
+        case 'PrimarySpell':   case 'SecondarySpell':  return 'Spell'
+        case 'UtilitySkill':  return 'Utility Skill'
+        case 'UtilitySpell':  return 'Utility Spell'
+        default: return book
+      }
+    }
+
+    function deriveClass(cls) {
+      if (!cls) return 'Universal'
+      const words = cls.split(/\s+/).filter(Boolean)
+      if (words.length === 0 || ALL_CLASSES.every(c => words.includes(c))) return 'Universal'
+      return cls
+    }
+
+    function formatMats(req) {
+      if (!req) return 'No Cost'
+      const parts = []
+      if (req.gold) parts.push(`${req.gold} gold`)
+      for (const item of (req.items || [])) {
+        const qty = Number(item.quantity) > 1 ? `${item.quantity} ` : ''
+        parts.push(`${qty}${item.itemName}`)
+      }
+      return parts.length > 0 ? parts.join(', ') : 'No Cost'
+    }
+
+    function formatCastCost(castCosts) {
+      if (!castCosts || castCosts.length === 0) return ''
+      return castCosts.map(cost => {
+        if (cost.type === 'Item') return `${cost.quantity || 1} ${cost.itemName}`
+        const val = String(cost.value || '')
+        const hpMatch  = /SOURCEBASEHP\s*\*\s*([\d.]+)/.exec(val)
+        const mpMatch  = /SOURCEBASEMP\s*\*\s*([\d.]+)/.exec(val)
+        const gldMatch = /SOURCEGOLD\s*\*\s*([\d.]+)/.exec(val)
+        if (hpMatch)  return `${Math.round(Number(hpMatch[1])  * 100)}% of Base Health`
+        if (mpMatch)  return `${Math.round(Number(mpMatch[1])  * 100)}% of Base Mana`
+        if (gldMatch) return `${Math.round(Number(gldMatch[1]) * 100)}% of Gold`
+        if (/^SOURCEBASEHP$/i.test(val)) return '100% of Base Health'
+        if (/^SOURCEBASEMP$/i.test(val)) return '100% of Base Mana'
+        if (/^SOURCEGOLD$/i.test(val))   return '100% of Gold'
+        if (cost.type === 'Hp')   return `${val} HP`
+        if (cost.type === 'Mp')   return `${val} Mana`
+        if (cost.type === 'Gold') return `${val} Gold`
+        return val
+      }).join(', ')
+    }
+
+    function esc(val) {
+      const s = String(val ?? '')
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? `"${s.replace(/"/g, '""')}"` : s
+    }
+
+    const header = 'Name,Icon,Description,Class,Subclass,Location,StatStr,StatInt,StatWis,StatDex,StatCon,Mats,Level,Type,CastCost,Cooldown'
+    const rows = [header]
+
+    let entries = []
+    try {
+      entries = await fs.readdir(castDir, { withFileTypes: true })
+    } catch {
+      return { error: 'Could not read castables directory' }
+    }
+
+    for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+      try {
+        const xmlString = await fs.readFile(join(castDir, entry.name), 'utf-8')
+        const meta = extractMeta(xmlString)
+        if (meta.isTest || meta.isGM) continue
+        const castable = await parseCastableXml(xmlString)
+        const req = castable.requirements[0] || null
+        const trainers = castableTrainers[castable.name.toLowerCase()] || []
+        let location = ''
+        if (trainers.length > 0) location = trainers.join(', ')
+        else if (meta.givenViaScript) location = 'Awarded by a Quest'
+        const classLabel = deriveClass(castable.class)
+        const subclass = meta.specialty || classLabel
+        rows.push([
+          esc(castable.name),
+          esc(deriveIcon(castable.book, castable.icon)),
+          esc(castable.descriptions[0]?.text || ''),
+          esc(classLabel),
+          esc(subclass),
+          esc(location),
+          esc(req?.str  || '3'),
+          esc(req?.int  || '3'),
+          esc(req?.wis  || '3'),
+          esc(req?.dex  || '3'),
+          esc(req?.con  || '3'),
+          esc(formatMats(req)),
+          esc(req?.levelMin || '1'),
+          esc(deriveType(castable.book)),
+          esc(formatCastCost(castable.castCosts)),
+          esc(castable.cooldown || ''),
+        ].join(','))
+      } catch { /* skip malformed file */ }
+    }
+
+    return { csv: rows.join('\r\n') }
   })
 
   createWindow()
