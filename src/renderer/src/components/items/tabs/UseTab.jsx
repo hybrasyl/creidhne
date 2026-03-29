@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../../recoil/atoms';
 import { PROC_EVENT_TYPES } from '../../../data/itemConstants';
+import ScriptAutocomplete from '../../common/ScriptAutocomplete';
 
 const DEFAULT_TELEPORT = { map: '', x: 0, y: 0 };
 const DEFAULT_EFFECT = { id: 0, speed: 100 };
@@ -21,7 +22,6 @@ const DEFAULT_PROC = { type: 'OnUse', castable: '', script: '', chance: '0' };
 function UseTab({ data, onChange }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const castableNames = libraryIndex.castables || [];
-  const scriptNames = libraryIndex.scripts || [];
   const mapNames = libraryIndex.maps || [];
   const statusNames = libraryIndex.statuses || [];
 
@@ -72,11 +72,10 @@ function UseTab({ data, onChange }) {
       {/* Use effect content — only when use is enabled */}
       {u !== null && (
         <>
-          <Autocomplete
-            options={scriptNames} value={u.script || null}
-            onChange={(_, val) => onChange({ ...data, use: { ...u, script: val || '' } })}
-            size="small" fullWidth sx={{ mb: 2 }}
-            renderInput={(params) => <TextField {...params} label="Script" />}
+          <ScriptAutocomplete
+            label="Script" fullWidth sx={{ mb: 2 }}
+            value={u.script || ''}
+            onChange={(val) => onChange({ ...data, use: { ...u, script: val } })}
           />
 
           {/* Teleport */}
@@ -223,11 +222,10 @@ function UseTab({ data, onChange }) {
             size="small" sx={{ flex: 1, minWidth: 140 }}
             renderInput={(params) => <TextField {...params} label="Castable" />}
           />
-          <Autocomplete
-            options={scriptNames} value={proc.script || null}
-            onChange={(_, val) => setProc(index, 'script', val || '')}
-            size="small" sx={{ flex: 1, minWidth: 120 }}
-            renderInput={(params) => <TextField {...params} label="Script" />}
+          <ScriptAutocomplete
+            label="Script" sx={{ flex: 1, minWidth: 120 }}
+            value={proc.script || ''}
+            onChange={(val) => setProc(index, 'script', val)}
           />
           <TextField label="Chance" type="number" value={proc.chance} size="small" sx={{ width: 100 }}
             onChange={(e) => setProc(index, 'chance', e.target.value)}

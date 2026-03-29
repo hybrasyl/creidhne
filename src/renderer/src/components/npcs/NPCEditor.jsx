@@ -15,6 +15,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
+import ScriptAutocomplete from '../common/ScriptAutocomplete';
 
 function computeNpcFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -66,22 +67,6 @@ function NationPicker({ label, value, onChange, sx }) {
   );
 }
 
-// ── Script autocomplete ───────────────────────────────────────────────────────
-function ScriptPicker({ label, value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState);
-  const scriptOptions = (libraryIndex.scripts || []).map((s) =>
-    s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '')
-  );
-  return (
-    <Autocomplete
-      freeSolo options={scriptOptions} value={value || ''}
-      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
-      onChange={(_, val) => onChange(val ?? '')}
-      size="small" sx={sx}
-      renderInput={(params) => <TextField {...params} label={label} />}
-    />
-  );
-}
 
 // ── Main editor ───────────────────────────────────────────────────────────────
 function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
@@ -424,7 +409,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, bank: { ...d.roles.bank, discount: e.target.value } } }))}
                 size="small" sx={{ width: 140 }} inputProps={{ maxLength: 64 }}
               />
-              <ScriptPicker
+              <ScriptAutocomplete freeSolo
                 label="Bank Check" value={data.roles.bankCheck} sx={{ width: 200 }}
                 onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, bankCheck: val } }))}
               />
@@ -447,7 +432,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   label="Nation" value={data.roles.post.nation} sx={{ flex: 1 }}
                   onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, post: { ...d.roles.post, nation: val } } }))}
                 />
-                <ScriptPicker
+                <ScriptAutocomplete freeSolo
                   label="Post Check" value={data.roles.postCheck} sx={{ width: 200 }}
                   onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, postCheck: val } }))}
                 />
@@ -506,7 +491,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   <MenuItem value="All">All</MenuItem>
                 </Select>
               </FormControl>
-              <ScriptPicker
+              <ScriptAutocomplete freeSolo
                 label="Repair Check" value={data.roles.repairCheck} sx={{ width: 200 }}
                 onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, repairCheck: val } }))}
               />
@@ -524,7 +509,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         >
           {data.roles.vend !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <ScriptPicker
+              <ScriptAutocomplete freeSolo
                 label="Vend Check" value={data.roles.vendCheck}
                 onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, vendCheck: val } }))}
               />
@@ -567,7 +552,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         >
           {data.roles.train !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <ScriptPicker
+              <ScriptAutocomplete freeSolo
                 label="Train Check" value={data.roles.trainCheck}
                 onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, trainCheck: val } }))}
               />

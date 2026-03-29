@@ -3,6 +3,7 @@ import {
   Box, Button, IconButton, TextField, FormControlLabel, Checkbox, Autocomplete, Typography,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ScriptAutocomplete from '../common/ScriptAutocomplete';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -11,32 +12,19 @@ const DEFAULT_REACTOR = {
   displayOwner: false, displayGroup: false, displayStatus: '', displayCookie: '',
 };
 
-function ReactorRow({ reactor, index, scriptNames, statusNames, onChange, onRemove }) {
+function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
   const set             = (field, val) => onChange({ ...reactor, [field]: val });
   const setNumeric      = (field) => (e) => set(field, e.target.value.replace(/\D/g, ''));
   const setSignedNumeric = (field) => (e) => set(field, e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, ''));
-  const isUnknownScript = reactor.script && !scriptNames.includes(reactor.script);
 
   return (
     <Box sx={{ mb: 2 }}>
       {/* Line 1: positional / timing fields */}
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexWrap: 'wrap', mb: 1 }}>
-        <Autocomplete
-          freeSolo
-          options={scriptNames}
+        <ScriptAutocomplete
+          freeSolo label="Script" sx={{ flex: 1, minWidth: 200 }}
           value={reactor.script || ''}
-          onInputChange={(_, val, reason) => { if (reason === 'input') set('script', val); }}
-          onChange={(_, val) => set('script', val ?? '')}
-          size="small"
-          sx={{ flex: 1, minWidth: 200 }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Script"
-              color={isUnknownScript ? 'warning' : 'primary'}
-              focused={isUnknownScript || undefined}
-            />
-          )}
+          onChange={(val) => set('script', val)}
         />
         <TextField label="Rel X"       size="small" sx={{ width: 80  }} value={reactor.relativeX}  onChange={setSignedNumeric('relativeX')}  inputProps={{ inputMode: 'numeric' }} />
         <TextField label="Rel Y"       size="small" sx={{ width: 80  }} value={reactor.relativeY}  onChange={setSignedNumeric('relativeY')}  inputProps={{ inputMode: 'numeric' }} />
@@ -81,7 +69,6 @@ function ReactorRow({ reactor, index, scriptNames, statusNames, onChange, onRemo
 }
 
 function ReactorsSection({ reactors, libraryIndex, onChange }) {
-  const scriptNames = libraryIndex.scripts  || [];
   const statusNames = libraryIndex.statuses || [];
 
   const add    = ()     => onChange([...reactors, { ...DEFAULT_REACTOR }]);
@@ -95,7 +82,6 @@ function ReactorsSection({ reactors, libraryIndex, onChange }) {
           key={i}
           reactor={r}
           index={i}
-          scriptNames={scriptNames}
           statusNames={statusNames}
           onChange={(v) => update(i, v)}
           onRemove={() => remove(i)}

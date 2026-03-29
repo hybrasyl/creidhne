@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ScriptAutocomplete from '../common/ScriptAutocomplete';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox,
@@ -504,28 +505,11 @@ function CastableEditor({
 
         {/* ── Script ── */}
         <Section title="Script" open={openScript} onToggle={() => setOpenScript((v) => !v)}>
-          {(() => {
-            const scriptNames = libraryIndex.scripts || [];
-            const isUnknown = data.script && !scriptNames.includes(data.script);
-            return (
-              <Autocomplete
-                freeSolo
-                options={scriptNames}
-                value={data.script || ''}
-                onInputChange={(_, val, reason) => { if (reason === 'input') updateData((d) => ({ ...d, script: val })); }}
-                onChange={(_, val) => updateData((d) => ({ ...d, script: val ?? '' }))}
-                size="small"
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Script"
-                    color={isUnknown ? 'warning' : 'primary'}
-                    focused={isUnknown || undefined}
-                  />
-                )}
-              />
-            );
-          })()}
+          <ScriptAutocomplete
+            freeSolo label="Script" fullWidth
+            value={data.script || ''}
+            onChange={(val) => updateData((d) => ({ ...d, script: val }))}
+          />
         </Section>
 
         {/* ── Visual / Audio ── */}
