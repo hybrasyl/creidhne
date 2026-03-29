@@ -1,5 +1,5 @@
 import xml2js from 'xml2js';
-import { extractComment, injectComment } from './xmlCommentUtils.js';
+import { extractComment, injectComment, extractMeta, injectMeta } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -10,6 +10,21 @@ const toBool = (val, def = false) =>
 const omitEmpty = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== '' && v !== null && v !== undefined));
 
+const NPC_META_DEFAULTS = { job: '', location: '' };
+
+function extractNpcMeta(xmlString) {
+  const raw = extractMeta(xmlString);
+  return { job: raw.job || '', location: raw.location || '' };
+}
+
+function injectNpcMeta(xml, meta) {
+  if (!meta || (!meta.job && !meta.location)) return xml;
+  const payload = {};
+  if (meta.job) payload.job = meta.job;
+  if (meta.location) payload.location = meta.location;
+  return xml.replace(/(<Npc[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`);
+}
+
 // =============================================================================
 // PARSER
 // =============================================================================
@@ -17,15 +32,16 @@ const omitEmpty = (obj) =>
 export function parseNpcXml(xmlString) {
   return new Promise((resolve, reject) => {
     const comment = extractComment(xmlString);
+    const meta = extractNpcMeta(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToNpc(result, comment)); }
+      try { resolve(mapXmlToNpc(result, comment, meta)); }
       catch (e) { reject(e); }
     });
   });
 }
 
-function mapXmlToNpc(result, comment) {
+function mapXmlToNpc(result, comment, meta) {
   const root = result.Npc;
   const appearance = first(root.Appearance);
   const roles = first(root.Roles);
@@ -37,6 +53,7 @@ function mapXmlToNpc(result, comment) {
     name: first(root.Name, ''),
     displayName: first(root.DisplayName, ''),
     comment,
+    meta: meta || { ...NPC_META_DEFAULTS },
     sprite: a(appearance, 'Sprite', ''),
     portrait: a(appearance, 'Portrait', ''),
     allowDead: toBool(first(root.AllowDead, 'false')),
@@ -97,7 +114,8 @@ export function serializeNpcXml(npc) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  const xml = injectComment(builder.buildObject(buildXmlObject(npc)), npc.comment, 'Npc');
+  let xml = injectComment(builder.buildObject(buildXmlObject(npc)), npc.comment, 'Npc');
+  xml = injectNpcMeta(xml, npc.meta);
   return xml + '\n';
 }
 

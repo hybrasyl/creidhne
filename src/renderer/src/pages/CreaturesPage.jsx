@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -113,6 +113,7 @@ function CreaturesPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingCreature, setEditingCreature] = useState(null);
+  const [loadingCreature, setLoadingCreature] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -135,7 +136,7 @@ function CreaturesPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingCreature(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -154,13 +155,16 @@ function CreaturesPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingCreature(null);
+    setLoadingCreature(true);
     try {
       const creature = await window.electronAPI.loadCreature(file.path);
       setEditingCreature(creature);
     } catch (err) {
       console.error('Failed to load creature:', err);
-      setEditingCreature(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingCreature(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -192,7 +196,9 @@ function CreaturesPage() {
     markClean();
     setSelectedFile(null); setEditingCreature(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, CREATURES_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -209,6 +215,8 @@ function CreaturesPage() {
     setSelectedFile(null); setEditingCreature(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, CREATURES_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -225,6 +233,10 @@ function CreaturesPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load creature:</strong> {loadError}
           </Alert>
+        ) : loadingCreature ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={32} />
+          </Box>
         ) : editingCreature ? (
           <CreatureEditor
             creature={editingCreature}

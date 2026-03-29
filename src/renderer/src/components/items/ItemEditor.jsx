@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Alert, Collapse, Paper,
   Switch, Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox, Autocomplete, Chip,
+  Snackbar,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
@@ -18,7 +19,7 @@ import StatsTab from './tabs/StatsTab';
 import RestrictionsTab from './tabs/RestrictionsTab';
 import UseTab from './tabs/UseTab';
 import {
-  computeItemFilename,
+  computeItemFilename, deriveItemPrefix,
   ITEM_TAGS, ITEM_BODY_STYLES, ITEM_COLORS,
   EQUIPMENT_SLOTS, WEAPON_TYPES, ITEM_FLAGS,
 } from '../../data/itemConstants';
@@ -65,6 +66,13 @@ function deriveFilename(data) {
   );
 }
 
+function derivePrefix(data) {
+  return deriveItemPrefix(
+    data.properties.equipment?.slot,
+    data.properties.vendor?.shopTab,
+  );
+}
+
 function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = [], onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const castableNames = libraryIndex.castables || [];
@@ -82,6 +90,7 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
   const [openVendor, setOpenVendor] = useState(true);
 
   const isDirtyRef = useRef(false);
+  const [dupSnack, setDupSnack] = useState(null);
 
   useEffect(() => {
     setData(item);
@@ -90,8 +99,24 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
     setWarningsDismissed(false);
     setOpenUse(item.properties.use !== null);
     isDirtyRef.current = false;
+    setDupSnack(null);
     onDirtyChange?.(false);
   }, [item, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Duplicate detection ───────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (item.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+    const activeNames = libraryIndex?.items || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+    const archivedNames = libraryIndex?.archivedItems || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+    return null;
+  }, [data.name, libraryIndex, isExisting, item.name]);
+
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
@@ -120,6 +145,7 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
     setFileName(deriveFilename(data));
     setFileNameEdited(false);
   };
+
 
   if (saveRef) saveRef.current = () => onSave(data, fileName);
 
@@ -193,14 +219,49 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from name / slot / vendor">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
+          {(() => {
+            const computedFileName = deriveFilename(data);
+            const recyclePending = !!initialFileName && fileName !== computedFileName;
+            const willRename     = !!initialFileName && fileName !== initialFileName;
+            const fileNameWarn   = recyclePending || willRename;
+            const helperText     = willRename
+              ? `Saving will create "${fileName}" and archive "${initialFileName}"`
+              : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
+            const recycleDisabled = fileName === computedFileName;
+            const recycleTooltip  = recycleDisabled
+              ? 'Filename is auto-computed'
+              : willRename ? 'Reset to computed filename' : 'Apply computed filename';
+            return (
+              <>
+                <TextField
+                  size="small" label="Prefix" value={derivePrefix(data)}
+                  sx={{ width: 120 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  size="small" label="Filename" value={fileName}
+                  onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
+                  sx={{
+                    flex: 1,
+                    ...(fileNameWarn && {
+                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                      '& .MuiFormHelperText-root': { color: 'warning.main' },
+                    }),
+                  }}
+                  inputProps={{ spellCheck: false }}
+                  helperText={helperText}
+                  FormHelperTextProps={{ sx: { mx: 0 } }}
+                />
+                <Tooltip title={recycleTooltip}>
+                  <span>
+                    <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled}>
+                      <AutorenewIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            );
+          })()}
         </Box>
       </Box>
 
@@ -218,8 +279,24 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
 
         {/* ── Basic — no accordion, always visible ── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-          <TextField label="Name" required value={data.name} size="small" inputProps={{ maxLength: 255 }}
-            onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))} />
+          <TextField
+            label="Name" required value={data.name} size="small" inputProps={{ maxLength: 255 }}
+            onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
+            onBlur={handleNameBlur}
+            error={dupStatus === 'active'}
+            helperText={
+              dupStatus === 'active'   ? `"${data.name}" already exists` :
+              dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+              undefined
+            }
+            sx={{
+              ...(dupStatus === 'archived' && {
+                '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                '& .MuiFormHelperText-root': { color: 'warning.main' },
+              }),
+            }}
+          />
           <TextField label="Unidentified Name" value={data.unidentifiedName} size="small" inputProps={{ maxLength: 255 }}
             onChange={(e) => updateData((d) => ({ ...d, unidentifiedName: e.target.value }))} />
           <TextField label="Comment" value={data.comment} size="small" multiline minRows={2} inputProps={{ maxLength: 65534 }}
@@ -518,8 +595,17 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
         {/* ── Vendor ── */}
         <Section title="Vendor" open={openVendor} onToggle={() => setOpenVendor((v) => !v)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField label="Shop Tab" value={p.vendor?.shopTab ?? ''} size="small" inputProps={{ maxLength: 255 }}
-              onChange={(e) => updateProperties({ vendor: { ...(p.vendor ?? {}), shopTab: e.target.value } })} />
+            <Autocomplete
+              freeSolo
+              options={libraryIndex.vendorTabs || []}
+              value={p.vendor?.shopTab ?? ''}
+              onInputChange={(_, val, reason) => {
+                if (reason === 'input') updateProperties({ vendor: { ...(p.vendor ?? {}), shopTab: val } });
+              }}
+              onChange={(_, val) => updateProperties({ vendor: { ...(p.vendor ?? {}), shopTab: val ?? '' } })}
+              size="small"
+              renderInput={(params) => <TextField {...params} label="Shop Tab" inputProps={{ ...params.inputProps, maxLength: 255 }} />}
+            />
             <TextField label="Description" value={p.vendor?.description ?? ''} size="small" multiline minRows={2}
               inputProps={{ maxLength: 255 }}
               onChange={(e) => updateProperties({ vendor: { ...(p.vendor ?? {}), description: e.target.value } })} />
@@ -549,6 +635,14 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
 
         <Box sx={{ height: 32 }} />
       </Box>
+      <Snackbar
+        open={!!dupSnack} autoHideDuration={5000} onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active' ? `"${data.name}" already exists!` : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

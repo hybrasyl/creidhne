@@ -128,26 +128,23 @@ const SLOT_PREFIX_MAP = {
   SecondAcc: 'tool', ThirdAcc: 'accessory', Gauntlet: 'gauntlet', Ring: 'ring',
 };
 
-export function computeItemFilename(itemName, equipSlot, vendorTab) {
+export function deriveItemPrefix(equipSlot, vendorTab) {
   const slot = equipSlot && equipSlot !== 'None' ? equipSlot : '';
   const vnd = vendorTab || '';
+  if (vnd === '1Test') return '1test';
+  if (slot && SLOT_PREFIX_MAP[slot]) return SLOT_PREFIX_MAP[slot];
+  if (!slot && vnd) return vnd.toLowerCase().replace(/ /g, '-');
+  return 'item';
+}
 
-  let prefix = '';
-  if (vnd === '1Test') {
-    prefix = '1test';
-  } else if (slot && SLOT_PREFIX_MAP[slot]) {
-    prefix = SLOT_PREFIX_MAP[slot];
-  } else if (!slot && vnd) {
-    prefix = vnd.toLowerCase().replace(/ /g, '-');
-  }
-
+export function computeItemFilename(itemName, equipSlot, vendorTab) {
+  const prefix = deriveItemPrefix(equipSlot, vendorTab);
   const safeName = (itemName || '')
     .toLowerCase()
     .replace(/ /g, '-')
     .replace(/'/g, '');
-
   if (!safeName) return '';
-  return (prefix ? prefix + '_' : '') + safeName + '.xml';
+  return prefix + '_' + safeName + '.xml';
 }
 
 export const DEFAULT_ITEM = {

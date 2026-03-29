@@ -121,11 +121,7 @@ function CastableEditor({
   }, [data.name, libraryIndex, isExisting, castable.name]);
 
   const [dupSnack, setDupSnack] = useState(null);
-  const prevDupStatusRef = useRef(null);
-  useEffect(() => {
-    if (dupStatus && !prevDupStatusRef.current) setDupSnack(dupStatus);
-    prevDupStatusRef.current = dupStatus;
-  }, [dupStatus]);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
 
   useEffect(() => {
     const derivedPrefix = deriveMetaPrefix(castable.meta, castable.book) ?? derivePrefix(castable.class, castable.book);
@@ -135,7 +131,7 @@ function CastableEditor({
     setFileName(initialFileName || computeCastableFilename(derivedPrefix, castable.name));
     setFileNameEdited(!!initialFileName);
     isDirtyRef.current = false;
-    prevDupStatusRef.current = null;
+    setDupSnack(null);
     onDirtyChange?.(false);
   }, [castable, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -335,7 +331,7 @@ function CastableEditor({
                   dupStatus === 'archived' ? `"${data.name}" exists in archive` :
                   undefined
                 }
-                value={data.name} onChange={set('name')} inputProps={{ maxLength: 255 }}
+                value={data.name} onChange={set('name')} onBlur={handleNameBlur} inputProps={{ maxLength: 255 }}
               />
               <TextField
                 label="Prefix" size="small" sx={{ width: 150 }}
@@ -762,7 +758,7 @@ function CastableEditor({
         open={!!dupSnack}
         autoHideDuration={5000}
         onClose={() => setDupSnack(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
           {dupSnack === 'active'

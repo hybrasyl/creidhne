@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Switch, Select, MenuItem, FormControl, InputLabel, FormControlLabel,
-  Checkbox, Autocomplete, Collapse, Alert,
+  Checkbox, Autocomplete, Collapse, Alert, Snackbar,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
@@ -594,23 +594,40 @@ function EffectAccordion({ title, data, onChange, readOnly = false, computedStat
 
 function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data,           setData]           = useState(status);
-  const [prefix,         setPrefix]         = useState('');
-  const [fileName,       setFileName]       = useState(initialFileName || computeStatusFilename('', status.name));
+  const [prefix,         setPrefix]         = useState('status');
+  const [fileName,       setFileName]       = useState(initialFileName || computeStatusFilename('status', status.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [castHint,       setCastHint]       = useState(false);
 
   const libraryIndex = useRecoilValue(libraryIndexState);
   const isDirtyRef = useRef(false);
+  const [dupSnack, setDupSnack] = useState(null);
 
   useEffect(() => {
     setData(status);
-    setPrefix('');
-    setFileName(initialFileName || computeStatusFilename('', status.name));
+    setPrefix('status');
+    setFileName(initialFileName || computeStatusFilename('status', status.name));
     setFileNameEdited(!!initialFileName);
     setCastHint(false);
     isDirtyRef.current = false;
+    setDupSnack(null);
     onDirtyChange?.(false);
   }, [status, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Duplicate detection ───────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (status.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+    const activeNames = libraryIndex?.statuses || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+    const archivedNames = libraryIndex?.archivedStatuses || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+    return null;
+  }, [data.name, libraryIndex, isExisting, status.name]);
+
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
 
   useEffect(() => {
     if (!fileNameEdited) setFileName(computeStatusFilename(prefix, data.name));
@@ -635,7 +652,7 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
   const setCategory    = (i, v) => updateData((d) => ({ ...d, categories: d.categories.map((c, idx) => idx === i ? v : c) }));
   const removeCategory = (i) => updateData((d) => ({ ...d, categories: d.categories.filter((_, idx) => idx !== i) }));
 
-  const addRestriction    = () => { setCastHint(true); updateData((d) => ({ ...d, castRestrictions: [...d.castRestrictions, { use: '', receive: '' }] })); };
+  const addRestriction    = () => { setCastHint(true); updateData((d) => ({ ...d, castRestrictions: [...d.castRestrictions, { type: 'use-castable', value: '' }] })); };
   const setRestriction    = (i, field, val) => updateData((d) => ({ ...d, castRestrictions: d.castRestrictions.map((r, idx) => idx === i ? { ...r, [field]: val } : r) }));
   const removeRestriction = (i) => updateData((d) => ({ ...d, castRestrictions: d.castRestrictions.filter((_, idx) => idx !== i) }));
 
@@ -682,12 +699,45 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirty(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }} />
-          <Tooltip title="Regenerate from prefix + name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
+          {(() => {
+            const computedFileName = computeStatusFilename(prefix, data.name);
+            const recyclePending = !!initialFileName && fileName !== computedFileName;
+            const willRename     = !!initialFileName && fileName !== initialFileName;
+            const fileNameWarn   = recyclePending || willRename;
+            const helperText     = willRename
+              ? `Saving will create "${fileName}" and archive "${initialFileName}"`
+              : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
+            const recycleDisabled = fileName === computedFileName;
+            const recycleTooltip  = recycleDisabled
+              ? 'Filename is auto-computed'
+              : willRename ? 'Reset to computed filename' : 'Apply computed filename';
+            return (
+              <>
+                <TextField
+                  size="small" label="Filename" value={fileName}
+                  onChange={(e) => { markDirty(); setFileName(e.target.value); setFileNameEdited(true); }}
+                  sx={{
+                    flex: 1,
+                    ...(fileNameWarn && {
+                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                      '& .MuiFormHelperText-root': { color: 'warning.main' },
+                    }),
+                  }}
+                  inputProps={{ spellCheck: false }}
+                  helperText={helperText}
+                  FormHelperTextProps={{ sx: { mx: 0 } }}
+                />
+                <Tooltip title={recycleTooltip}>
+                  <span>
+                    <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled}>
+                      <AutorenewIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            );
+          })()}
         </Box>
       </Box>
 
@@ -701,8 +751,23 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <TextField label="Prefix" size="small" sx={{ width: 130 }} value={prefix}
                 onChange={(e) => setPrefix(e.target.value)} inputProps={{ maxLength: 64, spellCheck: false }} />
-              <TextField label="Name" required size="small" sx={{ flex: 1, minWidth: 160 }} value={data.name}
-                onChange={set('name')} inputProps={{ maxLength: 255 }} />
+              <TextField
+                label="Name" required size="small" sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                value={data.name} onChange={set('name')} onBlur={handleNameBlur} inputProps={{ maxLength: 255 }}
+              />
               <TextField label="Icon" size="small" sx={{ width: 130 }} value={data.icon}
                 onChange={set('icon')} inputProps={{ maxLength: 255 }} />
             </Box>
@@ -751,10 +816,22 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
           )}
           {data.castRestrictions.map((r, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
-              <TextField label="Use (category)"     value={r.use}     size="small" sx={{ flex: 1, minWidth: 160 }}
-                onChange={(e) => setRestriction(i, 'use', e.target.value)} inputProps={{ maxLength: 255 }} />
-              <TextField label="Receive (category)" value={r.receive} size="small" sx={{ flex: 1, minWidth: 160 }}
-                onChange={(e) => setRestriction(i, 'receive', e.target.value)} inputProps={{ maxLength: 255 }} />
+              <FormControl size="small" sx={{ minWidth: 220 }}>
+                <InputLabel>Type</InputLabel>
+                <Select value={r.type} label="Type"
+                  onChange={(e) => setRestriction(i, 'type', e.target.value)}>
+                  <MenuItem value="use-castable">Use (Castable Category)</MenuItem>
+                  <MenuItem value="use-status">Use (Status Category)</MenuItem>
+                  <MenuItem value="receive-castable">Receive (Castable Category)</MenuItem>
+                  <MenuItem value="receive-status">Receive (Status Category)</MenuItem>
+                </Select>
+              </FormControl>
+              <ConstantAutocomplete
+                indexKey={r.type.includes('castable') ? 'castableCategories' : 'statusCategories'}
+                label="Category" value={r.value} sx={{ flex: 1, minWidth: 160 }}
+                onChange={(val) => setRestriction(i, 'value', val)}
+                inputProps={{ maxLength: 255 }}
+              />
               <IconButton size="small" color="error" onClick={() => removeRestriction(i)}>
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -773,6 +850,14 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
 
         <Box sx={{ height: 32 }} />
       </Box>
+      <Snackbar
+        open={!!dupSnack} autoHideDuration={5000} onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active' ? `"${data.name}" already exists!` : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

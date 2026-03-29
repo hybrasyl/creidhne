@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -19,6 +19,7 @@ const DEFAULT_NPC = {
   name: '',
   displayName: '',
   comment: '',
+  meta: { job: '', location: '' },
   sprite: '',
   portrait: '',
   allowDead: false,
@@ -124,6 +125,7 @@ function NPCsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingNpc, setEditingNpc] = useState(null);
+  const [loadingNpc, setLoadingNpc] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -146,7 +148,7 @@ function NPCsPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingNpc(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -165,13 +167,27 @@ function NPCsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingNpc(null);
+    setLoadingNpc(true);
     try {
-      const npc = await window.electronAPI.loadNpc(file.path);
+      let npc = await window.electronAPI.loadNpc(file.path);
+      if (!npc.meta?.job) {
+        const namePart = file.name.replace(/\.xml$/i, '');
+        const underscoreIdx = namePart.indexOf('_');
+        if (underscoreIdx > 0) {
+          const prefix = namePart.slice(0, underscoreIdx);
+          if (prefix && prefix.toLowerCase() !== 'npc') {
+            npc = { ...npc, meta: { ...(npc.meta || {}), job: prefix } };
+          }
+        }
+      }
       setEditingNpc(npc);
     } catch (err) {
       console.error('Failed to load NPC:', err);
       setEditingNpc(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingNpc(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -203,7 +219,9 @@ function NPCsPage() {
     markClean();
     setSelectedFile(null); setEditingNpc(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, NPCS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -220,6 +238,8 @@ function NPCsPage() {
     setSelectedFile(null); setEditingNpc(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, NPCS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -236,6 +256,10 @@ function NPCsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load NPC:</strong> {loadError}
           </Alert>
+        ) : loadingNpc ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={32} />
+          </Box>
         ) : editingNpc ? (
           <NPCEditor
             npc={editingNpc}

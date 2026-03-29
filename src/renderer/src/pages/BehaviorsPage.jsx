@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -102,6 +102,7 @@ function BehaviorsPage() {
   const [archivedFiles,      setArchivedFiles]      = useState([]);
   const [selectedFile,       setSelectedFile]       = useState(null);
   const [editingBehaviorSet, setEditingBehaviorSet] = useState(null);
+  const [loadingBehaviorSet, setLoadingBehaviorSet] = useState(false);
   const [showArchived,       setShowArchived]       = useState(false);
   const [loadError,          setLoadError]          = useState(null);
   const [snackbar,           setSnackbar]           = useState(null);
@@ -127,7 +128,7 @@ function BehaviorsPage() {
       return;
     }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
@@ -146,13 +147,16 @@ function BehaviorsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingBehaviorSet(null);
+    setLoadingBehaviorSet(true);
     try {
       const bvs = await window.electronAPI.loadBehaviorSet(file.path);
       setEditingBehaviorSet(bvs);
     } catch (err) {
       console.error('Failed to load behavior set:', err);
-      setEditingBehaviorSet(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingBehaviorSet(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -177,7 +181,7 @@ function BehaviorsPage() {
 
       markClean();
       await loadActiveFiles(activeLibrary);
-      if (showArchived) await loadArchivedFiles(activeLibrary);
+      await loadArchivedFiles(activeLibrary);
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
@@ -201,7 +205,9 @@ function BehaviorsPage() {
     markClean();
     setSelectedFile(null); setEditingBehaviorSet(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -218,6 +224,8 @@ function BehaviorsPage() {
     setSelectedFile(null); setEditingBehaviorSet(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -234,6 +242,10 @@ function BehaviorsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load behavior set:</strong> {loadError}
           </Alert>
+        ) : loadingBehaviorSet ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={32} />
+          </Box>
         ) : editingBehaviorSet ? (
           <BehaviorSetEditor
             behaviorSet={editingBehaviorSet}

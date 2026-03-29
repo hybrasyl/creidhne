@@ -155,10 +155,14 @@ function mapXmlToStatus(result, comment) {
     removeOnDeath:    a(root, 'RemoveOnDeath', 'false') === 'true',
     prohibitedMessage: first(root.ProhibitedMessage, ''),
     categories: ((first(root.Categories) || {}).Category || []).filter(Boolean),
-    castRestrictions: ((first(root.CastRestrictions) || {}).CastRestriction || []).map((cr) => ({
-      use:     a(cr, 'Use',     ''),
-      receive: a(cr, 'Receive', ''),
-    })),
+    castRestrictions: ((first(root.CastRestrictions) || {}).CastRestriction || []).flatMap((cr) => {
+      const result = [];
+      const use     = a(cr, 'Use',     '');
+      const receive = a(cr, 'Receive', '');
+      if (use)     result.push({ type: 'use-castable',     value: use });
+      if (receive) result.push({ type: 'receive-castable', value: receive });
+      return result;
+    }),
     onApply:  mapEffectBlock(effects?.OnApply),
     onTick:   mapEffectBlock(effects?.OnTick),
     onRemove: mapEffectBlock(effects?.OnRemove),
@@ -291,7 +295,7 @@ function buildXmlObject(status) {
   if (status.castRestrictions?.length) {
     root.CastRestrictions = [{
       CastRestriction: status.castRestrictions.map((cr) => ({
-        $: { Use: cr.use, Receive: cr.receive },
+        $: cr.type.startsWith('use') ? { Use: cr.value } : { Receive: cr.value },
       })),
     }];
   }

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, Collapse, Autocomplete,
-  Checkbox, FormControlLabel, Chip,
+  Checkbox, FormControlLabel, Chip, Snackbar, Alert,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
@@ -25,6 +25,17 @@ import CommentField from '../shared/CommentField';
 import StatsTab from '../items/tabs/StatsTab';
 
 const DEFAULT_PREFIX = 'bvs';
+
+function deriveBehaviorSetPrefix(fileName, name) {
+  if (!fileName) return DEFAULT_PREFIX;
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || DEFAULT_PREFIX;
+  }
+  return DEFAULT_PREFIX;
+}
 
 // ── Section accordion wrapper ─────────────────────────────────────────────────
 
@@ -119,6 +130,7 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
 // ── Casting set accordion ─────────────────────────────────────────────────────
 
 function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove }) {
+  const libraryIndex = useRecoilValue(libraryIndexState);
   const [open, setOpen] = useState(true);
   const title = `Casting Set ${index + 1} — ${cs.type || 'Unset'}`;
 
@@ -269,7 +281,7 @@ function BehaviorSetEditor({
   onSave, onArchive, onUnarchive, onDirtyChange, saveRef,
 }) {
   const [data,           setData]           = useState(behaviorSet);
-  const [prefix,         setPrefix]         = useState(() => initialFileName ? '' : DEFAULT_PREFIX);
+  const [prefix,         setPrefix]         = useState(() => deriveBehaviorSetPrefix(initialFileName, behaviorSet.name));
   const [prefixEdited,   setPrefixEdited]   = useState(false);
   const [fileName,       setFileName]       = useState(
     () => initialFileName || computeBehaviorSetFilename(DEFAULT_PREFIX, behaviorSet.name)
@@ -285,8 +297,27 @@ function BehaviorSetEditor({
   const libraryIndex = useRecoilValue(libraryIndexState);
   const isDirtyRef   = useRef(false);
 
+  // ── Duplicate detection ────────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (behaviorSet.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.creaturebehaviorsets || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedCreaturebehaviorsets || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, behaviorSet.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
+
   useEffect(() => {
-    const p = initialFileName ? '' : DEFAULT_PREFIX;
+    const p = deriveBehaviorSetPrefix(initialFileName, behaviorSet.name);
     setData(behaviorSet);
     setPrefix(p);
     setPrefixEdited(false);
@@ -294,6 +325,7 @@ function BehaviorSetEditor({
     setFileNameEdited(!!initialFileName);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
+    setDupSnack(null);
     setOpenCastingSets(true);
     setOpenHostility(true);
     setOpenCookies(true);
@@ -448,8 +480,22 @@ function BehaviorSetEditor({
             {/* Line 1: Set Name, Prefix, Import */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <TextField
-                label="Set Name" required size="small" sx={{ flex: 1, minWidth: 160 }}
-                value={data.name} onChange={set('name')}
+                label="Set Name" required size="small"
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                value={data.name} onChange={set('name')} onBlur={handleNameBlur}
               />
               <TextField
                 label="Prefix" size="small" sx={{ width: 120 }}
@@ -592,6 +638,19 @@ function BehaviorSetEditor({
         </Section>
 
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

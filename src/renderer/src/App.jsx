@@ -43,7 +43,12 @@ function App() {
   // Load persisted index from disk whenever active library changes
   useEffect(() => {
     if (!activeLibrary) { setLibraryIndex({}); return; }
-    window.electronAPI.loadIndex(activeLibrary).then((index) => setLibraryIndex(index || {}));
+    Promise.all([
+      window.electronAPI.loadIndex(activeLibrary),
+      window.electronAPI.loadUserConstants(activeLibrary),
+    ]).then(([index, constants]) => {
+      setLibraryIndex({ ...(index || {}), vendorTabs: constants?.vendorTabs || [], npcJobs: constants?.npcJobs || [] });
+    });
   }, [activeLibrary, setLibraryIndex]);
 
   // Save settings whenever theme or libraries change

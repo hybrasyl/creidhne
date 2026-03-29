@@ -543,6 +543,86 @@ app.whenReady().then(() => {
         } catch { /* .ignore may not exist */ }
         index.archivedCastables = archivedNames.sort()
       }
+      if (type === 'creatures') {
+        const archivedNames = []
+        try {
+          const archivedDirPath = join(dirPath, '.ignore')
+          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+            const nameMatch = /\bName="([^"]+)"/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !archivedNames.includes(name)) archivedNames.push(name)
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        index.archivedCreatures = archivedNames.sort()
+      }
+      if (type === 'creaturebehaviorsets') {
+        const archivedNames = []
+        try {
+          const archivedDirPath = join(dirPath, '.ignore')
+          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+            const nameMatch = /\bName="([^"]+)"/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !archivedNames.includes(name)) archivedNames.push(name)
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        index.archivedCreaturebehaviorsets = archivedNames.sort()
+      }
+      if (type === 'statuses') {
+        const archivedNames = []
+        try {
+          const archivedDirPath = join(dirPath, '.ignore')
+          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+            const nameMatch = /\bName="([^"]+)"/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !archivedNames.includes(name)) archivedNames.push(name)
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        index.archivedStatuses = archivedNames.sort()
+      }
+      if (type === 'npcs') {
+        const archivedNames = []
+        try {
+          const archivedDirPath = join(dirPath, '.ignore')
+          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !archivedNames.includes(name)) archivedNames.push(name)
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        index.archivedNpcs = archivedNames.sort()
+      }
+      if (type === 'items') {
+        const archivedNames = []
+        try {
+          const archivedDirPath = join(dirPath, '.ignore')
+          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !archivedNames.includes(name)) archivedNames.push(name)
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        index.archivedItems = archivedNames.sort()
+      }
     }
 
     // Collect element row names from all element table files
@@ -803,6 +883,86 @@ app.whenReady().then(() => {
       } catch { /* .ignore may not exist */ }
       result.archivedCastables = archivedNames.sort()
     }
+    if (section === 'creatures') {
+      const archivedNames = []
+      try {
+        const archivedDirPath = join(dirPath, '.ignore')
+        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+          const nameMatch = /\bName="([^"]+)"/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !archivedNames.includes(name)) archivedNames.push(name)
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      result.archivedCreatures = archivedNames.sort()
+    }
+    if (section === 'creaturebehaviorsets') {
+      const archivedNames = []
+      try {
+        const archivedDirPath = join(dirPath, '.ignore')
+        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+          const nameMatch = /\bName="([^"]+)"/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !archivedNames.includes(name)) archivedNames.push(name)
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      result.archivedCreaturebehaviorsets = archivedNames.sort()
+    }
+    if (section === 'statuses') {
+      const archivedNames = []
+      try {
+        const archivedDirPath = join(dirPath, '.ignore')
+        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+          const nameMatch = /\bName="([^"]+)"/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !archivedNames.includes(name)) archivedNames.push(name)
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      result.archivedStatuses = archivedNames.sort()
+    }
+    if (section === 'npcs') {
+      const archivedNames = []
+      try {
+        const archivedDirPath = join(dirPath, '.ignore')
+        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !archivedNames.includes(name)) archivedNames.push(name)
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      result.archivedNpcs = archivedNames.sort()
+    }
+    if (section === 'items') {
+      const archivedNames = []
+      try {
+        const archivedDirPath = join(dirPath, '.ignore')
+        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
+        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !archivedNames.includes(name)) archivedNames.push(name)
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      result.archivedItems = archivedNames.sort()
+    }
 
     // Merge into persisted index so Dashboard stats stay current
     try {
@@ -936,6 +1096,25 @@ app.whenReady().then(() => {
     return [...tabs].sort()
   })
 
+  ipcMain.handle('constants:scanNpcJobs', async (_, libraryPath) => {
+    const jobs = new Set()
+    try {
+      const npcsDir = join(libraryPath, 'npcs')
+      const entries = await fs.readdir(npcsDir, { withFileTypes: true })
+      for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        const namePart = entry.name.replace(/\.xml$/i, '')
+        const underscoreIdx = namePart.indexOf('_')
+        if (underscoreIdx > 0) {
+          const prefix = namePart.slice(0, underscoreIdx)
+          if (prefix && prefix.toLowerCase() !== 'npc') {
+            jobs.add(prefix)
+          }
+        }
+      }
+    } catch { /* dir may not exist */ }
+    return [...jobs].sort()
+  })
+
   ipcMain.handle('constants:scanCookies', async (_, libraryPath) => {
     const scriptsDir = join(libraryPath, '..', 'scripts')
     const cookies = []
@@ -998,7 +1177,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:loadUserConstants', async (_, libraryPath) => {
-    const empty = { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [] }
+    const empty = { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [], npcJobs: [] }
     if (!libraryPath) return empty
     const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
     try {

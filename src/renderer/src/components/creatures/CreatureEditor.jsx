@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
-  Paper, Autocomplete, Collapse, FormControlLabel, Checkbox,
+  Paper, Autocomplete, Collapse, FormControlLabel, Checkbox, Snackbar, Alert,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
@@ -21,6 +21,17 @@ function computeCreatureFilename(prefix, name) {
   if (!safe) return '';
   const p = (prefix || '').trim().toLowerCase().replace(/\s+/g, '_');
   return p ? `${p}_${safe}.xml` : `${safe}.xml`;
+}
+
+function deriveCreaturePrefix(fileName, name) {
+  if (!fileName) return 'creature';
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'creature';
+  }
+  return 'creature';
 }
 
 const DEFAULT_HOSTILITY = {
@@ -328,9 +339,10 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
 
 // ── Main editor ───────────────────────────────────────────────────────────────
 function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
+  const libraryIndex = useRecoilValue(libraryIndexState);
   const [data, setData] = useState(creature);
-  const [prefix, setPrefix] = useState('');
-  const [fileName, setFileName] = useState(initialFileName || computeCreatureFilename('', creature.name));
+  const [prefix, setPrefix] = useState(() => deriveCreaturePrefix(initialFileName, creature.name));
+  const [fileName, setFileName] = useState(initialFileName || computeCreatureFilename('creature', creature.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
   const [openLoot, setOpenLoot] = useState(false);
@@ -339,16 +351,36 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
 
   const isDirtyRef = useRef(false);
 
+  // ── Duplicate detection ────────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (creature.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.creatures || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedCreatures || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, creature.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
+
   useEffect(() => {
     setData(creature);
-    setPrefix('');
-    setFileName(initialFileName || computeCreatureFilename('', creature.name));
+    setPrefix(deriveCreaturePrefix(initialFileName, creature.name));
+    setFileName(initialFileName || computeCreatureFilename('creature', creature.name));
     setFileNameEdited(!!initialFileName);
     setOpenLoot(false);
     setOpenHostility(false);
     setOpenCookies(false);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
+    setDupSnack(null);
   }, [creature, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -442,9 +474,24 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
                 inputProps={{ maxLength: 64, spellCheck: false }}
               />
               <TextField
-                label="Name" required size="small" sx={{ flex: 1, minWidth: 160 }}
+                label="Name" required size="small"
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
                 value={data.name}
                 onChange={set('name')}
+                onBlur={handleNameBlur}
                 inputProps={{ maxLength: 255 }}
               />
               <TextField
@@ -528,6 +575,19 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
           <Button startIcon={<AddIcon />} onClick={addSubtype}>Add Subtype</Button>
         </Box>
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

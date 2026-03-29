@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -106,6 +106,7 @@ function CastablesPage() {
   const [archivedFiles,   setArchivedFiles]   = useState([]);
   const [selectedFile,    setSelectedFile]    = useState(null);
   const [editingCastable, setEditingCastable] = useState(null);
+  const [loadingCastable, setLoadingCastable] = useState(false);
   const [showArchived,    setShowArchived]    = useState(false);
   const [loadError,       setLoadError]       = useState(null);
   const [snackbar,        setSnackbar]        = useState(null);
@@ -147,6 +148,8 @@ function CastablesPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingCastable(null);
+    setLoadingCastable(true);
     try {
       let c = await window.electronAPI.loadCastable(file.path);
       // Infer meta override flag from filename for files that predate the meta comment
@@ -161,8 +164,9 @@ function CastablesPage() {
       setEditingCastable(c);
     } catch (err) {
       console.error('Failed to load castable:', err);
-      setEditingCastable(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingCastable(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -248,6 +252,10 @@ function CastablesPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load castable:</strong> {loadError}
           </Alert>
+        ) : loadingCastable ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={32} />
+          </Box>
         ) : editingCastable ? (
           <CastableEditor
             castable={editingCastable}

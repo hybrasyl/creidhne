@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -120,6 +120,7 @@ function StatusesPage() {
   const [archivedFiles,  setArchivedFiles]  = useState([]);
   const [selectedFile,   setSelectedFile]   = useState(null);
   const [editingStatus,  setEditingStatus]  = useState(null);
+  const [loadingStatus,  setLoadingStatus]  = useState(false);
   const [showArchived,   setShowArchived]   = useState(false);
   const [loadError,      setLoadError]      = useState(null);
   const [snackbar,       setSnackbar]       = useState(null);
@@ -142,7 +143,7 @@ function StatusesPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingStatus(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
@@ -161,13 +162,16 @@ function StatusesPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingStatus(null);
+    setLoadingStatus(true);
     try {
       const s = await window.electronAPI.loadStatus(file.path);
       setEditingStatus(s);
     } catch (err) {
       console.error('Failed to load status:', err);
-      setEditingStatus(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingStatus(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -199,7 +203,9 @@ function StatusesPage() {
     markClean();
     setSelectedFile(null); setEditingStatus(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -216,6 +222,8 @@ function StatusesPage() {
     setSelectedFile(null); setEditingStatus(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -232,6 +240,10 @@ function StatusesPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load status:</strong> {loadError}
           </Alert>
+        ) : loadingStatus ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={32} />
+          </Box>
         ) : editingStatus ? (
           <StatusEditor
             status={editingStatus}

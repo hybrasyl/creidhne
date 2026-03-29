@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch, FormControlLabel, Checkbox,
-  FormControl, InputLabel, Select, MenuItem,
+  FormControl, InputLabel, Select, MenuItem, Snackbar, Alert,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -16,6 +16,11 @@ import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
 import ScriptAutocomplete from '../common/ScriptAutocomplete';
+
+function deriveNpcPrefix(job) {
+  if (!job) return 'npc';
+  return job.toLowerCase().replace(/\s+/g, '_');
+}
 
 function computeNpcFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -77,10 +82,13 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   const npcResponseCalls = libraryIndex.npcResponseCalls || {};
   const npcCallOptions = Object.keys(npcResponseCalls).sort();
   const npcStringKeys = libraryIndex.npcStringKeys || [];
+  const npcJobs = libraryIndex.npcJobs || [];
 
   const [data, setData] = useState(npc);
-  const [prefix, setPrefix] = useState('');
-  const [fileName, setFileName] = useState(initialFileName || computeNpcFilename('', npc.name));
+  const [fileName, setFileName] = useState(() => {
+    const p = deriveNpcPrefix(npc.meta?.job || '');
+    return initialFileName || computeNpcFilename(p, npc.name);
+  });
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
   const [openResponses, setOpenResponses] = useState(false);
@@ -93,10 +101,39 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
 
   const isDirtyRef = useRef(false);
 
+  // ── Computed values ────────────────────────────────────────────────────────
+  const computedPrefix = deriveNpcPrefix(data.meta?.job || '');
+  const computedFileName = computeNpcFilename(computedPrefix, data.name);
+  const recyclePending = !!initialFileName && fileName !== computedFileName;
+  const willRename = !!initialFileName && fileName !== initialFileName;
+  const fileNameWarn = recyclePending || willRename;
+  const fileNameHelperText = willRename
+    ? `Saving will create "${fileName}" and archive "${initialFileName}"`
+    : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
+  const recycleDisabled = fileName === computedFileName;
+  const recycleTooltip = recycleDisabled
+    ? 'Filename is auto-computed'
+    : willRename ? 'Reset to computed filename' : 'Apply computed filename';
+
+  // ── Duplicate detection ────────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (npc.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+    const activeNames = libraryIndex?.npcs || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+    const archivedNames = libraryIndex?.archivedNpcs || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+    return null;
+  }, [data.name, libraryIndex, isExisting, npc.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
+
   useEffect(() => {
     setData(npc);
-    setPrefix('');
-    setFileName(initialFileName || computeNpcFilename('', npc.name));
+    setFileName(initialFileName || computeNpcFilename(deriveNpcPrefix(npc.meta?.job || ''), npc.name));
     setFileNameEdited(!!initialFileName);
     setOpenResponses(false);
     setOpenStrings(false);
@@ -106,13 +143,9 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
     setOpenVend(npc.roles.vend !== null);
     setOpenTrain(npc.roles.train !== null);
     isDirtyRef.current = false;
+    setDupSnack(null);
     onDirtyChange?.(false);
   }, [npc, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Regenerate filename when prefix changes (if not manually edited)
-  useEffect(() => {
-    if (!fileNameEdited) setFileName(computeNpcFilename(prefix, data.name));
-  }, [prefix]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
@@ -122,16 +155,17 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
     markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeNpcFilename(prefix, next.name));
+      if (!fileNameEdited) setFileName(computeNpcFilename(deriveNpcPrefix(next.meta?.job || ''), next.name));
       return next;
     });
-  }, [fileNameEdited, prefix, markDirtyLocal]);
+  }, [fileNameEdited, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
+  const setMetaField = (field) => (val) => updateData((d) => ({ ...d, meta: { ...(d.meta || {}), [field]: val } }));
 
   const handleRegenerate = () => {
     markDirtyLocal();
-    setFileName(computeNpcFilename(prefix, data.name));
+    setFileName(computeNpcFilename(computedPrefix, data.name));
     setFileNameEdited(false);
   };
 
@@ -241,14 +275,28 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
             </Button>
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
           <TextField
             size="small" label="Filename" value={fileName}
             onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
+            sx={{
+              flex: 1,
+              ...(fileNameWarn && {
+                '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                '& .MuiFormHelperText-root': { color: 'warning.main' },
+              }),
+            }}
+            inputProps={{ spellCheck: false }}
+            helperText={fileNameHelperText}
+            FormHelperTextProps={{ sx: { mx: 0 } }}
           />
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
+          <Tooltip title={recycleTooltip}>
+            <span>
+              <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled} sx={{ mt: 0.5 }}>
+                <AutorenewIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>
@@ -262,13 +310,26 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="Prefix" value={prefix}
-                onChange={(e) => setPrefix(e.target.value)}
-                size="small" sx={{ width: 140 }} inputProps={{ maxLength: 64, spellCheck: false }}
+                label="Prefix" value={computedPrefix}
+                size="small" sx={{ width: 140 }} inputProps={{ readOnly: true, spellCheck: false }}
               />
               <TextField
-                label="Name" value={data.name} onChange={set('name')}
-                size="small" required sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
+                label="Name" value={data.name} onChange={set('name')} onBlur={handleNameBlur}
+                size="small" required inputProps={{ maxLength: 255 }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                sx={{
+                  flex: 1,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
               />
               <TextField
                 label="Display Name" value={data.displayName} onChange={set('displayName')}
@@ -293,6 +354,19 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   />
                 }
                 label={<Typography variant="body2">Allow Dead</Typography>}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Autocomplete
+                freeSolo options={npcJobs} value={data.meta?.job || ''}
+                onInputChange={(_, val, reason) => { if (reason === 'input') setMetaField('job')(val); }}
+                onChange={(_, val) => setMetaField('job')(val ?? '')}
+                size="small" sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} label="Job" inputProps={{ ...params.inputProps, maxLength: 64 }} />}
+              />
+              <TextField
+                label="Location" value={data.meta?.location || ''} onChange={(e) => setMetaField('location')(e.target.value)}
+                size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 128 }}
               />
             </Box>
             <CommentField value={data.comment} onChange={set('comment')} />
@@ -611,6 +685,19 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
 
         <Box sx={{ height: 32 }} />
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

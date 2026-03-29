@@ -18,6 +18,7 @@ const EMPTY_CONSTANTS = {
   castableCategories: [],
   statusCategories: [],
   cookies: [],
+  npcJobs: [],
 };
 
 // ─── Simple Types Tab ──────────────────────────────────────────────────────────
@@ -190,6 +191,91 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary }) {
                 <TableCell><Typography variant="body2">{tab}</Typography></TableCell>
                 <TableCell padding="none">
                   <IconButton size="small" onClick={() => onChange(vendorTabs.filter(t => t !== tab))}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </Box>
+  );
+}
+
+// ─── NPC Jobs Tab ──────────────────────────────────────────────────────────────
+
+function NpcJobsTab({ npcJobs, onChange, activeLibrary }) {
+  const [newJob, setNewJob] = useState('');
+  const [scanning, setScanning] = useState(false);
+
+  const handleAdd = () => {
+    const val = newJob.trim();
+    if (!val || npcJobs.includes(val)) return;
+    onChange([...npcJobs, val].sort());
+    setNewJob('');
+  };
+
+  const handleScan = async () => {
+    if (!activeLibrary) return;
+    setScanning(true);
+    try {
+      const scanned = await window.electronAPI.scanNpcJobs(activeLibrary);
+      const merged = [...new Set([...npcJobs, ...scanned])].sort();
+      onChange(merged);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  return (
+    <Box sx={{ p: 2, maxWidth: 480 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+          NPC job names derived from filename prefixes (e.g. <code>blacksmith</code> in <code>blacksmith_anvil.xml</code>).
+        </Typography>
+        <Button
+          size="small" variant="outlined"
+          startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
+          onClick={handleScan} disabled={scanning || !activeLibrary}
+        >
+          Scan NPCs
+        </Button>
+      </Box>
+      {!activeLibrary && (
+        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for NPC jobs.</Alert>
+      )}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField
+          size="small" placeholder="New job name..." value={newJob}
+          onChange={e => setNewJob(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          sx={{ flex: 1 }}
+        />
+        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newJob.trim()}>
+          Add
+        </Button>
+      </Box>
+      {npcJobs.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No NPC jobs defined. Click "Scan NPCs" to discover from filenames.
+        </Typography>
+      ) : (
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Job Name</TableCell>
+              <TableCell sx={{ width: 40 }} padding="none" />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {npcJobs.map(job => (
+              <TableRow key={job} hover>
+                <TableCell><Typography variant="body2">{job}</Typography></TableCell>
+                <TableCell padding="none">
+                  <IconButton size="small" onClick={() => onChange(npcJobs.filter(j => j !== job))}>
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </TableCell>
@@ -462,6 +548,7 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
 const TABS = [
   { label: 'Simple Types' },
   { label: 'Vendor Tabs' },
+  { label: 'NPC Jobs' },
   { label: 'Item Categories' },
   { label: 'Castable Categories' },
   { label: 'Status Categories' },
@@ -500,6 +587,15 @@ function ConstantsPage() {
     setSaving(true);
     try {
       await window.electronAPI.saveUserConstants(activeLibrary, userConstants);
+      setLibraryIndex((prev) => ({
+        ...prev,
+        vendorTabs:         userConstants.vendorTabs         || [],
+        npcJobs:            userConstants.npcJobs            || [],
+        itemCategories:     userConstants.itemCategories     || [],
+        castableCategories: userConstants.castableCategories || [],
+        statusCategories:   userConstants.statusCategories   || [],
+        cookieNames:        (userConstants.cookies || []).map((c) => c.name),
+      }));
       setDirty(false);
     } catch (e) {
       console.error(e);
@@ -539,6 +635,15 @@ function ConstantsPage() {
           </Box>
         )}
         {tab === 2 && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <NpcJobsTab
+              npcJobs={userConstants.npcJobs || []}
+              onChange={jobs => handleChange({ ...userConstants, npcJobs: jobs })}
+              activeLibrary={activeLibrary}
+            />
+          </Box>
+        )}
+        {tab === 3 && (
           <CategoryTab
             label="Item categories"
             scanResultKey="items"
@@ -548,7 +653,7 @@ function ConstantsPage() {
             onIndexUpdated={setLibraryIndex}
           />
         )}
-        {tab === 3 && (
+        {tab === 4 && (
           <CategoryTab
             label="Castable categories"
             scanResultKey="castables"
@@ -558,7 +663,7 @@ function ConstantsPage() {
             onIndexUpdated={setLibraryIndex}
           />
         )}
-        {tab === 4 && (
+        {tab === 5 && (
           <CategoryTab
             label="Status categories"
             scanResultKey="statuses"
@@ -568,7 +673,7 @@ function ConstantsPage() {
             onIndexUpdated={setLibraryIndex}
           />
         )}
-        {tab === 5 && (
+        {tab === 6 && (
           <CookiesTab
             userConstants={userConstants}
             onChange={handleChange}
