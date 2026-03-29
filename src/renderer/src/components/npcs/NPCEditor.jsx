@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch, FormControlLabel, Checkbox,
+  FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -57,6 +58,23 @@ function NationPicker({ label, value, onChange, sx }) {
   return (
     <Autocomplete
       freeSolo options={nationNames} value={value}
+      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      onChange={(_, val) => onChange(val ?? '')}
+      size="small" sx={sx}
+      renderInput={(params) => <TextField {...params} label={label} />}
+    />
+  );
+}
+
+// ── Script autocomplete ───────────────────────────────────────────────────────
+function ScriptPicker({ label, value, onChange, sx }) {
+  const libraryIndex = useRecoilValue(libraryIndexState);
+  const scriptOptions = (libraryIndex.scripts || []).map((s) =>
+    s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '')
+  );
+  return (
+    <Autocomplete
+      freeSolo options={scriptOptions} value={value || ''}
       onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
       onChange={(_, val) => onChange(val ?? '')}
       size="small" sx={sx}
@@ -125,7 +143,6 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   }, [fileNameEdited, prefix, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
-  const setRole = (field) => (e) => updateData((d) => ({ ...d, roles: { ...d.roles, [field]: e.target.value } }));
 
   const handleRegenerate = () => {
     markDirtyLocal();
@@ -148,22 +165,12 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   // ── Responses ─────────────────────────────────────────────────────────────
   const addResponse = () =>
     updateData((d) => ({ ...d, responses: [...d.responses, { call: '', response: '' }] }));
-  const setResponse = (i, field, val) =>
-    updateData((d) => ({
-      ...d,
-      responses: d.responses.map((r, idx) => idx === i ? { ...r, [field]: val } : r),
-    }));
   const removeResponse = (i) =>
     updateData((d) => ({ ...d, responses: d.responses.filter((_, idx) => idx !== i) }));
 
   // ── Strings ───────────────────────────────────────────────────────────────
   const addString = () =>
     updateData((d) => ({ ...d, strings: [...d.strings, { key: '', message: '' }] }));
-  const setString = (i, field, val) =>
-    updateData((d) => ({
-      ...d,
-      strings: d.strings.map((s, idx) => idx === i ? { ...s, [field]: val } : s),
-    }));
   const removeString = (i) =>
     updateData((d) => ({ ...d, strings: d.strings.filter((_, idx) => idx !== i) }));
 
@@ -407,23 +414,20 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           onEnable={enableRole('bank', { nation: '', discount: '' })}
         >
           {data.roles.bank !== null && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Bank Check (script)" value={data.roles.bankCheck}
-                onChange={setRole('bankCheck')}
-                size="small" inputProps={{ maxLength: 255 }}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <NationPicker
+                label="Nation" value={data.roles.bank.nation} sx={{ flex: 1 }}
+                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, bank: { ...d.roles.bank, nation: val } } }))}
               />
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <NationPicker
-                  label="Nation" value={data.roles.bank.nation} sx={{ flex: 1 }}
-                  onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, bank: { ...d.roles.bank, nation: val } } }))}
-                />
-                <TextField
-                  label="Discount" value={data.roles.bank.discount}
-                  onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, bank: { ...d.roles.bank, discount: e.target.value } } }))}
-                  size="small" sx={{ width: 140 }} inputProps={{ maxLength: 64 }}
-                />
-              </Box>
+              <TextField
+                label="Discount" value={data.roles.bank.discount}
+                onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, bank: { ...d.roles.bank, discount: e.target.value } } }))}
+                size="small" sx={{ width: 140 }} inputProps={{ maxLength: 64 }}
+              />
+              <ScriptPicker
+                label="Bank Check" value={data.roles.bankCheck} sx={{ width: 200 }}
+                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, bankCheck: val } }))}
+              />
             </Box>
           )}
         </Section>
@@ -438,15 +442,16 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         >
           {data.roles.post !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Post Check (script)" value={data.roles.postCheck}
-                onChange={setRole('postCheck')}
-                size="small" inputProps={{ maxLength: 255 }}
-              />
-              <NationPicker
-                label="Nation" value={data.roles.post.nation}
-                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, post: { ...d.roles.post, nation: val } } }))}
-              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <NationPicker
+                  label="Nation" value={data.roles.post.nation} sx={{ flex: 1 }}
+                  onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, post: { ...d.roles.post, nation: val } } }))}
+                />
+                <ScriptPicker
+                  label="Post Check" value={data.roles.postCheck} sx={{ width: 200 }}
+                  onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, postCheck: val } }))}
+                />
+              </Box>
               <Typography variant="caption" color="text.secondary">Surcharges</Typography>
               {data.roles.post.surcharges.map((s, i) => (
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -478,28 +483,33 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           onEnable={enableRole('repair', { nation: '', discount: '', type: '' })}
         >
           {data.roles.repair !== null && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Repair Check (script)" value={data.roles.repairCheck}
-                onChange={setRole('repairCheck')}
-                size="small" inputProps={{ maxLength: 255 }}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <NationPicker
+                label="Nation" value={data.roles.repair.nation} sx={{ flex: 1 }}
+                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, repair: { ...d.roles.repair, nation: val } } }))}
               />
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <NationPicker
-                  label="Nation" value={data.roles.repair.nation} sx={{ flex: 1 }}
-                  onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, repair: { ...d.roles.repair, nation: val } } }))}
-                />
-                <TextField
-                  label="Discount" value={data.roles.repair.discount}
-                  onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, repair: { ...d.roles.repair, discount: e.target.value } } }))}
-                  size="small" sx={{ width: 140 }} inputProps={{ maxLength: 64 }}
-                />
-                <TextField
-                  label="Type" value={data.roles.repair.type}
+              <TextField
+                label="Discount" value={data.roles.repair.discount}
+                onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, repair: { ...d.roles.repair, discount: e.target.value } } }))}
+                size="small" sx={{ width: 140 }} inputProps={{ maxLength: 64 }}
+              />
+              <FormControl size="small" sx={{ width: 120 }}>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={data.roles.repair.type || ''}
+                  label="Type"
                   onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, repair: { ...d.roles.repair, type: e.target.value } } }))}
-                  size="small" sx={{ width: 120 }} inputProps={{ maxLength: 64 }}
-                />
-              </Box>
+                >
+                  <MenuItem value="">—</MenuItem>
+                  <MenuItem value="Weapon">Weapon</MenuItem>
+                  <MenuItem value="Armor">Armor</MenuItem>
+                  <MenuItem value="All">All</MenuItem>
+                </Select>
+              </FormControl>
+              <ScriptPicker
+                label="Repair Check" value={data.roles.repairCheck} sx={{ width: 200 }}
+                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, repairCheck: val } }))}
+              />
             </Box>
           )}
         </Section>
@@ -514,10 +524,9 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         >
           {data.roles.vend !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Vend Check (script)" value={data.roles.vendCheck}
-                onChange={setRole('vendCheck')}
-                size="small" inputProps={{ maxLength: 255 }}
+              <ScriptPicker
+                label="Vend Check" value={data.roles.vendCheck}
+                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, vendCheck: val } }))}
               />
               {data.roles.vend.items.map((item, i) => (
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -558,10 +567,9 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
         >
           {data.roles.train !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Train Check (script)" value={data.roles.trainCheck}
-                onChange={setRole('trainCheck')}
-                size="small" inputProps={{ maxLength: 255 }}
+              <ScriptPicker
+                label="Train Check" value={data.roles.trainCheck}
+                onChange={(val) => updateData((d) => ({ ...d, roles: { ...d.roles, trainCheck: val } }))}
               />
               {data.roles.train.castables.map((c, i) => (
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
