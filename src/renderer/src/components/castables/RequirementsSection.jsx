@@ -4,6 +4,7 @@ import {
   IconButton, InputLabel, MenuItem, Paper, Select, TextField, Typography,
   Autocomplete,
 } from '@mui/material';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import AddIcon       from '@mui/icons-material/Add';
 import DeleteIcon    from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -69,8 +70,8 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
                 {ALL_CASTABLE_CLASSES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField label="Forbid Cookie"  size="small" sx={{ width: 140 }} value={req.forbidCookie  || ''} onChange={(e) => set('forbidCookie',  e.target.value)} />
-            <TextField label="Require Cookie" size="small" sx={{ width: 140 }} value={req.requireCookie || ''} onChange={(e) => set('requireCookie', e.target.value)} />
+            <ConstantAutocomplete indexKey="cookieNames" label="Forbid Cookie"  sx={{ width: 140 }} value={req.forbidCookie  || ''} onChange={(val) => set('forbidCookie',  val)} />
+            <ConstantAutocomplete indexKey="cookieNames" label="Require Cookie" sx={{ width: 140 }} value={req.requireCookie || ''} onChange={(val) => set('requireCookie', val)} />
             <TextField label="Level Min" size="small" sx={{ width: 90  }} value={req.levelMin} onChange={setNumeric('levelMin')} inputProps={{ inputMode: 'numeric' }} />
             <TextField label="Level Max" size="small" sx={{ width: 90  }} value={req.levelMax} onChange={setNumeric('levelMax')} inputProps={{ inputMode: 'numeric' }} />
             <TextField label="Gold"      size="small" sx={{ width: 110 }} value={req.gold}     onChange={setNumeric('gold')}     inputProps={{ inputMode: 'numeric' }} />
@@ -101,10 +102,10 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
               sx={{ m: 0, mb: 1 }}
             />
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-              <TextField
-                label="Forbid Cookie" size="small" sx={{ width: 150 }}
+              <ConstantAutocomplete
+                indexKey="cookieNames" label="Forbid Cookie" sx={{ width: 150 }}
                 value={req.prerequisites?.forbidCookie || ''}
-                onChange={(e) => setPr('forbidCookie', e.target.value)}
+                onChange={(val) => setPr('forbidCookie', val)}
               />
               <Autocomplete
                 freeSolo options={npcStringKeys}
@@ -114,10 +115,10 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
                 size="small" sx={{ width: 220 }}
                 renderInput={(params) => <TextField {...params} label="Forbid Message" />}
               />
-              <TextField
-                label="Require Cookie" size="small" sx={{ width: 150 }}
+              <ConstantAutocomplete
+                indexKey="cookieNames" label="Require Cookie" sx={{ width: 150 }}
                 value={req.prerequisites?.requireCookie || ''}
-                onChange={(e) => setPr('requireCookie', e.target.value)}
+                onChange={(val) => setPr('requireCookie', val)}
               />
               <Autocomplete
                 freeSolo options={npcStringKeys}

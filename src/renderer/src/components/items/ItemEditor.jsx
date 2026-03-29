@@ -3,6 +3,7 @@ import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Alert, Collapse, Paper,
   Switch, Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox, Autocomplete, Chip,
 } from '@mui/material';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -261,8 +262,8 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
             <Typography variant="subtitle2" gutterBottom>Categories</Typography>
             {p.categories.map((cat, index) => (
               <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                <TextField label="Category" value={cat.name} size="small" sx={{ flex: 1 }}
-                  onChange={(e) => setCategory(index, e.target.value)} inputProps={{ maxLength: 255 }} />
+                <ConstantAutocomplete indexKey="itemCategories" label="Category" value={cat.name} sx={{ flex: 1 }}
+                  onChange={(val) => setCategory(index, val)} inputProps={{ maxLength: 255 }} />
                 <IconButton size="small" color="error" onClick={() => removeCategory(index)}>
                   <DeleteIcon fontSize="small" />
                 </IconButton>

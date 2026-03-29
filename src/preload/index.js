@@ -54,6 +54,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),
   getIndexStatus: (libraryPath) => ipcRenderer.invoke('index:status', libraryPath),
   deleteIndex: (libraryPath) => ipcRenderer.invoke('index:delete', libraryPath),
+  addConstantValue: (libraryPath, type, value) => ipcRenderer.invoke('constants:addValue', libraryPath, type, value),
+  loadXsdTypes: () => ipcRenderer.invoke('constants:loadXsdTypes'),
+  scanCategories: (libraryPath) => ipcRenderer.invoke('constants:scanCategories', libraryPath),
+  scanVendorTabs: (libraryPath) => ipcRenderer.invoke('constants:scanVendorTabs', libraryPath),
+  scanCookies: (libraryPath) => ipcRenderer.invoke('constants:scanCookies', libraryPath),
+  loadUserConstants: (libraryPath) => ipcRenderer.invoke('constants:loadUserConstants', libraryPath),
+  saveUserConstants: (libraryPath, data) => ipcRenderer.invoke('constants:saveUserConstants', libraryPath, data),
 });
 
 // If context isolation is disabled, add to the DOM global directly

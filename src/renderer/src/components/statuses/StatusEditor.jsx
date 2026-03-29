@@ -4,6 +4,7 @@ import {
   Switch, Select, MenuItem, FormControl, InputLabel, FormControlLabel,
   Checkbox, Autocomplete, Collapse, Alert,
 } from '@mui/material';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -725,8 +726,8 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
           <Typography variant="subtitle2" gutterBottom>Categories</Typography>
           {data.categories.map((cat, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-              <TextField label="Category" value={cat} size="small" sx={{ flex: 1 }}
-                onChange={(e) => setCategory(i, e.target.value)} inputProps={{ maxLength: 255 }} />
+              <ConstantAutocomplete indexKey="statusCategories" label="Category" value={cat} sx={{ flex: 1 }}
+                onChange={(val) => setCategory(i, val)} inputProps={{ maxLength: 255 }} />
               <IconButton size="small" color="error" onClick={() => removeCategory(i)}>
                 <DeleteIcon fontSize="small" />
               </IconButton>

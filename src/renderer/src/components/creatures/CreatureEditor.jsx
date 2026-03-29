@@ -3,6 +3,7 @@ import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, FormControlLabel, Checkbox,
 } from '@mui/material';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -207,10 +208,10 @@ function CookiesContent({ cookies, onChange }) {
     <>
       {cookies.map((cookie, i) => (
         <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-          <TextField
-            label="Cookie Name" size="small" sx={{ flex: 1 }}
+          <ConstantAutocomplete
+            indexKey="cookieNames" label="Cookie Name" sx={{ flex: 1 }}
             value={cookie.name}
-            onChange={(e) => set(i, 'name', e.target.value)}
+            onChange={(val) => set(i, 'name', val)}
             inputProps={{ maxLength: 128 }}
           />
           <TextField

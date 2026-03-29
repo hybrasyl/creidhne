@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Box, Button, IconButton, TextField, FormControlLabel, Checkbox, Autocomplete, Typography,
 } from '@mui/material';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -69,10 +70,10 @@ function ReactorRow({ reactor, index, scriptNames, statusNames, onChange, onRemo
           sx={{ width: 200 }}
           renderInput={(params) => <TextField {...params} label="Show if Status" />}
         />
-        <TextField
-          label="Show if Cookie" size="small" sx={{ width: 180 }}
+        <ConstantAutocomplete
+          indexKey="cookieNames" label="Show if Cookie" sx={{ width: 180 }}
           value={reactor.displayCookie}
-          onChange={(e) => set('displayCookie', e.target.value)}
+          onChange={(val) => set('displayCookie', val)}
         />
       </Box>
     </Box>

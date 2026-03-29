@@ -483,6 +483,50 @@ app.whenReady().then(() => {
     const scriptsDir = join(libraryPath, '..', 'scripts')
     index.scripts = (await walkDir(scriptsDir, '.lua', scriptsDir)).sort()
 
+    const scanCatNames = async (dir) => {
+      const cats = new Set()
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
+        for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(dir, entry.name), 'utf-8')
+          const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
+          if (!catSection) continue
+          const body = catSection[1]
+          const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
+          const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
+          let m
+          while ((m = catElemRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
+          while ((m = catAttrRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
+        }
+      } catch { /* dir may not exist */ }
+      return [...cats].sort()
+    }
+    index.itemCategories = await scanCatNames(join(libraryPath, 'items'))
+    index.castableCategories = await scanCatNames(join(libraryPath, 'castables'))
+    index.statusCategories = await scanCatNames(join(libraryPath, 'statuses'))
+
+    const cookieNamesSet = new Set()
+    const cookieRegexBuild = /\w+\.setcookie\s*\(\s*"([^"]+)"/gi
+    const scanCookieNames = async (dir) => {
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
+        for (const entry of entries) {
+          const full = join(dir, entry.name)
+          if (entry.isDirectory()) await scanCookieNames(full)
+          else if (entry.isFile() && entry.name.endsWith('.lua')) {
+            const content = await fs.readFile(full, 'utf-8')
+            cookieRegexBuild.lastIndex = 0
+            let m
+            while ((m = cookieRegexBuild.exec(content)) !== null) {
+              if (m[1]) cookieNamesSet.add(m[1])
+            }
+          }
+        }
+      } catch { /* dir may not exist */ }
+    }
+    await scanCookieNames(scriptsDir)
+    index.cookieNames = [...cookieNamesSet].sort()
+
     await fs.mkdir(getIndexDir(), { recursive: true })
     await fs.writeFile(getIndexPath(libraryPath), JSON.stringify(index, null, 2), 'utf-8')
     return { success: true, builtAt: index.builtAt }
@@ -629,6 +673,181 @@ app.whenReady().then(() => {
 
   ipcMain.handle('index:delete', async (_, libraryPath) => {
     try { await fs.unlink(getIndexPath(libraryPath)) } catch { /* may not exist */ }
+  })
+
+  // --- Constants (XSD simple types, categories, cookies) ---
+
+  ipcMain.handle('constants:loadXsdTypes', async () => {
+    const xsdDir = join(app.getAppPath(), 'xsd', 'src', 'XSD')
+    const result = []
+    try {
+      const files = await fs.readdir(xsdDir)
+      for (const fileName of files.filter(f => f.endsWith('.xsd'))) {
+        const content = await fs.readFile(join(xsdDir, fileName), 'utf-8')
+        const simpleTypeRegex = /<xs:simpleType\s+name="([^"]+)"[^>]*>([\s\S]*?)<\/xs:simpleType>/g
+        let match
+        while ((match = simpleTypeRegex.exec(content)) !== null) {
+          const name = match[1]
+          const body = match[2]
+          const enumRegex = /<xs:enumeration\s+value="([^"]+)"/g
+          const values = []
+          let em
+          while ((em = enumRegex.exec(body)) !== null) values.push(em[1])
+          if (values.length === 0) continue
+          const isList = /<xs:list/.test(body)
+          result.push({ name, values, isList, sourceFile: fileName.replace('.xsd', '') })
+        }
+      }
+    } catch (e) {
+      console.error('Error loading XSD types:', e)
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name))
+  })
+
+  ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
+    const result = { items: [], castables: [], statuses: [] }
+    const scanDir = async (dir, target) => {
+      const catMap = {}
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
+        for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(dir, entry.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
+          const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
+          const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
+          if (!catSection) continue
+          const body = catSection[1]
+          const cats = new Set()
+          const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
+          const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
+          let m
+          while ((m = catElemRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
+          while ((m = catAttrRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
+          for (const cat of cats) {
+            if (!catMap[cat]) catMap[cat] = { count: 0, usedBy: [] }
+            catMap[cat].count++
+            if (catMap[cat].usedBy.length < 5) catMap[cat].usedBy.push(itemName)
+          }
+        }
+      } catch { /* dir may not exist */ }
+      target.push(...Object.entries(catMap)
+        .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
+        .sort((a, b) => a.name.localeCompare(b.name)))
+    }
+    await scanDir(join(libraryPath, 'items'), result.items)
+    await scanDir(join(libraryPath, 'castables'), result.castables)
+    await scanDir(join(libraryPath, 'statuses'), result.statuses)
+    // Merge scanned names into the persisted index
+    try {
+      const indexPath = getIndexPath(libraryPath)
+      let existing = {}
+      try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
+      const merged = {
+        ...existing,
+        itemCategories:     [...new Set([...(existing.itemCategories     || []), ...result.items.map(c => c.name)])].sort(),
+        castableCategories: [...new Set([...(existing.castableCategories || []), ...result.castables.map(c => c.name)])].sort(),
+        statusCategories:   [...new Set([...(existing.statusCategories   || []), ...result.statuses.map(c => c.name)])].sort(),
+      }
+      await fs.mkdir(getIndexDir(), { recursive: true })
+      await fs.writeFile(indexPath, JSON.stringify(merged, null, 2), 'utf-8')
+    } catch { /* non-fatal */ }
+    return result
+  })
+
+  ipcMain.handle('constants:scanVendorTabs', async (_, libraryPath) => {
+    const tabs = new Set()
+    try {
+      const itemsDir = join(libraryPath, 'items')
+      const entries = await fs.readdir(itemsDir, { withFileTypes: true })
+      for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        const content = await fs.readFile(join(itemsDir, entry.name), 'utf-8')
+        const shopTabRegex = /\bShopTab="([^"]+)"/g
+        let m
+        while ((m = shopTabRegex.exec(content)) !== null) {
+          const val = m[1].trim()
+          if (val) tabs.add(val)
+        }
+      }
+    } catch { /* dir may not exist */ }
+    return [...tabs].sort()
+  })
+
+  ipcMain.handle('constants:scanCookies', async (_, libraryPath) => {
+    const scriptsDir = join(libraryPath, '..', 'scripts')
+    const cookies = []
+    const cookieRegex = /\w+\.setcookie\s*\(\s*"([^"]+)"/gi
+    const scanDir = async (dir, base) => {
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
+        for (const entry of entries) {
+          const full = join(dir, entry.name)
+          if (entry.isDirectory()) await scanDir(full, base)
+          else if (entry.isFile() && entry.name.endsWith('.lua')) {
+            const content = await fs.readFile(full, 'utf-8')
+            const relPath = full.slice(base.length + 1).replace(/\\/g, '/')
+            cookieRegex.lastIndex = 0
+            let m
+            while ((m = cookieRegex.exec(content)) !== null) {
+              const name = m[1]
+              if (name && !cookies.some(c => c.name === name && c.sourceFile === relPath)) {
+                cookies.push({ name, sourceFile: relPath })
+              }
+            }
+          }
+        }
+      } catch { /* dir may not exist */ }
+    }
+    await scanDir(scriptsDir, scriptsDir)
+    cookies.sort((a, b) => a.name.localeCompare(b.name))
+    // Merge cookie names into the persisted index
+    try {
+      const indexPath = getIndexPath(libraryPath)
+      let existing = {}
+      try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
+      const merged = {
+        ...existing,
+        cookieNames: [...new Set([...(existing.cookieNames || []), ...cookies.map(c => c.name)])].sort(),
+      }
+      await fs.mkdir(getIndexDir(), { recursive: true })
+      await fs.writeFile(indexPath, JSON.stringify(merged, null, 2), 'utf-8')
+    } catch { /* non-fatal */ }
+    return cookies
+  })
+
+  ipcMain.handle('constants:addValue', async (_, libraryPath, type, value) => {
+    if (!libraryPath || !type || !value) return null
+    try {
+      const indexPath = getIndexPath(libraryPath)
+      let index = {}
+      try { index = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
+      const existing = index[type] || []
+      if (!existing.includes(value)) {
+        index[type] = [...existing, value].sort()
+        await fs.mkdir(getIndexDir(), { recursive: true })
+        await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8')
+      }
+      return index
+    } catch (e) {
+      console.error('Error adding constant value:', e)
+      return null
+    }
+  })
+
+  ipcMain.handle('constants:loadUserConstants', async (_, libraryPath) => {
+    const empty = { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [] }
+    if (!libraryPath) return empty
+    const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
+    try {
+      return (await settings.get(`constants_${hash}`)) || empty
+    } catch {
+      return empty
+    }
+  })
+
+  ipcMain.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
+    if (!libraryPath) return
+    const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
+    await settings.set(`constants_${hash}`, data)
   })
 
   createWindow()

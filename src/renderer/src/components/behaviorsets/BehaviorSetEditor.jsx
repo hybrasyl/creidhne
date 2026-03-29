@@ -4,8 +4,9 @@ import { libraryIndexState } from '../../recoil/atoms';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, Collapse, Autocomplete,
-  Checkbox, FormControlLabel,
+  Checkbox, FormControlLabel, Chip,
 } from '@mui/material';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -202,12 +203,20 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
             />
           </Box>
 
-          {/* Row 2: Categories placeholder */}
-          <TextField
-            label="Categories" size="small" fullWidth
-            value={cs.categories}
-            onChange={(e) => setField('categories', e.target.value)}
-            placeholder="Castable categories (multiselect not yet available)"
+          {/* Row 2: Categories multiselect */}
+          <Autocomplete
+            multiple
+            size="small"
+            fullWidth
+            options={libraryIndex.castableCategories || []}
+            value={cs.categories ? cs.categories.trim().split(/\s+/).filter(Boolean) : []}
+            onChange={(_, newValue) => setField('categories', newValue.join(' '))}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+              ))
+            }
+            renderInput={(params) => <TextField {...params} label="Categories" />}
           />
 
           <Divider />
@@ -565,10 +574,10 @@ function BehaviorSetEditor({
           </Button>
           {(data.cookies || []).map((c, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-              <TextField
-                label="Cookie Name" size="small" sx={{ flex: 1 }}
+              <ConstantAutocomplete
+                indexKey="cookieNames" label="Cookie Name" sx={{ flex: 1 }}
                 value={c.name}
-                onChange={(e) => changeCookieField(i, 'name', e.target.value)}
+                onChange={(val) => changeCookieField(i, 'name', val)}
               />
               <TextField
                 label="Cookie Value" size="small" sx={{ flex: 1 }}

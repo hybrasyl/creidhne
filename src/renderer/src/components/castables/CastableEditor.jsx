@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox,
@@ -376,9 +377,9 @@ function CastableEditor({
         <Section title="Categories" open={openCategories} onToggle={() => setOpenCategories((v) => !v)}>
           {data.categories.map((cat, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-              <TextField
-                label="Category" size="small" sx={{ flex: 1 }}
-                value={cat} onChange={(e) => setCategory(i, e.target.value)}
+              <ConstantAutocomplete
+                indexKey="castableCategories" label="Category" sx={{ flex: 1 }}
+                value={cat} onChange={(val) => setCategory(i, val)}
                 inputProps={{ maxLength: 255 }}
               />
               <IconButton size="small" color="error" onClick={() => removeCategory(i)}>
