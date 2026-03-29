@@ -389,6 +389,19 @@ app.whenReady().then(() => {
                   if (!index.castableClasses) index.castableClasses = {}
                   index.castableClasses[name] = classMatch[1].trim()
                 }
+                const statusesMatch = /<Statuses>([\s\S]*?)<\/Statuses>/.exec(content)
+                if (statusesMatch) {
+                  if (!index.statusCasters) index.statusCasters = {}
+                  const addRegex = /<Add[^>]*>([^<]+)<\/Add>/g
+                  let am
+                  while ((am = addRegex.exec(statusesMatch[1])) !== null) {
+                    const key = am[1].trim().toLowerCase()
+                    if (key) {
+                      if (!index.statusCasters[key]) index.statusCasters[key] = []
+                      if (!index.statusCasters[key].includes(name)) index.statusCasters[key].push(name)
+                    }
+                  }
+                }
               }
             }
           } else if (type === 'localizations') {
@@ -442,6 +455,56 @@ app.whenReady().then(() => {
             if (match) {
               const name = match[1].trim()
               if (name && !names.includes(name)) names.push(name)
+            }
+          } else if (type === 'npcs') {
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const npcName = nameMatch[1].trim()
+              if (npcName && !names.includes(npcName)) names.push(npcName)
+              const trainMatch = /<Train>([\s\S]*?)<\/Train>/.exec(content)
+              if (trainMatch) {
+                if (!index.castableTrainers) index.castableTrainers = {}
+                const castableRegex = /<Castable[^>]+Name="([^"]+)"/g
+                let cm
+                while ((cm = castableRegex.exec(trainMatch[1])) !== null) {
+                  const key = cm[1].trim().toLowerCase()
+                  if (!index.castableTrainers[key]) index.castableTrainers[key] = []
+                  if (!index.castableTrainers[key].includes(npcName)) index.castableTrainers[key].push(npcName)
+                }
+              }
+              const vendMatch = /<Vend>([\s\S]*?)<\/Vend>/.exec(content)
+              if (vendMatch) {
+                if (!index.itemVendors) index.itemVendors = {}
+                const vendItemRegex = /<Item[^>]+Name="([^"]+)"/g
+                let vm
+                while ((vm = vendItemRegex.exec(vendMatch[1])) !== null) {
+                  const key = vm[1].trim().toLowerCase()
+                  if (key) {
+                    if (!index.itemVendors[key]) index.itemVendors[key] = []
+                    if (!index.itemVendors[key].includes(npcName)) index.itemVendors[key].push(npcName)
+                  }
+                }
+              }
+            }
+          } else if (type === 'lootsets') {
+            const nameMatch = /\bName="([^"]+)"/.exec(content)
+            if (nameMatch) {
+              const lootSetName = nameMatch[1].trim()
+              if (lootSetName && !names.includes(lootSetName)) names.push(lootSetName)
+              if (!index.itemLootSets) index.itemLootSets = {}
+              const itemsBlockRegex = /<Items[^>]*>([\s\S]*?)<\/Items>/g
+              let ib
+              while ((ib = itemsBlockRegex.exec(content)) !== null) {
+                const itemRegex = /<Item[^>]*>([^<]+)<\/Item>/g
+                let im
+                while ((im = itemRegex.exec(ib[1])) !== null) {
+                  const key = im[1].trim().toLowerCase()
+                  if (key) {
+                    if (!index.itemLootSets[key]) index.itemLootSets[key] = []
+                    if (!index.itemLootSets[key].includes(lootSetName)) index.itemLootSets[key].push(lootSetName)
+                  }
+                }
+              }
             }
           } else if (type === 'variantgroups') {
             // Only the first <Name> is the group name; nested <Variant><Name> are variant names
@@ -553,6 +616,22 @@ app.whenReady().then(() => {
                 if (!result.castableClasses) result.castableClasses = {}
                 result.castableClasses[name] = classMatch[1].trim()
               }
+              const statusesMatch = /<Statuses>([\s\S]*?)<\/Statuses>/.exec(content)
+              if (statusesMatch) {
+                const addMatch = /<Add>([\s\S]*?)<\/Add>/.exec(statusesMatch[1])
+                if (addMatch) {
+                  if (!result.statusCasters) result.statusCasters = {}
+                  const statusRegex = /<Status[^>]*>([^<]+)<\/Status>/g
+                  let sm
+                  while ((sm = statusRegex.exec(addMatch[1])) !== null) {
+                    const key = sm[1].trim().toLowerCase()
+                    if (key) {
+                      if (!result.statusCasters[key]) result.statusCasters[key] = []
+                      if (!result.statusCasters[key].includes(name)) result.statusCasters[key].push(name)
+                    }
+                  }
+                }
+              }
             }
           }
         } else if (section === 'localizations') {
@@ -618,6 +697,56 @@ app.whenReady().then(() => {
           if (match) {
             const name = match[1].trim()
             if (name && !names.includes(name)) names.push(name)
+          }
+        } else if (section === 'npcs') {
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const npcName = nameMatch[1].trim()
+            if (npcName && !names.includes(npcName)) names.push(npcName)
+            const trainMatch = /<Train>([\s\S]*?)<\/Train>/.exec(content)
+            if (trainMatch) {
+              if (!result.castableTrainers) result.castableTrainers = {}
+              const castableRegex = /<Castable[^>]+Name="([^"]+)"/g
+              let cm
+              while ((cm = castableRegex.exec(trainMatch[1])) !== null) {
+                const key = cm[1].trim().toLowerCase()
+                if (!result.castableTrainers[key]) result.castableTrainers[key] = []
+                if (!result.castableTrainers[key].includes(npcName)) result.castableTrainers[key].push(npcName)
+              }
+            }
+            const vendMatch = /<Vend>([\s\S]*?)<\/Vend>/.exec(content)
+            if (vendMatch) {
+              if (!result.itemVendors) result.itemVendors = {}
+              const vendItemRegex = /<Item[^>]+Name="([^"]+)"/g
+              let vm
+              while ((vm = vendItemRegex.exec(vendMatch[1])) !== null) {
+                const key = vm[1].trim().toLowerCase()
+                if (key) {
+                  if (!result.itemVendors[key]) result.itemVendors[key] = []
+                  if (!result.itemVendors[key].includes(npcName)) result.itemVendors[key].push(npcName)
+                }
+              }
+            }
+          }
+        } else if (section === 'lootsets') {
+          const nameMatch = /\bName="([^"]+)"/.exec(content)
+          if (nameMatch) {
+            const lootSetName = nameMatch[1].trim()
+            if (lootSetName && !names.includes(lootSetName)) names.push(lootSetName)
+            if (!result.itemLootSets) result.itemLootSets = {}
+            const itemsBlockRegex = /<Items[^>]*>([\s\S]*?)<\/Items>/g
+            let ib
+            while ((ib = itemsBlockRegex.exec(content)) !== null) {
+              const itemRegex = /<Item[^>]*>([^<]+)<\/Item>/g
+              let im
+              while ((im = itemRegex.exec(ib[1])) !== null) {
+                const key = im[1].trim().toLowerCase()
+                if (key) {
+                  if (!result.itemLootSets[key]) result.itemLootSets[key] = []
+                  if (!result.itemLootSets[key].includes(lootSetName)) result.itemLootSets[key].push(lootSetName)
+                }
+              }
+            }
           }
         } else if (section === 'variantgroups') {
           const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)

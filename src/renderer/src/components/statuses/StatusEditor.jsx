@@ -599,6 +599,7 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [castHint,       setCastHint]       = useState(false);
 
+  const libraryIndex = useRecoilValue(libraryIndexState);
   const isDirtyRef = useRef(false);
 
   useEffect(() => {
@@ -718,6 +719,10 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
             <TextField label="Prohibited Message" size="small" value={data.prohibitedMessage}
               onChange={set('prohibitedMessage')} inputProps={{ maxLength: 255 }} />
             <CommentField value={data.comment} onChange={set('comment')} />
+            <TextField
+              label="Applied By" size="small" inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+              value={(libraryIndex.statusCasters?.[data.name?.toLowerCase()] || []).join(', ') || 'No castables apply this status'}
+            />
           </Box>
         </Paper>
 

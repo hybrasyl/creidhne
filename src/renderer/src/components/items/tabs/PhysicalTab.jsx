@@ -68,6 +68,11 @@ function PhysicalTab({ data, onChange }) {
             size="small"
             sx={{ width: 130 }}
           />
+        {data.physical.value ? (
+          <Typography variant="caption" color="text.secondary">
+            Suggested sell price: {(Number(data.physical.value) / 5).toFixed(0)} gold
+          </Typography>
+        ) : null}
         </Box>
       </Paper>
 
@@ -156,6 +161,11 @@ function PhysicalTab({ data, onChange }) {
                 sx={{ width: 130 }}
               />
             </Box>
+            {(data.damage.smallMin || data.damage.smallMax || data.damage.largeMin || data.damage.largeMax) ? (
+              <Typography variant="caption" color="text.secondary">
+                Average damage — Small: {((Number(data.damage.smallMin) + Number(data.damage.smallMax)) / 2).toFixed(1)} / Large: {((Number(data.damage.largeMin) + Number(data.damage.largeMax)) / 2).toFixed(1)}
+              </Typography>
+            ) : null}
           </>
         )}
       </Paper>

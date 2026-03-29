@@ -62,6 +62,7 @@ export const DEFAULT_REQUIREMENT = {
 export const DEFAULT_CASTABLE = {
   name: '',
   comment: '',
+  meta: { isTest: false, isGM: false, givenViaScript: false, specialty: '' },
   lines: '',
   cooldown: '',
   icon: '',

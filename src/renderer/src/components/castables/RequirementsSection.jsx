@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Box, Button, Collapse, Divider, FormControl, FormControlLabel, Checkbox,
   IconButton, InputLabel, MenuItem, Paper, Select, TextField, Typography,
-  Autocomplete,
+  Autocomplete, Tooltip,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import AddIcon       from '@mui/icons-material/Add';
@@ -75,6 +75,13 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
             <TextField label="Level Min" size="small" sx={{ width: 90  }} value={req.levelMin} onChange={setNumeric('levelMin')} inputProps={{ inputMode: 'numeric' }} />
             <TextField label="Level Max" size="small" sx={{ width: 90  }} value={req.levelMax} onChange={setNumeric('levelMax')} inputProps={{ inputMode: 'numeric' }} />
             <TextField label="Gold"      size="small" sx={{ width: 110 }} value={req.gold}     onChange={setNumeric('gold')}     inputProps={{ inputMode: 'numeric' }} />
+            {req.levelMin ? (
+              <Tooltip title="Suggested gold = 750 + (Level Min × 135)">
+                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center', whiteSpace: 'nowrap' }}>
+                  Suggested: {750 + Number(req.levelMin) * 135}
+                </Typography>
+              </Tooltip>
+            ) : null}
             <TextField label="AB Min"    size="small" sx={{ width: 80  }} value={req.abMin}    onChange={setNumeric('abMin')}    inputProps={{ inputMode: 'numeric' }} />
             <TextField label="AB Max"    size="small" sx={{ width: 80  }} value={req.abMax}    onChange={setNumeric('abMax')}    inputProps={{ inputMode: 'numeric' }} />
           </Box>
@@ -88,6 +95,20 @@ function RequirementAccordion({ requirement: req, castableNames, itemNames, npcS
                 inputProps={{ inputMode: 'numeric' }} placeholder="3"
               />
             ))}
+            {req.levelMin ? (() => {
+              const level = Number(req.levelMin) || 1;
+              const budget = 15 + 2 * (level - 1);
+              const required = STAT_FIELDS.reduce((sum, { key }) => sum + (Number(req[key]) || 3), 0);
+              const diff = required - budget;
+              const color = diff <= 0 ? 'success.main' : diff <= 5 ? 'warning.main' : 'error.main';
+              return (
+                <Tooltip title={`Players have ~${budget} total stats at level ${level} (15 base + 2/level). Required sum: ${required}.`}>
+                  <Typography variant="caption" sx={{ alignSelf: 'center', color, whiteSpace: 'nowrap' }}>
+                    Budget: {budget} / Required: {required} ({diff > 0 ? '+' : ''}{diff})
+                  </Typography>
+                </Tooltip>
+              );
+            })() : null}
           </Box>
 
           {/* Prerequisites sub-section */}

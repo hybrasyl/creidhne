@@ -1,5 +1,5 @@
 import xml2js from 'xml2js';
-import { extractComment, injectComment } from './xmlCommentUtils.js';
+import { extractComment, injectComment, extractMeta, injectMeta } from './xmlCommentUtils.js';
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
@@ -404,6 +404,7 @@ function mapXmlToCastable(result, xmlString) {
   return {
     name:             first(root.Name, ''),
     comment:          extractComment(xmlString),
+    meta:             extractMeta(xmlString),
     lines:            a(root, 'Lines',            ''),
     cooldown:         a(root, 'Cooldown',         ''),
     icon:             a(root, 'Icon',             ''),
@@ -725,6 +726,7 @@ export function serializeCastableXml(castable) {
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
   let xml = injectComment(builder.buildObject(buildXmlObject(castable)), castable.comment, 'Castable');
+  xml = injectMeta(xml, castable.meta, 'Castable');
   if (castable.maxLevel?.deprecated) {
     xml = xml.replace(/(\s*)<MaxLevel([^/]*)\/>/,
       (_, indent, attrs) => `${indent}<!--<MaxLevel${attrs}/>-->`);

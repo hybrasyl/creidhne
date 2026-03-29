@@ -224,13 +224,24 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
             onChange={(e) => updateData((d) => ({ ...d, unidentifiedName: e.target.value }))} />
           <TextField label="Comment" value={data.comment} size="small" multiline minRows={2} inputProps={{ maxLength: 65534 }}
             onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))} />
-          <FormControlLabel
-            control={
-              <Checkbox size="small" checked={data.includeInMetafile}
-                onChange={(e) => updateData((d) => ({ ...d, includeInMetafile: e.target.checked }))} />
-            }
-            label="Include in Metafile"
-          />
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControlLabel
+              control={
+                <Checkbox size="small" checked={data.includeInMetafile}
+                  onChange={(e) => updateData((d) => ({ ...d, includeInMetafile: e.target.checked }))} />
+              }
+              label="Include in Metafile"
+              sx={{ m: 0 }}
+            />
+            <TextField
+              label="Sold By" size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+              value={(libraryIndex.itemVendors?.[data.name?.toLowerCase()] || []).join(', ') || 'Not sold by any NPC'}
+            />
+            <TextField
+              label="Found In" size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+              value={(libraryIndex.itemLootSets?.[data.name?.toLowerCase()] || []).join(', ') || 'Not in any loot set'}
+            />
+          </Box>
           <Autocomplete
             multiple options={ITEM_TAGS} value={p.tags}
             onChange={(_, val) => updateProperties({ tags: val })}
@@ -353,6 +364,11 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
                 onChange={(e) => updateProperties({ stackable: { max: e.target.value } })}
                 inputProps={{ min: 1, max: 255 }} />
             </Box>
+            {p.physical.value ? (
+              <Typography variant="caption" color="text.secondary">
+                Suggested sell price: {Math.round(Number(p.physical.value) / 5)} gold
+              </Typography>
+            ) : null}
 
             {/* Equipment sub-paper */}
             <Paper variant="outlined" sx={{ p: 1.5 }}>
@@ -394,16 +410,21 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
                   <Switch size="small" checked={p.damage !== null} onChange={(e) => enableDamage(e.target.checked)} />
                 </Box>
                 {p.damage !== null && (
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <TextField label="Small Min" type="number" value={p.damage.smallMin} size="small" sx={{ width: 130 }}
-                      onChange={setPropField('damage', 'smallMin')} inputProps={{ step: 0.01 }} />
-                    <TextField label="Small Max" type="number" value={p.damage.smallMax} size="small" sx={{ width: 130 }}
-                      onChange={setPropField('damage', 'smallMax')} inputProps={{ step: 0.01 }} />
-                    <TextField label="Large Min" type="number" value={p.damage.largeMin} size="small" sx={{ width: 130 }}
-                      onChange={setPropField('damage', 'largeMin')} inputProps={{ step: 0.01 }} />
-                    <TextField label="Large Max" type="number" value={p.damage.largeMax} size="small" sx={{ width: 130 }}
-                      onChange={setPropField('damage', 'largeMax')} inputProps={{ step: 0.01 }} />
-                  </Box>
+                  <>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                      <TextField label="Small Min" type="number" value={p.damage.smallMin} size="small" sx={{ width: 130 }}
+                        onChange={setPropField('damage', 'smallMin')} inputProps={{ step: 0.01 }} />
+                      <TextField label="Small Max" type="number" value={p.damage.smallMax} size="small" sx={{ width: 130 }}
+                        onChange={setPropField('damage', 'smallMax')} inputProps={{ step: 0.01 }} />
+                      <TextField label="Large Min" type="number" value={p.damage.largeMin} size="small" sx={{ width: 130 }}
+                        onChange={setPropField('damage', 'largeMin')} inputProps={{ step: 0.01 }} />
+                      <TextField label="Large Max" type="number" value={p.damage.largeMax} size="small" sx={{ width: 130 }}
+                        onChange={setPropField('damage', 'largeMax')} inputProps={{ step: 0.01 }} />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Average damage — Small: {((Number(p.damage.smallMin) + Number(p.damage.smallMax)) / 2).toFixed(1)} / Large: {((Number(p.damage.largeMin) + Number(p.damage.largeMax)) / 2).toFixed(1)}
+                    </Typography>
+                  </>
                 )}
               </Paper>
             )}

@@ -116,6 +116,8 @@ function CastableEditor({
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
   const setChecked = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.checked }));
+  const setMeta = (field) => (e) => updateData((d) => ({ ...d, meta: { ...d.meta, [field]: e.target.checked } }));
+  const setMetaText = (field) => (e) => updateData((d) => ({ ...d, meta: { ...d.meta, [field]: e.target.value } }));
 
   // ── Class multiselect ──────────────────────────────────────────────────────
 
@@ -333,6 +335,43 @@ function CastableEditor({
                 label={<Typography variant="body2">Script Override</Typography>}
                 sx={{ m: 0 }}
               />
+            </Box>
+
+            {/* Line 5: Export metadata */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <FormControlLabel
+                control={<Checkbox size="small" checked={!!data.meta?.isTest} onChange={setMeta('isTest')} />}
+                label={<Typography variant="body2">Test Ability</Typography>}
+                sx={{ m: 0 }}
+              />
+              <FormControlLabel
+                control={<Checkbox size="small" checked={!!data.meta?.isGM} onChange={setMeta('isGM')} />}
+                label={<Typography variant="body2">GM Ability</Typography>}
+                sx={{ m: 0 }}
+              />
+              <FormControlLabel
+                control={<Checkbox size="small" checked={!!data.meta?.givenViaScript} onChange={setMeta('givenViaScript')} />}
+                label={<Typography variant="body2">Given via Script</Typography>}
+                sx={{ m: 0 }}
+              />
+              <TextField
+                label="Specialty" size="small" sx={{ width: 180 }}
+                value={data.meta?.specialty || ''} onChange={setMetaText('specialty')}
+                placeholder="e.g. Scorpion"
+              />
+              {(() => {
+                const trainers = libraryIndex.castableTrainers?.[data.name?.toLowerCase()] || [];
+                const label = trainers.length > 0
+                  ? trainers.join(', ')
+                  : data.meta?.givenViaScript ? 'Via script' : 'Unassigned';
+                return (
+                  <TextField
+                    label="Assigned Trainer" size="small" sx={{ flex: 1, minWidth: 180 }}
+                    value={label} inputProps={{ readOnly: true }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                );
+              })()}
             </Box>
 
             <CommentField value={data.comment} onChange={set('comment')} />
