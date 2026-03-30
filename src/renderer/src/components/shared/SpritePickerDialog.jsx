@@ -8,9 +8,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import { FixedSizeGrid } from 'react-window';
 import spriteMeta, { spriteUrl, keyFromSprite, frameDisplay } from '../../data/creatureSpriteData';
 
-const COLS       = 8;
-const CELL_SIZE  = 96;
-const IMAGE_SIZE = 64;
+const COLS       = 6;
+const CELL_SIZE  = 144;
+const IMAGE_SIZE = 96;
 const GRID_H     = 480;
 
 // ── Single grid cell ──────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ function SpriteCell({ columnIndex, rowIndex, style, data }) {
             <img src={spriteUrl(key)} alt={key} draggable={false} style={imgStyle} />
           </Box>
         </Box>
-        <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary', lineHeight: 1 }}>
+        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1 }}>
           {parseInt(key.replace('monster', ''), 10)}
         </Typography>
       </Box>
@@ -107,14 +107,14 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
   const rowCount = Math.ceil(filtered.length / COLS);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth={false}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', py: 1.5 }}>
+    <Dialog open={open} onClose={onClose} maxWidth={false} PaperProps={{ sx: { overflowX: 'hidden' } }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', py: 1.6 }}>
         Creature Sprites
         <IconButton size="small" onClick={onClose} sx={{ ml: 'auto' }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ p: 1, pt: '8px !important' }}>
+      <DialogContent sx={{ p: 1, pt: '8px !important', overflowX: 'hidden' }}>
         <TextField
           size="small" fullWidth placeholder="Filter by number..."
           value={search} onChange={(e) => setSearch(e.target.value)}
@@ -127,7 +127,7 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
           rowCount={rowCount}
           columnWidth={CELL_SIZE}
           rowHeight={CELL_SIZE}
-          width={COLS * CELL_SIZE}
+          width={COLS * CELL_SIZE + 17}
           height={GRID_H}
           itemData={cellData}
         >

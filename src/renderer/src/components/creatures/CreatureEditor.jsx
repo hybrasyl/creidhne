@@ -15,7 +15,9 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
-import CreatureSpritePicker from '../shared/CreatureSpritePicker';
+import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
+import SpritePickerDialog from '../shared/SpritePickerDialog';
+import GridViewIcon from '@mui/icons-material/GridView';
 
 function computeCreatureFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -248,8 +250,14 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
   const [openLoot, setOpenLoot] = useState(false);
   const [openHostility, setOpenHostility] = useState(false);
   const [openCookies, setOpenCookies] = useState(false);
+  const [spritePickerOpen, setSpritePickerOpen] = useState(false);
 
   const set = (field, val) => onChange({ ...data, [field]: val });
+
+  const SPRITE_PREVIEW = 96;
+  const spritePreviewKey = keyFromSprite(data.sprite);
+  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null;
+  const spritePreviewFrame = spritePreviewMeta ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW) : null;
 
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
@@ -275,47 +283,82 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
         <Box sx={{ p: 2 }}>
           {/* Core fields */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Name" required size="small" sx={{ flex: 1, minWidth: 160 }}
-                value={data.name}
-                onChange={(e) => set('name', e.target.value)}
-                inputProps={{ maxLength: 255 }}
-              />
-              <CreatureSpritePicker value={data.sprite} onChange={(val) => set('sprite', val)} />
-              <BehaviorSetPicker
-                value={data.behaviorSet}
-                onChange={(val) => set('behaviorSet', val)}
-                sx={{ flex: 1, minWidth: 180 }}
-              />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {/* Left: sprite preview + browse */}
+              <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: SPRITE_PREVIEW, height: SPRITE_PREVIEW, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
+                  {spritePreviewFrame && (
+                    <Box sx={{ width: spritePreviewFrame.clipW, height: spritePreviewFrame.clipH, overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={spriteUrl(spritePreviewKey)} alt={spritePreviewKey} draggable={false} style={spritePreviewFrame.imgStyle} />
+                    </Box>
+                  )}
+                </Box>
+                <Button size="small" startIcon={<GridViewIcon />} onClick={() => setSpritePickerOpen(true)}>
+                  Browse
+                </Button>
+              </Box>
+              {/* Right: 3 rows */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Row 1: Name | Behavior Set */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="Name" required size="small" sx={{ flex: 1 }}
+                    value={data.name}
+                    onChange={(e) => set('name', e.target.value)}
+                    inputProps={{ maxLength: 255 }}
+                  />
+                  <BehaviorSetPicker
+                    value={data.behaviorSet}
+                    onChange={(val) => set('behaviorSet', val)}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+                {/* Row 2: Sprite # | Min Damage | Max Damage | Assail Sound */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="Sprite" type="number" size="small" sx={{ width: 100 }}
+                    value={data.sprite}
+                    onChange={(e) => set('sprite', e.target.value)}
+                    inputProps={{ min: 1, max: 9999 }}
+                  />
+                  <TextField
+                    label="Min Damage" size="small" sx={{ width: 120 }}
+                    value={data.minDmg}
+                    onChange={(e) => set('minDmg', e.target.value)}
+                    inputProps={{ maxLength: 32 }}
+                  />
+                  <TextField
+                    label="Max Damage" size="small" sx={{ width: 120 }}
+                    value={data.maxDmg}
+                    onChange={(e) => set('maxDmg', e.target.value)}
+                    inputProps={{ maxLength: 32 }}
+                  />
+                  <TextField
+                    label="Assail Sound" size="small" sx={{ width: 120 }}
+                    value={data.assailSound}
+                    onChange={(e) => set('assailSound', e.target.value)}
+                    inputProps={{ maxLength: 32 }}
+                  />
+                </Box>
+                {/* Row 3: Description */}
+                <TextField
+                  label="Description" size="small" multiline minRows={2}
+                  value={data.description}
+                  onChange={(e) => set('description', e.target.value)}
+                  inputProps={{ maxLength: 1024 }}
+                />
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Min Damage" size="small" sx={{ width: 120 }}
-                value={data.minDmg}
-                onChange={(e) => set('minDmg', e.target.value)}
-                inputProps={{ maxLength: 32 }}
-              />
-              <TextField
-                label="Max Damage" size="small" sx={{ width: 120 }}
-                value={data.maxDmg}
-                onChange={(e) => set('maxDmg', e.target.value)}
-                inputProps={{ maxLength: 32 }}
-              />
-              <TextField
-                label="Assail Sound" size="small" sx={{ width: 120 }}
-                value={data.assailSound}
-                onChange={(e) => set('assailSound', e.target.value)}
-                inputProps={{ maxLength: 32 }}
-              />
-            </Box>
-            <TextField
-              label="Description" size="small" multiline minRows={2}
-              value={data.description}
-              onChange={(e) => set('description', e.target.value)}
-              inputProps={{ maxLength: 1024 }}
-            />
           </Box>
+          <SpritePickerDialog
+            open={spritePickerOpen}
+            value={data.sprite}
+            onClose={() => setSpritePickerOpen(false)}
+            onChange={(key) => {
+              set('sprite', String(parseInt(key.replace('monster', ''), 10)));
+              setSpritePickerOpen(false);
+            }}
+          />
 
           {/* Nested sections */}
           <Section title="Loot" open={openLoot} onToggle={() => setOpenLoot((v) => !v)}>
@@ -344,6 +387,7 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
   const [openLoot, setOpenLoot] = useState(false);
   const [openHostility, setOpenHostility] = useState(false);
   const [openCookies, setOpenCookies] = useState(false);
+  const [spritePickerOpen, setSpritePickerOpen] = useState(false);
 
   const isDirtyRef = useRef(false);
 
@@ -374,6 +418,7 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
     setOpenLoot(false);
     setOpenHostility(false);
     setOpenCookies(false);
+    setSpritePickerOpen(false);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
     setDupSnack(null);
@@ -419,6 +464,11 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
 
   if (saveRef) saveRef.current = () => onSave(data, fileName);
 
+  const SPRITE_PREVIEW = 96;
+  const spritePreviewKey = keyFromSprite(data.sprite);
+  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null;
+  const spritePreviewFrame = spritePreviewMeta ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW) : null;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ── Header ── */}
@@ -462,70 +512,105 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
         {/* Root creature fields (headerless) */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Prefix" size="small" sx={{ width: 140 }}
-                value={prefix}
-                onChange={(e) => setPrefix(e.target.value)}
-                inputProps={{ maxLength: 64, spellCheck: false }}
-              />
-              <TextField
-                label="Name" required size="small"
-                sx={{
-                  flex: 1, minWidth: 160,
-                  ...(dupStatus === 'archived' && {
-                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                    '& .MuiFormHelperText-root': { color: 'warning.main' },
-                  }),
-                }}
-                error={dupStatus === 'active'}
-                helperText={
-                  dupStatus === 'active'   ? `"${data.name}" already exists` :
-                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
-                  undefined
-                }
-                value={data.name}
-                onChange={set('name')}
-                onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
-              />
-              <CreatureSpritePicker value={data.sprite} onChange={(val) => updateData((d) => ({ ...d, sprite: val }))} />
-              <BehaviorSetPicker
-                value={data.behaviorSet}
-                onChange={(val) => updateData((d) => ({ ...d, behaviorSet: val }))}
-                sx={{ flex: 1, minWidth: 180 }}
-              />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {/* Left: big sprite preview + browse button */}
+              <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: SPRITE_PREVIEW, height: SPRITE_PREVIEW, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
+                  {spritePreviewFrame && (
+                    <Box sx={{ width: spritePreviewFrame.clipW, height: spritePreviewFrame.clipH, overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={spriteUrl(spritePreviewKey)} alt={spritePreviewKey} draggable={false} style={spritePreviewFrame.imgStyle} />
+                    </Box>
+                  )}
+                </Box>
+                <Button size="small" startIcon={<GridViewIcon />} onClick={() => setSpritePickerOpen(true)}>
+                  Browse
+                </Button>
+              </Box>
+              {/* Right: 3 rows */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Row 1: Prefix | Name | Behavior Set */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="Prefix" size="small" sx={{ width: 140 }}
+                    value={prefix}
+                    onChange={(e) => setPrefix(e.target.value)}
+                    inputProps={{ maxLength: 64, spellCheck: false }}
+                  />
+                  <TextField
+                    label="Name" required size="small"
+                    sx={{
+                      flex: 1,
+                      ...(dupStatus === 'archived' && {
+                        '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                        '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                        '& .MuiFormHelperText-root': { color: 'warning.main' },
+                      }),
+                    }}
+                    error={dupStatus === 'active'}
+                    helperText={
+                      dupStatus === 'active'   ? `"${data.name}" already exists` :
+                      dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                      undefined
+                    }
+                    value={data.name}
+                    onChange={set('name')}
+                    onBlur={handleNameBlur}
+                    inputProps={{ maxLength: 255 }}
+                  />
+                  <BehaviorSetPicker
+                    value={data.behaviorSet}
+                    onChange={(val) => updateData((d) => ({ ...d, behaviorSet: val }))}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+                {/* Row 2: Sprite # | Min Damage | Max Damage | Assail Sound */}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    label="Sprite" type="number" size="small" sx={{ width: 100 }}
+                    value={data.sprite}
+                    onChange={(e) => updateData((d) => ({ ...d, sprite: e.target.value }))}
+                    inputProps={{ min: 1, max: 9999 }}
+                  />
+                  <TextField
+                    label="Min Damage" size="small" sx={{ width: 120 }}
+                    value={data.minDmg}
+                    onChange={set('minDmg')}
+                    inputProps={{ maxLength: 32 }}
+                  />
+                  <TextField
+                    label="Max Damage" size="small" sx={{ width: 120 }}
+                    value={data.maxDmg}
+                    onChange={set('maxDmg')}
+                    inputProps={{ maxLength: 32 }}
+                  />
+                  <TextField
+                    label="Assail Sound" size="small" sx={{ width: 120 }}
+                    value={data.assailSound}
+                    onChange={set('assailSound')}
+                    inputProps={{ maxLength: 32 }}
+                  />
+                </Box>
+                {/* Row 3: Description */}
+                <TextField
+                  label="Description" size="small" multiline minRows={2}
+                  value={data.description}
+                  onChange={set('description')}
+                  inputProps={{ maxLength: 1024 }}
+                />
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Min Damage" size="small" sx={{ width: 120 }}
-                value={data.minDmg}
-                onChange={set('minDmg')}
-                inputProps={{ maxLength: 32 }}
-              />
-              <TextField
-                label="Max Damage" size="small" sx={{ width: 120 }}
-                value={data.maxDmg}
-                onChange={set('maxDmg')}
-                inputProps={{ maxLength: 32 }}
-              />
-              <TextField
-                label="Assail Sound" size="small" sx={{ width: 120 }}
-                value={data.assailSound}
-                onChange={set('assailSound')}
-                inputProps={{ maxLength: 32 }}
-              />
-            </Box>
-            <TextField
-              label="Description" size="small" multiline minRows={2}
-              value={data.description}
-              onChange={set('description')}
-              inputProps={{ maxLength: 1024 }}
-            />
-            <CommentField value={data.comment} onChange={set('comment')} />
+            <CommentField value={data.comment} onChange={set('comment')} fullWidth />
           </Box>
         </Paper>
+        <SpritePickerDialog
+          open={spritePickerOpen}
+          value={data.sprite}
+          onClose={() => setSpritePickerOpen(false)}
+          onChange={(key) => {
+            updateData((d) => ({ ...d, sprite: String(parseInt(key.replace('monster', ''), 10)) }));
+            setSpritePickerOpen(false);
+          }}
+        />
 
         {/* Loot */}
         <Section title="Loot" open={openLoot} onToggle={() => setOpenLoot((v) => !v)}>
@@ -552,6 +637,10 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
         </Section>
 
         {/* Subtypes */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Typography variant="subtitle2" sx={{ flexShrink: 0 }}>Subtypes</Typography>
+          <Divider sx={{ flex: 1 }} />
+        </Box>
         {data.subtypes.map((sub, i) => (
           <SubtypeAccordion
             key={i}
