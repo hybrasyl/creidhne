@@ -124,12 +124,14 @@ describe('Field coverage — minimal', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Test 4: Schema validation
-// Serialize a nation object and assert the output XML structure matches the
-// constraints defined in Nation.xsd + Common.xsd.
+// Test 4: Output structure
+// Serialize a nation object and re-parse it with xml2js to assert the output
+// XML has the expected elements, attributes, and nesting. These are structural
+// assertions written by hand from the code — they do NOT perform real XSD
+// validation and will not catch divergences between creidhne and the XSD.
 // ---------------------------------------------------------------------------
 
-describe('Schema validation', () => {
+describe('Output structure', () => {
   const nation = {
     name: 'Suomi',
     comment: '',
