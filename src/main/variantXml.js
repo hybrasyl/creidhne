@@ -48,7 +48,6 @@ function mapXmlToVariantGroup(result) {
   return {
     name: first(root.Name, ''),
     comment: first(root.Comment, ''),
-    prefix: first(root.Prefix, ''),
     variants: (root.Variant || []).map(mapVariant),
   };
 }
@@ -153,7 +152,6 @@ function buildXmlObject(vg) {
   const root = { $: { xmlns: XMLNS } };
   root.Name = [vg.name];
   if (vg.comment) root.Comment = [vg.comment];
-  if (vg.prefix) root.Prefix = [vg.prefix];
   root.Variant = vg.variants.map(buildVariant);
   return { VariantGroup: root };
 }

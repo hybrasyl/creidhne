@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -110,6 +110,7 @@ function NationsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingNation, setEditingNation] = useState(null);
+  const [loadingNation, setLoadingNation] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -132,7 +133,7 @@ function NationsPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingNation(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -151,13 +152,16 @@ function NationsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingNation(null);
+    setLoadingNation(true);
     try {
       const nation = await window.electronAPI.loadNation(file.path);
       setEditingNation(nation);
     } catch (err) {
       console.error('Failed to load nation:', err);
-      setEditingNation(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingNation(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -189,7 +193,9 @@ function NationsPage() {
     markClean();
     setSelectedFile(null); setEditingNation(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, NATIONS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -206,6 +212,8 @@ function NationsPage() {
     setSelectedFile(null); setEditingNation(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, NATIONS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -222,6 +230,10 @@ function NationsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load nation:</strong> {loadError}
           </Alert>
+        ) : loadingNation ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={64} thickness={8} />
+          </Box>
         ) : editingNation ? (
           <NationEditor
             nation={editingNation}

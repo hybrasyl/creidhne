@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -115,6 +115,7 @@ function SpawngroupsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingSpawngroup, setEditingSpawngroup] = useState(null);
+  const [loadingSpawngroup, setLoadingSpawngroup] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -137,7 +138,7 @@ function SpawngroupsPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingSpawngroup(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -156,13 +157,16 @@ function SpawngroupsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingSpawngroup(null);
+    setLoadingSpawngroup(true);
     try {
       const sg = await window.electronAPI.loadSpawngroup(file.path);
       setEditingSpawngroup(sg);
     } catch (err) {
       console.error('Failed to load spawn group:', err);
-      setEditingSpawngroup(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingSpawngroup(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -194,7 +198,9 @@ function SpawngroupsPage() {
     markClean();
     setSelectedFile(null); setEditingSpawngroup(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SPAWN_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -211,6 +217,8 @@ function SpawngroupsPage() {
     setSelectedFile(null); setEditingSpawngroup(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SPAWN_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -227,6 +235,10 @@ function SpawngroupsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load spawn group:</strong> {loadError}
           </Alert>
+        ) : loadingSpawngroup ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={64} thickness={8} />
+          </Box>
         ) : editingSpawngroup ? (
           <SpawngroupEditor
             spawngroup={editingSpawngroup}

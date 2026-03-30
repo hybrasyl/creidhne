@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch, Checkbox, FormControlLabel,
+  Snackbar, Alert,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -15,10 +16,21 @@ import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
 
-function computeLootFilename(name) {
+function deriveLootPrefix(fileName, name) {
+  if (!fileName) return 'lts';
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'lts';
+  }
+  return 'lts';
+}
+
+function computeLootFilename(filePrefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
   if (!safe) return '';
-  return `lootset_${safe}.xml`;
+  return `${filePrefix || 'lts'}_${safe}.xml`;
 }
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
@@ -47,7 +59,8 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
   const variantNames = libraryIndex.variantgroups || [];
 
   const [data, setData] = useState(loot);
-  const [fileName, setFileName] = useState(initialFileName || computeLootFilename(loot.name));
+  const [prefix, setPrefix] = useState(deriveLootPrefix(initialFileName, loot.name));
+  const [fileName, setFileName] = useState(initialFileName || computeLootFilename(deriveLootPrefix(initialFileName, loot.name), loot.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [openTable, setOpenTable] = useState(true);
   const [openItems, setOpenItems] = useState(true);
@@ -55,10 +68,13 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
   const isDirtyRef = useRef(false);
 
   useEffect(() => {
+    const derivedPrefix = deriveLootPrefix(initialFileName, loot.name);
     setData(loot);
-    setFileName(initialFileName || computeLootFilename(loot.name));
+    setPrefix(derivedPrefix);
+    setFileName(initialFileName || computeLootFilename(derivedPrefix, loot.name));
     setFileNameEdited(!!initialFileName);
     isDirtyRef.current = false;
+    setDupSnack(null);
     onDirtyChange?.(false);
   }, [loot, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -70,16 +86,43 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
     markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeLootFilename(next.name));
+      if (!fileNameEdited) setFileName(computeLootFilename(prefix, next.name));
       return next;
     });
-  }, [fileNameEdited, markDirtyLocal]);
+  }, [fileNameEdited, prefix, markDirtyLocal]);
+
+  const handlePrefixChange = (e) => {
+    markDirtyLocal();
+    const p = e.target.value;
+    setPrefix(p);
+    if (!fileNameEdited) setFileName(computeLootFilename(p, data.name));
+  };
 
   const handleRegenerate = () => {
     markDirtyLocal();
-    setFileName(computeLootFilename(data.name));
+    setFileName(computeLootFilename(prefix, data.name));
     setFileNameEdited(false);
   };
+
+  // ── Duplicate detection ──────────────────────────────────────────────────────
+
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (loot.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.lootsets || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedLootsets || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, loot.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
 
   if (saveRef) saveRef.current = () => onSave(data, fileName);
 
@@ -174,16 +217,31 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
         {/* Basic info */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <TextField
-                label="Name" value={data.name} size="small" required
-                onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
-                sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
+                label="Prefix" value={prefix} size="small" sx={{ width: 140 }}
+                onChange={handlePrefixChange}
+                inputProps={{ maxLength: 64, spellCheck: false }}
               />
               <TextField
-                label="Prefix" value={data.prefix} size="small"
-                onChange={(e) => updateData((d) => ({ ...d, prefix: e.target.value }))}
-                sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
+                label="Name" value={data.name} size="small" required
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
+                onBlur={handleNameBlur}
+                inputProps={{ maxLength: 255 }}
               />
             </Box>
             <CommentField value={data.comment} onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))} />
@@ -293,6 +351,19 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
 
         <Box sx={{ height: 32 }} />
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

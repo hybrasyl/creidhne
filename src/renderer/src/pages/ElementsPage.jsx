@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import { activeLibraryState } from '../recoil/atoms';
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import ElementTableEditor from '../components/elementTables/ElementTableEditor';
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
@@ -103,10 +103,12 @@ function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, sh
 
 function ElementsPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [files, setFiles] = useState([]);
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingTable, setEditingTable] = useState(null);
+  const [loadingTable, setLoadingTable] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -129,7 +131,7 @@ function ElementsPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingTable(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -148,13 +150,16 @@ function ElementsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingTable(null);
+    setLoadingTable(true);
     try {
       const table = await window.electronAPI.loadElementTable(file.path);
       setEditingTable(table);
     } catch (err) {
       console.error('Failed to load element table:', err);
-      setEditingTable(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingTable(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -167,6 +172,10 @@ function ElementsPage() {
       await window.electronAPI.saveElementTable(filePath, data);
       markClean();
       if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (activeLibrary) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+        setLibraryIndex((prev) => ({ ...prev, ...section }));
+      }
     } catch (err) {
       console.error('Failed to save element table:', err);
     }
@@ -182,7 +191,9 @@ function ElementsPage() {
     markClean();
     setSelectedFile(null); setEditingTable(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -199,6 +210,8 @@ function ElementsPage() {
     setSelectedFile(null); setEditingTable(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -215,6 +228,10 @@ function ElementsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load element table:</strong> {loadError}
           </Alert>
+        ) : loadingTable ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={64} thickness={8} />
+          </Box>
         ) : editingTable ? (
           <ElementTableEditor
             table={editingTable}

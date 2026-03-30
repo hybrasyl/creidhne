@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
-  Paper, Autocomplete, Collapse, Switch,
+  Paper, Autocomplete, Collapse, Switch, Snackbar, Alert,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -15,10 +15,22 @@ import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
 
-function computeNationFilename(name) {
+function computeNationFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
   if (!safe) return '';
-  return `nation_${safe}.xml`;
+  const p = (prefix || '').trim().toLowerCase().replace(/\s+/g, '_');
+  return p ? `${p}_${safe}.xml` : `${safe}.xml`;
+}
+
+function deriveNationPrefix(fileName, name) {
+  if (!fileName) return 'nation';
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'nation';
+  }
+  return 'nation';
 }
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
@@ -66,8 +78,10 @@ function MapPicker({ label, value, onChange, sx }) {
 
 // ── Main editor ───────────────────────────────────────────────────────────────
 function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
+  const libraryIndex = useRecoilValue(libraryIndexState);
   const [data, setData] = useState(nation);
-  const [fileName, setFileName] = useState(initialFileName || computeNationFilename(nation.name));
+  const [prefix, setPrefix] = useState(() => deriveNationPrefix(initialFileName, nation.name));
+  const [fileName, setFileName] = useState(initialFileName || computeNationFilename('nation', nation.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
   const [openSpawnPoints, setOpenSpawnPoints] = useState(nation.spawnPoints.length > 0);
@@ -75,14 +89,36 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
 
   const isDirtyRef = useRef(false);
 
+  // ── Duplicate detection ────────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (nation.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.nations || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedNations || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, nation.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
+
   useEffect(() => {
+    const p = deriveNationPrefix(initialFileName, nation.name);
     setData(nation);
-    setFileName(initialFileName || computeNationFilename(nation.name));
+    setPrefix(p);
+    setFileName(initialFileName || computeNationFilename(p, nation.name));
     setFileNameEdited(!!initialFileName);
     setOpenSpawnPoints(nation.spawnPoints.length > 0);
     setOpenTerritory(nation.territory !== null);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
+    setDupSnack(null);
   }, [nation, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
@@ -93,16 +129,22 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
     markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeNationFilename(next.name));
+      if (!fileNameEdited) setFileName(computeNationFilename(prefix, next.name));
       return next;
     });
-  }, [fileNameEdited, markDirtyLocal]);
+  }, [fileNameEdited, prefix, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
 
+  const handlePrefixChange = (e) => {
+    markDirtyLocal();
+    setPrefix(e.target.value);
+    if (!fileNameEdited) setFileName(computeNationFilename(e.target.value, data.name));
+  };
+
   const handleRegenerate = () => {
     markDirtyLocal();
-    setFileName(computeNationFilename(data.name));
+    setFileName(computeNationFilename(prefix, data.name));
     setFileNameEdited(false);
   };
 
@@ -178,10 +220,33 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
         {/* Basic info */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Name" value={data.name} onChange={set('name')}
-              size="small" required inputProps={{ maxLength: 255 }}
-            />
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <TextField
+                label="Prefix" size="small" sx={{ width: 140 }}
+                value={prefix}
+                onChange={handlePrefixChange}
+                inputProps={{ maxLength: 64, spellCheck: false }}
+              />
+              <TextField
+                label="Name" size="small" required
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                value={data.name} onChange={set('name')} onBlur={handleNameBlur}
+                inputProps={{ maxLength: 255 }}
+              />
+            </Box>
             <TextField
               label="Description" value={data.description} onChange={set('description')}
               size="small" multiline minRows={2} inputProps={{ maxLength: 1000 }}
@@ -189,6 +254,8 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
             <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
         </Paper>
+
+
 
         {/* ── Spawn Points ── */}
         <Section title="Spawn Points" open={openSpawnPoints} onToggle={() => setOpenSpawnPoints((v) => !v)}>
@@ -244,6 +311,19 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
 
         <Box sx={{ height: 32 }} />
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

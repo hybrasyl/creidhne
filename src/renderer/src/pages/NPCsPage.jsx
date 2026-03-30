@@ -258,7 +258,7 @@ function NPCsPage() {
           </Alert>
         ) : loadingNpc ? (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <CircularProgress size={32} />
+            <CircularProgress size={64} thickness={8} />
           </Box>
         ) : editingNpc ? (
           <NPCEditor

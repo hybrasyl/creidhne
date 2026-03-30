@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox,
-  Autocomplete, Chip, Collapse,
+  Autocomplete, Chip, Collapse, Snackbar, Alert,
 } from '@mui/material';
 import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
@@ -26,6 +26,17 @@ function computeFilename(prefix, name) {
   if (!safe) return '';
   const p = (prefix || '').trim().toLowerCase().replace(/\s+/g, '_');
   return p ? `${p}_${safe}.xml` : `${safe}.xml`;
+}
+
+function deriveSpawngroupPrefix(fileName, name) {
+  if (!fileName) return 'spn';
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'spn';
+  }
+  return 'spn';
 }
 
 const makeDefaultSpawn = () => ({
@@ -207,16 +218,16 @@ function HostilityContent({ hostility, onChange }) {
           />
           {hostility[key] && (
             <>
-              <TextField
-                label="Except Cookie" size="small" sx={{ flex: 1, minWidth: 140 }}
+              <ConstantAutocomplete
+                indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1, minWidth: 140 }}
                 value={hostility[exceptKey]}
-                onChange={(e) => set(exceptKey, e.target.value)}
+                onChange={(val) => set(exceptKey, val)}
                 inputProps={{ maxLength: 128 }}
               />
-              <TextField
-                label="Only Cookie" size="small" sx={{ flex: 1, minWidth: 140 }}
+              <ConstantAutocomplete
+                indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1, minWidth: 140 }}
                 value={hostility[onlyKey]}
-                onChange={(e) => set(onlyKey, e.target.value)}
+                onChange={(val) => set(onlyKey, val)}
                 inputProps={{ maxLength: 128 }}
               />
             </>
@@ -573,9 +584,9 @@ function SpawngroupEditor({
   onSave, onArchive, onUnarchive, onDirtyChange, saveRef,
 }) {
   const [data, setData] = useState(spawngroup);
-  const [prefix, setPrefix] = useState('');
+  const [prefix, setPrefix] = useState(() => deriveSpawngroupPrefix(initialFileName, spawngroup.name));
   const [fileName, setFileName] = useState(
-    () => initialFileName || computeFilename('', spawngroup.name)
+    () => initialFileName || computeFilename('spn', spawngroup.name)
   );
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
@@ -585,13 +596,34 @@ function SpawngroupEditor({
   const libraryIndex = useRecoilValue(libraryIndexState);
   const isDirtyRef = useRef(false);
 
+  // ── Duplicate detection ────────────────────────────────────────────────────
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (spawngroup.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.spawngroups || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedSpawngroups || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, spawngroup.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
+
   useEffect(() => {
+    const p = deriveSpawngroupPrefix(initialFileName, spawngroup.name);
     setData(spawngroup);
-    setPrefix('');
-    setFileName(initialFileName || computeFilename('', spawngroup.name));
+    setPrefix(p);
+    setFileName(initialFileName || computeFilename(p, spawngroup.name));
     setFileNameEdited(!!initialFileName);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
+    setDupSnack(null);
   }, [spawngroup, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirty = useCallback(() => {
@@ -690,8 +722,23 @@ function SpawngroupEditor({
             {/* Line 1: Name + Prefix */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <TextField
-                label="Name" required size="small" sx={{ flex: 1, minWidth: 160 }}
-                value={data.name} onChange={set('name')} inputProps={{ maxLength: 255 }}
+                label="Name" required size="small"
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                value={data.name} onChange={set('name')} onBlur={handleNameBlur}
+                inputProps={{ maxLength: 255 }}
               />
               <TextField
                 label="Prefix" size="small" sx={{ width: 150 }}
@@ -769,6 +816,19 @@ function SpawngroupEditor({
         </Section>
 
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -11,15 +11,20 @@ export default defineConfig({
   },
   renderer: {
     base: './',  // Ensure the base URL is relative
+    publicDir: resolve('resources'),
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src')
       }
     },
     plugins: [react()],
+    optimizeDeps: {
+      include: ['react-window'],
+    },
     build: {
       outDir: 'out/renderer', // Output directory for your renderer build
       rollupOptions: {
+        external: [],
       },
     },
   }

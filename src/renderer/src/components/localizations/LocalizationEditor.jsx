@@ -12,6 +12,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CommentField from '../shared/CommentField';
 
 // TODO: Fill in variable descriptions for each $ variable
@@ -32,9 +33,20 @@ const KNOWN_VARIABLES = [
   { name: '$STATS',     desc: '(TODO)' },
 ];
 
-function computeFileName(locale) {
+function deriveLocalizationPrefix(fileName, locale) {
+  if (!fileName) return 'str';
   const safe = (locale || '').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-  return safe ? `${safe}.xml` : '';
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'str';
+  }
+  return 'str';
+}
+
+function computeFileName(prefix, locale) {
+  const safe = (locale || '').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  return safe ? `${prefix || 'str'}_${safe}.xml` : '';
 }
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
@@ -97,7 +109,8 @@ function ResponseRow({ call, response, onChangeCall, onChangeResponse, onDelete 
 // ── Main editor ───────────────────────────────────────────────────────────────
 function LocalizationEditor({ localization, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data, setData] = useState(localization);
-  const [fileName, setFileName] = useState(initialFileName || computeFileName(localization.locale));
+  const [prefix, setPrefix] = useState(deriveLocalizationPrefix(initialFileName, localization.locale));
+  const [fileName, setFileName] = useState(initialFileName || computeFileName(deriveLocalizationPrefix(initialFileName, localization.locale), localization.locale));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [varsOpen, setVarsOpen] = useState(false);
   const [openCommon, setOpenCommon] = useState(localization.common.length > 0);
@@ -108,8 +121,10 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
   const isDirtyRef = useRef(false);
 
   useEffect(() => {
+    const derivedPrefix = deriveLocalizationPrefix(initialFileName, localization.locale);
     setData(localization);
-    setFileName(initialFileName || computeFileName(localization.locale));
+    setPrefix(derivedPrefix);
+    setFileName(initialFileName || computeFileName(derivedPrefix, localization.locale));
     setFileNameEdited(!!initialFileName);
     setOpenCommon(localization.common.length > 0);
     setOpenMerchant(localization.merchant.length > 0);
@@ -127,10 +142,23 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
     markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeFileName(next.locale));
+      if (!fileNameEdited) setFileName(computeFileName(prefix, next.locale));
       return next;
     });
-  }, [fileNameEdited, markDirtyLocal]);
+  }, [fileNameEdited, prefix, markDirtyLocal]);
+
+  const handlePrefixChange = (e) => {
+    const p = e.target.value;
+    setPrefix(p);
+    if (!fileNameEdited) setFileName(computeFileName(p, data.locale));
+    markDirtyLocal();
+  };
+
+  const handleRegenerate = () => {
+    setFileName(computeFileName(prefix, data.locale));
+    setFileNameEdited(false);
+    markDirtyLocal();
+  };
 
   if (saveRef) saveRef.current = () => onSave(data, fileName);
 
@@ -160,44 +188,71 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1, flexShrink: 0 }}>
-        <TextField
-          label="Locale Name" value={data.locale}
-          onChange={(e) => update((d) => ({ ...d, locale: e.target.value }))}
-          size="small" sx={{ width: 180 }} inputProps={{ spellCheck: false }}
-          helperText="Format: en_us"
-        />
+
+      {/* ── Title + actions ── */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, flexShrink: 0 }}>
+        <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
+          {data.locale || '(unnamed localization)'}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {isExisting && !isArchived && (
+            <Tooltip title="Archive localization">
+              <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          {isExisting && isArchived && (
+            <Tooltip title="Unarchive localization">
+              <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
+            </Tooltip>
+          )}
+          <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
+            Save
+          </Button>
+        </Box>
+      </Box>
+
+      {/* ── Filename row ── */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pb: 1, flexShrink: 0 }}>
         <TextField
           size="small" label="Filename" value={fileName}
           onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
           sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
         />
+        <Tooltip title="Regenerate from prefix + locale">
+          <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* ── Prefix + Locale Name ── */}
+      <Box sx={{ display: 'flex', gap: 1, pb: 1, flexShrink: 0 }}>
+        <TextField
+          label="Prefix" size="small" value={prefix} sx={{ width: 140 }}
+          onChange={handlePrefixChange}
+          inputProps={{ maxLength: 64, spellCheck: false }}
+        />
+        <TextField
+          label="Locale Name" value={data.locale} size="small" sx={{ flex: 1 }}
+          onChange={(e) => update((d) => ({ ...d, locale: e.target.value }))}
+          inputProps={{ spellCheck: false }}
+          helperText="Format: en-us"
+        />
+      </Box>
+
+      {/* ── Comment ── */}
+      <CommentField value={data.comment} onChange={(e) => update((d) => ({ ...d, comment: e.target.value }))} sx={{ mb: 1, flexShrink: 0 }} />
+
+      {/* ── Variables button ── */}
+      <Box sx={{ mb: 1, flexShrink: 0 }}>
         <Tooltip title="View $ variables">
-          <Button size="small" startIcon={<InfoOutlinedIcon />} onClick={() => setVarsOpen(true)} sx={{ mt: 0.5 }}>
+          <Button size="small" startIcon={<InfoOutlinedIcon />} onClick={() => setVarsOpen(true)}>
             Variables
           </Button>
         </Tooltip>
-        {isExisting && !isArchived && (
-          <Tooltip title="Archive localization">
-            <IconButton size="small" onClick={onArchive} sx={{ mt: 0.5 }}><ArchiveIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        )}
-        {isExisting && isArchived && (
-          <Tooltip title="Unarchive localization">
-            <IconButton size="small" onClick={onUnarchive} sx={{ mt: 0.5 }}><UnarchiveIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        )}
-        <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)} sx={{ mt: 0.5 }}>
-          Save
-        </Button>
       </Box>
-
-      <CommentField value={data.comment} onChange={(e) => update((d) => ({ ...d, comment: e.target.value }))} sx={{ mb: 1, flexShrink: 0 }} />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
-      {/* ── Form ── */}
+      {/* ── Accordions ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Section title="Common" open={openCommon} onToggle={() => setOpenCommon((v) => !v)}>
           {data.common.map((s, i) => (

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
+  Snackbar, Alert,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SaveIcon from '@mui/icons-material/Save';
@@ -11,10 +12,23 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CommentField from '../shared/CommentField';
+import { useRecoilValue } from 'recoil';
+import { libraryIndexState } from '../../recoil/atoms';
 
-function computeFileName(name) {
+function deriveElementPrefix(fileName, name) {
+  if (!fileName) return 'element';
   const safe = (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
-  return safe ? `${safe}.xml` : '';
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'element';
+  }
+  return 'element';
+}
+
+function computeFileName(prefix, name) {
+  const safe = (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+  return safe ? `${prefix || 'element'}_${safe}.xml` : '';
 }
 
 function ElementTableEditor({
@@ -24,25 +38,31 @@ function ElementTableEditor({
   const theme = useTheme();
   const headerBg = theme.palette.background.paper;
   const borderColor = theme.palette.divider;
+  const libraryIndex = useRecoilValue(libraryIndexState);
 
   const [name, setName] = useState(table.name);
   const [comment, setComment] = useState(table.comment);
   const [elements, setElements] = useState(table.elements);
   const [matrix, setMatrix] = useState(table.matrix);
-  const [fileName, setFileName] = useState(initialFileName || computeFileName(table.name));
+  const [prefix, setPrefix] = useState(deriveElementPrefix(initialFileName, table.name));
+  const [fileName, setFileName] = useState(initialFileName || computeFileName(deriveElementPrefix(initialFileName, table.name), table.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [focusedCell, setFocusedCell] = useState(null); // { row, col }
+  const [dupSnack, setDupSnack] = useState(null);
 
   const isDirtyRef = useRef(false);
 
   useEffect(() => {
+    const derivedPrefix = deriveElementPrefix(initialFileName, table.name);
     setName(table.name);
     setComment(table.comment);
     setElements(table.elements);
     setMatrix(table.matrix);
-    setFileName(initialFileName || computeFileName(table.name));
+    setPrefix(derivedPrefix);
+    setFileName(initialFileName || computeFileName(derivedPrefix, table.name));
     setFileNameEdited(!!initialFileName);
     setFocusedCell(null);
+    setDupSnack(null);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
   }, [table, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,15 +73,41 @@ function ElementTableEditor({
 
   const handleNameChange = (val) => {
     setName(val);
-    if (!fileNameEdited) setFileName(computeFileName(val));
+    if (!fileNameEdited) setFileName(computeFileName(prefix, val));
+    markDirty();
+  };
+
+  const handlePrefixChange = (e) => {
+    const p = e.target.value;
+    setPrefix(p);
+    if (!fileNameEdited) setFileName(computeFileName(p, name));
     markDirty();
   };
 
   const handleRegenerate = () => {
-    setFileName(computeFileName(name));
+    setFileName(computeFileName(prefix, name));
     setFileNameEdited(false);
     markDirty();
   };
+
+  // ── Duplicate detection ──────────────────────────────────────────────────────
+
+  const dupStatus = useMemo(() => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return null;
+    const originalName = isExisting ? (table.name || '') : '';
+    if (originalName && trimmed.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.elementtables || [];
+    if (activeNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedElementtables || [];
+    if (archivedNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) return 'archived';
+
+    return null;
+  }, [name, libraryIndex, isExisting, table.name]);
+
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
 
   // ── Grid mutations ──────────────────────────────────────────────────────────
 
@@ -109,10 +155,7 @@ function ElementTableEditor({
 
   // ── Save ────────────────────────────────────────────────────────────────────
 
-  const getFileName = () => {
-    if (isExisting) return initialFileName;
-    return fileName || `${computeFileName(name) || 'element_table'}.xml`;
-  };
+  const getFileName = () => fileName || computeFileName(prefix, name) || 'element-table.xml';
 
   const handleSave = useCallback(() => {
     onSave({ name, comment, elements, matrix }, getFileName());
@@ -192,24 +235,41 @@ function ElementTableEditor({
         <TextField
           size="small" label="Filename" value={fileName}
           onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); markDirty(); }}
-          sx={{ width: 240 }} inputProps={{ spellCheck: false }}
-          disabled={isExisting}
+          sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
         />
-        {!isExisting && (
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        )}
+        <Tooltip title="Regenerate from name">
+          <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
+        </Tooltip>
       </Box>
 
       <Divider sx={{ mb: 1.5, flexShrink: 0 }} />
 
       {/* ── Name + Comment ── */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 1.5, flexShrink: 0 }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 1.5, flexShrink: 0, flexWrap: 'wrap' }}>
+        <TextField
+          label="Prefix" size="small" value={prefix} sx={{ width: 140 }}
+          onChange={handlePrefixChange}
+          inputProps={{ maxLength: 64, spellCheck: false }}
+        />
         <TextField
           label="Name" size="small" value={name}
+          sx={{
+            width: 200,
+            ...(dupStatus === 'archived' && {
+              '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+              '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+              '& .MuiFormHelperText-root': { color: 'warning.main' },
+            }),
+          }}
+          error={dupStatus === 'active'}
+          helperText={
+            dupStatus === 'active'   ? `"${name}" already exists` :
+            dupStatus === 'archived' ? `"${name}" exists in archive` :
+            undefined
+          }
           onChange={(e) => handleNameChange(e.target.value)}
-          sx={{ width: 200 }} inputProps={{ maxLength: 128 }}
+          onBlur={handleNameBlur}
+          inputProps={{ maxLength: 128 }}
         />
         <CommentField value={comment}
           onChange={(e) => { setComment(e.target.value); markDirty(); }}
@@ -235,6 +295,19 @@ function ElementTableEditor({
           Add Element
         </Button>
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${name}" already exists!`
+            : `"${name}" exists in archive`}
+        </Alert>
+      </Snackbar>
 
       {/* ── Grid ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>

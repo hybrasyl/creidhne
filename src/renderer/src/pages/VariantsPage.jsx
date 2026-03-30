@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -18,7 +18,6 @@ const IGNORE_SUBDIR = 'variantgroups/.ignore';
 const DEFAULT_VARIANT_GROUP = {
   name: '',
   comment: '',
-  prefix: '',
   variants: [],
 };
 
@@ -108,6 +107,7 @@ function VariantsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingVariantGroup, setEditingVariantGroup] = useState(null);
+  const [loadingVariantGroup, setLoadingVariantGroup] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -130,7 +130,7 @@ function VariantsPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingVariantGroup(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -149,13 +149,16 @@ function VariantsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingVariantGroup(null);
+    setLoadingVariantGroup(true);
     try {
       const vg = await window.electronAPI.loadVariantGroup(file.path);
       setEditingVariantGroup(vg);
     } catch (err) {
       console.error('Failed to load variant group:', err);
-      setEditingVariantGroup(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingVariantGroup(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -190,7 +193,9 @@ function VariantsPage() {
     markClean();
     setSelectedFile(null); setEditingVariantGroup(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, VARIANTS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -207,6 +212,8 @@ function VariantsPage() {
     setSelectedFile(null); setEditingVariantGroup(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, VARIANTS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -223,6 +230,10 @@ function VariantsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load variant group:</strong> {loadError}
           </Alert>
+        ) : loadingVariantGroup ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={64} thickness={8} />
+          </Box>
         ) : editingVariantGroup ? (
           <VariantEditor
             variantGroup={editingVariantGroup}

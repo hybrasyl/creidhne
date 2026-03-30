@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert,
+  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -18,7 +18,6 @@ const IGNORE_SUBDIR = 'lootsets/.ignore';
 const DEFAULT_LOOT = {
   name: '',
   comment: '',
-  prefix: '',
   table: {
     rolls: '',
     chance: '',
@@ -114,6 +113,7 @@ function LootPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingLoot, setEditingLoot] = useState(null);
+  const [loadingLoot, setLoadingLoot] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -136,7 +136,7 @@ function LootPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingLoot(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -155,13 +155,16 @@ function LootPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingLoot(null);
+    setLoadingLoot(true);
     try {
       const loot = await window.electronAPI.loadLoot(file.path);
       setEditingLoot(loot);
     } catch (err) {
       console.error('Failed to load loot set:', err);
-      setEditingLoot(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingLoot(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -193,7 +196,9 @@ function LootPage() {
     markClean();
     setSelectedFile(null); setEditingLoot(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, LOOT_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -210,6 +215,8 @@ function LootPage() {
     setSelectedFile(null); setEditingLoot(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, LOOT_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -226,6 +233,10 @@ function LootPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load loot set:</strong> {loadError}
           </Alert>
+        ) : loadingLoot ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={64} thickness={8} />
+          </Box>
         ) : editingLoot ? (
           <LootEditor
             loot={editingLoot}

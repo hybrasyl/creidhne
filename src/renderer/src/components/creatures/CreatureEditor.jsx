@@ -15,6 +15,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
+import CreatureSpritePicker from '../shared/CreatureSpritePicker';
 
 function computeCreatureFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -160,16 +161,16 @@ function HostilityContent({ hostility, onChange }) {
         />
         {hostility.players && (
           <>
-            <TextField
-              label="Except Cookie" size="small" sx={{ flex: 1, minWidth: 140 }}
+            <ConstantAutocomplete
+              indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1, minWidth: 140 }}
               value={hostility.playerExceptCookie}
-              onChange={(e) => set('playerExceptCookie', e.target.value)}
+              onChange={(val) => set('playerExceptCookie', val)}
               inputProps={{ maxLength: 128 }}
             />
-            <TextField
-              label="Only Cookie" size="small" sx={{ flex: 1, minWidth: 140 }}
+            <ConstantAutocomplete
+              indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1, minWidth: 140 }}
               value={hostility.playerOnlyCookie}
-              onChange={(e) => set('playerOnlyCookie', e.target.value)}
+              onChange={(val) => set('playerOnlyCookie', val)}
               inputProps={{ maxLength: 128 }}
             />
           </>
@@ -190,16 +191,16 @@ function HostilityContent({ hostility, onChange }) {
         />
         {hostility.monsters && (
           <>
-            <TextField
-              label="Except Cookie" size="small" sx={{ flex: 1, minWidth: 140 }}
+            <ConstantAutocomplete
+              indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1, minWidth: 140 }}
               value={hostility.monsterExceptCookie}
-              onChange={(e) => set('monsterExceptCookie', e.target.value)}
+              onChange={(val) => set('monsterExceptCookie', val)}
               inputProps={{ maxLength: 128 }}
             />
-            <TextField
-              label="Only Cookie" size="small" sx={{ flex: 1, minWidth: 140 }}
+            <ConstantAutocomplete
+              indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1, minWidth: 140 }}
               value={hostility.monsterOnlyCookie}
-              onChange={(e) => set('monsterOnlyCookie', e.target.value)}
+              onChange={(val) => set('monsterOnlyCookie', val)}
               inputProps={{ maxLength: 128 }}
             />
           </>
@@ -281,12 +282,7 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                 onChange={(e) => set('name', e.target.value)}
                 inputProps={{ maxLength: 255 }}
               />
-              <TextField
-                label="Sprite" size="small" sx={{ width: 100 }}
-                value={data.sprite}
-                onChange={(e) => set('sprite', e.target.value)}
-                inputProps={{ maxLength: 64 }}
-              />
+              <CreatureSpritePicker value={data.sprite} onChange={(val) => set('sprite', val)} />
               <BehaviorSetPicker
                 value={data.behaviorSet}
                 onChange={(val) => set('behaviorSet', val)}
@@ -494,12 +490,7 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
                 onBlur={handleNameBlur}
                 inputProps={{ maxLength: 255 }}
               />
-              <TextField
-                label="Sprite" size="small" sx={{ width: 100 }}
-                value={data.sprite}
-                onChange={set('sprite')}
-                inputProps={{ maxLength: 64 }}
-              />
+              <CreatureSpritePicker value={data.sprite} onChange={(val) => updateData((d) => ({ ...d, sprite: val }))} />
               <BehaviorSetPicker
                 value={data.behaviorSet}
                 onChange={(val) => updateData((d) => ({ ...d, behaviorSet: val }))}

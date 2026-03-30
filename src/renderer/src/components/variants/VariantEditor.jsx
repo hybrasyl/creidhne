@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Collapse, Switch, Checkbox, FormControlLabel, Chip, Autocomplete,
-  FormControl, InputLabel, Select, MenuItem,
+  FormControl, InputLabel, Select, MenuItem, Snackbar, Alert,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -15,11 +15,24 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import StatsTab from '../items/tabs/StatsTab';
 import RestrictionsTab from '../items/tabs/RestrictionsTab';
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants';
+import { useRecoilValue } from 'recoil';
+import { libraryIndexState } from '../../recoil/atoms';
 
-function computeVariantFilename(name) {
+function deriveVariantPrefix(fileName, name) {
+  if (!fileName) return 'vg';
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
+  const base = fileName.replace(/\.xml$/i, '');
+  if (safe && base.endsWith(`_${safe}`)) {
+    const p = base.slice(0, base.length - safe.length - 1);
+    return p || 'vg';
+  }
+  return 'vg';
+}
+
+function computeVariantFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
   if (!safe) return '';
-  return `${safe}.xml`;
+  return `${prefix || 'vg'}_${safe}.xml`;
 }
 
 const makeDefaultVariant = () => ({
@@ -270,17 +283,23 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
 
 // ── Main editor ───────────────────────────────────────────────────────────────
 function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
+  const libraryIndex = useRecoilValue(libraryIndexState);
+
   const [data, setData] = useState(variantGroup);
-  const [fileName, setFileName] = useState(initialFileName || computeVariantFilename(variantGroup.name));
+  const [prefix, setPrefix] = useState(deriveVariantPrefix(initialFileName, variantGroup.name));
+  const [fileName, setFileName] = useState(initialFileName || computeVariantFilename(deriveVariantPrefix(initialFileName, variantGroup.name), variantGroup.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
   const isDirtyRef = useRef(false);
 
   useEffect(() => {
+    const derivedPrefix = deriveVariantPrefix(initialFileName, variantGroup.name);
     setData(variantGroup);
-    setFileName(initialFileName || computeVariantFilename(variantGroup.name));
+    setPrefix(derivedPrefix);
+    setFileName(initialFileName || computeVariantFilename(derivedPrefix, variantGroup.name));
     setFileNameEdited(!!initialFileName);
     isDirtyRef.current = false;
+    setDupSnack(null);
     onDirtyChange?.(false);
   }, [variantGroup, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -292,16 +311,43 @@ function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, 
     markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeVariantFilename(next.name));
+      if (!fileNameEdited) setFileName(computeVariantFilename(prefix, next.name));
       return next;
     });
-  }, [fileNameEdited, markDirtyLocal]);
+  }, [fileNameEdited, prefix, markDirtyLocal]);
+
+  const handlePrefixChange = (e) => {
+    markDirtyLocal();
+    const p = e.target.value;
+    setPrefix(p);
+    if (!fileNameEdited) setFileName(computeVariantFilename(p, data.name));
+  };
 
   const handleRegenerate = () => {
     markDirtyLocal();
-    setFileName(computeVariantFilename(data.name));
+    setFileName(computeVariantFilename(prefix, data.name));
     setFileNameEdited(false);
   };
+
+  // ── Duplicate detection ──────────────────────────────────────────────────────
+
+  const dupStatus = useMemo(() => {
+    const name = (data.name || '').trim();
+    if (!name) return null;
+    const originalName = isExisting ? (variantGroup.name || '') : '';
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+
+    const activeNames = libraryIndex?.variantgroups || [];
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+
+    const archivedNames = libraryIndex?.archivedVariantgroups || [];
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+
+    return null;
+  }, [data.name, libraryIndex, isExisting, variantGroup.name]);
+
+  const [dupSnack, setDupSnack] = useState(null);
+  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
 
   if (saveRef) saveRef.current = () => onSave(data, fileName);
 
@@ -358,20 +404,37 @@ function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, 
         {/* ── Group fields (headerless section) ── */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Group Name" required value={data.name} size="small"
-              inputProps={{ maxLength: 255 }}
-              onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
-            />
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <TextField
+                label="Prefix" value={prefix} size="small" sx={{ width: 140 }}
+                inputProps={{ maxLength: 64, spellCheck: false }}
+                onChange={handlePrefixChange}
+              />
+              <TextField
+                label="Group Name" required value={data.name} size="small"
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                inputProps={{ maxLength: 255 }}
+                onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
+                onBlur={handleNameBlur}
+              />
+            </Box>
             <TextField
               label="Comment" value={data.comment} size="small" multiline minRows={2}
               inputProps={{ maxLength: 65534 }}
               onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))}
-            />
-            <TextField
-              label="Prefix" value={data.prefix} size="small"
-              inputProps={{ maxLength: 255 }}
-              onChange={(e) => updateData((d) => ({ ...d, prefix: e.target.value }))}
             />
           </Box>
         </Paper>
@@ -393,6 +456,19 @@ function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, 
 
         <Box sx={{ height: 32 }} />
       </Box>
+
+      <Snackbar
+        open={!!dupSnack}
+        autoHideDuration={5000}
+        onClose={() => setDupSnack(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+          {dupSnack === 'active'
+            ? `"${data.name}" already exists!`
+            : `"${data.name}" exists in archive`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

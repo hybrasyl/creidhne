@@ -33,7 +33,6 @@ function mapXmlToLoot(result, comment) {
   return {
     name: a(root, 'Name', ''),
     comment,
-    prefix: a(root, 'Prefix', ''),
     table: {
       rolls: a(table, 'Rolls', ''),
       chance: a(table, 'Chance', ''),
@@ -94,7 +93,7 @@ function buildXmlObject(loot) {
 
   return {
     LootSet: {
-      $: omitEmpty({ xmlns: XMLNS, Name: loot.name, Prefix: loot.prefix }),
+      $: omitEmpty({ xmlns: XMLNS, Name: loot.name }),
       Table: [tableNode],
     },
   };

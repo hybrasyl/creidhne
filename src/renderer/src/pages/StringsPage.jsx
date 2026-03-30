@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
   Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider,
-  Button, Tooltip, TextField, InputAdornment, IconButton, Snackbar, Alert,
+  Button, Tooltip, TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -112,6 +112,7 @@ function StringsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingLocalization, setEditingLocalization] = useState(null);
+  const [loadingLocalization, setLoadingLocalization] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -134,7 +135,7 @@ function StringsPage() {
   useEffect(() => {
     if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingLocalization(null); return; }
     loadActiveFiles(activeLibrary);
-    if (showArchived) loadArchivedFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -153,13 +154,16 @@ function StringsPage() {
   const doSelect = async (file) => {
     setSelectedFile(file);
     setLoadError(null);
+    setEditingLocalization(null);
+    setLoadingLocalization(true);
     try {
       const loc = await window.electronAPI.loadLocalization(file.path);
       setEditingLocalization(loc);
     } catch (err) {
       console.error('Failed to load localization:', err);
-      setEditingLocalization(null);
       setLoadError(err?.message || 'Failed to parse XML.');
+    } finally {
+      setLoadingLocalization(false);
     }
   };
   const handleSelect = (file) => guard(() => doSelect(file));
@@ -195,7 +199,9 @@ function StringsPage() {
     markClean();
     setSelectedFile(null); setEditingLocalization(null);
     await loadActiveFiles(activeLibrary);
-    if (showArchived) await loadArchivedFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, LOCALIZATIONS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleUnarchive = async () => {
@@ -212,6 +218,8 @@ function StringsPage() {
     setSelectedFile(null); setEditingLocalization(null);
     await loadActiveFiles(activeLibrary);
     await loadArchivedFiles(activeLibrary);
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, LOCALIZATIONS_SUBDIR);
+    setLibraryIndex((prev) => ({ ...prev, ...section }));
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -228,6 +236,10 @@ function StringsPage() {
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load localization:</strong> {loadError}
           </Alert>
+        ) : loadingLocalization ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <CircularProgress size={64} thickness={8} />
+          </Box>
         ) : editingLocalization ? (
           <LocalizationEditor
             localization={editingLocalization}
