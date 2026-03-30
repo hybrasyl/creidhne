@@ -82,9 +82,10 @@ function mapBehavior(behaviorNode) {
     : [];
 
   // Hostility
+  const hostilityNode = first(beh.Hostility);
   const hostility = {
-    monsters: mapHostilityEntry(beh.Monsters),
-    players:  mapHostilityEntry(beh.Players),
+    monsters: mapHostilityEntry(hostilityNode?.Monsters),
+    players:  mapHostilityEntry(hostilityNode?.Players),
   };
 
   // Cookies
