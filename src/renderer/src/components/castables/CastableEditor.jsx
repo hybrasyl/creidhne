@@ -407,6 +407,11 @@ function CastableEditor({
             {/* Line 4: Checkboxes */}
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <FormControlLabel
+                control={<Checkbox size="small" checked={data.isAssail} onChange={setChecked('isAssail')} />}
+                label={<Typography variant="body2">Is Assail</Typography>}
+                sx={{ m: 0 }}
+              />
+              <FormControlLabel
                 control={<Checkbox size="small" checked={data.reflectable} onChange={setChecked('reflectable')} />}
                 label={<Typography variant="body2">Reflectable</Typography>}
                 sx={{ m: 0 }}
@@ -419,6 +424,11 @@ function CastableEditor({
               <FormControlLabel
                 control={<Checkbox size="small" checked={data.includeInMetafile} onChange={setChecked('includeInMetafile')} />}
                 label={<Typography variant="body2">Include in Metafile</Typography>}
+                sx={{ m: 0 }}
+              />
+              <FormControlLabel
+                control={<Checkbox size="small" checked={data.pvpOnly} onChange={setChecked('pvpOnly')} />}
+                label={<Typography variant="body2">PvP Only</Typography>}
                 sx={{ m: 0 }}
               />
               <FormControlLabel

@@ -13,6 +13,7 @@ import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
 import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
+import { exportCastablesExcelCSV } from './exportCastablesJson.js'
 import { extractMeta } from './xmlCommentUtils.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
@@ -1512,6 +1513,10 @@ app.whenReady().then(() => {
     }
 
     return { csv: rows.join('\r\n') }
+  })
+
+  ipcMain.handle('export:castablesJSON', async (_, libraryPath) => {
+    return exportCastablesExcelCSV(libraryPath)
   })
 
   createWindow()

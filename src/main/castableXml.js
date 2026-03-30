@@ -411,9 +411,11 @@ function mapXmlToCastable(result, xmlString) {
     book:             a(root, 'Book',             'PrimarySkill'),
     elements:         a(root, 'Elements',         'None'),
     class:            a(root, 'Class',            ''),
+    isAssail:         a(root, 'IsAssail',         'false') === 'true',
     reflectable:      a(root, 'Reflectable',      'false') === 'true',
     breakStealth:     a(root, 'BreakStealth',     'false') === 'true',
     includeInMetafile: a(root, 'IncludeInMetafile', 'false') === 'true',
+    pvpOnly:          a(root, 'PvpOnly',          'false') === 'true',
     descriptions:     mapDescriptions(root.Descriptions),
     categories:       mapCategories(root.Categories),
     castCosts:        mapCastCosts(root.CastCosts),
@@ -456,9 +458,11 @@ function buildXmlObject(castable) {
     Elements:         castable.elements         || 'None',
     Class:            castable.class            || '',
     Cooldown:         castable.cooldown         || '0',
+    IsAssail:         castable.isAssail         ? 'true' : 'false',
     Reflectable:      castable.reflectable      ? 'true' : 'false',
     BreakStealth:     castable.breakStealth     ? 'true' : 'false',
     IncludeInMetafile: castable.includeInMetafile ? 'true' : 'false',
+    PvpOnly:          castable.pvpOnly          ? 'true' : 'false',
   };
 
   const root = { $: attrs };
