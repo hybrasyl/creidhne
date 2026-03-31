@@ -452,18 +452,18 @@ export function parseCastableXml(xmlString) {
 function buildXmlObject(castable) {
   const attrs = {
     xmlns:            XMLNS,
-    Lines:            castable.lines            || '0',
-    Icon:             castable.icon             || '0',
     Book:             castable.book             || 'PrimarySkill',
     Elements:         castable.elements         || 'None',
     Class:            castable.class            || '',
-    Cooldown:         castable.cooldown         || '0',
     IsAssail:         castable.isAssail         ? 'true' : 'false',
     Reflectable:      castable.reflectable      ? 'true' : 'false',
     BreakStealth:     castable.breakStealth     ? 'true' : 'false',
     IncludeInMetafile: castable.includeInMetafile ? 'true' : 'false',
     PvpOnly:          castable.pvpOnly          ? 'true' : 'false',
   };
+  if (castable.lines)    attrs.Lines    = castable.lines;
+  if (castable.icon)     attrs.Icon     = castable.icon;
+  if (castable.cooldown) attrs.Cooldown = castable.cooldown;
 
   const root = { $: attrs };
 

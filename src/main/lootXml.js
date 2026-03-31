@@ -44,8 +44,9 @@ function mapXmlToLoot(result, comment) {
         entries: (items?.Item || []).map((item) => ({
           name: typeof item === 'string' ? item : (item._ || ''),
           variants: a(item, 'Variants', '').split(' ').filter(Boolean),
-          unique: a(item, 'Unique', 'true') === 'true',
-          always: a(item, 'Always', 'true') === 'true',
+          unique: a(item, 'Unique', 'false') === 'true',
+          always: a(item, 'Always', 'false') === 'true',
+          inInventory: a(item, 'InInventory', 'false') === 'true',
           max: a(item, 'Max', ''),
         })),
       },
@@ -86,6 +87,7 @@ function buildXmlObject(loot) {
         Variants: entry.variants.length ? entry.variants.join(' ') : undefined,
         Unique: String(entry.unique),
         Always: String(entry.always),
+        InInventory: String(entry.inInventory),
       }),
     }));
     tableNode.Items = [itemsNode];

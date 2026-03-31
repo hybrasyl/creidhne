@@ -50,13 +50,15 @@ function mapHostility(hosNode) {
       monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '',
     };
   }
-  const players = first(hosNode.Players);
-  const monsters = first(hosNode.Monsters);
+  const hasPlayers = Array.isArray(hosNode.Players) && hosNode.Players.length > 0;
+  const hasMonsters = Array.isArray(hosNode.Monsters) && hosNode.Monsters.length > 0;
+  const players = hasPlayers ? hosNode.Players[0] : null;
+  const monsters = hasMonsters ? hosNode.Monsters[0] : null;
   return {
-    players: !!players,
+    players: hasPlayers,
     playerExceptCookie: players ? a(players, 'ExceptCookie', '') : '',
     playerOnlyCookie: players ? a(players, 'OnlyCookie', '') : '',
-    monsters: !!monsters,
+    monsters: hasMonsters,
     monsterExceptCookie: monsters ? a(monsters, 'ExceptCookie', '') : '',
     monsterOnlyCookie: monsters ? a(monsters, 'OnlyCookie', '') : '',
   };

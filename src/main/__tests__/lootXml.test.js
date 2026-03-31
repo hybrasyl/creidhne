@@ -7,8 +7,8 @@ import xml2js from 'xml2js'
 // ---------------------------------------------------------------------------
 
 // Each Item uses mixed content: text body (the name) plus attributes.
-// unique and always default to 'true' when the attribute is absent.
-// variants is a space-separated attribute; absent = empty array.
+// unique, always, and inInventory default to false when the attribute is absent.
+// variants is a space-separated attribute; absent = empty array [].
 
 const FULL_XML = `<?xml version="1.0"?>
 <!-- Comment: Test loot set -->
@@ -17,8 +17,8 @@ const FULL_XML = `<?xml version="1.0"?>
     <Gold Min="10" Max="100" />
     <Xp Min="5" Max="50" />
     <Items Rolls="1" Chance="50">
-      <Item Variants="Blessed Holy" Unique="false" Always="false" Max="3">Iron Sword</Item>
-      <Item Unique="true" Always="true">Gold Coin</Item>
+      <Item Variants="Blessed Holy" Unique="false" Always="false" InInventory="true" Max="3">Iron Sword</Item>
+      <Item>Gold Coin</Item>
     </Items>
   </Table>
 </LootSet>`
@@ -119,6 +119,11 @@ describe('Field coverage — all fields', () => {
     expect(l.table.items.entries[0].always).toBe(false)
   })
 
+  it('parses explicit inInventory=true', async () => {
+    const l = await parseLootXml(FULL_XML)
+    expect(l.table.items.entries[0].inInventory).toBe(true)
+  })
+
   it('parses item max', async () => {
     const l = await parseLootXml(FULL_XML)
     expect(l.table.items.entries[0].max).toBe('3')
@@ -129,15 +134,19 @@ describe('Field coverage — all fields', () => {
     expect(l.table.items.entries[1].variants).toEqual([])
   })
 
-  it('absent Unique attribute defaults to true', async () => {
-    // The parser defaults Unique to 'true' when the attribute is absent.
+  it('absent Unique attribute defaults to false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[1].unique).toBe(true)
+    expect(l.table.items.entries[1].unique).toBe(false)
   })
 
-  it('absent Always attribute defaults to true', async () => {
+  it('absent Always attribute defaults to false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[1].always).toBe(true)
+    expect(l.table.items.entries[1].always).toBe(false)
+  })
+
+  it('absent InInventory attribute defaults to false', async () => {
+    const l = await parseLootXml(FULL_XML)
+    expect(l.table.items.entries[1].inInventory).toBe(false)
   })
 })
 
@@ -205,7 +214,7 @@ describe('Output structure', () => {
         rolls: '1',
         chance: '80',
         entries: [
-          { name: 'Short Sword', variants: ['Rusty'], unique: false, always: true, max: '1' },
+          { name: 'Short Sword', variants: ['Rusty'], unique: false, always: false, inInventory: true, max: '1' },
         ],
       },
     },
@@ -249,13 +258,14 @@ describe('Output structure', () => {
     expect(items.$?.Chance).toBe('80')
   })
 
-  it('Item has text content, Variants, Unique, and Always attributes', async () => {
+  it('Item has text content, Variants, Unique, Always, and InInventory attributes', async () => {
     const parsed = await parseRaw(serializeLootXml(loot))
     const item = parsed.LootSet.Table?.[0]?.Items?.[0]?.Item?.[0]
     expect(item._).toBe('Short Sword')
     expect(item.$?.Variants).toBe('Rusty')
     expect(item.$?.Unique).toBe('false')
-    expect(item.$?.Always).toBe('true')
+    expect(item.$?.Always).toBe('false')
+    expect(item.$?.InInventory).toBe('true')
   })
 
   it('omits Gold element when both min and max are empty', async () => {

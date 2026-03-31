@@ -51,7 +51,7 @@ function mapXmlToItem(result) {
     name: first(root.Name, ''),
     unidentifiedName: first(root.UnidentifiedName, ''),
     comment: first(root.Comment, ''),
-    includeInMetafile: toBool(a(root, 'IncludeInMetafile'), true),
+    includeInMetafile: toBool(root?.$?.IncludeInMetafile, true),
     properties: {
       tags: spaceList(a(props, 'Tags')),
       appearance: parseAppearance(first(props.Appearance)),
@@ -270,7 +270,7 @@ function buildXmlObject(item) {
   }) }];
 
   if (p.categories.length)
-    propsObj.Categories = [{ Category: p.categories.map((c) => c.name) }];
+    propsObj.Categories = [{ Category: p.categories.map((c) => c.unique ? { _: c.name, $: { Unique: 'true' } } : c.name) }];
 
   if (p.castModifiers.length)
     propsObj.CastModifiers = [{ Match: p.castModifiers.map(buildCastModifier) }];
@@ -307,7 +307,7 @@ function buildXmlObject(item) {
   if (p.restrictions) propsObj.Restrictions = [buildRestrictions(p.restrictions)];
 
   if (p.motions.length)
-    propsObj.Motion = [{ Motion: p.motions.map((m) => ({ $: omitEmpty({ Id: String(m.id), Speed: String(m.speed) }) })) }];
+    propsObj.Motions = [{ Motion: p.motions.map((m) => ({ $: omitEmpty({ Id: String(m.id), Speed: String(m.speed) }) })) }];
 
   if (p.procs.length)
     propsObj.Procs = [{ Proc: p.procs.map((pr) => ({ $: omitEmpty({ Type: pr.type, Castable: pr.castable || undefined, Script: pr.script || undefined, Chance: String(pr.chance) }) })) }];

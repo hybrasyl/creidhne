@@ -217,7 +217,7 @@ function mapHandlers(handlersArr) {
 
   return {
     death: mapDeath(n.Death),
-    chat: chatNode
+    chat: n.Chat !== undefined
       ? {
           commandsEnabled: a(chatNode, 'CommandsEnabled', 'true') === 'true',
           commandPrefix: a(chatNode, 'CommandPrefix', '/'),

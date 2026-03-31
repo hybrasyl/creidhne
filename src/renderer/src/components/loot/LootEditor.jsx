@@ -145,7 +145,7 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
         ...d.table,
         items: {
           ...d.table.items,
-          entries: [...d.table.items.entries, { name: '', variants: [], unique: true, always: true, max: '' }],
+          entries: [...d.table.items.entries, { name: '', variants: [], unique: false, always: false, inInventory: false, max: '' }],
         },
       },
     }));
@@ -339,6 +339,16 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
                     <Checkbox
                       size="small" checked={entry.always}
                       onChange={(e) => setEntry(i, 'always', e.target.checked)}
+                    />
+                  }
+                />
+                <FormControlLabel
+                  label="In Inventory"
+                  sx={{ ml: 0.5, mr: 0 }}
+                  control={
+                    <Checkbox
+                      size="small" checked={entry.inInventory}
+                      onChange={(e) => setEntry(i, 'inInventory', e.target.checked)}
                     />
                   }
                 />
