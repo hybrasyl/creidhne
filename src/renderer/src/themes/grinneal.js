@@ -16,7 +16,7 @@ const grinnealTheme = responsiveFontSizes(createTheme({
       contrastText:'#1a1408',
     },
     background: {
-      default: '#0e0c0a',
+      default: '#27221c',
       paper:   'rgba(22,18,14,0.88)',
     },
     text: {

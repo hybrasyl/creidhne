@@ -179,7 +179,7 @@ function DashboardPage() {
               const arr = libraryIndex[key];
               if (!arr) return null;
               return (
-                <Grid item xs={6} sm={4} md={3} lg={2} key={key}>
+                <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={key}>
                   <StatCard label={label} count={arr.length} page={page} tooltip={tooltip} onNavigate={setCurrentPage} />
                 </Grid>
               );

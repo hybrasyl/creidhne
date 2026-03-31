@@ -280,7 +280,7 @@ function ItemsPage() {
           </Alert>
         ) : loadingItem ? (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <CircularProgress size={64} thickness={8} />
+            <CircularProgress size={64} thickness={4} color="info" disableShrink/>
           </Box>
         ) : editingItem ? (
           <ItemEditor

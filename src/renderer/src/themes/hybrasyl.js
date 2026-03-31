@@ -10,13 +10,13 @@ const hybrasylTheme = responsiveFontSizes(createTheme({
       contrastText:'#f0e6cc',
     },
     secondary: {
-      main:        '#A3412A',
+      main:        '#c1701f',
       light:       '#C9623E',
       dark:        '#71291D',
       contrastText:'#f0e6cc',
     },
     background: {
-      default: '#040810',
+      default: '#0d182f',
       paper:   'rgba(6,12,18,0.82)',
     },
     text: {
