@@ -9,21 +9,77 @@ const filter = createFilterOptions();
  * Drop-in replacement for TextField on fields backed by a constants index key.
  *
  * indexKey: 'itemCategories' | 'castableCategories' | 'statusCategories' | 'cookieNames'
- * onChange: (value: string) => void   ← receives a plain string, not an event
+ *           | 'npcJobs' | 'vendorTabs'
+ * onChange: (value: string) => void          — single mode (default)
+ * onChange: (value: string[]) => void        — multiple mode
+ * multiple: boolean — when true, value/onChange work with string arrays
  */
-function ConstantAutocomplete({ indexKey, label, value, onChange, size = 'small', sx, inputProps, ...rest }) {
+function ConstantAutocomplete({ indexKey, label, value, onChange, size = 'small', sx, inputProps, multiple = false, ...rest }) {
   const activeLibrary = useRecoilValue(activeLibraryState);
   const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState);
 
   const options = libraryIndex[indexKey] || [];
 
-  const handleCreate = async (val) => {
+  const persistNew = async (val) => {
     if (activeLibrary) {
-      const updated = await window.electronAPI.addConstantValue(activeLibrary, indexKey, val);
-      if (updated) setLibraryIndex(updated);
+      await window.electronAPI.addConstantValue(activeLibrary, indexKey, val);
+      setLibraryIndex(prev => ({
+        ...prev,
+        [indexKey]: [...new Set([...(prev[indexKey] || []), val])].sort(),
+      }));
     }
-    onChange(val);
   };
+
+  const filterOptions = (opts, params) => {
+    const filtered = filter(opts, params);
+    const trimmed = params.inputValue.trim();
+    if (trimmed && !opts.some(o => o.toLowerCase() === trimmed.toLowerCase())) {
+      filtered.push({ label: `Create "${trimmed}"`, inputValue: trimmed });
+    }
+    return filtered;
+  };
+
+  if (multiple) {
+    const currentValue = value || [];
+    return (
+      <Autocomplete
+        multiple
+        freeSolo
+        size={size}
+        sx={sx}
+        options={options}
+        value={currentValue}
+        onChange={async (_, newVal) => {
+          // Resolve any {inputValue} objects (create selections) in the array
+          const resolved = [];
+          for (const item of newVal) {
+            if (typeof item === 'object' && item.inputValue) {
+              await persistNew(item.inputValue);
+              resolved.push(item.inputValue);
+            } else if (typeof item === 'string') {
+              const trimmed = item.trim();
+              if (trimmed && !options.some(o => o.toLowerCase() === trimmed.toLowerCase())) {
+                await persistNew(trimmed);
+              }
+              if (trimmed) resolved.push(trimmed);
+            }
+          }
+          onChange(resolved);
+        }}
+        filterOptions={filterOptions}
+        getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+        isOptionEqualToValue={(opt, val) => opt === val}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label={label}
+            inputProps={{ ...params.inputProps, ...inputProps }}
+          />
+        )}
+        {...rest}
+      />
+    );
+  }
 
   return (
     <Autocomplete
@@ -37,18 +93,18 @@ function ConstantAutocomplete({ indexKey, label, value, onChange, size = 'small'
       }}
       onChange={(_, val) => {
         if (val === null) onChange('');
-        else if (typeof val === 'object' && val.inputValue) handleCreate(val.inputValue);
-        else onChange(val ?? '');
-      }}
-      filterOptions={(opts, params) => {
-        const filtered = filter(opts, params);
-        const { inputValue } = params;
-        const trimmed = inputValue.trim();
-        if (trimmed && !opts.some(o => o.toLowerCase() === trimmed.toLowerCase())) {
-          filtered.push({ label: `Create "${trimmed}"`, inputValue: trimmed });
+        else if (typeof val === 'object' && val.inputValue) {
+          persistNew(val.inputValue);
+          onChange(val.inputValue);
+        } else {
+          const trimmed = (val || '').trim();
+          if (trimmed && !options.some(o => o.toLowerCase() === trimmed.toLowerCase())) {
+            persistNew(trimmed);
+          }
+          onChange(trimmed);
         }
-        return filtered;
       }}
+      filterOptions={filterOptions}
       getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
       isOptionEqualToValue={(opt, val) => opt === val}
       renderInput={(params) => (

@@ -595,16 +595,12 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
         {/* ── Vendor ── */}
         <Section title="Vendor" open={openVendor} onToggle={() => setOpenVendor((v) => !v)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Autocomplete
-              freeSolo
-              options={libraryIndex.vendorTabs || []}
+            <ConstantAutocomplete
+              indexKey="vendorTabs" label="Shop Tab"
               value={p.vendor?.shopTab ?? ''}
-              onInputChange={(_, val, reason) => {
-                if (reason === 'input') updateProperties({ vendor: { ...(p.vendor ?? {}), shopTab: val } });
-              }}
-              onChange={(_, val) => updateProperties({ vendor: { ...(p.vendor ?? {}), shopTab: val ?? '' } })}
+              onChange={(val) => updateProperties({ vendor: { ...(p.vendor ?? {}), shopTab: val } })}
               size="small"
-              renderInput={(params) => <TextField {...params} label="Shop Tab" inputProps={{ ...params.inputProps, maxLength: 255 }} />}
+              inputProps={{ maxLength: 255 }}
             />
             <TextField label="Description" value={p.vendor?.description ?? ''} size="small" multiline minRows={2}
               inputProps={{ maxLength: 255 }}

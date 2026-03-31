@@ -100,6 +100,17 @@ function mapBehavior(behaviorNode) {
   return { castingSets, hostility, cookies };
 }
 
+function mapCastables(castablesNode) {
+  const node = first(castablesNode);
+  if (!node) return { auto: true, skillCategories: '', spellCategories: '', names: [] };
+  return {
+    auto:             a(node, 'Auto', 'true') !== 'false',
+    skillCategories:  a(node, 'SkillCategories', ''),
+    spellCategories:  a(node, 'SpellCategories', ''),
+    names:            (node.Castable || []).filter(Boolean),
+  };
+}
+
 function mapXmlToBehaviorSet(result, comment) {
   const root = result.BehaviorSet;
   const { castingSets, hostility, cookies } = mapBehavior(root.Behavior);
@@ -108,6 +119,7 @@ function mapXmlToBehaviorSet(result, comment) {
     comment,
     import:        a(root, 'Import', ''),
     statAlloc:     first(root.StatAlloc, ''),
+    castables:     mapCastables(root.Castables),
     castingSets,
     hostility,
     cookies,
@@ -217,6 +229,18 @@ function buildXmlObject(bvs) {
 
   if (bvs.statAlloc?.trim()) {
     root.StatAlloc = [bvs.statAlloc.trim()];
+  }
+
+  const c = bvs.castables;
+  if (c && (!c.auto || c.skillCategories?.trim() || c.spellCategories?.trim() || c.names?.length)) {
+    const attrs = {};
+    if (!c.auto) attrs.Auto = 'false';
+    if (c.skillCategories?.trim()) attrs.SkillCategories = c.skillCategories.trim();
+    if (c.spellCategories?.trim()) attrs.SpellCategories = c.spellCategories.trim();
+    const castablesNode = { $: attrs };
+    const filtered = (c.names || []).filter((n) => n?.trim());
+    if (filtered.length) castablesNode.Castable = filtered;
+    root.Castables = [castablesNode];
   }
 
   const csSets   = buildCastingSets(bvs.castingSets);

@@ -41,6 +41,7 @@ export const DEFAULT_BEHAVIOR_SET = {
   comment:       '',
   import:        '',
   statAlloc:     '',
+  castables:     { auto: true, skillCategories: '', spellCategories: '', names: [] },
   castingSets:   [],
   hostility:     { monsters: { enabled: false, exceptCookie: '', onlyCookie: '' }, players: { enabled: false, exceptCookie: '', onlyCookie: '' } },
   cookies:       [],

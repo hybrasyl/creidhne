@@ -47,7 +47,16 @@ function App() {
       window.electronAPI.loadIndex(activeLibrary),
       window.electronAPI.loadUserConstants(activeLibrary),
     ]).then(([index, constants]) => {
-      setLibraryIndex({ ...(index || {}), vendorTabs: constants?.vendorTabs || [], npcJobs: constants?.npcJobs || [] });
+      const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort();
+      setLibraryIndex({
+        ...(index || {}),
+        vendorTabs:         dedup(index?.vendorTabs,         constants?.vendorTabs),
+        npcJobs:            dedup(index?.npcJobs,            constants?.npcJobs),
+        itemCategories:     dedup(index?.itemCategories,     constants?.itemCategories),
+        castableCategories: dedup(index?.castableCategories, constants?.castableCategories),
+        statusCategories:   dedup(index?.statusCategories,   constants?.statusCategories),
+        cookieNames:        dedup(index?.cookieNames,        (constants?.cookies || []).map(c => c.name)),
+      });
     });
   }, [activeLibrary, setLibraryIndex]);
 

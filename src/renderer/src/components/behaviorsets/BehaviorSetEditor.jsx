@@ -216,19 +216,19 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
           </Box>
 
           {/* Row 2: Categories multiselect */}
-          <Autocomplete
+          <ConstantAutocomplete
             multiple
+            indexKey="castableCategories"
+            label="Categories"
             size="small"
             fullWidth
-            options={libraryIndex.castableCategories || []}
             value={cs.categories ? cs.categories.trim().split(/\s+/).filter(Boolean) : []}
-            onChange={(_, newValue) => setField('categories', newValue.join(' '))}
+            onChange={(newValue) => setField('categories', newValue.join(' '))}
             renderTags={(value, getTagProps) =>
               value.map((option, index) => (
                 <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
               ))
             }
-            renderInput={(params) => <TextField {...params} label="Categories" />}
           />
 
           <Divider />
@@ -288,6 +288,7 @@ function BehaviorSetEditor({
   );
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
+  const [openCastables,     setOpenCastables]     = useState(true);
   const [openImmunities,    setOpenImmunities]    = useState(true);
   const [openStatModifiers, setOpenStatModifiers] = useState(true);
   const [openCastingSets,   setOpenCastingSets]   = useState(true);
@@ -326,6 +327,7 @@ function BehaviorSetEditor({
     isDirtyRef.current = false;
     onDirtyChange?.(false);
     setDupSnack(null);
+    setOpenCastables(true);
     setOpenCastingSets(true);
     setOpenHostility(true);
     setOpenCookies(true);
@@ -388,6 +390,26 @@ function BehaviorSetEditor({
 
   const removeImmunity = (i) =>
     updateData((d) => ({ ...d, immunities: d.immunities.filter((_, idx) => idx !== i) }));
+
+  // ── Castables (learn list) ───────────────────────────────────────────────────
+
+  const setCastablesField = (field, val) =>
+    updateData((d) => ({ ...d, castables: { ...d.castables, [field]: val } }));
+
+  const addCastableName = () =>
+    updateData((d) => ({ ...d, castables: { ...d.castables, names: [...(d.castables?.names || []), ''] } }));
+
+  const changeCastableName = (i, val) =>
+    updateData((d) => ({
+      ...d,
+      castables: { ...d.castables, names: d.castables.names.map((n, idx) => idx === i ? val : n) },
+    }));
+
+  const removeCastableName = (i) =>
+    updateData((d) => ({
+      ...d,
+      castables: { ...d.castables, names: d.castables.names.filter((_, idx) => idx !== i) },
+    }));
 
   // ── Casting sets ─────────────────────────────────────────────────────────────
 
@@ -531,6 +553,65 @@ function BehaviorSetEditor({
 
           </Box>
         </Paper>
+
+        {/* ── Castables (learn list) ── */}
+        <Section title="Castables" open={openCastables} onToggle={() => setOpenCastables((v) => !v)}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={data.castables?.auto ?? true}
+                    onChange={(e) => setCastablesField('auto', e.target.checked)}
+                  />
+                }
+                label={<Typography variant="body2">Auto</Typography>}
+                sx={{ m: 0 }}
+              />
+              <ConstantAutocomplete
+                multiple indexKey="castableCategories" label="Skill Categories"
+                size="small" sx={{ flex: 1, minWidth: 200 }}
+                value={(data.castables?.skillCategories || '').trim().split(/\s+/).filter(Boolean)}
+                onChange={(val) => setCastablesField('skillCategories', val.join(' '))}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+                  ))
+                }
+              />
+              <ConstantAutocomplete
+                multiple indexKey="castableCategories" label="Spell Categories"
+                size="small" sx={{ flex: 1, minWidth: 200 }}
+                value={(data.castables?.spellCategories || '').trim().split(/\s+/).filter(Boolean)}
+                onChange={(val) => setCastablesField('spellCategories', val.join(' '))}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+                  ))
+                }
+              />
+            </Box>
+            {(data.castables?.names || []).map((name, i) => (
+              <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Autocomplete
+                  freeSolo size="small" sx={{ flex: 1 }}
+                  options={castableOptions}
+                  value={name}
+                  onInputChange={(_, val, reason) => { if (reason === 'input') changeCastableName(i, val); }}
+                  onChange={(_, val) => changeCastableName(i, val ?? '')}
+                  renderInput={(params) => <TextField {...params} label="Castable" />}
+                />
+                <IconButton size="small" color="error" onClick={() => removeCastableName(i)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))}
+            <Button size="small" startIcon={<AddIcon />} onClick={addCastableName}>
+              Add Castable
+            </Button>
+          </Box>
+        </Section>
 
         {/* ── Immunities ── */}
         <Section title="Immunities" open={openImmunities} onToggle={() => setOpenImmunities((v) => !v)}>

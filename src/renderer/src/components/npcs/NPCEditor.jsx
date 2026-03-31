@@ -15,6 +15,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GridViewIcon from '@mui/icons-material/GridView';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
+import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import CommentField from '../shared/CommentField';
 import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
 import SpritePickerDialog from '../shared/SpritePickerDialog';
@@ -104,7 +105,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   const npcResponseCalls = libraryIndex.npcResponseCalls || {};
   const npcCallOptions = Object.keys(npcResponseCalls).sort();
   const npcStringKeys = libraryIndex.npcStringKeys || [];
-  const npcJobs = libraryIndex.npcJobs || [];
+
 
   const [data, setData] = useState(npc);
   const [fileName, setFileName] = useState(() => {
@@ -399,12 +400,12 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   </Box>
                   {/* Row 3: Job | Location | Allow Dead */}
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Autocomplete
-                      freeSolo options={npcJobs} value={data.meta?.job || ''}
-                      onInputChange={(_, val, reason) => { if (reason === 'input') setMetaField('job')(val); }}
-                      onChange={(_, val) => setMetaField('job')(val ?? '')}
+                    <ConstantAutocomplete
+                      indexKey="npcJobs" label="Job"
+                      value={data.meta?.job || ''}
+                      onChange={setMetaField('job')}
                       size="small" sx={{ flex: 1 }}
-                      renderInput={(params) => <TextField {...params} label="Job" inputProps={{ ...params.inputProps, maxLength: 64 }} />}
+                      inputProps={{ maxLength: 64 }}
                     />
                     <TextField
                       label="Location" value={data.meta?.location || ''} onChange={(e) => setMetaField('location')(e.target.value)}

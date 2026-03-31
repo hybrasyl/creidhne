@@ -14,6 +14,7 @@ import { parseElementTableXml, serializeElementTableXml } from './elementTableXm
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { exportCastablesExcelCSV } from './exportCastablesJson.js'
+import { loadConstants, saveConstants } from './constantsJson.js'
 import { extractMeta } from './xmlCommentUtils.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
@@ -35,7 +36,7 @@ app.setPath('userData', userDataPath);
 
 // Configuration for electron-settings
 settings.configure({
-  atomicSave: true,
+  atomicSave: false,
   //dir: join(app.getPath('userData'), 'Erisco', 'Creidhne'),
   fileName: 'settings.json',
   numSpaces: 2,
@@ -741,27 +742,63 @@ app.whenReady().then(() => {
     const scriptsDir = join(libraryPath, '..', 'scripts')
     index.scripts = (await walkDir(scriptsDir, '.lua', scriptsDir)).sort()
 
-    const scanCatNames = async (dir) => {
-      const cats = new Set()
+    const scanCatDetails = async (dir) => {
+      const catMap = {}
       try {
         const entries = await fs.readdir(dir, { withFileTypes: true })
         for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
           const content = await fs.readFile(join(dir, entry.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
+          const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
           const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
           if (!catSection) continue
           const body = catSection[1]
           const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
           const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
           let m
-          while ((m = catElemRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
-          while ((m = catAttrRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
+          while ((m = catElemRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) { if (!catMap[c]) catMap[c] = { count: 0, usedBy: [] }; catMap[c].count++; if (catMap[c].usedBy.length < 5) catMap[c].usedBy.push(itemName) } }
+          while ((m = catAttrRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) { if (!catMap[c]) catMap[c] = { count: 0, usedBy: [] }; catMap[c].count++; if (catMap[c].usedBy.length < 5) catMap[c].usedBy.push(itemName) } }
         }
       } catch { /* dir may not exist */ }
-      return [...cats].sort()
+      return Object.entries(catMap)
+        .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
+        .sort((a, b) => a.name.localeCompare(b.name))
     }
-    index.itemCategories = await scanCatNames(join(libraryPath, 'items'))
-    index.castableCategories = await scanCatNames(join(libraryPath, 'castables'))
-    index.statusCategories = await scanCatNames(join(libraryPath, 'statuses'))
+    const itemCatDetails      = await scanCatDetails(join(libraryPath, 'items'))
+    const castableCatDetails  = await scanCatDetails(join(libraryPath, 'castables'))
+    const statusCatDetails    = await scanCatDetails(join(libraryPath, 'statuses'))
+    index.itemCategories          = itemCatDetails.map(c => c.name)
+    index.castableCategories      = castableCatDetails.map(c => c.name)
+    index.statusCategories        = statusCatDetails.map(c => c.name)
+    index.itemCategoryDetails     = itemCatDetails
+    index.castableCategoryDetails = castableCatDetails
+    index.statusCategoryDetails   = statusCatDetails
+
+    const vendorTabsSet = new Set()
+    try {
+      const itemsDir = join(libraryPath, 'items')
+      for (const entry of (await fs.readdir(itemsDir, { withFileTypes: true })).filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        const content = await fs.readFile(join(itemsDir, entry.name), 'utf-8')
+        const shopTabRegex = /\bShopTab="([^"]+)"/g
+        let m
+        while ((m = shopTabRegex.exec(content)) !== null) { if (m[1].trim()) vendorTabsSet.add(m[1].trim()) }
+      }
+    } catch { /* dir may not exist */ }
+    index.vendorTabs = [...vendorTabsSet].sort()
+
+    const npcJobsSet = new Set()
+    try {
+      const npcsDir = join(libraryPath, 'npcs')
+      for (const entry of (await fs.readdir(npcsDir, { withFileTypes: true })).filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        const namePart = entry.name.replace(/\.xml$/i, '')
+        const idx = namePart.indexOf('_')
+        if (idx > 0) {
+          const prefix = namePart.slice(0, idx)
+          if (prefix && prefix.toLowerCase() !== 'npc') npcJobsSet.add(prefix)
+        }
+      }
+    } catch { /* dir may not exist */ }
+    index.npcJobs = [...npcJobsSet].sort()
 
     const cookieNamesSet = new Set()
     const cookieRegexBuild = /\w+\.setcookie\s*\(\s*"([^"]+)"/gi
@@ -787,6 +824,7 @@ app.whenReady().then(() => {
 
     await fs.mkdir(getIndexDir(), { recursive: true })
     await fs.writeFile(getIndexPath(libraryPath), JSON.stringify(index, null, 2), 'utf-8')
+
     return { success: true, builtAt: index.builtAt }
   })
 
@@ -1221,6 +1259,15 @@ app.whenReady().then(() => {
     return result.sort((a, b) => a.name.localeCompare(b.name))
   })
 
+  // Helper: read index, apply updater fn, write back
+  const updateIndex = async (libraryPath, updater) => {
+    const indexPath = getIndexPath(libraryPath)
+    let idx = {}
+    try { idx = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
+    await fs.mkdir(getIndexDir(), { recursive: true })
+    await fs.writeFile(indexPath, JSON.stringify(updater(idx), null, 2), 'utf-8')
+  }
+
   ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
     const result = { items: [], castables: [], statuses: [] }
     const scanDir = async (dir, target) => {
@@ -1254,58 +1301,83 @@ app.whenReady().then(() => {
     await scanDir(join(libraryPath, 'items'), result.items)
     await scanDir(join(libraryPath, 'castables'), result.castables)
     await scanDir(join(libraryPath, 'statuses'), result.statuses)
-    // Merge scanned names into the persisted index
     try {
-      const indexPath = getIndexPath(libraryPath)
-      let existing = {}
-      try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-      const merged = {
-        ...existing,
-        itemCategories:     [...new Set([...(existing.itemCategories     || []), ...result.items.map(c => c.name)])].sort(),
-        castableCategories: [...new Set([...(existing.castableCategories || []), ...result.castables.map(c => c.name)])].sort(),
-        statusCategories:   [...new Set([...(existing.statusCategories   || []), ...result.statuses.map(c => c.name)])].sort(),
-      }
-      await fs.mkdir(getIndexDir(), { recursive: true })
-      await fs.writeFile(indexPath, JSON.stringify(merged, null, 2), 'utf-8')
+      await updateIndex(libraryPath, idx => ({
+        ...idx,
+        itemCategories:          result.items.map(c => c.name),
+        castableCategories:      result.castables.map(c => c.name),
+        statusCategories:        result.statuses.map(c => c.name),
+        itemCategoryDetails:     result.items,
+        castableCategoryDetails: result.castables,
+        statusCategoryDetails:   result.statuses,
+      }))
     } catch { /* non-fatal */ }
     return result
   })
 
   ipcMain.handle('constants:scanVendorTabs', async (_, libraryPath) => {
-    const tabs = new Set()
+    const tabMap = {}
     try {
       const itemsDir = join(libraryPath, 'items')
       const entries = await fs.readdir(itemsDir, { withFileTypes: true })
       for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
         const content = await fs.readFile(join(itemsDir, entry.name), 'utf-8')
+        const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+        const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
         const shopTabRegex = /\bShopTab="([^"]+)"/g
         let m
         while ((m = shopTabRegex.exec(content)) !== null) {
           const val = m[1].trim()
-          if (val) tabs.add(val)
+          if (!val) continue
+          if (!tabMap[val]) tabMap[val] = { count: 0, usedBy: [] }
+          tabMap[val].count++
+          if (tabMap[val].usedBy.length < 5) tabMap[val].usedBy.push(itemName)
         }
       }
     } catch { /* dir may not exist */ }
-    return [...tabs].sort()
+    const details = Object.entries(tabMap)
+      .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    try {
+      await updateIndex(libraryPath, idx => ({
+        ...idx,
+        vendorTabs:        details.map(t => t.name),
+        vendorTabDetails:  details,
+      }))
+    } catch { /* non-fatal */ }
+    return details
   })
 
   ipcMain.handle('constants:scanNpcJobs', async (_, libraryPath) => {
-    const jobs = new Set()
+    const jobMap = {}
     try {
       const npcsDir = join(libraryPath, 'npcs')
       const entries = await fs.readdir(npcsDir, { withFileTypes: true })
       for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
         const namePart = entry.name.replace(/\.xml$/i, '')
         const underscoreIdx = namePart.indexOf('_')
-        if (underscoreIdx > 0) {
-          const prefix = namePart.slice(0, underscoreIdx)
-          if (prefix && prefix.toLowerCase() !== 'npc') {
-            jobs.add(prefix)
-          }
-        }
+        if (underscoreIdx <= 0) continue
+        const prefix = namePart.slice(0, underscoreIdx)
+        if (!prefix || prefix.toLowerCase() === 'npc') continue
+        const content = await fs.readFile(join(npcsDir, entry.name), 'utf-8')
+        const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+        const npcName = nameMatch ? nameMatch[1].trim() : namePart
+        if (!jobMap[prefix]) jobMap[prefix] = { count: 0, usedBy: [] }
+        jobMap[prefix].count++
+        if (jobMap[prefix].usedBy.length < 5) jobMap[prefix].usedBy.push(npcName)
       }
     } catch { /* dir may not exist */ }
-    return [...jobs].sort()
+    const details = Object.entries(jobMap)
+      .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    try {
+      await updateIndex(libraryPath, idx => ({
+        ...idx,
+        npcJobs:        details.map(j => j.name),
+        npcJobDetails:  details,
+      }))
+    } catch { /* non-fatal */ }
+    return details
   })
 
   ipcMain.handle('constants:scanCookies', async (_, libraryPath) => {
@@ -1335,17 +1407,11 @@ app.whenReady().then(() => {
     }
     await scanDir(scriptsDir, scriptsDir)
     cookies.sort((a, b) => a.name.localeCompare(b.name))
-    // Merge cookie names into the persisted index
     try {
-      const indexPath = getIndexPath(libraryPath)
-      let existing = {}
-      try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-      const merged = {
-        ...existing,
-        cookieNames: [...new Set([...(existing.cookieNames || []), ...cookies.map(c => c.name)])].sort(),
-      }
-      await fs.mkdir(getIndexDir(), { recursive: true })
-      await fs.writeFile(indexPath, JSON.stringify(merged, null, 2), 'utf-8')
+      await updateIndex(libraryPath, idx => ({
+        ...idx,
+        cookieNames: [...new Set(cookies.map(c => c.name))].sort(),
+      }))
     } catch { /* non-fatal */ }
     return cookies
   })
@@ -1353,16 +1419,13 @@ app.whenReady().then(() => {
   ipcMain.handle('constants:addValue', async (_, libraryPath, type, value) => {
     if (!libraryPath || !type || !value) return null
     try {
-      const indexPath = getIndexPath(libraryPath)
-      let index = {}
-      try { index = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-      const existing = index[type] || []
+      const constants = await loadConstants(libraryPath)
+      const existing = constants[type] || []
       if (!existing.includes(value)) {
-        index[type] = [...existing, value].sort()
-        await fs.mkdir(getIndexDir(), { recursive: true })
-        await fs.writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8')
+        constants[type] = [...existing, value].sort()
+        await saveConstants(libraryPath, constants)
       }
-      return index
+      return constants
     } catch (e) {
       console.error('Error adding constant value:', e)
       return null
@@ -1370,20 +1433,13 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:loadUserConstants', async (_, libraryPath) => {
-    const empty = { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [], npcJobs: [] }
-    if (!libraryPath) return empty
-    const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
-    try {
-      return (await settings.get(`constants_${hash}`)) || empty
-    } catch {
-      return empty
-    }
+    if (!libraryPath) return { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [], npcJobs: [] }
+    return loadConstants(libraryPath)
   })
 
   ipcMain.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
     if (!libraryPath) return
-    const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
-    await settings.set(`constants_${hash}`, data)
+    await saveConstants(libraryPath, data)
   })
 
   ipcMain.handle('dialog:saveFile', async (_, defaultName, content) => {

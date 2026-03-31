@@ -120,9 +120,10 @@ function SimpleTypesTab() {
 
 // ─── Vendor Tabs Tab ───────────────────────────────────────────────────────────
 
-function VendorTabsTab({ vendorTabs, onChange, activeLibrary }) {
+function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, onIndexUpdated }) {
   const [newTab, setNewTab] = useState('');
   const [scanning, setScanning] = useState(false);
+  const [scanData, setScanData] = useState(initialDetails || null);
 
   const handleAdd = () => {
     const val = newTab.trim();
@@ -135,9 +136,13 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary }) {
     if (!activeLibrary) return;
     setScanning(true);
     try {
-      const scanned = await window.electronAPI.scanVendorTabs(activeLibrary);
-      const merged = [...new Set([...vendorTabs, ...scanned])].sort();
+      const details = await window.electronAPI.scanVendorTabs(activeLibrary);
+      setScanData(details);
+      const scannedNames = details.map(d => d.name);
+      const merged = [...new Set([...vendorTabs, ...scannedNames])].sort();
       onChange(merged);
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
+      if (updatedIndex) onIndexUpdated(updatedIndex);
     } catch (e) {
       console.error(e);
     } finally {
@@ -145,11 +150,22 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary }) {
     }
   };
 
+  const rows = useMemo(() => {
+    const scanMap = {};
+    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
+    return vendorTabs.map(name => ({
+      name,
+      count: scanMap[name]?.count ?? (scanData ? 0 : null),
+      usedBy: scanMap[name]?.usedBy ?? [],
+    }));
+  }, [vendorTabs, scanData]);
+
   return (
-    <Box sx={{ p: 2, maxWidth: 480 }}>
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           Vendor tab names used on item definitions (<code>Vendor/@ShopTab</code>).
+          {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
         <Button
           size="small" variant="outlined"
@@ -167,37 +183,61 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary }) {
           size="small" placeholder="New vendor tab name..." value={newTab}
           onChange={e => setNewTab(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          sx={{ flex: 1 }}
+          sx={{ maxWidth: 300 }}
         />
         <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newTab.trim()}>
           Add
         </Button>
       </Box>
-      {vendorTabs.length === 0 ? (
+      {rows.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No vendor tabs defined. Click "Scan Items" to discover from XML.
         </Typography>
       ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Tab Name</TableCell>
-              <TableCell sx={{ width: 40 }} padding="none" />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {vendorTabs.map(tab => (
-              <TableRow key={tab} hover>
-                <TableCell><Typography variant="body2">{tab}</Typography></TableCell>
-                <TableCell padding="none">
-                  <IconButton size="small" onClick={() => onChange(vendorTabs.filter(t => t !== tab))}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Tab Name</TableCell>
+                <TableCell sx={{ width: 80 }}>Count</TableCell>
+                <TableCell>Used By</TableCell>
+                <TableCell sx={{ width: 40 }} padding="none" />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {rows.map(row => (
+                <TableRow key={row.name} hover>
+                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                      {row.count === null ? '—' : row.count}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {row.usedBy.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {row.usedBy.map(name => (
+                          <Chip key={name} label={name} size="small" variant="outlined" />
+                        ))}
+                      </Box>
+                    )}
+                  </TableCell>
+                  <TableCell padding="none">
+                    <Tooltip title={row.count > 0 ? `In use by ${row.count} item${row.count !== 1 ? 's' : ''} — removing may break editors` : ''}>
+                      <IconButton
+                        size="small"
+                        color={row.count > 0 ? 'warning' : 'default'}
+                        onClick={() => onChange(vendorTabs.filter(t => t !== row.name))}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
       )}
     </Box>
   );
@@ -205,9 +245,10 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary }) {
 
 // ─── NPC Jobs Tab ──────────────────────────────────────────────────────────────
 
-function NpcJobsTab({ npcJobs, onChange, activeLibrary }) {
+function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexUpdated }) {
   const [newJob, setNewJob] = useState('');
   const [scanning, setScanning] = useState(false);
+  const [scanData, setScanData] = useState(initialDetails || null);
 
   const handleAdd = () => {
     const val = newJob.trim();
@@ -220,9 +261,13 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary }) {
     if (!activeLibrary) return;
     setScanning(true);
     try {
-      const scanned = await window.electronAPI.scanNpcJobs(activeLibrary);
-      const merged = [...new Set([...npcJobs, ...scanned])].sort();
+      const details = await window.electronAPI.scanNpcJobs(activeLibrary);
+      setScanData(details);
+      const scannedNames = details.map(d => d.name);
+      const merged = [...new Set([...npcJobs, ...scannedNames])].sort();
       onChange(merged);
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
+      if (updatedIndex) onIndexUpdated(updatedIndex);
     } catch (e) {
       console.error(e);
     } finally {
@@ -230,11 +275,22 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary }) {
     }
   };
 
+  const rows = useMemo(() => {
+    const scanMap = {};
+    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
+    return npcJobs.map(name => ({
+      name,
+      count: scanMap[name]?.count ?? (scanData ? 0 : null),
+      usedBy: scanMap[name]?.usedBy ?? [],
+    }));
+  }, [npcJobs, scanData]);
+
   return (
-    <Box sx={{ p: 2, maxWidth: 480 }}>
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           NPC job names derived from filename prefixes (e.g. <code>blacksmith</code> in <code>blacksmith_anvil.xml</code>).
+          {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
         <Button
           size="small" variant="outlined"
@@ -252,37 +308,61 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary }) {
           size="small" placeholder="New job name..." value={newJob}
           onChange={e => setNewJob(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          sx={{ flex: 1 }}
+          sx={{ maxWidth: 300 }}
         />
         <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newJob.trim()}>
           Add
         </Button>
       </Box>
-      {npcJobs.length === 0 ? (
+      {rows.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
           No NPC jobs defined. Click "Scan NPCs" to discover from filenames.
         </Typography>
       ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Job Name</TableCell>
-              <TableCell sx={{ width: 40 }} padding="none" />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {npcJobs.map(job => (
-              <TableRow key={job} hover>
-                <TableCell><Typography variant="body2">{job}</Typography></TableCell>
-                <TableCell padding="none">
-                  <IconButton size="small" onClick={() => onChange(npcJobs.filter(j => j !== job))}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Job Name</TableCell>
+                <TableCell sx={{ width: 80 }}>Count</TableCell>
+                <TableCell>Used By</TableCell>
+                <TableCell sx={{ width: 40 }} padding="none" />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {rows.map(row => (
+                <TableRow key={row.name} hover>
+                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                      {row.count === null ? '—' : row.count}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {row.usedBy.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {row.usedBy.map(name => (
+                          <Chip key={name} label={name} size="small" variant="outlined" />
+                        ))}
+                      </Box>
+                    )}
+                  </TableCell>
+                  <TableCell padding="none">
+                    <Tooltip title={row.count > 0 ? `In use by ${row.count} NPC${row.count !== 1 ? 's' : ''} — removing may break editors` : ''}>
+                      <IconButton
+                        size="small"
+                        color={row.count > 0 ? 'warning' : 'default'}
+                        onClick={() => onChange(npcJobs.filter(j => j !== row.name))}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
       )}
     </Box>
   );
@@ -290,9 +370,9 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary }) {
 
 // ─── Category Tab (reused for Item / Castable / Status) ────────────────────────
 
-function CategoryTab({ label, scanResultKey, categories, onChange, activeLibrary, onIndexUpdated }) {
+function CategoryTab({ label, scanResultKey, categories, onChange, activeLibrary, onIndexUpdated, initialDetails }) {
   const [scanning, setScanning] = useState(false);
-  const [scanData, setScanData] = useState(null); // null = not yet scanned
+  const [scanData, setScanData] = useState(initialDetails || null);
   const [newCat, setNewCat] = useState('');
 
   const handleScan = async () => {
@@ -557,7 +637,7 @@ const TABS = [
 
 function ConstantsPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
-  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
+  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [tab, setTab] = useState(0);
   const [userConstants, setUserConstants] = useState(EMPTY_CONSTANTS);
   const [dirty, setDirty] = useState(false);
@@ -583,18 +663,34 @@ function ConstantsPage() {
     });
   }, []);
 
+  // After any scan that writes to the index, reload it and merge with current user constants
+  const handleIndexUpdated = useCallback((rawIndex) => {
+    if (!rawIndex) return;
+    const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort();
+    setLibraryIndex({
+      ...rawIndex,
+      vendorTabs:         dedup(rawIndex.vendorTabs,         userConstants.vendorTabs),
+      npcJobs:            dedup(rawIndex.npcJobs,            userConstants.npcJobs),
+      itemCategories:     dedup(rawIndex.itemCategories,     userConstants.itemCategories),
+      castableCategories: dedup(rawIndex.castableCategories, userConstants.castableCategories),
+      statusCategories:   dedup(rawIndex.statusCategories,   userConstants.statusCategories),
+      cookieNames:        dedup(rawIndex.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
+    });
+  }, [setLibraryIndex, userConstants]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
       await window.electronAPI.saveUserConstants(activeLibrary, userConstants);
+      const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort();
       setLibraryIndex((prev) => ({
         ...prev,
-        vendorTabs:         userConstants.vendorTabs         || [],
-        npcJobs:            userConstants.npcJobs            || [],
-        itemCategories:     userConstants.itemCategories     || [],
-        castableCategories: userConstants.castableCategories || [],
-        statusCategories:   userConstants.statusCategories   || [],
-        cookieNames:        (userConstants.cookies || []).map((c) => c.name),
+        vendorTabs:         dedup(prev.vendorTabs,         userConstants.vendorTabs),
+        npcJobs:            dedup(prev.npcJobs,            userConstants.npcJobs),
+        itemCategories:     dedup(prev.itemCategories,     userConstants.itemCategories),
+        castableCategories: dedup(prev.castableCategories, userConstants.castableCategories),
+        statusCategories:   dedup(prev.statusCategories,   userConstants.statusCategories),
+        cookieNames:        dedup(prev.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
       }));
       setDirty(false);
     } catch (e) {
@@ -626,22 +722,22 @@ function ConstantsPage() {
       <Box sx={{ flex: 1, overflow: 'hidden' }}>
         {tab === 0 && <SimpleTypesTab />}
         {tab === 1 && (
-          <Box sx={{ height: '100%', overflow: 'auto' }}>
-            <VendorTabsTab
-              vendorTabs={userConstants.vendorTabs || []}
-              onChange={tabs => handleChange({ ...userConstants, vendorTabs: tabs })}
-              activeLibrary={activeLibrary}
-            />
-          </Box>
+          <VendorTabsTab
+            vendorTabs={userConstants.vendorTabs || []}
+            onChange={tabs => handleCategoryChange('vendorTabs', tabs)}
+            activeLibrary={activeLibrary}
+            initialDetails={libraryIndex.vendorTabDetails}
+            onIndexUpdated={handleIndexUpdated}
+          />
         )}
         {tab === 2 && (
-          <Box sx={{ height: '100%', overflow: 'auto' }}>
-            <NpcJobsTab
-              npcJobs={userConstants.npcJobs || []}
-              onChange={jobs => handleChange({ ...userConstants, npcJobs: jobs })}
-              activeLibrary={activeLibrary}
-            />
-          </Box>
+          <NpcJobsTab
+            npcJobs={userConstants.npcJobs || []}
+            onChange={jobs => handleCategoryChange('npcJobs', jobs)}
+            activeLibrary={activeLibrary}
+            initialDetails={libraryIndex.npcJobDetails}
+            onIndexUpdated={handleIndexUpdated}
+          />
         )}
         {tab === 3 && (
           <CategoryTab
@@ -650,7 +746,8 @@ function ConstantsPage() {
             categories={userConstants.itemCategories || []}
             onChange={names => handleCategoryChange('itemCategories', names)}
             activeLibrary={activeLibrary}
-            onIndexUpdated={setLibraryIndex}
+            onIndexUpdated={handleIndexUpdated}
+            initialDetails={libraryIndex.itemCategoryDetails}
           />
         )}
         {tab === 4 && (
@@ -660,7 +757,8 @@ function ConstantsPage() {
             categories={userConstants.castableCategories || []}
             onChange={names => handleCategoryChange('castableCategories', names)}
             activeLibrary={activeLibrary}
-            onIndexUpdated={setLibraryIndex}
+            onIndexUpdated={handleIndexUpdated}
+            initialDetails={libraryIndex.castableCategoryDetails}
           />
         )}
         {tab === 5 && (
@@ -670,7 +768,8 @@ function ConstantsPage() {
             categories={userConstants.statusCategories || []}
             onChange={names => handleCategoryChange('statusCategories', names)}
             activeLibrary={activeLibrary}
-            onIndexUpdated={setLibraryIndex}
+            onIndexUpdated={handleIndexUpdated}
+            initialDetails={libraryIndex.statusCategoryDetails}
           />
         )}
         {tab === 6 && (
