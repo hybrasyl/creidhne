@@ -209,7 +209,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   const setRoleField = (roleKey, field, val) =>
     updateData((d) => ({ ...d, roles: { ...d.roles, [roleKey]: { ...d.roles[roleKey], [field]: val } } }));
 
-  // ── Adjustment helpers (bank, post, repair) ────────────────────────────────
+  // ── Adjustment helpers ────────────────────────────────────────────────────
   const addAdjustment = (roleKey) =>
     updateData((d) => ({
       ...d,
@@ -542,7 +542,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 onChangeExcept={(val) => setRoleField('bank', 'exceptCookie', val)}
                 onChangeOnly={(val) => setRoleField('bank', 'onlyCookie', val)}
               />
-              <Typography variant="caption" color="text.secondary">Adjustments</Typography>
+              <Typography variant="caption" color="text.secondary">Cost Adjustments</Typography>
               {data.roles.bank.adjustments.map((adj, i) => (
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <NationPicker
@@ -559,7 +559,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   </IconButton>
                 </Box>
               ))}
-              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('bank')}>Add Adjustment</Button>
+              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('bank')}>Add Cost Adjustment</Button>
             </Box>
           )}
         </Section>
@@ -579,14 +579,20 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   label="Nation" value={data.roles.post.nation} sx={{ flex: 1 }}
                   onChange={(val) => setRoleField('post', 'nation', val)}
                 />
+                <ConstantAutocomplete
+                  indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1 }}
+                  value={data.roles.post.exceptCookie}
+                  onChange={(val) => setRoleField('post', 'exceptCookie', val)}
+                  inputProps={{ maxLength: 128 }}
+                />
+                <ConstantAutocomplete
+                  indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1 }}
+                  value={data.roles.post.onlyCookie}
+                  onChange={(val) => setRoleField('post', 'onlyCookie', val)}
+                  inputProps={{ maxLength: 128 }}
+                />
               </Box>
-              <CookiePickers
-                exceptCookie={data.roles.post.exceptCookie}
-                onlyCookie={data.roles.post.onlyCookie}
-                onChangeExcept={(val) => setRoleField('post', 'exceptCookie', val)}
-                onChangeOnly={(val) => setRoleField('post', 'onlyCookie', val)}
-              />
-              <Typography variant="caption" color="text.secondary">Adjustments</Typography>
+              <Typography variant="caption" color="text.secondary">Cost Adjustments</Typography>
               {data.roles.post.adjustments.map((adj, i) => (
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <NationPicker
@@ -603,7 +609,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   </IconButton>
                 </Box>
               ))}
-              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('post')}>Add Adjustment</Button>
+              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('post')}>Add Cost Adjustment</Button>
             </Box>
           )}
         </Section>
@@ -632,14 +638,20 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                     <MenuItem value="All">All</MenuItem>
                   </Select>
                 </FormControl>
+                <ConstantAutocomplete
+                  indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1 }}
+                  value={data.roles.repair.exceptCookie}
+                  onChange={(val) => setRoleField('repair', 'exceptCookie', val)}
+                  inputProps={{ maxLength: 128 }}
+                />
+                <ConstantAutocomplete
+                  indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1 }}
+                  value={data.roles.repair.onlyCookie}
+                  onChange={(val) => setRoleField('repair', 'onlyCookie', val)}
+                  inputProps={{ maxLength: 128 }}
+                />
               </Box>
-              <CookiePickers
-                exceptCookie={data.roles.repair.exceptCookie}
-                onlyCookie={data.roles.repair.onlyCookie}
-                onChangeExcept={(val) => setRoleField('repair', 'exceptCookie', val)}
-                onChangeOnly={(val) => setRoleField('repair', 'onlyCookie', val)}
-              />
-              <Typography variant="caption" color="text.secondary">Adjustments</Typography>
+              <Typography variant="caption" color="text.secondary">Cost Adjustments</Typography>
               {data.roles.repair.adjustments.map((adj, i) => (
                 <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <NationPicker
@@ -656,7 +668,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                   </IconButton>
                 </Box>
               ))}
-              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('repair')}>Add Adjustment</Button>
+              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('repair')}>Add Cost Adjustment</Button>
             </Box>
           )}
         </Section>
@@ -667,7 +679,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           open={openVend}
           onToggle={() => setOpenVend((v) => !v)}
           enabled={data.roles.vend !== null}
-          onEnable={enableRole('vend', { exceptCookie: '', onlyCookie: '', items: [] })}
+          onEnable={enableRole('vend', { exceptCookie: '', onlyCookie: '', items: [], adjustments: [] })}
         >
           {data.roles.vend !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -702,6 +714,24 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 </Box>
               ))}
               <Button size="small" startIcon={<AddIcon />} onClick={addVendItem}>Add Item</Button>
+              <Typography variant="caption" color="text.secondary">Cost Adjustments</Typography>
+              {data.roles.vend.adjustments.map((adj, i) => (
+                <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <NationPicker
+                    label="Nation" value={adj.nation} sx={{ flex: 1 }}
+                    onChange={(val) => setAdjustment('vend', i, 'nation', val)}
+                  />
+                  <TextField
+                    label="Adjustment" value={adj.value}
+                    onChange={(e) => setAdjustment('vend', i, 'value', e.target.value)}
+                    size="small" sx={{ width: 140 }} inputProps={{ maxLength: 32 }}
+                  />
+                  <IconButton size="small" color="error" onClick={() => removeAdjustment('vend', i)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('vend')}>Add Cost Adjustment</Button>
             </Box>
           )}
         </Section>
@@ -712,7 +742,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           open={openTrain}
           onToggle={() => setOpenTrain((v) => !v)}
           enabled={data.roles.train !== null}
-          onEnable={enableRole('train', { exceptCookie: '', onlyCookie: '', castables: [] })}
+          onEnable={enableRole('train', { exceptCookie: '', onlyCookie: '', castables: [], adjustments: [] })}
         >
           {data.roles.train !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -771,6 +801,24 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                 </Box>
               ))}
               <Button size="small" startIcon={<AddIcon />} onClick={addTrainCastable}>Add Castable</Button>
+              <Typography variant="caption" color="text.secondary">Cost Adjustments</Typography>
+              {data.roles.train.adjustments.map((adj, i) => (
+                <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <NationPicker
+                    label="Nation" value={adj.nation} sx={{ flex: 1 }}
+                    onChange={(val) => setAdjustment('train', i, 'nation', val)}
+                  />
+                  <TextField
+                    label="Adjustment" value={adj.value}
+                    onChange={(e) => setAdjustment('train', i, 'value', e.target.value)}
+                    size="small" sx={{ width: 140 }} inputProps={{ maxLength: 32 }}
+                  />
+                  <IconButton size="small" color="error" onClick={() => removeAdjustment('train', i)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <Button size="small" startIcon={<AddIcon />} onClick={() => addAdjustment('train')}>Add Cost Adjustment</Button>
             </Box>
           )}
         </Section>

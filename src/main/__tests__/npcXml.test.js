@@ -31,23 +31,25 @@ const FULL_XML = `<?xml version="1.0"?>
   </Strings>
   <Roles>
     <Bank ExceptCookie="banned">
-      <Adjustment Nation="Mileth">0.95</Adjustment>
+      <CostAdjustment Nation="Mileth">0.95</CostAdjustment>
     </Bank>
     <Post Nation="Mileth" OnlyCookie="citizen">
-      <Adjustment Nation="Mileth">0.90</Adjustment>
+      <CostAdjustment Nation="Mileth">0.90</CostAdjustment>
     </Post>
     <Repair Type="Armor" ExceptCookie="untrusted">
-      <Adjustment Nation="Mileth">0.85</Adjustment>
+      <CostAdjustment Nation="Mileth">0.85</CostAdjustment>
     </Repair>
     <Vend OnlyCookie="guild-member">
       <Items>
         <Item Name="Bread" Quantity="5" Restock="1" />
         <Item Name="Water" Quantity="10" />
       </Items>
+      <CostAdjustment Nation="Suomi">0.80</CostAdjustment>
     </Vend>
     <Train ExceptCookie="novice-only">
       <Castable Name="Ao Beag Cradh" Type="Spell" Class="Priest" />
       <Castable Name="Lam" Type="Skill" Class="Warrior" />
+      <CostAdjustment>0.75</CostAdjustment>
     </Train>
   </Roles>
 </Npc>`
@@ -135,7 +137,7 @@ describe('Field coverage — all fields', () => {
     expect(npc.strings[0]).toEqual({ key: 'inn-name', message: "The Wanderer's Rest" })
   })
 
-  it('parses bank role with adjustment', async () => {
+  it('parses bank role with CostAdjustment', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.roles.bank).not.toBeNull()
     expect(npc.roles.bank.exceptCookie).toBe('banned')
@@ -143,7 +145,7 @@ describe('Field coverage — all fields', () => {
     expect(npc.roles.bank.adjustments[0]).toEqual({ nation: 'Mileth', value: '0.95' })
   })
 
-  it('parses post role with nation and adjustment', async () => {
+  it('parses post role with nation and CostAdjustment', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.roles.post).not.toBeNull()
     expect(npc.roles.post.nation).toBe('Mileth')
@@ -151,7 +153,7 @@ describe('Field coverage — all fields', () => {
     expect(npc.roles.post.adjustments[0]).toEqual({ nation: 'Mileth', value: '0.90' })
   })
 
-  it('parses repair role with type and adjustment', async () => {
+  it('parses repair role with type and CostAdjustment', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.roles.repair).not.toBeNull()
     expect(npc.roles.repair.type).toBe('Armor')
@@ -159,22 +161,26 @@ describe('Field coverage — all fields', () => {
     expect(npc.roles.repair.adjustments[0]).toEqual({ nation: 'Mileth', value: '0.85' })
   })
 
-  it('parses vend role with items', async () => {
+  it('parses vend role with items and CostAdjustment', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.roles.vend).not.toBeNull()
     expect(npc.roles.vend.onlyCookie).toBe('guild-member')
     expect(npc.roles.vend.items).toHaveLength(2)
     expect(npc.roles.vend.items[0]).toEqual({ name: 'Bread', quantity: '5', restock: '1' })
     expect(npc.roles.vend.items[1]).toEqual({ name: 'Water', quantity: '10', restock: '' })
+    expect(npc.roles.vend.adjustments).toHaveLength(1)
+    expect(npc.roles.vend.adjustments[0]).toEqual({ nation: 'Suomi', value: '0.80' })
   })
 
-  it('parses train role with castables', async () => {
+  it('parses train role with castables and CostAdjustment', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.roles.train).not.toBeNull()
     expect(npc.roles.train.exceptCookie).toBe('novice-only')
     expect(npc.roles.train.castables).toHaveLength(2)
     expect(npc.roles.train.castables[0]).toEqual({ name: 'Ao Beag Cradh', type: 'Spell', class: 'Priest' })
     expect(npc.roles.train.castables[1]).toEqual({ name: 'Lam', type: 'Skill', class: 'Warrior' })
+    expect(npc.roles.train.adjustments).toHaveLength(1)
+    expect(npc.roles.train.adjustments[0]).toEqual({ nation: '', value: '0.75' })
   })
 
   it('displayName fallback: empty displayName serializes as name, round-trips as name', async () => {
@@ -248,7 +254,7 @@ describe('Field coverage — minimal', () => {
 // the expected elements, attributes, and nesting. These are structural
 // assertions written by hand from the code — they do NOT perform real XSD
 // validation and will not catch divergences between creidhne and the XSD.
-// NOTE: creidhne's NPC role structure (Adjustment, ExceptCookie, OnlyCookie)
+// NOTE: creidhne's NPC role structure (CostAdjustment, ExceptCookie, OnlyCookie)
 // is ahead of the current XSD, which reflects an older server format.
 // ---------------------------------------------------------------------------
 
@@ -271,11 +277,13 @@ describe('Output structure', () => {
         exceptCookie: '',
         onlyCookie: '',
         items: [{ name: 'Sword', quantity: '1', restock: '' }],
+        adjustments: [{ nation: 'Mileth', value: '0.90' }],
       },
       train: {
         exceptCookie: '',
         onlyCookie: '',
         castables: [{ name: 'Punch', type: 'Skill', class: 'Warrior' }],
+        adjustments: [{ nation: '', value: '0.85' }],
       },
     },
   }
@@ -354,6 +362,15 @@ describe('Output structure', () => {
     }
   })
 
+  it('Vend/CostAdjustment has Nation attribute and text value', async () => {
+    const xml = serializeNpcXml(npc)
+    const parsed = await parseRaw(xml)
+    const adj = parsed.Npc.Roles?.[0]?.Vend?.[0]?.CostAdjustment?.[0]
+    expect(adj).toBeDefined()
+    expect(adj.$?.Nation).toBe('Mileth')
+    expect(adj._).toBe('0.90')
+  })
+
   it('Train/Castable elements have a Name attribute', async () => {
     const xml = serializeNpcXml(npc)
     const parsed = await parseRaw(xml)
@@ -362,6 +379,15 @@ describe('Output structure', () => {
       expect(typeof c.$?.Name).toBe('string')
       expect(c.$?.Name.length).toBeGreaterThan(0)
     }
+  })
+
+  it('Train/CostAdjustment has text value', async () => {
+    const xml = serializeNpcXml(npc)
+    const parsed = await parseRaw(xml)
+    // no Nation on this fixture adj — xml2js returns a plain string when there are no attributes
+    const adj = parsed.Npc.Roles?.[0]?.Train?.[0]?.CostAdjustment?.[0]
+    expect(adj).toBeDefined()
+    expect(typeof adj === 'string' ? adj : adj._).toBe('0.85')
   })
 
   it('omits Roles element when all roles are null', async () => {

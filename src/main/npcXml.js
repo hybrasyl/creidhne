@@ -69,7 +69,7 @@ function mapXmlToNpc(result, comment, meta) {
       bank: roles?.Bank?.[0] ? {
         exceptCookie: a(roles.Bank[0], 'ExceptCookie', ''),
         onlyCookie: a(roles.Bank[0], 'OnlyCookie', ''),
-        adjustments: (roles.Bank[0].Adjustment || []).map((adj) => ({
+        adjustments: (roles.Bank[0].CostAdjustment || []).map((adj) => ({
           nation: a(adj, 'Nation', ''),
           value: typeof adj === 'string' ? adj : (adj._ || ''),
         })),
@@ -78,7 +78,7 @@ function mapXmlToNpc(result, comment, meta) {
         nation: a(post, 'Nation', ''),
         exceptCookie: a(post, 'ExceptCookie', ''),
         onlyCookie: a(post, 'OnlyCookie', ''),
-        adjustments: (post.Adjustment || []).map((adj) => ({
+        adjustments: (post.CostAdjustment || []).map((adj) => ({
           nation: a(adj, 'Nation', ''),
           value: typeof adj === 'string' ? adj : (adj._ || ''),
         })),
@@ -87,7 +87,7 @@ function mapXmlToNpc(result, comment, meta) {
         type: a(roles.Repair[0], 'Type', ''),
         exceptCookie: a(roles.Repair[0], 'ExceptCookie', ''),
         onlyCookie: a(roles.Repair[0], 'OnlyCookie', ''),
-        adjustments: (roles.Repair[0].Adjustment || []).map((adj) => ({
+        adjustments: (roles.Repair[0].CostAdjustment || []).map((adj) => ({
           nation: a(adj, 'Nation', ''),
           value: typeof adj === 'string' ? adj : (adj._ || ''),
         })),
@@ -100,6 +100,10 @@ function mapXmlToNpc(result, comment, meta) {
           quantity: a(item, 'Quantity', '1'),
           restock: a(item, 'Restock', ''),
         })),
+        adjustments: (vend.CostAdjustment || []).map((adj) => ({
+          nation: a(adj, 'Nation', ''),
+          value: typeof adj === 'string' ? adj : (adj._ || ''),
+        })),
       } : null,
       train: train ? {
         exceptCookie: a(train, 'ExceptCookie', ''),
@@ -108,6 +112,10 @@ function mapXmlToNpc(result, comment, meta) {
           name: a(c, 'Name', ''),
           type: a(c, 'Type', ''),
           class: a(c, 'Class', ''),
+        })),
+        adjustments: (train.CostAdjustment || []).map((adj) => ({
+          nation: a(adj, 'Nation', ''),
+          value: typeof adj === 'string' ? adj : (adj._ || ''),
         })),
       } : null,
     },
@@ -154,36 +162,27 @@ function buildXmlObject(npc) {
   if (hasAnyRole) {
     const rolesNode = {};
 
+    const serializeAdjustments = (adjustments) =>
+      adjustments.map((adj) => ({
+        $: omitEmpty({ Nation: adj.nation }),
+        _: adj.value,
+      }));
+
     if (bank !== null) {
       const bankEl = { $: omitEmpty({ ExceptCookie: bank.exceptCookie, OnlyCookie: bank.onlyCookie }) };
-      if (bank.adjustments?.length) {
-        bankEl.Adjustment = bank.adjustments.map((adj) => ({
-          $: omitEmpty({ Nation: adj.nation }),
-          _: adj.value,
-        }));
-      }
+      if (bank.adjustments?.length) bankEl.CostAdjustment = serializeAdjustments(bank.adjustments);
       rolesNode.Bank = [bankEl];
     }
 
     if (post !== null) {
       const postEl = { $: omitEmpty({ Nation: post.nation, ExceptCookie: post.exceptCookie, OnlyCookie: post.onlyCookie }) };
-      if (post.adjustments?.length) {
-        postEl.Adjustment = post.adjustments.map((adj) => ({
-          $: omitEmpty({ Nation: adj.nation }),
-          _: adj.value,
-        }));
-      }
+      if (post.adjustments?.length) postEl.CostAdjustment = serializeAdjustments(post.adjustments);
       rolesNode.Post = [postEl];
     }
 
     if (repair !== null) {
       const repairEl = { $: omitEmpty({ Type: repair.type, ExceptCookie: repair.exceptCookie, OnlyCookie: repair.onlyCookie }) };
-      if (repair.adjustments?.length) {
-        repairEl.Adjustment = repair.adjustments.map((adj) => ({
-          $: omitEmpty({ Nation: adj.nation }),
-          _: adj.value,
-        }));
-      }
+      if (repair.adjustments?.length) repairEl.CostAdjustment = serializeAdjustments(repair.adjustments);
       rolesNode.Repair = [repairEl];
     }
 
@@ -196,6 +195,7 @@ function buildXmlObject(npc) {
           })),
         }];
       }
+      if (vend.adjustments?.length) vendEl.CostAdjustment = serializeAdjustments(vend.adjustments);
       rolesNode.Vend = [vendEl];
     }
 
@@ -206,6 +206,7 @@ function buildXmlObject(npc) {
           $: omitEmpty({ Name: c.name, Type: c.type, Class: c.class }),
         }));
       }
+      if (train.adjustments?.length) trainEl.CostAdjustment = serializeAdjustments(train.adjustments);
       rolesNode.Train = [trainEl];
     }
 
