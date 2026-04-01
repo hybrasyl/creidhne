@@ -9,13 +9,14 @@ import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../../recoil/atoms';
 import { PROC_EVENT_TYPES } from '../../../data/itemConstants';
 import ScriptAutocomplete from '../../common/ScriptAutocomplete';
+import { RemoveStatusRow } from '../../castables/StatusesSection';
 
 const DEFAULT_TELEPORT = { map: '', x: 0, y: 0 };
 const DEFAULT_EFFECT = { id: 0, speed: 100 };
 const DEFAULT_SOUND = { id: 1 };
 const DEFAULT_ADD_STATUS = { name: '', duration: 0, intensity: 1.0, tick: 0, removeChance: '', persistDeath: false };
-const DEFAULT_REMOVE_STATUS = { name: '', isCategory: false, quantity: 1 };
-const DEFAULT_PROC = { type: 'OnUse', castable: '', script: '', chance: '0' };
+const DEFAULT_REMOVE_STATUS = { name: '', isCategory: false, quantity: '' };
+const DEFAULT_PROC = { type: 'OnUse', sourceType: '', castable: '', script: '', chance: '0' };
 
 // data: { use, motions, procs }
 // onChange: (updated) => void  — updated always includes all three keys
@@ -24,6 +25,8 @@ function UseTab({ data, onChange }) {
   const castableNames = libraryIndex.castables || [];
   const mapNames = libraryIndex.maps || [];
   const statusNames = libraryIndex.statuses || [];
+  const statusCategories = libraryIndex.statusCategories || [];
+  const motionOptions = libraryIndex.motions || [];
 
   const u = data.use;
 
@@ -46,9 +49,9 @@ function UseTab({ data, onChange }) {
 
   const addRemoveStatus = () =>
     setStatuses({ ...u.statuses, remove: [...u.statuses.remove, { ...DEFAULT_REMOVE_STATUS }] });
-  const setRemoveStatus = (index, field, val) =>
-    setStatuses({ ...u.statuses, remove: u.statuses.remove.map((s, i) => i === index ? { ...s, [field]: val } : s) });
-  const removeRemoveStatus = (index) =>
+  const updateRemoveStatus = (index, val) =>
+    setStatuses({ ...u.statuses, remove: u.statuses.remove.map((s, i) => i === index ? val : s) });
+  const deleteRemoveStatus = (index) =>
     setStatuses({ ...u.statuses, remove: u.statuses.remove.filter((_, i) => i !== index) });
 
   // ── Motions helpers ─────────────────────────────────────────────────────────
@@ -126,6 +129,7 @@ function UseTab({ data, onChange }) {
 
           <Divider sx={{ my: 1 }} />
 
+          {/* Add Statuses */}
           <Typography variant="subtitle2" gutterBottom>Add Statuses</Typography>
           {u.statuses.add.map((s, index) => (
             <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
@@ -157,26 +161,17 @@ function UseTab({ data, onChange }) {
             Add Status
           </Button>
 
+          {/* Remove Statuses — reuses castable RemoveStatusRow */}
           <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>Remove Statuses</Typography>
           {u.statuses.remove.map((s, index) => (
-            <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
-              <Autocomplete
-                options={statusNames} value={s.name || null}
-                onChange={(_, val) => setRemoveStatus(index, 'name', val || '')}
-                size="small" sx={{ flex: 1, minWidth: 140 }}
-                renderInput={(params) => <TextField {...params} label="Status Name" />}
-              />
-              <TextField label="Quantity" type="number" value={s.quantity} size="small" sx={{ width: 100 }}
-                onChange={(e) => setRemoveStatus(index, 'quantity', e.target.value)} inputProps={{ min: 1 }} />
-              <FormControlLabel
-                control={<Checkbox size="small" checked={s.isCategory}
-                  onChange={(e) => setRemoveStatus(index, 'isCategory', e.target.checked)} />}
-                label="Is Category"
-              />
-              <IconButton size="small" color="error" onClick={() => removeRemoveStatus(index)}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            <RemoveStatusRow
+              key={index}
+              entry={s}
+              statusNames={statusNames}
+              categoryNames={statusCategories}
+              onChange={(val) => updateRemoveStatus(index, val)}
+              onRemove={() => deleteRemoveStatus(index)}
+            />
           ))}
           <Button startIcon={<AddIcon />} size="small" onClick={addRemoveStatus} sx={{ mb: 1 }}>
             Remove Status
@@ -188,17 +183,33 @@ function UseTab({ data, onChange }) {
 
       {/* Motions — always shown */}
       <Typography variant="subtitle2" gutterBottom>Motions</Typography>
-      {data.motions.map((motion, index) => (
-        <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-          <TextField label="ID" type="number" value={motion.id} size="small" sx={{ width: 100 }}
-            onChange={(e) => setMotion(index, 'id', e.target.value)} />
-          <TextField label="Speed" type="number" value={motion.speed} size="small" sx={{ width: 100 }}
-            onChange={(e) => setMotion(index, 'speed', e.target.value)} />
-          <IconButton size="small" color="error" onClick={() => removeMotion(index)}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ))}
+      {data.motions.map((motion, index) => {
+        const matched = motionOptions.find((m) => String(m.id) === String(motion.id));
+        return (
+          <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1, flexWrap: 'wrap' }}>
+            <Autocomplete
+              options={motionOptions}
+              value={matched || null}
+              onChange={(_, val) => {
+                if (val) {
+                  onChange({ ...data, motions: data.motions.map((m, i) =>
+                    i === index ? { id: String(val.id), speed: String(val.speed) } : m) });
+                }
+              }}
+              getOptionLabel={(opt) => opt.name}
+              size="small" sx={{ flex: 1, minWidth: 160 }}
+              renderInput={(params) => <TextField {...params} label="Motion" />}
+            />
+            <TextField label="ID" type="number" value={motion.id} size="small" sx={{ width: 90 }}
+              onChange={(e) => setMotion(index, 'id', e.target.value)} />
+            <TextField label="Speed" type="number" value={motion.speed} size="small" sx={{ width: 90 }}
+              onChange={(e) => setMotion(index, 'speed', e.target.value)} />
+            <IconButton size="small" color="error" onClick={() => removeMotion(index)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        );
+      })}
       <Button startIcon={<AddIcon />} size="small" onClick={addMotion} sx={{ mb: 1 }}>
         Add Motion
       </Button>
@@ -207,34 +218,56 @@ function UseTab({ data, onChange }) {
 
       {/* Procs — always shown */}
       <Typography variant="subtitle2" gutterBottom>Procs</Typography>
-      {data.procs.map((proc, index) => (
-        <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 130 }}>
-            <InputLabel>Event Type</InputLabel>
-            <Select value={proc.type} label="Event Type" onChange={(e) => setProc(index, 'type', e.target.value)}>
-              {PROC_EVENT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <Autocomplete
-            freeSolo options={castableNames} value={proc.castable}
-            onInputChange={(_, val, reason) => { if (reason === 'input') setProc(index, 'castable', val); }}
-            onChange={(_, val) => setProc(index, 'castable', val ?? '')}
-            size="small" sx={{ flex: 1, minWidth: 140 }}
-            renderInput={(params) => <TextField {...params} label="Castable" />}
-          />
-          <ScriptAutocomplete
-            label="Script" sx={{ flex: 1, minWidth: 120 }}
-            value={proc.script || ''}
-            onChange={(val) => setProc(index, 'script', val)}
-          />
-          <TextField label="Chance" type="number" value={proc.chance} size="small" sx={{ width: 100 }}
-            onChange={(e) => setProc(index, 'chance', e.target.value)}
-            inputProps={{ min: 0, max: 1, step: 0.01 }} />
-          <IconButton size="small" color="error" onClick={() => removeProc(index)}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ))}
+      {data.procs.map((proc, index) => {
+        // For existing procs loaded from XML (no sourceType stored), derive it
+        const sourceType = proc.sourceType || (proc.castable ? 'Castable' : proc.script ? 'Script' : '');
+        const switchSource = (newType) => {
+          onChange({ ...data, procs: data.procs.map((p, i) =>
+            i === index ? { ...p, sourceType: newType, castable: '', script: '' } : p) });
+        };
+        return (
+          <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel>Event Type</InputLabel>
+              <Select value={proc.type} label="Event Type" onChange={(e) => setProc(index, 'type', e.target.value)}>
+                {PROC_EVENT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 110 }}>
+              <InputLabel>Source</InputLabel>
+              <Select value={sourceType} label="Source" onChange={(e) => switchSource(e.target.value)}
+                displayEmpty>
+                <MenuItem value=""><em>—</em></MenuItem>
+                <MenuItem value="Castable">Castable</MenuItem>
+                <MenuItem value="Script">Script</MenuItem>
+              </Select>
+            </FormControl>
+            {sourceType === 'Castable' && (
+              <Autocomplete
+                options={castableNames} value={proc.castable || null}
+                onChange={(_, val) => setProc(index, 'castable', val ?? '')}
+                size="small" sx={{ flex: 1, minWidth: 160 }}
+                renderInput={(params) => <TextField {...params} label="Castable" />}
+              />
+            )}
+            {sourceType === 'Script' && (
+              <ScriptAutocomplete
+                label="Script" sx={{ flex: 1, minWidth: 160 }}
+                value={proc.script || ''}
+                onChange={(val) => setProc(index, 'script', val)}
+              />
+            )}
+            {sourceType && (
+              <TextField label="Chance" type="number" value={proc.chance} size="small" sx={{ width: 100 }}
+                onChange={(e) => setProc(index, 'chance', e.target.value)}
+                inputProps={{ min: 0, max: 1, step: 0.01 }} />
+            )}
+            <IconButton size="small" color="error" onClick={() => removeProc(index)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        );
+      })}
       <Button startIcon={<AddIcon />} size="small" onClick={addProc}>
         Add Proc
       </Button>

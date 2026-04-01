@@ -1,7 +1,7 @@
 import {
   Box, TextField, Select, MenuItem, FormControl, InputLabel,
-  Typography, IconButton, Button, Autocomplete, Divider, Switch,
-  Chip, Paper,
+  Typography, IconButton, Button, Autocomplete, Divider,
+  Chip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -10,16 +10,16 @@ import { CLASS_TYPES, GENDERS, SLOT_RESTRICTION_TYPES, EQUIPMENT_SLOTS } from '.
 import { libraryIndexState } from '../../../recoil/atoms';
 
 const ALL_CLASS_OPTIONS = CLASS_TYPES.filter((c) => c !== 'All');
-const DEFAULT_AB = { min: '1', max: '99' };
 
 function RestrictionsTab({ data, onChange }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const castableNames = libraryIndex.castables || [];
+  const npcStringKeys = libraryIndex.npcStringKeys || [];
 
   const r = data.restrictions ?? {
     level: { min: '1', max: '99' },
     ab: null,
-    class: 'All',
+    class: '',
     gender: 'Neutral',
     castables: [],
     slotRestrictions: [],
@@ -31,29 +31,31 @@ function RestrictionsTab({ data, onChange }) {
   const setSubField = (parent, field) => (e) =>
     onChange({ ...data, restrictions: { ...r, [parent]: { ...r[parent], [field]: e.target.value } } });
 
-  // Class multi-select
+  // ── Class multi-select ─────────────────────────────────────────────────────
   const selectedClasses =
     r.class === 'All'
-      ? [...ALL_CLASS_OPTIONS]
+      ? [...ALL_CLASS_OPTIONS]   // backward-compat with existing data
       : (r.class || '').split(' ').filter(Boolean);
 
   const handleClassChange = (_, newVal) => {
     if (newVal.includes('All')) {
-      onChange({ ...data, restrictions: { ...r, class: ALL_CLASS_OPTIONS.join(' ') } });
+      // Toggle: if all are currently selected, deselect all; otherwise select all
+      const allSelected = ALL_CLASS_OPTIONS.every((c) => selectedClasses.includes(c));
+      onChange({ ...data, restrictions: { ...r, class: allSelected ? '' : ALL_CLASS_OPTIONS.join(' ') } });
       return;
     }
-    const joined = newVal.join(' ');
-    onChange({ ...data, restrictions: { ...r, class: joined || ALL_CLASS_OPTIONS.join(' ') } });
+    onChange({ ...data, restrictions: { ...r, class: newVal.join(' ') } });
   };
 
-  // AB
-  const toggleAb = (e) =>
-    onChange({ ...data, restrictions: { ...r, ab: e.target.checked ? { ...DEFAULT_AB } : null } });
+  // ── AB ────────────────────────────────────────────────────────────────────
+  const setAbField = (field) => (e) => {
+    const val = e.target.value;
+    const current = r.ab || { min: '', max: '' };
+    const next = { ...current, [field]: val };
+    onChange({ ...data, restrictions: { ...r, ab: (!next.min && !next.max) ? null : next } });
+  };
 
-  const setAbField = (field) => (e) =>
-    onChange({ ...data, restrictions: { ...r, ab: { ...r.ab, [field]: e.target.value } } });
-
-  // Castables
+  // ── Castables ─────────────────────────────────────────────────────────────
   const addCastable = () =>
     onChange({ ...data, restrictions: { ...r, castables: [...r.castables, ''] } });
 
@@ -66,7 +68,7 @@ function RestrictionsTab({ data, onChange }) {
     onChange({ ...data, restrictions: { ...r, castables: r.castables.filter((_, i) => i !== index) } });
   };
 
-  // Slot restrictions
+  // ── Slot restrictions ──────────────────────────────────────────────────────
   const addSlotRestriction = () =>
     onChange({
       ...data,
@@ -87,11 +89,16 @@ function RestrictionsTab({ data, onChange }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Level, AB, Gender on one line */}
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <TextField label="Level Min" type="number" value={r.level.min} size="small" sx={{ width: 120 }}
-          onChange={setSubField('level', 'min')} inputProps={{ min: 0, max: 255 }} />
-        <TextField label="Level Max" type="number" value={r.level.max} size="small" sx={{ width: 120 }}
-          onChange={setSubField('level', 'max')} inputProps={{ min: 0, max: 255 }} />
+        <TextField label="Level Min" type="number" value={r.level.min} size="small" sx={{ width: 110 }}
+          onChange={setSubField('level', 'min')} inputProps={{ min: 0, max: 99 }} />
+        <TextField label="Level Max" type="number" value={r.level.max} size="small" sx={{ width: 110 }}
+          onChange={setSubField('level', 'max')} inputProps={{ min: 0, max: 99 }} />
+        <TextField label="AB Min" type="number" value={r.ab?.min ?? ''} size="small" sx={{ width: 100 }}
+          onChange={setAbField('min')} inputProps={{ min: 0, max: 99 }} />
+        <TextField label="AB Max" type="number" value={r.ab?.max ?? ''} size="small" sx={{ width: 100 }}
+          onChange={setAbField('max')} inputProps={{ min: 0, max: 99 }} />
         <FormControl size="small" sx={{ minWidth: 130 }}>
           <InputLabel>Gender</InputLabel>
           <Select value={r.gender} label="Gender" onChange={setRestriction('gender')}>
@@ -100,6 +107,7 @@ function RestrictionsTab({ data, onChange }) {
         </FormControl>
       </Box>
 
+      {/* Class picker — blank = no restriction; "All" = select/deselect all */}
       <Autocomplete
         multiple
         options={['All', ...ALL_CLASS_OPTIONS]}
@@ -111,24 +119,8 @@ function RestrictionsTab({ data, onChange }) {
             <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
           ))
         }
-        renderInput={(params) => <TextField {...params} size="small" label="Classes" />}
+        renderInput={(params) => <TextField {...params} size="small" label="Classes (blank = no restriction)" />}
       />
-
-      {/* AB sub-paper */}
-      <Paper variant="outlined" sx={{ p: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: r.ab ? 1.5 : 0 }}>
-          <Typography variant="body2" sx={{ flex: 1 }}>AB Restriction</Typography>
-          <Switch size="small" checked={r.ab !== null} onChange={toggleAb} />
-        </Box>
-        {r.ab !== null && (
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <TextField label="AB Min" type="number" value={r.ab.min} size="small" sx={{ width: 120 }}
-              onChange={setAbField('min')} inputProps={{ min: 0, max: 255 }} />
-            <TextField label="AB Max" type="number" value={r.ab.max} size="small" sx={{ width: 120 }}
-              onChange={setAbField('max')} inputProps={{ min: 0, max: 255 }} />
-          </Box>
-        )}
-      </Paper>
 
       <Divider />
 
@@ -156,27 +148,46 @@ function RestrictionsTab({ data, onChange }) {
       <Divider />
 
       <Typography variant="subtitle2">Slot Restrictions</Typography>
-      {r.slotRestrictions.map((sr, index) => (
-        <Box key={index} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Type</InputLabel>
-            <Select value={sr.type} label="Type" onChange={(e) => setSlotRestriction(index, 'type', e.target.value)}>
-              {SLOT_RESTRICTION_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Slot</InputLabel>
-            <Select value={sr.slot} label="Slot" onChange={(e) => setSlotRestriction(index, 'slot', e.target.value)}>
-              {EQUIPMENT_SLOTS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <TextField label="Message" value={sr.message} size="small" sx={{ flex: 1, minWidth: 160 }}
-            onChange={(e) => setSlotRestriction(index, 'message', e.target.value)} inputProps={{ maxLength: 255 }} />
-          <IconButton size="small" color="error" onClick={() => removeSlotRestriction(index)}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ))}
+      {r.slotRestrictions.map((sr, index) => {
+        const matchedKey = npcStringKeys.find((s) => s.key === sr.message);
+        return (
+          <Box key={index} sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Type</InputLabel>
+                <Select value={sr.type} label="Type" onChange={(e) => setSlotRestriction(index, 'type', e.target.value)}>
+                  {SLOT_RESTRICTION_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Slot</InputLabel>
+                <Select value={sr.slot} label="Slot" onChange={(e) => setSlotRestriction(index, 'slot', e.target.value)}>
+                  {EQUIPMENT_SLOTS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <Autocomplete
+                options={npcStringKeys}
+                value={matchedKey || null}
+                onChange={(_, val) => setSlotRestriction(index, 'message', val?.key ?? '')}
+                getOptionLabel={(opt) => opt.key}
+                isOptionEqualToValue={(opt, val) => opt.key === val.key}
+                size="small" sx={{ minWidth: 200, flex: 1 }}
+                renderInput={(params) => <TextField {...params} label="Message Key" />}
+              />
+              <IconButton size="small" color="error" onClick={() => removeSlotRestriction(index)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            {matchedKey && (
+              <TextField
+                label="Message Preview" value={matchedKey.message}
+                size="small" inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+                sx={{ pl: 0 }}
+              />
+            )}
+          </Box>
+        );
+      })}
       <Button startIcon={<AddIcon />} size="small" onClick={addSlotRestriction}>
         Add Slot Restriction
       </Button>

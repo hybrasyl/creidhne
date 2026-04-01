@@ -135,4 +135,5 @@ function StatusesSection({ statuses, libraryIndex, onChange }) {
   );
 }
 
+export { RemoveStatusRow };
 export default StatusesSection;

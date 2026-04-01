@@ -28,7 +28,7 @@ const DEFAULT_EQUIPMENT = { slot: 'None', weaponType: 'None' };
 const DEFAULT_DAMAGE = { smallMin: '0', smallMax: '0', largeMin: '0', largeMax: '0' };
 const DEFAULT_USE = { script: '', teleport: null, effect: null, sound: null, statuses: { add: [], remove: [] } };
 const DEFAULT_CAST_MODIFIER = { group: '', castable: '', all: false, add: [], subtract: [], replace: [] };
-const DEFAULT_OP = { match: '-1', amount: '0', min: '-1', max: '255' };
+const DEFAULT_OP = { match: '', amount: '0', min: '', max: '' };
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
 function Section({ title, open, onToggle, enabled, onEnable, children }) {
@@ -476,6 +476,7 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
               <StatsTab
                 data={p.statModifiers}
                 onChange={(updated) => updateProperties({ statModifiers: updated })}
+                elementOptions={libraryIndex.elementnames || []}
               />
             )}
 
@@ -544,12 +545,15 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
                           {cm[field].map((op, opIdx) => (
                             <Box key={opIdx} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 0.5 }}>
                               <TextField label="Match" value={op.match} size="small" sx={{ width: 100 }}
+                                placeholder="-1"
                                 onChange={(e) => setOp(field, opIdx, 'match', e.target.value)} />
                               <TextField label="Amount" value={op.amount} size="small" sx={{ width: 100 }}
                                 onChange={(e) => setOp(field, opIdx, 'amount', e.target.value)} />
                               <TextField label="Min" value={op.min} size="small" sx={{ width: 90 }}
+                                placeholder="-1"
                                 onChange={(e) => setOp(field, opIdx, 'min', e.target.value)} />
                               <TextField label="Max" value={op.max} size="small" sx={{ width: 90 }}
+                                placeholder="255"
                                 onChange={(e) => setOp(field, opIdx, 'max', e.target.value)} />
                               <IconButton size="small" color="error" onClick={() => removeOp(field, opIdx)}>
                                 <DeleteIcon fontSize="small" />
@@ -595,6 +599,9 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
         {/* ── Vendor ── */}
         <Section title="Vendor" open={openVendor} onToggle={() => setOpenVendor((v) => !v)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              Shop Tab also determines the bank tab name for this item.
+            </Typography>
             <ConstantAutocomplete
               indexKey="vendorTabs" label="Shop Tab"
               value={p.vendor?.shopTab ?? ''}

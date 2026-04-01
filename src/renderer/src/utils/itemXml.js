@@ -281,8 +281,10 @@ function buildXmlObject(item) {
     propsObj.Variants = [varNode];
   }
 
-  if (p.vendor) {
-    propsObj.Vendor = [{ $: { ShopTab: p.vendor.shopTab }, Description: [p.vendor.description] }];
+  if (p.vendor && (p.vendor.shopTab || p.vendor.description)) {
+    const vendorNode = { $: { ShopTab: p.vendor.shopTab } };
+    if (p.vendor.description) vendorNode.Description = [p.vendor.description];
+    propsObj.Vendor = [vendorNode];
   }
 
   if (p.damage) {

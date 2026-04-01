@@ -105,7 +105,10 @@ function ConstantAutocomplete({ indexKey, label, value, onChange, size = 'small'
         }
       }}
       filterOptions={filterOptions}
-      getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+      getOptionLabel={(option) => (typeof option === 'string' ? option : option.inputValue)}
+      renderOption={(props, option) => (
+        <li {...props}>{typeof option === 'string' ? option : option.label}</li>
+      )}
       isOptionEqualToValue={(opt, val) => opt === val}
       renderInput={(params) => (
         <TextField
