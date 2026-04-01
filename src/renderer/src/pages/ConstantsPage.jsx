@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box, Typography, Tabs, Tab, Divider, List, ListItem, ListItemText,
   ListItemButton, TextField, IconButton, Tooltip, Button, Chip,
@@ -11,6 +11,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 
 const EMPTY_CONSTANTS = {
   vendorTabs: [],
@@ -642,26 +643,34 @@ function ConstantsPage() {
   const [userConstants, setUserConstants] = useState(EMPTY_CONSTANTS);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { markDirty, markClean, saveRef } = useUnsavedGuard('Constants');
+  const handleSaveRef = useRef(null);
+
+  // Keep saveRef pointed at the current save function
+  useEffect(() => { saveRef.current = () => handleSaveRef.current?.(); });
 
   useEffect(() => {
     window.electronAPI.loadUserConstants(activeLibrary)
       .then(data => setUserConstants({ ...EMPTY_CONSTANTS, ...data }))
       .catch(console.error);
     setDirty(false);
-  }, [activeLibrary]);
+    markClean();
+  }, [activeLibrary, markClean]);
 
   const handleChange = useCallback((newConstants) => {
     setUserConstants(newConstants);
     setDirty(true);
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   const handleCategoryChange = useCallback((key, names) => {
     setUserConstants(prev => {
       const next = { ...prev, [key]: names };
       setDirty(true);
+      markDirty();
       return next;
     });
-  }, []);
+  }, [markDirty]);
 
   // After any scan that writes to the index, reload it and merge with current user constants
   const handleIndexUpdated = useCallback((rawIndex) => {
@@ -678,7 +687,7 @@ function ConstantsPage() {
     });
   }, [setLibraryIndex, userConstants]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       await window.electronAPI.saveUserConstants(activeLibrary, userConstants);
@@ -693,12 +702,16 @@ function ConstantsPage() {
         cookieNames:        dedup(prev.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
       }));
       setDirty(false);
+      markClean();
     } catch (e) {
       console.error(e);
     } finally {
       setSaving(false);
     }
-  };
+  }, [activeLibrary, userConstants, setLibraryIndex, markClean]);
+
+  // Keep the stable ref in sync for saveRef
+  useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

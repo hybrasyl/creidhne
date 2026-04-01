@@ -38,6 +38,8 @@ const settingsManager = createSettingsManager(userDataPath)
 
 //console.log('Settings directory:', join(app.getPath('appData'), 'Erisco', 'Creidhne'));
 
+let closeConfirmed = false
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1024,
@@ -51,6 +53,13 @@ function createWindow() {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
+    }
+  })
+
+  mainWindow.on('close', (e) => {
+    if (!closeConfirmed) {
+      e.preventDefault()
+      mainWindow.webContents.send('app:check-close')
     }
   })
 
@@ -98,7 +107,15 @@ app.whenReady().then(() => {
 
   ipcMain.on('close-window', () => {
     const window = BrowserWindow.getFocusedWindow()
-    if (window) window.close()
+    if (window) window.webContents.send('app:check-close')
+  })
+
+  ipcMain.on('app:confirm-close', () => {
+    const window = BrowserWindow.getFocusedWindow()
+    if (window) {
+      closeConfirmed = true
+      window.close()
+    }
   })
   ipcMain.handle('dialog:openFile', handleFileOpen)
   ipcMain.handle('open-directory', handleDirectoryOpen)

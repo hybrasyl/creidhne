@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState, dirtyEditorState, recentPagesState } from './recoil/atoms'; // Import Recoil atoms
@@ -27,6 +27,8 @@ function App() {
   const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState);
   const [pendingNav, setPendingNav] = useState(null);
   const [navDialogOpen, setNavDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const dirtyEditorRef = useRef(dirtyEditor);
 
   // Load settings on mount
   useEffect(() => {
@@ -116,6 +118,37 @@ function App() {
     setPendingNav(null);
   }, []);
 
+  // Keep ref in sync so the close listener always sees current dirty state
+  useEffect(() => { dirtyEditorRef.current = dirtyEditor; }, [dirtyEditor]);
+
+  // Register the close listener once — reads state via ref to avoid stacking
+  useEffect(() => {
+    window.electronAPI.onCheckClose(() => {
+      if (dirtyEditorRef.current) {
+        setCloseDialogOpen(true);
+      } else {
+        window.electronAPI.confirmClose();
+      }
+    });
+  }, []);
+
+  const handleCloseSave = useCallback(async () => {
+    setCloseDialogOpen(false);
+    try {
+      await dirtyEditor?.onSave();
+    } catch { /* save failed — still close */ }
+    window.electronAPI.confirmClose();
+  }, [dirtyEditor]);
+
+  const handleCloseDiscard = useCallback(() => {
+    setCloseDialogOpen(false);
+    window.electronAPI.confirmClose();
+  }, []);
+
+  const handleCloseCancel = useCallback(() => {
+    setCloseDialogOpen(false);
+  }, []);
+
   const handleAddLibrary = async () => {
     const directoryPath = await window.electronAPI.openDirectory(); // Use IPC call to open directory
     if (directoryPath && !libraries.includes(directoryPath)) {
@@ -143,6 +176,13 @@ function App() {
         onSave={handleNavSave}
         onDiscard={handleNavDiscard}
         onCancel={handleNavCancel}
+      />
+      <UnsavedChangesDialog
+        open={closeDialogOpen}
+        label={dirtyEditor?.label}
+        onSave={handleCloseSave}
+        onDiscard={handleCloseDiscard}
+        onCancel={handleCloseCancel}
       />
     </ThemeProvider>
   );
