@@ -81,16 +81,7 @@ export const DEFAULT_CASTABLE = {
   maxLevel: { deprecated: false, monk: '', warrior: '', peasant: '', wizard: '', priest: '', rogue: '' },
   script: '',
   sound: { id: '' },
-  animations: {
-    onCast: {
-      player: { peasant:{id:'1',speed:'20'}, warrior:{id:'1',speed:'20'}, wizard:{id:'1',speed:'20'}, priest:{id:'1',speed:'20'}, rogue:{id:'1',speed:'20'}, monk:{id:'1',speed:'20'} },
-      target: { id:'', speed:'' },
-    },
-    onEnd: {
-      player: { peasant:{id:'',speed:''}, warrior:{id:'',speed:''}, wizard:{id:'',speed:''}, priest:{id:'',speed:''}, rogue:{id:'',speed:''}, monk:{id:'',speed:''} },
-      target: { id:'', speed:'' },
-    },
-  },
+  animations: { onCast: null, onEnd: null },
   scriptOverride: false,
   heal:    null,
   damage:  null,

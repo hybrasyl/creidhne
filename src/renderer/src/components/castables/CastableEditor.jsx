@@ -662,6 +662,7 @@ function CastableEditor({
           <AnimationsSection
             sound={data.sound || { id: '' }}
             animations={data.animations}
+            motions={libraryIndex?.motions || []}
             onSoundChange={(val) => updateData((d) => ({ ...d, sound: val }))}
             onAnimationsChange={(val) => updateData((d) => ({ ...d, animations: val }))}
           />

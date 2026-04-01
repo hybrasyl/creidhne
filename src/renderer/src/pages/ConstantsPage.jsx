@@ -20,6 +20,7 @@ const EMPTY_CONSTANTS = {
   statusCategories: [],
   cookies: [],
   npcJobs: [],
+  motions: [],
 };
 
 // ─── Simple Types Tab ──────────────────────────────────────────────────────────
@@ -624,6 +625,154 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
   );
 }
 
+// ─── Motions Tab ───────────────────────────────────────────────────────────────
+
+const DEFAULT_MOTIONS = [
+  { name: 'Basic - Assail',      id: 1,   speed: 20 },
+  { name: 'Basic - Cast',        id: 6,   speed: 40 },
+  { name: 'Priest - Cast',       id: 128, speed: 20 },
+  { name: 'Warrior - 2h Attack', id: 129, speed: 20 },
+  { name: 'Warrior - Charge',    id: 130, speed: 20 },
+  { name: 'Monk - Kick',         id: 131, speed: 20 },
+  { name: 'Monk - Punch',        id: 132, speed: 20 },
+  { name: 'Monk - Kick 2',       id: 133, speed: 20 },
+  { name: 'Rogue - Stab Once',   id: 134, speed: 40 },
+  { name: 'Rogue - Stab Twice',  id: 135, speed: 40 },
+  { name: 'Wizard - Cast',       id: 136, speed: 20 },
+  { name: 'Bard - Sing',         id: 137, speed: 20 },
+  { name: 'Bard - Attack',       id: 138, speed: 20 },
+  { name: 'Gladiator - Swipe',   id: 139, speed: 20 },
+  { name: 'Gladiator - Sweep',   id: 140, speed: 20 },
+  { name: 'Gladiator - Hop',     id: 141, speed: 20 },
+  { name: 'Archer - Shoot',      id: 142, speed: 20 },
+  { name: 'Archer - Long Shoot', id: 143, speed: 20 },
+  { name: 'Archer - Far Shoot',  id: 144, speed: 20 },
+  { name: 'Summoner - Cast',     id: 145, speed: 40 },
+];
+
+function MotionsTab({ userConstants, onChange }) {
+  const motions = userConstants.motions || [];
+  const [newName,  setNewName]  = useState('');
+  const [newId,    setNewId]    = useState('');
+  const [newSpeed, setNewSpeed] = useState('');
+
+  const handleUpdate = (index, field, value) => {
+    const updated = motions.map((m, i) => i === index ? { ...m, [field]: value } : m);
+    onChange({ ...userConstants, motions: updated });
+  };
+
+  const handleDelete = (index) => {
+    onChange({ ...userConstants, motions: motions.filter((_, i) => i !== index) });
+  };
+
+  const handleAdd = () => {
+    const name  = newName.trim();
+    const id    = Number(newId);
+    const speed = Number(newSpeed);
+    if (!name || !newId) return;
+    onChange({ ...userConstants, motions: [...motions, { name, id, speed: speed || 20 }] });
+    setNewName(''); setNewId(''); setNewSpeed('');
+  };
+
+  const handleReset = () => {
+    onChange({ ...userConstants, motions: DEFAULT_MOTIONS.map(m => ({ ...m })) });
+  };
+
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+          Player motion IDs and speeds used by the animation preset buttons in the castable editor.
+        </Typography>
+        <Button size="small" variant="outlined" startIcon={<RefreshIcon />} onClick={handleReset}>
+          Reset to defaults
+        </Button>
+      </Box>
+      {motions.length === 0 ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Alert severity="info" sx={{ flex: 1 }}>No motions defined. Load the defaults or add entries manually.</Alert>
+          <Button size="small" variant="contained" onClick={handleReset}>Load defaults</Button>
+        </Box>
+      ) : (
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell sx={{ width: 110 }}>Motion ID</TableCell>
+                <TableCell sx={{ width: 110 }}>Speed</TableCell>
+                <TableCell sx={{ width: 40 }} padding="none" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {motions.map((motion, index) => (
+                <TableRow key={index} hover>
+                  <TableCell>
+                    <TextField
+                      size="small" fullWidth variant="standard"
+                      value={motion.name || ''}
+                      onChange={e => handleUpdate(index, 'name', e.target.value)}
+                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      size="small" fullWidth variant="standard"
+                      value={motion.id ?? ''}
+                      onChange={e => handleUpdate(index, 'id', Number(e.target.value.replace(/\D/g, '')))}
+                      inputProps={{ inputMode: 'numeric' }}
+                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      size="small" fullWidth variant="standard"
+                      value={motion.speed ?? ''}
+                      onChange={e => handleUpdate(index, 'speed', Number(e.target.value.replace(/\D/g, '')))}
+                      inputProps={{ inputMode: 'numeric' }}
+                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                    />
+                  </TableCell>
+                  <TableCell padding="none">
+                    <IconButton size="small" onClick={() => handleDelete(index)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
+      <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+        <TextField
+          size="small" placeholder="Name..." value={newName}
+          onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          sx={{ flex: 1, maxWidth: 300 }}
+        />
+        <TextField
+          size="small" placeholder="ID..." value={newId}
+          onChange={e => setNewId(e.target.value.replace(/\D/g, ''))}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          inputProps={{ inputMode: 'numeric' }}
+          sx={{ width: 90 }}
+        />
+        <TextField
+          size="small" placeholder="Speed..." value={newSpeed}
+          onChange={e => setNewSpeed(e.target.value.replace(/\D/g, ''))}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          inputProps={{ inputMode: 'numeric' }}
+          sx={{ width: 90 }}
+        />
+        <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newName.trim() || !newId}>
+          Add
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -634,6 +783,7 @@ const TABS = [
   { label: 'Castable Categories' },
   { label: 'Status Categories' },
   { label: 'Cookies' },
+  { label: 'Motions' },
 ];
 
 function ConstantsPage() {
@@ -684,6 +834,7 @@ function ConstantsPage() {
       castableCategories: dedup(rawIndex.castableCategories, userConstants.castableCategories),
       statusCategories:   dedup(rawIndex.statusCategories,   userConstants.statusCategories),
       cookieNames:        dedup(rawIndex.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
+      motions:            userConstants.motions || [],
     });
   }, [setLibraryIndex, userConstants]);
 
@@ -700,6 +851,7 @@ function ConstantsPage() {
         castableCategories: dedup(prev.castableCategories, userConstants.castableCategories),
         statusCategories:   dedup(prev.statusCategories,   userConstants.statusCategories),
         cookieNames:        dedup(prev.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
+        motions:            userConstants.motions || [],
       }));
       setDirty(false);
       markClean();
@@ -790,6 +942,12 @@ function ConstantsPage() {
             userConstants={userConstants}
             onChange={handleChange}
             activeLibrary={activeLibrary}
+          />
+        )}
+        {tab === 7 && (
+          <MotionsTab
+            userConstants={userConstants}
+            onChange={handleChange}
           />
         )}
       </Box>

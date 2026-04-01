@@ -180,6 +180,11 @@ function CastablesPage() {
 
       await window.electronAPI.saveCastable(newPath, data);
 
+      // Always sync editingCastable to the saved data so the editor's reset
+      // useEffect (triggered by selectedFile/initialFileName changes below) resets
+      // to the correct content rather than the stale pre-edit version.
+      setEditingCastable(data);
+
       if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
@@ -187,6 +192,8 @@ function CastablesPage() {
         );
         setSelectedFile({ name: fileName, path: newPath });
         setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
       }
 
       markClean();

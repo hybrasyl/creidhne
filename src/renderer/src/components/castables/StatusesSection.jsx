@@ -36,7 +36,7 @@ function AddStatusRow({ entry, statusNames, onChange, onRemove }) {
   );
 }
 
-function RemoveStatusRow({ entry, statusNames, onChange, onRemove }) {
+function RemoveStatusRow({ entry, statusNames, categoryNames, onChange, onRemove }) {
   const set = (field, val) => onChange({ ...entry, [field]: val });
 
   return (
@@ -54,10 +54,15 @@ function RemoveStatusRow({ entry, statusNames, onChange, onRemove }) {
         </Select>
       </FormControl>
       {entry.isCategory ? (
-        <TextField
-          label="Category" size="small" sx={{ flex: 1, minWidth: 160 }}
+        <Autocomplete
+          freeSolo
+          options={categoryNames}
           value={entry.name || ''}
-          onChange={(e) => set('name', e.target.value)}
+          onInputChange={(_, val, reason) => { if (reason === 'input') set('name', val); }}
+          onChange={(_, val) => set('name', val ?? '')}
+          size="small"
+          sx={{ flex: 1, minWidth: 160 }}
+          renderInput={(params) => <TextField {...params} label="Category" />}
         />
       ) : (
         <Autocomplete
@@ -85,7 +90,8 @@ function RemoveStatusRow({ entry, statusNames, onChange, onRemove }) {
 }
 
 function StatusesSection({ statuses, libraryIndex, onChange }) {
-  const statusNames = libraryIndex.statuses || [];
+  const statusNames   = libraryIndex.statuses          || [];
+  const categoryNames = libraryIndex.statusCategories  || [];
   const add    = statuses?.add    || [];
   const remove = statuses?.remove || [];
 
@@ -112,6 +118,7 @@ function StatusesSection({ statuses, libraryIndex, onChange }) {
           key={i}
           entry={entry}
           statusNames={statusNames}
+          categoryNames={categoryNames}
           onChange={(v) => updateRemove(i, v)}
           onRemove={() => deleteRemove(i)}
         />

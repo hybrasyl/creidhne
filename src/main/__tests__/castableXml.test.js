@@ -64,10 +64,12 @@ const FULL_XML = `<?xml version="1.0"?>
           <Motion Class="Warrior" Id="3" Speed="20"/>
           <Motion Class="Peasant" Id="1" Speed="20"/>
         </Player>
+        <SpellEffect Id="20" Speed="100"/>
         <Target Id="10" Speed="50"/>
       </OnCast>
       <OnEnd>
         <Target Id="11" Speed="30"/>
+        <SpellEffect Id="21" Speed="60"/>
       </OnEnd>
     </Animations>
     <Sound Id="7"/>
@@ -82,14 +84,14 @@ const FULL_XML = `<?xml version="1.0"?>
       <Add Duration="10" Intensity="2" Tick="3">Burn</Add>
       <Remove IsCategory="true" Quantity="2">FireGroup</Remove>
     </Statuses>
+    <Reactors>
+      <Reactor Script="explode.cs" RelativeX="1" RelativeY="-1" Sprite="5" Expiration="30" Uses="3"
+        DisplayOwner="true" DisplayGroup="true" DisplayStatus="OnFire" DisplayCookie="burned"/>
+    </Reactors>
   </Effects>
   <Restrictions>
     <Item RestrictionType="Equipped" Slot="Armor" WeaponType="None" Message="Wrong gear">Breastplate</Item>
   </Restrictions>
-  <Reactors>
-    <Reactor Script="explode.cs" RelativeX="1" RelativeY="-1" Sprite="5" Expiration="30" Uses="3"
-      DisplayOwner="true" DisplayGroup="true" DisplayStatus="OnFire" DisplayCookie="burned"/>
-  </Reactors>
 </Castable>`;
 
 const MINIMAL_XML = `<?xml version="1.0"?>
@@ -268,7 +270,9 @@ describe('castableXml — all fields', () => {
   // Effects — Animations
   it('parses onCast wizard motion', () => expect(c.animations.onCast.player.wizard).toEqual({ id: '5', speed: '25' }));
   it('parses onCast priest motion', () => expect(c.animations.onCast.player.priest).toEqual({ id: '6', speed: '20' }));
+  it('parses onCast spellEffect', () => expect(c.animations.onCast.spellEffect).toEqual({ id: '20', speed: '100' }));
   it('parses onCast target', () => expect(c.animations.onCast.target).toEqual({ id: '10', speed: '50' }));
+  it('parses onEnd spellEffect', () => expect(c.animations.onEnd.spellEffect).toEqual({ id: '21', speed: '60' }));
   it('parses onEnd target', () => expect(c.animations.onEnd.target).toEqual({ id: '11', speed: '30' }));
 
   // Effects — Heal (Static)
@@ -348,14 +352,8 @@ describe('castableXml — minimal', () => {
   it('scriptOverride defaults to false', () => expect(c.scriptOverride).toBe(false));
   it('requirements defaults to empty array', () => expect(c.requirements).toEqual([]));
   it('sound defaults to id empty string', () => expect(c.sound).toEqual({ id: '' }));
-  it('onCast player motions default to id 1 speed 20', () => {
-    expect(c.animations.onCast.player.wizard).toEqual({ id: '1', speed: '20' });
-    expect(c.animations.onCast.player.monk).toEqual({ id: '1', speed: '20' });
-  });
-  it('onEnd player motions default to empty strings', () => {
-    expect(c.animations.onEnd.player.wizard).toEqual({ id: '', speed: '' });
-    expect(c.animations.onEnd.player.monk).toEqual({ id: '', speed: '' });
-  });
+  it('animations onCast defaults to null', () => expect(c.animations.onCast).toBeNull());
+  it('animations onEnd defaults to null', () => expect(c.animations.onEnd).toBeNull());
   it('heal defaults to null', () => expect(c.heal).toBeNull());
   it('damage defaults to null', () => expect(c.damage).toBeNull());
   it('statuses defaults to empty add/remove arrays', () => {
@@ -410,6 +408,7 @@ describe('castableXml — output structure', () => {
             wizard: { id: '', speed: '' }, priest: { id: '', speed: '' },
             rogue: { id: '9', speed: '15' }, monk: { id: '', speed: '' },
           },
+          spellEffect: { id: '7', speed: '80' },
           target: { id: '4', speed: '10' },
         },
         onEnd: {
@@ -418,6 +417,7 @@ describe('castableXml — output structure', () => {
             wizard: { id: '', speed: '' }, priest: { id: '', speed: '' },
             rogue: { id: '', speed: '' }, monk: { id: '', speed: '' },
           },
+          spellEffect: { id: '', speed: '' },
           target: { id: '', speed: '' },
         },
       },
@@ -486,8 +486,15 @@ describe('castableXml — output structure', () => {
     expect(rogue.$.Id).toBe('9');
     expect(rogue.$.Speed).toBe('15');
   });
+  it('Effects > Animations > OnCast > SpellEffect', () => {
+    expect(raw.Castable.Effects[0].Animations[0].OnCast[0].SpellEffect[0].$.Id).toBe('7');
+    expect(raw.Castable.Effects[0].Animations[0].OnCast[0].SpellEffect[0].$.Speed).toBe('80');
+  });
   it('Effects > Animations > OnCast > Target', () => {
     expect(raw.Castable.Effects[0].Animations[0].OnCast[0].Target[0].$.Id).toBe('4');
+  });
+  it('Effects > Animations > OnEnd omits SpellEffect when id is empty', () => {
+    expect(raw.Castable.Effects[0].Animations[0].OnEnd).toBeUndefined();
   });
   it('Effects > Sound with Id', () => {
     expect(raw.Castable.Effects[0].Sound[0].$.Id).toBe('3');
@@ -517,8 +524,8 @@ describe('castableXml — output structure', () => {
     expect(r.$.Slot).toBe('Weapon');
     expect(r.$.WeaponType).toBe('Staff');
   });
-  it('Reactors > Reactor with Script and DisplayGroup', () => {
-    const reactor = raw.Castable.Reactors[0].Reactor[0];
+  it('Effects > Reactors > Reactor with Script and DisplayGroup', () => {
+    const reactor = raw.Castable.Effects[0].Reactors[0].Reactor[0];
     expect(reactor.$.Script).toBe('r.cs');
     expect(reactor.$.DisplayGroup).toBe('true');
     expect(reactor.$.DisplayOwner).toBeUndefined();

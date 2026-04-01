@@ -244,33 +244,24 @@ function mapRestrictions(restrictsNode) {
   }));
 }
 
-const DEFAULT_MOTION        = { id: '', speed: '' };
-const DEFAULT_PLAYER_MOTION = { id: '1', speed: '20' };
-const DEFAULT_PLAYER = {
-  peasant: { ...DEFAULT_PLAYER_MOTION }, warrior: { ...DEFAULT_PLAYER_MOTION },
-  wizard:  { ...DEFAULT_PLAYER_MOTION }, priest:  { ...DEFAULT_PLAYER_MOTION },
-  rogue:   { ...DEFAULT_PLAYER_MOTION }, monk:    { ...DEFAULT_PLAYER_MOTION },
-};
+const DEFAULT_MOTION = { id: '', speed: '' };
 const EMPTY_PLAYER = {
   peasant: { ...DEFAULT_MOTION }, warrior: { ...DEFAULT_MOTION },
   wizard:  { ...DEFAULT_MOTION }, priest:  { ...DEFAULT_MOTION },
   rogue:   { ...DEFAULT_MOTION }, monk:    { ...DEFAULT_MOTION },
 };
-const DEFAULT_GROUP = { player: { ...DEFAULT_PLAYER }, target: { ...DEFAULT_MOTION } };
-const EMPTY_GROUP   = { player: { ...EMPTY_PLAYER },   target: { ...DEFAULT_MOTION } };
 
-function mapAnimationGroup(groupArr, emptyDefaults = false) {
+function mapAnimationGroup(groupArr) {
   const group = first(groupArr);
-  if (!group) return emptyDefaults ? { ...EMPTY_GROUP } : { ...DEFAULT_GROUP };
+  if (!group) return null;
 
-  const player = emptyDefaults ? { ...EMPTY_PLAYER } : { ...DEFAULT_PLAYER };
-  const fallbackMotion = emptyDefaults ? DEFAULT_MOTION : DEFAULT_PLAYER_MOTION;
+  const player = { ...EMPTY_PLAYER };
   const playerNode = first(group.Player);
   if (playerNode) {
     for (const motion of (playerNode.Motion || [])) {
       const cls = a(motion, 'Class', '').toLowerCase();
       if (cls && cls in player) {
-        player[cls] = { id: a(motion, 'Id', fallbackMotion.id), speed: a(motion, 'Speed', fallbackMotion.speed) };
+        player[cls] = { id: a(motion, 'Id', ''), speed: a(motion, 'Speed', '') };
       }
     }
   }
@@ -280,17 +271,22 @@ function mapAnimationGroup(groupArr, emptyDefaults = false) {
     ? { id: a(targetNode, 'Id', ''), speed: a(targetNode, 'Speed', '') }
     : { ...DEFAULT_MOTION };
 
-  return { player, target };
+  const spellEffectNode = first(group.SpellEffect);
+  const spellEffect = spellEffectNode
+    ? { id: a(spellEffectNode, 'Id', ''), speed: a(spellEffectNode, 'Speed', '') }
+    : { id: '', speed: '' };
+
+  return { player, spellEffect, target };
 }
 
 function mapAnimations(effectsNode) {
   const ew = first(effectsNode);
-  if (!ew) return { onCast: { ...DEFAULT_GROUP }, onEnd: { ...EMPTY_GROUP } };
+  if (!ew) return { onCast: null, onEnd: null };
   const animNode = first(ew.Animations);
-  if (!animNode) return { onCast: { ...DEFAULT_GROUP }, onEnd: { ...EMPTY_GROUP } };
+  if (!animNode) return { onCast: null, onEnd: null };
   return {
     onCast: mapAnimationGroup(animNode.OnCast),
-    onEnd:  mapAnimationGroup(animNode.OnEnd, true),
+    onEnd:  mapAnimationGroup(animNode.OnEnd),
   };
 }
 
@@ -431,7 +427,7 @@ function mapXmlToCastable(result, xmlString) {
     damage:           mapDamage(root.Effects),
     statuses:         mapStatuses(root.Effects),
     restrictions:     mapRestrictions(root.Restrictions),
-    reactors:         mapReactors(root.Reactors),
+    reactors:         mapReactors(first(root.Effects)?.Reactors),
   };
 }
 
@@ -501,13 +497,12 @@ function buildXmlObject(castable) {
   if (castable.intents?.length) {
     root.Intents = [{
       Intent: castable.intents.map((intent) => {
-        const node = {
-          $: {
-            UseType:    intent.useType    || 'NoTarget',
-            MaxTargets: intent.maxTargets || '',
-            Flags:      (intent.flags || []).join(' '),
-          },
+        const intentAttrs = {
+          UseType: intent.useType || 'NoTarget',
+          Flags:   (intent.flags || []).join(' '),
         };
+        if (intent.maxTargets) intentAttrs.MaxTargets = intent.maxTargets;
+        const node = { $: intentAttrs };
         if (intent.map) node.Map = [{}];
         if (intent.crosses?.length)  node.Cross  = intent.crosses.map((c) => ({ $: { Radius: c.radius, VisualEffect: c.visualEffect } }));
         if (intent.cones?.length)    node.Cone   = intent.cones.map((c)   => ({ $: { Radius: c.radius, Direction: c.direction, VisualEffect: c.visualEffect } }));
@@ -580,26 +575,6 @@ function buildXmlObject(castable) {
     }];
   }
 
-  if (castable.reactors?.length) {
-    root.Reactors = [{
-      Reactor: castable.reactors.map((r) => {
-        const attrs = {
-          Script:     r.script     || '',
-          RelativeX:  r.relativeX  || '0',
-          RelativeY:  r.relativeY  || '0',
-          Sprite:     r.sprite     || '0',
-          Expiration: r.expiration || '0',
-          Uses:       r.uses       || '1',
-        };
-        if (r.displayOwner)  attrs.DisplayOwner = 'true';
-        if (r.displayGroup)  attrs.DisplayGroup = 'true';
-        if (r.displayStatus) attrs.DisplayStatus = r.displayStatus;
-        if (r.displayCookie) attrs.DisplayCookie = r.displayCookie;
-        return { $: attrs };
-      }),
-    }];
-  }
-
   {
     const effectsNode = {};
 
@@ -618,6 +593,11 @@ function buildXmlObject(castable) {
             return { $: attrs };
           });
         if (motions.length) node.Player = [{ Motion: motions }];
+        if (group.spellEffect?.id) {
+          const attrs = { Id: group.spellEffect.id };
+          if (group.spellEffect.speed) attrs.Speed = group.spellEffect.speed;
+          node.SpellEffect = [{ $: attrs }];
+        }
         if (group.target?.id) {
           const attrs = { Id: group.target.id };
           if (group.target.speed) attrs.Speed = group.target.speed;
@@ -685,6 +665,26 @@ function buildXmlObject(castable) {
         });
       }
       effectsNode.Statuses = [statusesNode];
+    }
+
+    if (castable.reactors?.length) {
+      effectsNode.Reactors = [{
+        Reactor: castable.reactors.map((r) => {
+          const attrs = {
+            Script:     r.script     || '',
+            RelativeX:  r.relativeX  || '0',
+            RelativeY:  r.relativeY  || '0',
+            Sprite:     r.sprite     || '0',
+            Expiration: r.expiration || '0',
+            Uses:       r.uses       || '1',
+          };
+          if (r.displayOwner)  attrs.DisplayOwner = 'true';
+          if (r.displayGroup)  attrs.DisplayGroup = 'true';
+          if (r.displayStatus) attrs.DisplayStatus = r.displayStatus;
+          if (r.displayCookie) attrs.DisplayCookie = r.displayCookie;
+          return { $: attrs };
+        }),
+      }];
     }
 
     if (castable.scriptOverride) effectsNode.$ = { ScriptOverride: 'true' };

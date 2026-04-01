@@ -58,6 +58,7 @@ function App() {
         castableCategories: dedup(index?.castableCategories, constants?.castableCategories),
         statusCategories:   dedup(index?.statusCategories,   constants?.statusCategories),
         cookieNames:        dedup(index?.cookieNames,        (constants?.cookies || []).map(c => c.name)),
+        motions:            constants?.motions || [],
       });
     });
   }, [activeLibrary, setLibraryIndex]);
