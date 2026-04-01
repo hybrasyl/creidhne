@@ -51,7 +51,7 @@ function getFolderName(fullPath) {
 function StatCard({ label, count, page, tooltip, onNavigate }) {
   const content = (
     <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-      <Typography variant="h5" fontWeight="bold" color={page ? 'primary' : 'text.primary'}>
+      <Typography variant="h5" fontWeight="bold" color={page ? 'primary.light' : 'text.primary'}>
         {count.toLocaleString()}
       </Typography>
       <Typography variant="caption" color="text.secondary">

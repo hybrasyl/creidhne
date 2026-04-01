@@ -4,15 +4,15 @@ const hybrasylTheme = responsiveFontSizes(createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main:        '#3a9e90',
-      light:       '#5ecfbe',
-      dark:        '#1e5e56',
+      main:        '#0d182f',
+      light:       '#4d84d1',
+      dark:        '#2a4a6e',
       contrastText:'#f0e6cc',
     },
     secondary: {
-      main:        '#c1701f',
-      light:       '#C9623E',
-      dark:        '#71291D',
+      main:        '#1e5e56',
+      light:       '#3a9e90',
+      dark:        '#5ecfbe',
       contrastText:'#f0e6cc',
     },
     background: {
@@ -137,6 +137,30 @@ const hybrasylTheme = responsiveFontSizes(createTheme({
       },
     },
     MuiTabs: { styleOverrides: { indicator: { backgroundColor: '#3a9e90' } } },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          '&.Mui-focused': { color: '#3a9e90' },
+        },
+      },
+    },
+    MuiCheckbox: {
+      styleOverrides: {
+        root: {
+          color: 'rgba(58,158,144,0.5)',
+          '&.Mui-checked': { color: '#3a9e90' },
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(58,158,144,0.3)' },
+          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(58,158,144,0.6)' },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#3a9e90' },
+        },
+      },
+    },
   },
 }));
 
