@@ -144,6 +144,15 @@ describe('castableXml — parse round-trip', () => {
     expect(second).toEqual(first);
   });
 
+  it('reactors round-trip inside Effects (not top-level)', async () => {
+    const parsed = await parseCastableXml(FULL_XML);
+    expect(parsed.reactors).toHaveLength(1);
+    expect(parsed.reactors[0].script).toBe('explode.cs');
+    const reserialized = await rawParse(serializeCastableXml(parsed));
+    expect(reserialized.Castable.Reactors).toBeUndefined();
+    expect(reserialized.Castable.Effects[0].Reactors[0].Reactor[0].$.Script).toBe('explode.cs');
+  });
+
   it('deprecated Prerequisites round-trips', async () => {
     const xml = `<?xml version="1.0"?>
 <Castable xmlns="${XMLNS}">
@@ -456,6 +465,9 @@ describe('castableXml — output structure', () => {
   it('Intents > Intent with UseType', () => {
     expect(raw.Castable.Intents[0].Intent[0].$.UseType).toBe('UseOnSelf');
   });
+  it('Intents > Intent omits MaxTargets when blank', () => {
+    expect(raw.Castable.Intents[0].Intent[0].$.MaxTargets).toBeUndefined();
+  });
   it('Intents > Intent > Line shape', () => {
     expect(raw.Castable.Intents[0].Intent[0].Line[0].$.Length).toBe('2');
     expect(raw.Castable.Intents[0].Intent[0].Line[0].$.Direction).toBe('North');
@@ -529,5 +541,8 @@ describe('castableXml — output structure', () => {
     expect(reactor.$.Script).toBe('r.cs');
     expect(reactor.$.DisplayGroup).toBe('true');
     expect(reactor.$.DisplayOwner).toBeUndefined();
+  });
+  it('Reactors not serialized at top level of Castable', () => {
+    expect(raw.Castable.Reactors).toBeUndefined();
   });
 });
