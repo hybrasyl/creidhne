@@ -1,10 +1,10 @@
 {
   "name": "Creidhne",
   "version": "1.0.0",
-  "description": "An Electron application with React",
+  "description": "A bespoke XML editor for dreaming Hybrasyl worlds into reality",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Sabrael (http://www.github.com/Caeldeth)",
+  "homepage": "https://github.com/hybrasyl/creidhne",
   "scripts": {
     "test": "vitest run",
     "format": "prettier --write .",
