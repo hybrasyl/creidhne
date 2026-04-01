@@ -1,8 +1,9 @@
-import React from 'react';
-import { Box, Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { themeState } from '../recoil/atoms';
 import ManageLibraries from '../components/ManageLibraries';
+import AboutDialog from '../components/AboutDialog';
 
 const THEMES = [
   { value: 'hybrasyl', label: 'Hybrasyl' },
@@ -13,6 +14,7 @@ const THEMES = [
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [theme, setTheme] = useRecoilState(themeState);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -36,6 +38,12 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         onAddLibrary={onAddLibrary}
         onRemoveLibrary={onRemoveLibrary}
       />
+      <Box sx={{ mt: 4 }}>
+        <Button variant="outlined" size="small" onClick={() => setAboutOpen(true)}>
+          About Creidhne
+        </Button>
+      </Box>
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </Box>
   );
 };

@@ -19,7 +19,6 @@ import ConstantAutocomplete from '../common/ConstantAutocomplete';
 import CommentField from '../shared/CommentField';
 import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
 import SpritePickerDialog from '../shared/SpritePickerDialog';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
 
 function deriveNpcPrefix(job) {
   if (!job) return 'npc';

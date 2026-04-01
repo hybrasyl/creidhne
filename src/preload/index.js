@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportCastablesCSV: (libraryPath) => ipcRenderer.invoke('export:castablesCSV', libraryPath),
   exportCastablesJSON: (libraryPath) => ipcRenderer.invoke('export:castablesJSON', libraryPath),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
+  getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
 });
 
 // If context isolation is disabled, add to the DOM global directly

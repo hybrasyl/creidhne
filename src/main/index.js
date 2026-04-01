@@ -20,7 +20,7 @@ import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import settings from 'electron-settings'
+import { createSettingsManager } from './settingsManager'
 
 // Determine the path to use based on the operating system
 let userDataPath;
@@ -34,14 +34,7 @@ if (process.platform === 'win32') {
 // Set the userData path
 app.setPath('userData', userDataPath);
 
-// Configuration for electron-settings
-settings.configure({
-  atomicSave: false,
-  //dir: join(app.getPath('userData'), 'Erisco', 'Creidhne'),
-  fileName: 'settings.json',
-  numSpaces: 2,
-  prettify: true
-})
+const settingsManager = createSettingsManager(userDataPath)
 
 //console.log('Settings directory:', join(app.getPath('appData'), 'Erisco', 'Creidhne'));
 
@@ -109,6 +102,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('dialog:openFile', handleFileOpen)
   ipcMain.handle('open-directory', handleDirectoryOpen)
+  ipcMain.handle('app:getVersion', () => app.getVersion())
 
   ipcMain.handle('fs:listDir', async (_, dirPath) => {
     try {
@@ -302,27 +296,9 @@ app.whenReady().then(() => {
   })
 
   // Handling settings load and save
-  ipcMain.handle('settings:load', async () => {
-    try {
-      const libraries = (await settings.get('libraries')) || []
-      const activeLibrary = (await settings.get('activeLibrary')) || null
-      const theme = (await settings.get('theme')) || 'light' // Add theme handling
-      return { libraries, activeLibrary, theme }
-    } catch (error) {
-      console.error('Failed to load settings:', error)
-      return { libraries: [], activeLibrary: null, theme: 'light' }
-    }
-  })
+  ipcMain.handle('settings:load', () => settingsManager.load())
 
-  ipcMain.handle('settings:save', async (_, data) => {
-    try {
-      await settings.set('libraries', data.libraries)
-      await settings.set('activeLibrary', data.activeLibrary)
-      await settings.set('theme', data.theme) // Save theme
-    } catch (error) {
-      console.error('Failed to save settings:', error)
-    }
-  })
+  ipcMain.handle('settings:save', (_, data) => settingsManager.save(data))
 
   ipcMain.handle('get-user-data-path', async () => {
     return app.getPath('userData')

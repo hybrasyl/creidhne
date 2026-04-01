@@ -31,7 +31,6 @@
     "@fontsource/yaldevi": "^5.2.9",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
-    "electron-settings": "^4.0.4",
     "fs-extra": "^11.3.4",
     "path": "^0.12.7",
     "react-image-filter": "^0.1.2",
