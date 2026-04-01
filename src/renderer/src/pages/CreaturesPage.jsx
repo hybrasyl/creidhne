@@ -18,6 +18,7 @@ const IGNORE_SUBDIR = 'creatures/.ignore';
 const DEFAULT_CREATURE = {
   name: '', sprite: '', behaviorSet: '', minDmg: '', maxDmg: '', assailSound: '',
   comment: '', description: '',
+  meta: { family: '' },
   loot: [],
   hostility: {
     players: false, playerExceptCookie: '', playerOnlyCookie: '',
@@ -158,7 +159,15 @@ function CreaturesPage() {
     setEditingCreature(null);
     setLoadingCreature(true);
     try {
-      const creature = await window.electronAPI.loadCreature(file.path);
+      let creature = await window.electronAPI.loadCreature(file.path);
+      if (!creature.meta?.family) {
+        const namePart = file.name.replace(/\.xml$/i, '');
+        const underscoreIdx = namePart.indexOf('_');
+        if (underscoreIdx > 0) {
+          const prefix = namePart.slice(0, underscoreIdx);
+          if (prefix) creature = { ...creature, meta: { ...(creature.meta || {}), family: prefix } };
+        }
+      }
       setEditingCreature(creature);
     } catch (err) {
       console.error('Failed to load creature:', err);
@@ -171,13 +180,25 @@ function CreaturesPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${CREATURES_SUBDIR}/${fileName}`;
-      await window.electronAPI.saveCreature(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath = isRename || !selectedFile
+        ? `${activeLibrary}/${CREATURES_SUBDIR}/${fileName}`
+        : selectedFile.path;
+      await window.electronAPI.saveCreature(newPath, data);
+      setEditingCreature(data);
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
+      }
       if (activeLibrary) {
+        await loadActiveFiles(activeLibrary);
         const section = await window.electronAPI.buildIndexSection(activeLibrary, CREATURES_SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
       }

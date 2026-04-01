@@ -33,6 +33,7 @@ function mapXmlToNation(result, comment) {
     comment,
     description: first(root.Description, ''),
     flag: a(root, 'Flag', ''),
+    isDefault: a(root, 'Default', 'false') === 'true',
     spawnPoints: (spawnPoints?.SpawnPoint || []).map((sp) => ({
       mapName: a(sp, 'MapName', ''),
       x: a(sp, 'X', ''),
@@ -56,7 +57,9 @@ export function serializeNationXml(nation) {
 }
 
 function buildXmlObject(nation) {
-  const root = { $: omitEmpty({ xmlns: XMLNS, Flag: nation.flag }) };
+  const rootAttrs = { xmlns: XMLNS, Flag: nation.flag };
+  if (nation.isDefault) rootAttrs.Default = 'true';
+  const root = { $: omitEmpty(rootAttrs) };
 
   root.Name = [nation.name];
   if (nation.description) root.Description = [nation.description];

@@ -137,6 +137,11 @@ describe('Field coverage — all fields', () => {
     expect(npc.strings[0]).toEqual({ key: 'inn-name', message: "The Wanderer's Rest" })
   })
 
+  it('defaults disableForget to false when Roles has no DisableForget attribute', async () => {
+    const npc = await parseNpcXml(FULL_XML)
+    expect(npc.roles.disableForget).toBe(false)
+  })
+
   it('parses bank role with CostAdjustment', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.roles.bank).not.toBeNull()
@@ -238,8 +243,9 @@ describe('Field coverage — minimal', () => {
     expect(npc.strings).toEqual([])
   })
 
-  it('defaults all roles to null', async () => {
+  it('defaults all roles to null and disableForget to false', async () => {
     const npc = await parseNpcXml(MINIMAL_XML)
+    expect(npc.roles.disableForget).toBe(false)
     expect(npc.roles.bank).toBeNull()
     expect(npc.roles.post).toBeNull()
     expect(npc.roles.repair).toBeNull()
@@ -270,6 +276,7 @@ describe('Output structure', () => {
     responses: [{ call: 'greet', response: 'Hello!' }],
     strings: [{ key: 'tagline', message: 'Best deals in town.' }],
     roles: {
+      disableForget: false,
       bank: null,
       post: null,
       repair: null,
@@ -391,10 +398,23 @@ describe('Output structure', () => {
   })
 
   it('omits Roles element when all roles are null', async () => {
-    const noRoles = { ...npc, roles: { bank: null, post: null, repair: null, vend: null, train: null } }
+    const noRoles = { ...npc, roles: { disableForget: false, bank: null, post: null, repair: null, vend: null, train: null } }
     const xml = serializeNpcXml(noRoles)
     const parsed = await parseRaw(xml)
     expect(parsed.Npc.Roles).toBeUndefined()
+  })
+
+  it('omits DisableForget attribute on Roles when false', async () => {
+    const xml = serializeNpcXml(npc)
+    const parsed = await parseRaw(xml)
+    expect(parsed.Npc.Roles?.[0]?.$?.DisableForget).toBeUndefined()
+  })
+
+  it('writes DisableForget="true" on Roles when true', async () => {
+    const withDisableForget = { ...npc, roles: { ...npc.roles, disableForget: true } }
+    const xml = serializeNpcXml(withDisableForget)
+    const parsed = await parseRaw(xml)
+    expect(parsed.Npc.Roles?.[0]?.$?.DisableForget).toBe('true')
   })
 
   it('meta is injected as creidhne:meta comment when job is set', async () => {

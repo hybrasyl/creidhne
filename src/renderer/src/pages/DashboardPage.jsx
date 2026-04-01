@@ -168,7 +168,7 @@ function DashboardPage() {
             <Tooltip title={rebuilding ? 'Building…' : 'Rebuild index'}>
               <span>
                 <IconButton size="small" onClick={handleRebuildIndex} disabled={rebuilding}>
-                  {rebuilding ? <CircularProgress size={14} /> : <RefreshIcon fontSize="small" />}
+                  {rebuilding ? <CircularProgress size={14} color="success"/> : <RefreshIcon fontSize="small" color="text.secondary"/>}
                 </IconButton>
               </span>
             </Tooltip>

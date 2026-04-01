@@ -750,6 +750,20 @@ app.whenReady().then(() => {
     } catch { /* dir may not exist */ }
     index.npcJobs = [...npcJobsSet].sort()
 
+    const creatureFamiliesSet = new Set()
+    try {
+      const creaturesDir = join(libraryPath, 'creatures')
+      for (const entry of (await fs.readdir(creaturesDir, { withFileTypes: true })).filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        const namePart = entry.name.replace(/\.xml$/i, '')
+        const idx = namePart.indexOf('_')
+        if (idx > 0) {
+          const prefix = namePart.slice(0, idx)
+          if (prefix) creatureFamiliesSet.add(prefix)
+        }
+      }
+    } catch { /* dir may not exist */ }
+    index.creatureFamilies = [...creatureFamiliesSet].sort()
+
     const cookieNamesSet = new Set()
     const cookieRegexBuild = /\w+\.setcookie\s*\(\s*"([^"]+)"/gi
     const scanCookieNames = async (dir) => {
@@ -1330,6 +1344,40 @@ app.whenReady().then(() => {
     return details
   })
 
+  ipcMain.handle('constants:scanCreatureFamilies', async (_, libraryPath) => {
+    const familyMap = {}
+    try {
+      const creaturesDir = join(libraryPath, 'creatures')
+      const entries = await fs.readdir(creaturesDir, { withFileTypes: true })
+      for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        const namePart = entry.name.replace(/\.xml$/i, '')
+        const underscoreIdx = namePart.indexOf('_')
+        if (underscoreIdx <= 0) continue
+        const prefix = namePart.slice(0, underscoreIdx)
+        if (!prefix) continue
+        if (!familyMap[prefix]) familyMap[prefix] = { count: 0, usedBy: [] }
+        familyMap[prefix].count++
+        try {
+          const content = await fs.readFile(join(creaturesDir, entry.name), 'utf-8')
+          const nameMatch = /Name="([^"]+)"/.exec(content)
+          const creatureName = nameMatch ? nameMatch[1].trim() : namePart
+          if (familyMap[prefix].usedBy.length < 5) familyMap[prefix].usedBy.push(creatureName)
+        } catch { /* skip name for this file */ }
+      }
+    } catch { /* dir may not exist */ }
+    const details = Object.entries(familyMap)
+      .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    try {
+      await updateIndex(libraryPath, idx => ({
+        ...idx,
+        creatureFamilies:        details.map(f => f.name),
+        creatureFamilyDetails:   details,
+      }))
+    } catch { /* non-fatal */ }
+    return details
+  })
+
   ipcMain.handle('constants:scanCookies', async (_, libraryPath) => {
     const scriptsDir = join(libraryPath, '..', 'scripts')
     const cookies = []
@@ -1383,7 +1431,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:loadUserConstants', async (_, libraryPath) => {
-    if (!libraryPath) return { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [], npcJobs: [] }
+    if (!libraryPath) return { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [], npcJobs: [], creatureFamilies: [] }
     return loadConstants(libraryPath)
   })
 

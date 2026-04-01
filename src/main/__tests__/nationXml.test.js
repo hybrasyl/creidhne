@@ -8,7 +8,7 @@ import xml2js from 'xml2js'
 
 const FULL_XML = `<?xml version="1.0"?>
 <!-- Comment: This is Mileth -->
-<Nation xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Flag="1">
+<Nation xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Flag="1" Default="true">
   <Name>Mileth</Name>
   <Description>The city of Mileth</Description>
   <SpawnPoints>
@@ -89,6 +89,11 @@ describe('Field coverage — all fields', () => {
     const nation = await parseNationXml(FULL_XML)
     expect(nation.territory).toEqual(['Mileth Village', 'Mileth Crypt 1'])
   })
+
+  it('parses Default="true" as isDefault=true', async () => {
+    const nation = await parseNationXml(FULL_XML)
+    expect(nation.isDefault).toBe(true)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -121,6 +126,11 @@ describe('Field coverage — minimal', () => {
     const nation = await parseNationXml(MINIMAL_XML)
     expect(nation.territory).toBeNull()
   })
+
+  it('defaults isDefault to false when Default attribute absent', async () => {
+    const nation = await parseNationXml(MINIMAL_XML)
+    expect(nation.isDefault).toBe(false)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -137,6 +147,7 @@ describe('Output structure', () => {
     comment: '',
     description: 'Land of lakes',
     flag: '3',
+    isDefault: false,
     spawnPoints: [
       { mapName: 'Suomi Village', x: '12', y: '34' },
     ],
@@ -210,6 +221,18 @@ describe('Output structure', () => {
     const xml = serializeNationXml({ ...nation, territory: null })
     const parsed = await parseRaw(xml)
     expect(parsed.Nation.Territory).toBeUndefined()
+  })
+
+  it('omits Default attribute when isDefault is false', async () => {
+    const xml = serializeNationXml({ ...nation, isDefault: false })
+    const parsed = await parseRaw(xml)
+    expect(parsed.Nation.$?.Default).toBeUndefined()
+  })
+
+  it('writes Default="true" when isDefault is true', async () => {
+    const xml = serializeNationXml({ ...nation, isDefault: true })
+    const parsed = await parseRaw(xml)
+    expect(parsed.Nation.$?.Default).toBe('true')
   })
 
   // NOTE: The XSD defines <Map> as type NationMap — a complex type with a Name attribute

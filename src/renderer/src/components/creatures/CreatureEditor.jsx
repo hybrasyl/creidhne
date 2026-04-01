@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
+  Box, Button, Typography, Divider, TextField, IconButton,
   Paper, Autocomplete, Collapse, FormControlLabel, Checkbox, Snackbar, Alert,
 } from '@mui/material';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
+import EditorHeader from '../shared/EditorHeader';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -26,16 +23,6 @@ function computeCreatureFilename(prefix, name) {
   return p ? `${p}_${safe}.xml` : `${safe}.xml`;
 }
 
-function deriveCreaturePrefix(fileName, name) {
-  if (!fileName) return 'creature';
-  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
-  const base = fileName.replace(/\.xml$/i, '');
-  if (safe && base.endsWith(`_${safe}`)) {
-    const p = base.slice(0, base.length - safe.length - 1);
-    return p || 'creature';
-  }
-  return 'creature';
-}
 
 const DEFAULT_HOSTILITY = {
   players: false, playerExceptCookie: '', playerOnlyCookie: '',
@@ -380,8 +367,7 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
 function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
   const [data, setData] = useState(creature);
-  const [prefix, setPrefix] = useState(() => deriveCreaturePrefix(initialFileName, creature.name));
-  const [fileName, setFileName] = useState(initialFileName || computeCreatureFilename('creature', creature.name));
+  const [fileName, setFileName] = useState(initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
 
   const [openLoot, setOpenLoot] = useState(false);
@@ -412,8 +398,7 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
 
   useEffect(() => {
     setData(creature);
-    setPrefix(deriveCreaturePrefix(initialFileName, creature.name));
-    setFileName(initialFileName || computeCreatureFilename('creature', creature.name));
+    setFileName(initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name));
     setFileNameEdited(!!initialFileName);
     setOpenLoot(false);
     setOpenHostility(false);
@@ -424,10 +409,6 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
     setDupSnack(null);
   }, [creature, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!fileNameEdited) setFileName(computeCreatureFilename(prefix, data.name));
-  }, [prefix]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
   }, [onDirtyChange]);
@@ -436,16 +417,16 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
     markDirtyLocal();
     setData((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeCreatureFilename(prefix, next.name));
+      if (!fileNameEdited) setFileName(computeCreatureFilename(next.meta?.family || '', next.name));
       return next;
     });
-  }, [fileNameEdited, prefix, markDirtyLocal]);
+  }, [fileNameEdited, markDirtyLocal]);
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
 
   const handleRegenerate = () => {
     markDirtyLocal();
-    setFileName(computeCreatureFilename(prefix, data.name));
+    setFileName(computeCreatureFilename(data.meta?.family || '', data.name));
     setFileNameEdited(false);
   };
 
@@ -472,38 +453,20 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed creature)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive Creature">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive Creature">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed creature)'}
+        entityLabel="creature"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeCreatureFilename(data.meta?.family || '', data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
@@ -528,12 +491,12 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
               </Box>
               {/* Right: 3 rows */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Row 1: Prefix | Name | Behavior Set */}
+                {/* Row 1: Family | Name | Behavior Set */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    label="Prefix" size="small" sx={{ width: 140 }}
-                    value={prefix}
-                    onChange={(e) => setPrefix(e.target.value)}
+                  <ConstantAutocomplete
+                    indexKey="creatureFamilies" label="Family" sx={{ width: 160 }}
+                    value={data.meta?.family || ''}
+                    onChange={(val) => updateData((d) => ({ ...d, meta: { ...d.meta, family: val } }))}
                     inputProps={{ maxLength: 64, spellCheck: false }}
                   />
                   <TextField

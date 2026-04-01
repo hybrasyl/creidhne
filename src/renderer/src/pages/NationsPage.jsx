@@ -20,6 +20,7 @@ const DEFAULT_NATION = {
   comment: '',
   description: '',
   flag: '',
+  isDefault: false,
   spawnPoints: [],
   territory: null,
 };
@@ -168,18 +169,35 @@ function NationsPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${NATIONS_SUBDIR}/${fileName}`;
-      await window.electronAPI.saveNation(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath = isRename || !selectedFile
+        ? `${activeLibrary}/${NATIONS_SUBDIR}/${fileName}`
+        : selectedFile.path;
+
+      await window.electronAPI.saveNation(newPath, data);
+      setEditingNation(data);
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
+      }
+
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      await loadActiveFiles(activeLibrary);
+      await loadArchivedFiles(activeLibrary);
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, NATIONS_SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
       }
     } catch (err) {
       console.error('Failed to save nation:', err);
+      setSnackbar({ message: 'Save failed.', severity: 'error' });
     }
   };
 

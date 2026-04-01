@@ -169,6 +169,7 @@ function BehaviorsPage() {
         : selectedFile.path;
 
       await window.electronAPI.saveBehaviorSet(newPath, data);
+      setEditingBehaviorSet(data);
 
       if (isRename) {
         const result = await window.electronAPI.archiveFile(
@@ -177,6 +178,8 @@ function BehaviorsPage() {
         );
         setSelectedFile({ name: fileName, path: newPath });
         setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
       }
 
       markClean();

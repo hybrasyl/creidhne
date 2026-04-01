@@ -59,6 +59,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanCategories: (libraryPath) => ipcRenderer.invoke('constants:scanCategories', libraryPath),
   scanVendorTabs: (libraryPath) => ipcRenderer.invoke('constants:scanVendorTabs', libraryPath),
   scanNpcJobs: (libraryPath) => ipcRenderer.invoke('constants:scanNpcJobs', libraryPath),
+  scanCreatureFamilies: (libraryPath) => ipcRenderer.invoke('constants:scanCreatureFamilies', libraryPath),
   scanCookies: (libraryPath) => ipcRenderer.invoke('constants:scanCookies', libraryPath),
   loadUserConstants: (libraryPath) => ipcRenderer.invoke('constants:loadUserConstants', libraryPath),
   saveUserConstants: (libraryPath, data) => ipcRenderer.invoke('constants:saveUserConstants', libraryPath, data),

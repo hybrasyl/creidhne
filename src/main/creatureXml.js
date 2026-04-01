@@ -1,7 +1,24 @@
 import xml2js from 'xml2js';
-import { extractComment, injectComment } from './xmlCommentUtils.js';
+import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js';
+
+// Design note: LootList intentionally only supports <Set> (named loot-set imports).
+// The XSD also defines <Table> (inline loot tables), <Gold>, and an Xp attribute,
+// but by design all creature loot is managed centrally through named LootSets.
+// Inline tables and gold/xp overrides on individual creatures are not supported.
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
+
+const CREATURE_META_DEFAULTS = { family: '' };
+
+function extractCreatureMeta(xmlString) {
+  const raw = extractMeta(xmlString);
+  return { family: raw.family || '' };
+}
+
+function injectCreatureMeta(xml, meta) {
+  if (!meta?.family) return xml;
+  return xml.replace(/(<Creature[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify({ family: meta.family })} -->`);
+}
 
 const first = (arr, def = undefined) => Array.isArray(arr) && arr.length ? arr[0] : def;
 const a = (node, key, def = '') => node?.$?.[key] ?? def;
@@ -15,10 +32,11 @@ const omitEmpty = (obj) =>
 export function parseCreatureXml(xmlString) {
   return new Promise((resolve, reject) => {
     const comment = extractComment(xmlString);
+    const meta = extractCreatureMeta(xmlString);
 
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToCreature(result, comment)); }
+      try { resolve(mapXmlToCreature(result, comment, meta)); }
       catch (e) { reject(e); }
     });
   });
@@ -77,7 +95,7 @@ function mapSubtype(typeNode) {
   };
 }
 
-function mapXmlToCreature(result, comment) {
+function mapXmlToCreature(result, comment, meta) {
   const root = result.Creature;
   return {
     name: a(root, 'Name', ''),
@@ -87,6 +105,7 @@ function mapXmlToCreature(result, comment) {
     maxDmg: a(root, 'MaxDmg', ''),
     assailSound: a(root, 'AssailSound', ''),
     comment,
+    meta: meta || { ...CREATURE_META_DEFAULTS },
     description: first(root.Description, ''),
     loot: mapLoot(first(root.Loot)),
     hostility: mapHostility(first(root.Hostility)),
@@ -106,8 +125,8 @@ export function serializeCreatureXml(creature) {
   });
 
   let xml = builder.buildObject(buildXmlObject(creature));
-
   xml = injectComment(xml, creature.comment, 'Creature');
+  xml = injectCreatureMeta(xml, creature.meta);
 
   return xml + '\n';
 }

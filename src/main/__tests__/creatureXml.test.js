@@ -37,6 +37,11 @@ const MINIMAL_XML = `<?xml version="1.0"?>
 <Creature xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Slime" Sprite="1" BehaviorSet="slime-behavior">
 </Creature>`
 
+const META_XML = `<?xml version="1.0"?>
+<Creature xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Pack Wolf" Sprite="101" BehaviorSet="wolf-behavior">
+  <!-- creidhne:meta {"family":"wolf"} -->
+</Creature>`
+
 // ---------------------------------------------------------------------------
 // Helper: parse raw XML string with xml2js (for schema validation test)
 // ---------------------------------------------------------------------------
@@ -59,6 +64,14 @@ describe('Parse round-trip', () => {
     const first = await parseCreatureXml(FULL_XML)
     const xml = serializeCreatureXml(first)
     const second = await parseCreatureXml(xml)
+    expect(second).toEqual(first)
+  })
+
+  it('round-trips a creature with meta.family annotation', async () => {
+    const first = await parseCreatureXml(META_XML)
+    const xml = serializeCreatureXml(first)
+    const second = await parseCreatureXml(xml)
+    expect(second.meta.family).toBe('wolf')
     expect(second).toEqual(first)
   })
 })
@@ -152,6 +165,11 @@ describe('Field coverage — all fields', () => {
     expect(c.subtypes[0].hostility.players).toBe(true)
     expect(c.subtypes[0].hostility.monsters).toBe(false)
   })
+
+  it('defaults meta.family to empty string when no annotation present', async () => {
+    const c = await parseCreatureXml(FULL_XML)
+    expect(c.meta).toEqual({ family: '' })
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -205,6 +223,35 @@ describe('Field coverage — minimal', () => {
     const c = await parseCreatureXml(MINIMAL_XML)
     expect(c.subtypes).toEqual([])
   })
+
+  it('defaults meta.family to empty string', async () => {
+    const c = await parseCreatureXml(MINIMAL_XML)
+    expect(c.meta).toEqual({ family: '' })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Test 3b: meta annotation
+// ---------------------------------------------------------------------------
+
+describe('meta.family annotation', () => {
+  it('parses family from creidhne:meta comment', async () => {
+    const c = await parseCreatureXml(META_XML)
+    expect(c.meta.family).toBe('wolf')
+  })
+
+  it('serializes creidhne:meta annotation when family is set', async () => {
+    const c = await parseCreatureXml(META_XML)
+    const xml = serializeCreatureXml(c)
+    expect(xml).toContain('creidhne:meta')
+    expect(xml).toContain('"family":"wolf"')
+  })
+
+  it('omits creidhne:meta annotation when family is empty', async () => {
+    const c = await parseCreatureXml(MINIMAL_XML)
+    const xml = serializeCreatureXml(c)
+    expect(xml).not.toContain('creidhne:meta')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -224,6 +271,7 @@ describe('Output structure', () => {
     maxDmg: '9',
     assailSound: '',
     comment: '',
+    meta: { family: 'wolf' },
     description: 'A wolf for schema testing',
     loot: [{ name: 'wolf-loot', rolls: '1', chance: '80' }],
     hostility: {
@@ -323,5 +371,17 @@ describe('Output structure', () => {
     const xml = serializeCreatureXml(noSubtypes)
     const parsed = await parseRaw(xml)
     expect(parsed.Creature.Types).toBeUndefined()
+  })
+
+  it('injects creidhne:meta annotation after opening tag when family is set', async () => {
+    const xml = serializeCreatureXml(creature)
+    expect(xml).toContain('creidhne:meta')
+    expect(xml).toContain('"family":"wolf"')
+  })
+
+  it('omits creidhne:meta annotation when family is empty string', async () => {
+    const noFamily = { ...creature, meta: { family: '' } }
+    const xml = serializeCreatureXml(noFamily)
+    expect(xml).not.toContain('creidhne:meta')
   })
 })

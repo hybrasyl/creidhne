@@ -26,11 +26,7 @@ const DEFAULT_NPC = {
   responses: [],
   strings: [],
   roles: {
-    bankCheck: '',
-    repairCheck: '',
-    postCheck: '',
-    vendCheck: '',
-    trainCheck: '',
+    disableForget: false,
     bank: null,
     post: null,
     repair: null,
@@ -194,13 +190,25 @@ function NPCsPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${NPCS_SUBDIR}/${fileName}`;
-      await window.electronAPI.saveNpc(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath = isRename || !selectedFile
+        ? `${activeLibrary}/${NPCS_SUBDIR}/${fileName}`
+        : selectedFile.path;
+      await window.electronAPI.saveNpc(newPath, data);
+      setEditingNpc(data);
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
+      }
       if (activeLibrary) {
+        await loadActiveFiles(activeLibrary);
         const section = await window.electronAPI.buildIndexSection(activeLibrary, NPCS_SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
       }

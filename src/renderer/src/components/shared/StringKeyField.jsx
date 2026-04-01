@@ -9,11 +9,13 @@ const STRING_CUSTOM = { key: '__custom__', message: '', category: '' };
  * String key picker + message preview/edit field.
  *
  * Props:
- *   text        — the stored message text (what gets written to XML)
- *   stringKey   — the npcStringKeys key tracking which string was picked; '' = custom mode
- *   onChange    — ({ text, key }) => void
- *   disabled    — bool
- *   pickerLabel — label for the Autocomplete (defaults to 'String')
+ *   text            — the stored message text (what gets written to XML)
+ *   stringKey       — the key tracking which option was picked; '' = custom mode
+ *   onChange        — ({ text, key }) => void
+ *   disabled        — bool
+ *   pickerLabel     — label for the Autocomplete (defaults to 'String')
+ *   externalOptions — optional Array<{ key, message, category }> to use instead of npcStringKeys
+ *   warning         — optional string shown as helper text on the message field in custom mode
  *
  * Behaviour:
  *   - Custom option selected (or stringKey=''): shows an editable Message TextField.
@@ -21,12 +23,13 @@ const STRING_CUSTOM = { key: '__custom__', message: '', category: '' };
  *   - Selecting a key sets text to the resolved message and records the key in metadata.
  *   - Switching back to Custom keeps the current text but clears the key.
  */
-function StringKeyField({ text, stringKey, onChange, disabled = false, pickerLabel = 'String' }) {
+function StringKeyField({ text, stringKey, onChange, disabled = false, pickerLabel = 'String', externalOptions, warning }) {
   const npcStringKeys  = (useRecoilValue(libraryIndexState).npcStringKeys || []);
-  const options        = [STRING_CUSTOM, ...npcStringKeys];
+  const entries        = externalOptions ?? npcStringKeys;
+  const options        = [STRING_CUSTOM, ...entries];
   const isCustom       = !stringKey;
-  const selectedOption = isCustom ? STRING_CUSTOM : (npcStringKeys.find((s) => s.key === stringKey) ?? STRING_CUSTOM);
-  const preview        = isCustom ? '' : (npcStringKeys.find((s) => s.key === stringKey)?.message ?? '');
+  const selectedOption = isCustom ? STRING_CUSTOM : (entries.find((s) => s.key === stringKey) ?? STRING_CUSTOM);
+  const preview        = isCustom ? '' : (entries.find((s) => s.key === stringKey)?.message ?? '');
 
   const handleChange = (_, val) => {
     if (!val || val.key === '__custom__') onChange({ text, key: '' });
@@ -57,7 +60,10 @@ function StringKeyField({ text, stringKey, onChange, disabled = false, pickerLab
       {isCustom
         ? <TextField label="Message" size="small" value={text}
             onChange={(e) => onChange({ text: e.target.value, key: '' })}
-            disabled={disabled} sx={{ flex: 1 }} />
+            disabled={disabled} sx={{ flex: 1 }}
+            helperText={warning}
+            FormHelperTextProps={{ sx: { color: 'warning.main', mx: 0 } }}
+          />
         : <TextField label="Preview" size="small" value={preview} disabled sx={{ flex: 1 }} />}
     </>
   );

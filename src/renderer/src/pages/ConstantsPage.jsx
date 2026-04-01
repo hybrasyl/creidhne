@@ -20,6 +20,7 @@ const EMPTY_CONSTANTS = {
   statusCategories: [],
   cookies: [],
   npcJobs: [],
+  creatureFamilies: [],
   motions: [],
 };
 
@@ -355,6 +356,131 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexU
                         size="small"
                         color={row.count > 0 ? 'warning' : 'default'}
                         onClick={() => onChange(npcJobs.filter(j => j !== row.name))}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+// ─── Creature Families Tab ─────────────────────────────────────────────────────
+
+function CreatureFamiliesTab({ creatureFamilies, onChange, activeLibrary, initialDetails, onIndexUpdated }) {
+  const [newFamily, setNewFamily] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanData, setScanData] = useState(initialDetails || null);
+
+  const handleAdd = () => {
+    const val = newFamily.trim();
+    if (!val || creatureFamilies.includes(val)) return;
+    onChange([...creatureFamilies, val].sort());
+    setNewFamily('');
+  };
+
+  const handleScan = async () => {
+    if (!activeLibrary) return;
+    setScanning(true);
+    try {
+      const details = await window.electronAPI.scanCreatureFamilies(activeLibrary);
+      setScanData(details);
+      const scannedNames = details.map(d => d.name);
+      const merged = [...new Set([...creatureFamilies, ...scannedNames])].sort();
+      onChange(merged);
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
+      if (updatedIndex) onIndexUpdated(updatedIndex);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const rows = useMemo(() => {
+    const scanMap = {};
+    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
+    return creatureFamilies.map(name => ({
+      name,
+      count: scanMap[name]?.count ?? (scanData ? 0 : null),
+      usedBy: scanMap[name]?.usedBy ?? [],
+    }));
+  }, [creatureFamilies, scanData]);
+
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+          Creature family names derived from filename prefixes (e.g. <code>goblin</code> in <code>goblin_shaman.xml</code>).
+          {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
+        </Typography>
+        <Button
+          size="small" variant="outlined"
+          startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
+          onClick={handleScan} disabled={scanning || !activeLibrary}
+        >
+          Scan Creatures
+        </Button>
+      </Box>
+      {!activeLibrary && (
+        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for creature families.</Alert>
+      )}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField
+          size="small" placeholder="New family name..." value={newFamily}
+          onChange={e => setNewFamily(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          sx={{ maxWidth: 300 }}
+        />
+        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newFamily.trim()}>
+          Add
+        </Button>
+      </Box>
+      {rows.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No creature families defined. Click "Scan Creatures" to discover from filenames.
+        </Typography>
+      ) : (
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Family Name</TableCell>
+                <TableCell sx={{ width: 80 }}>Count</TableCell>
+                <TableCell>Used By</TableCell>
+                <TableCell sx={{ width: 40 }} padding="none" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map(row => (
+                <TableRow key={row.name} hover>
+                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                      {row.count === null ? '—' : row.count}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {row.usedBy.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {row.usedBy.map(name => (
+                          <Chip key={name} label={name} size="small" variant="outlined" />
+                        ))}
+                      </Box>
+                    )}
+                  </TableCell>
+                  <TableCell padding="none">
+                    <Tooltip title={row.count > 0 ? `In use by ${row.count} creature${row.count !== 1 ? 's' : ''} — removing may break editors` : ''}>
+                      <IconButton
+                        size="small"
+                        color={row.count > 0 ? 'warning' : 'default'}
+                        onClick={() => onChange(creatureFamilies.filter(f => f !== row.name))}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -779,6 +905,7 @@ const TABS = [
   { label: 'Simple Types' },
   { label: 'Vendor Tabs' },
   { label: 'NPC Jobs' },
+  { label: 'Creature Families' },
   { label: 'Item Categories' },
   { label: 'Castable Categories' },
   { label: 'Status Categories' },
@@ -830,6 +957,7 @@ function ConstantsPage() {
       ...rawIndex,
       vendorTabs:         dedup(rawIndex.vendorTabs,         userConstants.vendorTabs),
       npcJobs:            dedup(rawIndex.npcJobs,            userConstants.npcJobs),
+      creatureFamilies:   dedup(rawIndex.creatureFamilies,   userConstants.creatureFamilies),
       itemCategories:     dedup(rawIndex.itemCategories,     userConstants.itemCategories),
       castableCategories: dedup(rawIndex.castableCategories, userConstants.castableCategories),
       statusCategories:   dedup(rawIndex.statusCategories,   userConstants.statusCategories),
@@ -847,6 +975,7 @@ function ConstantsPage() {
         ...prev,
         vendorTabs:         dedup(prev.vendorTabs,         userConstants.vendorTabs),
         npcJobs:            dedup(prev.npcJobs,            userConstants.npcJobs),
+        creatureFamilies:   dedup(prev.creatureFamilies,   userConstants.creatureFamilies),
         itemCategories:     dedup(prev.itemCategories,     userConstants.itemCategories),
         castableCategories: dedup(prev.castableCategories, userConstants.castableCategories),
         statusCategories:   dedup(prev.statusCategories,   userConstants.statusCategories),
@@ -905,6 +1034,15 @@ function ConstantsPage() {
           />
         )}
         {tab === 3 && (
+          <CreatureFamiliesTab
+            creatureFamilies={userConstants.creatureFamilies || []}
+            onChange={families => handleCategoryChange('creatureFamilies', families)}
+            activeLibrary={activeLibrary}
+            initialDetails={libraryIndex.creatureFamilyDetails}
+            onIndexUpdated={handleIndexUpdated}
+          />
+        )}
+        {tab === 4 && (
           <CategoryTab
             label="Item categories"
             scanResultKey="items"
@@ -915,7 +1053,7 @@ function ConstantsPage() {
             initialDetails={libraryIndex.itemCategoryDetails}
           />
         )}
-        {tab === 4 && (
+        {tab === 5 && (
           <CategoryTab
             label="Castable categories"
             scanResultKey="castables"
@@ -926,7 +1064,7 @@ function ConstantsPage() {
             initialDetails={libraryIndex.castableCategoryDetails}
           />
         )}
-        {tab === 5 && (
+        {tab === 6 && (
           <CategoryTab
             label="Status categories"
             scanResultKey="statuses"
@@ -937,14 +1075,14 @@ function ConstantsPage() {
             initialDetails={libraryIndex.statusCategoryDetails}
           />
         )}
-        {tab === 6 && (
+        {tab === 7 && (
           <CookiesTab
             userConstants={userConstants}
             onChange={handleChange}
             activeLibrary={activeLibrary}
           />
         )}
-        {tab === 7 && (
+        {tab === 8 && (
           <MotionsTab
             userConstants={userConstants}
             onChange={handleChange}

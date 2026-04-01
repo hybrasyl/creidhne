@@ -2,18 +2,22 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
   Paper, Autocomplete, Collapse, Switch, Snackbar, Alert,
+  Checkbox, FormControlLabel,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import GridViewIcon from '@mui/icons-material/GridView';
+import FlagIcon from '@mui/icons-material/Flag';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
+import EditorHeader from '../shared/EditorHeader';
+import FlagPickerDialog from '../shared/FlagPickerDialog';
+
+const FLAG_IMAGE_COUNT = 13;
+const FLAG_PREVIEW = 80;
 
 function computeNationFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
@@ -83,11 +87,15 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
   const [prefix, setPrefix] = useState(() => deriveNationPrefix(initialFileName, nation.name));
   const [fileName, setFileName] = useState(initialFileName || computeNationFilename('nation', nation.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
+  const [flagPickerOpen, setFlagPickerOpen] = useState(false);
 
   const [openSpawnPoints, setOpenSpawnPoints] = useState(nation.spawnPoints.length > 0);
   const [openTerritory, setOpenTerritory] = useState(nation.territory !== null);
 
   const isDirtyRef = useRef(false);
+
+  const flagNum = parseInt(data.flag, 10);
+  const flagHasImage = flagNum >= 1 && flagNum <= FLAG_IMAGE_COUNT;
 
   // ── Duplicate detection ────────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
@@ -148,7 +156,6 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
     setFileNameEdited(false);
   };
 
-  // Keep saveRef current so the unsaved-changes dialog can trigger a save.
   if (saveRef) saveRef.current = () => onSave(data, fileName);
 
   // ── Spawn points ──────────────────────────────────────────────────────────
@@ -179,39 +186,22 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
       {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed nation)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive Nation">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive Nation">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed nation)'}
+        entityLabel="nation"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeNationFilename(prefix, data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
@@ -219,43 +209,86 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Basic info */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Prefix" size="small" sx={{ width: 140 }}
-                value={prefix}
-                onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
-              />
-              <TextField
-                label="Name" size="small" required
-                sx={{
-                  flex: 1, minWidth: 160,
-                  ...(dupStatus === 'archived' && {
-                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                    '& .MuiFormHelperText-root': { color: 'warning.main' },
-                  }),
-                }}
-                error={dupStatus === 'active'}
-                helperText={
-                  dupStatus === 'active'   ? `"${data.name}" already exists` :
-                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
-                  undefined
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {/* Left: flag preview + browse button */}
+            <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: .8 }}>
+              <Box sx={{
+                width: FLAG_PREVIEW, height: FLAG_PREVIEW,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover',
+              }}>
+                {flagHasImage
+                  ? <img src={`./nations/${flagNum}.webp`} alt={`Flag ${flagNum}`} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  : <FlagIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
                 }
-                value={data.name} onChange={set('name')} onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
+              </Box>
+              <Button size="small" startIcon={<GridViewIcon />} onClick={() => setFlagPickerOpen(true)}>
+                Browse
+              </Button>
+            </Box>
+
+            {/* Right: field rows */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Row 1: Prefix | Name | Flag # | Default */}
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <TextField
+                  label="Prefix" size="small" sx={{ width: 120 }}
+                  value={prefix}
+                  onChange={handlePrefixChange}
+                  inputProps={{ maxLength: 64, spellCheck: false }}
+                />
+                <TextField
+                  label="Name" size="small" required
+                  sx={{
+                    flex: 1, minWidth: 160,
+                    ...(dupStatus === 'archived' && {
+                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                      '& .MuiFormHelperText-root': { color: 'warning.main' },
+                    }),
+                  }}
+                  error={dupStatus === 'active'}
+                  helperText={
+                    dupStatus === 'active'   ? `"${data.name}" already exists` :
+                    dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                    undefined
+                  }
+                  value={data.name} onChange={set('name')} onBlur={handleNameBlur}
+                  inputProps={{ maxLength: 255 }}
+                />
+                <TextField
+                  label="Flag" required size="small" sx={{ width: 72 }}
+                  value={data.flag}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '');
+                    if (v === '' || parseInt(v, 10) <= 99) updateData((d) => ({ ...d, flag: v }));
+                  }}
+                  inputProps={{ inputMode: 'numeric', maxLength: 2 }}
+                  placeholder="1–99"
+                />
+                <Tooltip title="Only one nation across the library should be marked as default">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={!!data.isDefault}
+                        onChange={(e) => updateData((d) => ({ ...d, isDefault: e.target.checked }))}
+                      />
+                    }
+                    label={<Typography variant="body2">Default</Typography>}
+                    sx={{ m: 0, alignSelf: 'center' }}
+                  />
+                </Tooltip>
+              </Box>
+              {/* Row 2: Description */}
+              <TextField
+                label="Description" value={data.description} onChange={set('description')}
+                size="small" multiline minRows={2} inputProps={{ maxLength: 1000 }}
               />
             </Box>
-            <TextField
-              label="Description" value={data.description} onChange={set('description')}
-              size="small" multiline minRows={2} inputProps={{ maxLength: 1000 }}
-            />
-            <CommentField value={data.comment} onChange={set('comment')} />
           </Box>
+          <CommentField value={data.comment} onChange={set('comment')} fullWidth sx={{ mt: 2 }} />
         </Paper>
-
-
 
         {/* ── Spawn Points ── */}
         <Section title="Spawn Points" open={openSpawnPoints} onToggle={() => setOpenSpawnPoints((v) => !v)}>
@@ -311,6 +344,13 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
 
         <Box sx={{ height: 32 }} />
       </Box>
+
+      <FlagPickerDialog
+        open={flagPickerOpen}
+        value={data.flag}
+        onClose={() => setFlagPickerOpen(false)}
+        onChange={(val) => { updateData((d) => ({ ...d, flag: val })); }}
+      />
 
       <Snackbar
         open={!!dupSnack}

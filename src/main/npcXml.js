@@ -66,6 +66,7 @@ function mapXmlToNpc(result, comment, meta) {
       message: typeof s === 'string' ? s : (s._ || ''),
     })),
     roles: {
+      disableForget: toBool(a(roles, 'DisableForget'), false),
       bank: roles?.Bank?.[0] ? {
         exceptCookie: a(roles.Bank[0], 'ExceptCookie', ''),
         onlyCookie: a(roles.Bank[0], 'OnlyCookie', ''),
@@ -161,6 +162,7 @@ function buildXmlObject(npc) {
 
   if (hasAnyRole) {
     const rolesNode = {};
+    if (npc.roles.disableForget) rolesNode.$ = { DisableForget: 'true' };
 
     const serializeAdjustments = (adjustments) =>
       adjustments.map((adj) => ({

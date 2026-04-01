@@ -193,17 +193,17 @@ function buildHostility(hostility) {
   if (!monsters?.enabled && !players?.enabled) return undefined;
 
   const node = {};
-  if (monsters?.enabled) {
-    const attrs = {};
-    if (monsters.exceptCookie) attrs.ExceptCookie = monsters.exceptCookie;
-    if (monsters.onlyCookie)   attrs.OnlyCookie   = monsters.onlyCookie;
-    node.Monsters = [Object.keys(attrs).length ? { $: attrs } : {}];
-  }
   if (players?.enabled) {
     const attrs = {};
     if (players.exceptCookie) attrs.ExceptCookie = players.exceptCookie;
     if (players.onlyCookie)   attrs.OnlyCookie   = players.onlyCookie;
     node.Players = [Object.keys(attrs).length ? { $: attrs } : {}];
+  }
+  if (monsters?.enabled) {
+    const attrs = {};
+    if (monsters.exceptCookie) attrs.ExceptCookie = monsters.exceptCookie;
+    if (monsters.onlyCookie)   attrs.OnlyCookie   = monsters.onlyCookie;
+    node.Monsters = [Object.keys(attrs).length ? { $: attrs } : {}];
   }
   return [node];
 }

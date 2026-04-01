@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
+  Box, Button, Typography, Divider, TextField, IconButton,
   Paper, Autocomplete, Collapse, Switch, FormControlLabel, Checkbox,
   FormControl, InputLabel, Select, MenuItem, Snackbar, Alert,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -19,6 +15,8 @@ import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import CommentField from '../shared/CommentField';
 import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
 import SpritePickerDialog from '../shared/SpritePickerDialog';
+import EditorHeader from '../shared/EditorHeader';
+import StringKeyField from '../shared/StringKeyField';
 
 function deriveNpcPrefix(job) {
   if (!job) return 'npc';
@@ -102,8 +100,11 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   const castableNames = libraryIndex.castables || [];
   const castableClasses = libraryIndex.castableClasses || {};
   const npcResponseCalls = libraryIndex.npcResponseCalls || {};
-  const npcCallOptions = Object.keys(npcResponseCalls).sort();
   const npcStringKeys = libraryIndex.npcStringKeys || [];
+  const responseCallOptions = useMemo(
+    () => Object.entries(npcResponseCalls).map(([key, message]) => ({ key, message, category: '' })).sort((a, b) => a.key.localeCompare(b.key)),
+    [npcResponseCalls]
+  );
 
 
   const [data, setData] = useState(npc);
@@ -127,17 +128,6 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   // ── Computed values ────────────────────────────────────────────────────────
   const computedPrefix = deriveNpcPrefix(data.meta?.job || '');
   const computedFileName = computeNpcFilename(computedPrefix, data.name);
-  const recyclePending = !!initialFileName && fileName !== computedFileName;
-  const willRename = !!initialFileName && fileName !== initialFileName;
-  const fileNameWarn = recyclePending || willRename;
-  const fileNameHelperText = willRename
-    ? `Saving will create "${fileName}" and archive "${initialFileName}"`
-    : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
-  const recycleDisabled = fileName === computedFileName;
-  const recycleTooltip = recycleDisabled
-    ? 'Filename is auto-computed'
-    : willRename ? 'Reset to computed filename' : 'Apply computed filename';
-
   // ── Duplicate detection ────────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
     const name = (data.name || '').trim();
@@ -287,52 +277,20 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed npc)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive NPC">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive NPC">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{
-              flex: 1,
-              ...(fileNameWarn && {
-                '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                '& .MuiFormHelperText-root': { color: 'warning.main' },
-              }),
-            }}
-            inputProps={{ spellCheck: false }}
-            helperText={fileNameHelperText}
-            FormHelperTextProps={{ sx: { mx: 0 } }}
-          />
-          <Tooltip title={recycleTooltip}>
-            <span>
-              <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled} sx={{ mt: 0.5 }}>
-                <AutorenewIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed npc)'}
+        entityLabel="NPC"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computedFileName}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
@@ -437,94 +395,72 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
 
         {/* ── Responses ── */}
         <Section title="Responses" open={openResponses} onToggle={() => setOpenResponses((v) => !v)}>
-          {data.responses.map((r, i) => (
-            <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
-              <Autocomplete
-                freeSolo options={npcCallOptions} value={r.call}
-                onInputChange={(_, val, reason) => {
-                  if (reason !== 'input') return;
-                  const resolved = npcResponseCalls[val] ?? '';
-                  updateData((d) => ({
+          {data.responses.map((r, i) => {
+            const inIndex = npcResponseCalls[r.call] !== undefined;
+            const stringKey = inIndex ? r.call : '';
+            const warning = r.call && !inIndex ? `"${r.call}" is not a known call — Call will be cleared on save` : undefined;
+            return (
+              <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
+                <StringKeyField
+                  stringKey={stringKey}
+                  text={r.response}
+                  pickerLabel="Call"
+                  externalOptions={responseCallOptions}
+                  warning={warning}
+                  onChange={({ key, text }) => updateData((d) => ({
                     ...d,
-                    responses: d.responses.map((resp, idx) =>
-                      idx === i ? { call: val, response: resolved || (val ? resp.response : '') } : resp
-                    ),
-                  }));
-                }}
-                onChange={(_, val) => {
-                  const v = val ?? '';
-                  const resolved = npcResponseCalls[v] ?? '';
-                  updateData((d) => ({
-                    ...d,
-                    responses: d.responses.map((resp, idx) =>
-                      idx === i ? { call: v, response: resolved || (v ? resp.response : '') } : resp
-                    ),
-                  }));
-                }}
-                size="small" sx={{ width: 220 }}
-                renderInput={(params) => <TextField {...params} label="Call" inputProps={{ ...params.inputProps, maxLength: 128 }} />}
-              />
-              <TextField
-                label="Response" size="small" sx={{ flex: 1 }}
-                value={npcResponseCalls[r.call] ?? r.response}
-                disabled
-                inputProps={{ maxLength: 1024 }}
-              />
-              <IconButton size="small" color="error" onClick={() => removeResponse(i)} sx={{ mt: 0.5 }}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          ))}
+                    responses: d.responses.map((resp, idx) => idx === i ? { call: key, response: text } : resp),
+                  }))}
+                />
+                <IconButton size="small" color="error" onClick={() => removeResponse(i)} sx={{ mt: 0.5 }}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            );
+          })}
           <Button size="small" startIcon={<AddIcon />} onClick={addResponse}>Add Response</Button>
         </Section>
 
         {/* ── Strings ── */}
         <Section title="Strings" open={openStrings} onToggle={() => setOpenStrings((v) => !v)}>
-          {data.strings.map((s, i) => (
-            <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
-              <Autocomplete
-                freeSolo
-                options={npcStringKeys}
-                groupBy={(opt) => opt.category}
-                getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.key}
-                value={s.key}
-                onInputChange={(_, val, reason) => {
-                  if (reason !== 'input') return;
-                  const found = npcStringKeys.find((sk) => sk.key === val);
-                  updateData((d) => ({
+          {data.strings.map((s, i) => {
+            const inIndex = npcStringKeys.some((sk) => sk.key === s.key);
+            const stringKey = inIndex ? s.key : '';
+            const warning = s.key && !inIndex ? `"${s.key}" is not in the string library — Key will be cleared on save` : undefined;
+            return (
+              <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1 }}>
+                <StringKeyField
+                  stringKey={stringKey}
+                  text={s.message}
+                  pickerLabel="Key"
+                  warning={warning}
+                  onChange={({ key, text }) => updateData((d) => ({
                     ...d,
-                    strings: d.strings.map((str, idx) =>
-                      idx === i ? { key: val, message: found ? found.message : (val ? str.message : '') } : str
-                    ),
-                  }));
-                }}
-                onChange={(_, val) => {
-                  const v = typeof val === 'string' ? val : (val?.key ?? '');
-                  const found = npcStringKeys.find((sk) => sk.key === v);
-                  updateData((d) => ({
-                    ...d,
-                    strings: d.strings.map((str, idx) =>
-                      idx === i ? { key: v, message: found ? found.message : (v ? str.message : '') } : str
-                    ),
-                  }));
-                }}
-                size="small" sx={{ width: 220 }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Key" inputProps={{ ...params.inputProps, maxLength: 128 }} />
-                )}
-              />
-              <TextField
-                label="Message" size="small" sx={{ flex: 1 }}
-                value={npcStringKeys.find((sk) => sk.key === s.key)?.message ?? s.message}
-                disabled
-              />
-              <IconButton size="small" color="error" onClick={() => removeString(i)} sx={{ mt: 0.5 }}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          ))}
+                    strings: d.strings.map((str, idx) => idx === i ? { key, message: text } : str),
+                  }))}
+                />
+                <IconButton size="small" color="error" onClick={() => removeString(i)} sx={{ mt: 0.5 }}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            );
+          })}
           <Button size="small" startIcon={<AddIcon />} onClick={addString}>Add String</Button>
         </Section>
+
+        {/* ── Roles options ── */}
+        <Box sx={{ mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={data.roles.disableForget ?? false}
+                onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, disableForget: e.target.checked } }))}
+              />
+            }
+            label={<Typography variant="body2">Disable Forget</Typography>}
+          />
+        </Box>
 
         {/* ── Bank ── */}
         <Section
