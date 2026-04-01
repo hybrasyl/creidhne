@@ -76,7 +76,7 @@ const MainToolbar = ({ navigate }) => {
       {/* Title Bar */}
       <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 36, px: 1.5 }}>
         <img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', flexGrow: 0 }} style={{ fontSize: '1.4rem' }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', flexGrow: 0 }} style={{ fontSize: '1.5rem' }}>
           Creidhne: XML Forge
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
