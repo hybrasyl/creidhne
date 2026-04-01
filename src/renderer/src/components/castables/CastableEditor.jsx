@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
-import ScriptAutocomplete from '../common/ScriptAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
+import ScriptAutocomplete from '../shared/ScriptAutocomplete';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox,

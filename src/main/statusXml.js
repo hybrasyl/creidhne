@@ -1,6 +1,37 @@
 import xml2js from 'xml2js';
 import { extractComment, injectComment } from './xmlCommentUtils.js';
 
+// ── Status-specific meta (creidhne:meta comment) ──────────────────────────────
+// Stores string keys for prohibited message and per-block message channels.
+// Format: { pm?: string, msgs?: { onApply?: {...}, onTick?: {...}, ... } }
+
+function extractStatusMeta(xmlString) {
+  const m = /<!--\s*creidhne:meta\s+({.*?})\s*-->/.exec(xmlString);
+  if (!m) return {};
+  try { return JSON.parse(m[1]); }
+  catch { return {}; }
+}
+
+function injectStatusMeta(xml, status) {
+  const payload = {};
+  if (status.prohibitedMessageKey) payload.pm = status.prohibitedMessageKey;
+
+  const msgBlocks = {};
+  for (const block of ['onApply', 'onTick', 'onRemove', 'onExpire']) {
+    const msgs = status[block]?.messages;
+    if (!Array.isArray(msgs)) continue;
+    const keys = {};
+    for (const entry of msgs) {
+      if (entry.key) keys[entry.type] = entry.key;
+    }
+    if (Object.keys(keys).length) msgBlocks[block] = keys;
+  }
+  if (Object.keys(msgBlocks).length) payload.msgs = msgBlocks;
+
+  if (!Object.keys(payload).length) return xml;
+  return xml.replace(/(<Status[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`);
+}
+
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
 
 const first = (arr, def = undefined) => Array.isArray(arr) && arr.length ? arr[0] : def;
@@ -22,43 +53,62 @@ export function makeDefaultEffectBlock() {
 // PARSER
 // =============================================================================
 
-function mapMessages(msgsNode) {
+function mapMessages(msgsNode, msgKeys) {
   if (!msgsNode) return null;
   const m = first(msgsNode);
-  if (!m) return null;
-  return {
-    target: { enabled: !!m.Target, text: first(m.Target, '') },
-    source: { enabled: !!m.Source, text: first(m.Source, '') },
-    group:  { enabled: !!m.Group,  text: first(m.Group,  '') },
-    say:    { enabled: !!m.Say,    text: first(m.Say,    '') },
-    shout:  { enabled: !!m.Shout,  text: first(m.Shout,  '') },
-  };
+  if (!m) return [];
+  const k = msgKeys || {};
+  const arr = [];
+  if (m.Target) arr.push({ type: 'target', text: first(m.Target, ''), key: k.target || '' });
+  if (m.Source) arr.push({ type: 'source', text: first(m.Source, ''), key: k.source || '' });
+  if (m.Group)  arr.push({ type: 'group',  text: first(m.Group,  ''), key: k.group  || '' });
+  if (m.Say)    arr.push({ type: 'say',    text: first(m.Say,    ''), key: k.say    || '' });
+  if (m.Shout)  arr.push({ type: 'shout',  text: first(m.Shout,  ''), key: k.shout  || '' });
+  return arr;
+}
+
+function parseSimpleNode(simpleEl) {
+  if (simpleEl === undefined || simpleEl === null) return { kind: 'none' };
+  if (typeof simpleEl === 'string') return { kind: 'static', value: simpleEl };
+  const min = a(simpleEl, 'Min', '0');
+  const max = a(simpleEl, 'Max', '0');
+  const val = simpleEl._ || '0';
+  if (min !== '0' || max !== '0') return { kind: 'variable', min, max };
+  return { kind: 'static', value: val };
 }
 
 function mapHeal(healNode) {
   if (!healNode) return null;
   const h = first(healNode);
   if (!h) return null;
-  const formula = first(h.Formula, '');
-  const simple  = first(h.Simple, '');
-  return { mode: formula ? 'formula' : 'simple', simple, formula };
+  const formulaEl = first(h.Formula, null);
+  if (formulaEl) {
+    const f = typeof formulaEl === 'string' ? formulaEl : (formulaEl._ || '');
+    if (f) return { kind: 'Formula', value: '', min: '', max: '', formula: f };
+  }
+  const sq = parseSimpleNode(first(h.Simple, null));
+  if (sq.kind === 'variable') return { kind: 'Variable', value: '', min: sq.min, max: sq.max, formula: '' };
+  if (sq.kind === 'static' && sq.value) return { kind: 'Static', value: sq.value, min: '', max: '', formula: '' };
+  return null;
 }
 
 function mapDamage(damNode) {
   if (!damNode) return null;
   const d = first(damNode);
   if (!d) return null;
-  const formula  = first(d.Formula, '');
-  const simple   = first(d.Simple, '');
   const flagsRaw = first(d.Flags, '');
-  return {
-    element: a(d, 'Element', 'None'),
-    type:    a(d, 'Type', ''),
-    flags:   flagsRaw ? flagsRaw.split(' ').filter(Boolean) : [],
-    mode:    formula ? 'formula' : 'simple',
-    simple,
-    formula,
-  };
+  const flags    = flagsRaw ? flagsRaw.split(' ').filter(Boolean) : [];
+  const element  = a(d, 'Element', 'None');
+  const type     = a(d, 'Type', 'Direct');
+  const formulaEl = first(d.Formula, null);
+  if (formulaEl) {
+    const f = typeof formulaEl === 'string' ? formulaEl : (formulaEl._ || '');
+    if (f) return { element, type, flags, kind: 'Formula', value: '', min: '', max: '', formula: f };
+  }
+  const sq = parseSimpleNode(first(d.Simple, null));
+  if (sq.kind === 'variable') return { element, type, flags, kind: 'Variable', value: '', min: sq.min, max: sq.max, formula: '' };
+  if (sq.kind === 'static' && sq.value) return { element, type, flags, kind: 'Static', value: sq.value, min: '', max: '', formula: '' };
+  return null;
 }
 
 function mapStatModifiers(statNode) {
@@ -101,7 +151,7 @@ function mapHandler(handlerNode) {
   };
 }
 
-function mapEffectBlock(blockNode) {
+function mapEffectBlock(blockNode, msgKeys) {
   const b = first(blockNode);
   if (!b) return makeDefaultEffectBlock();
 
@@ -133,7 +183,7 @@ function mapEffectBlock(blockNode) {
 
   return {
     animations,
-    messages:      mapMessages(b.Messages),
+    messages:      mapMessages(b.Messages, msgKeys),
     heal:          mapHeal(b.Heal),
     damage:        mapDamage(b.Damage),
     statModifiers: mapStatModifiers(b.StatModifiers),
@@ -142,9 +192,10 @@ function mapEffectBlock(blockNode) {
   };
 }
 
-function mapXmlToStatus(result, comment) {
+function mapXmlToStatus(result, comment, meta) {
   const root    = result.Status;
   const effects = first(root.Effects);
+  const msgs    = meta.msgs || {};
   return {
     name:             a(root, 'Name',          ''),
     comment,
@@ -153,7 +204,8 @@ function mapXmlToStatus(result, comment) {
     tick:             a(root, 'Tick',          ''),
     removeChance:     a(root, 'RemoveChance',  ''),
     removeOnDeath:    a(root, 'RemoveOnDeath', 'false') === 'true',
-    prohibitedMessage: first(root.ProhibitedMessage, ''),
+    prohibitedMessage:    first(root.ProhibitedMessage, ''),
+    prohibitedMessageKey: meta.pm || '',
     categories: ((first(root.Categories) || {}).Category || []).filter(Boolean),
     castRestrictions: ((first(root.CastRestrictions) || {}).CastRestriction || []).flatMap((cr) => {
       const result = [];
@@ -163,19 +215,20 @@ function mapXmlToStatus(result, comment) {
       if (receive) result.push({ type: 'receive-castable', value: receive });
       return result;
     }),
-    onApply:  mapEffectBlock(effects?.OnApply),
-    onTick:   mapEffectBlock(effects?.OnTick),
-    onRemove: mapEffectBlock(effects?.OnRemove),
-    onExpire: mapEffectBlock(effects?.OnExpire),
+    onApply:  mapEffectBlock(effects?.OnApply,  msgs.onApply),
+    onTick:   mapEffectBlock(effects?.OnTick,   msgs.onTick),
+    onRemove: mapEffectBlock(effects?.OnRemove, msgs.onRemove),
+    onExpire: mapEffectBlock(effects?.OnExpire, msgs.onExpire),
   };
 }
 
 export function parseStatusXml(xmlString) {
   return new Promise((resolve, reject) => {
     const comment = extractComment(xmlString);
+    const meta    = extractStatusMeta(xmlString);
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err);
-      try { resolve(mapXmlToStatus(result, comment)); }
+      try { resolve(mapXmlToStatus(result, comment, meta)); }
       catch (e) { reject(e); }
     });
   });
@@ -187,20 +240,20 @@ export function parseStatusXml(xmlString) {
 
 function buildMessages(msgs) {
   if (!msgs) return undefined;
+  const typeMap = { target: 'Target', source: 'Source', group: 'Group', say: 'Say', shout: 'Shout' };
   const node = {};
-  if (msgs.target?.enabled && msgs.target.text) node.Target = [msgs.target.text];
-  if (msgs.source?.enabled && msgs.source.text) node.Source = [msgs.source.text];
-  if (msgs.group?.enabled  && msgs.group.text)  node.Group  = [msgs.group.text];
-  if (msgs.say?.enabled    && msgs.say.text)    node.Say    = [msgs.say.text];
-  if (msgs.shout?.enabled  && msgs.shout.text)  node.Shout  = [msgs.shout.text];
+  for (const entry of msgs) {
+    if (entry.text) node[typeMap[entry.type]] = [entry.text];
+  }
   return Object.keys(node).length ? [node] : undefined;
 }
 
 function buildHeal(heal) {
   if (!heal) return undefined;
   const node = {};
-  if (heal.mode === 'simple'  && heal.simple)  node.Simple  = [heal.simple];
-  if (heal.mode === 'formula' && heal.formula) node.Formula = [heal.formula];
+  if (heal.kind === 'Formula'  && heal.formula) node.Formula = [heal.formula];
+  else if (heal.kind === 'Variable')            node.Simple  = [{ $: { Min: heal.min || '0', Max: heal.max || '0' } }];
+  else if (heal.kind === 'Static' && heal.value) node.Simple = [heal.value];
   return Object.keys(node).length ? [node] : undefined;
 }
 
@@ -211,9 +264,10 @@ function buildDamage(damage) {
   if (damage.element && damage.element !== 'None') attrs.Element = damage.element;
   if (damage.type)                                 attrs.Type    = damage.type;
   if (Object.keys(attrs).length) node.$ = attrs;
-  if (damage.flags?.length)                     node.Flags   = [damage.flags.join(' ')];
-  if (damage.mode === 'simple'  && damage.simple)  node.Simple  = [damage.simple];
-  if (damage.mode === 'formula' && damage.formula) node.Formula = [damage.formula];
+  if (damage.flags?.length) node.Flags = [damage.flags.join(' ')];
+  if (damage.kind === 'Formula' && damage.formula) node.Formula = [damage.formula];
+  else if (damage.kind === 'Variable')            node.Simple  = [{ $: { Min: damage.min || '0', Max: damage.max || '0' } }];
+  else if (damage.kind === 'Static' && damage.value) node.Simple = [damage.value];
   return (node.$ || node.Flags || node.Simple || node.Formula) ? [node] : undefined;
 }
 
@@ -318,6 +372,8 @@ export function serializeStatusXml(status) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
-  const xml = injectComment(builder.buildObject(buildXmlObject(status)), status.comment, 'Status');
+  let xml = builder.buildObject(buildXmlObject(status));
+  xml = injectComment(xml, status.comment, 'Status');
+  xml = injectStatusMeta(xml, status);
   return xml + '\n';
 }

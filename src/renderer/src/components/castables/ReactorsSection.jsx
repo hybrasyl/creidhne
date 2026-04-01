@@ -2,8 +2,8 @@ import React from 'react';
 import {
   Box, Button, IconButton, TextField, FormControlLabel, Checkbox, Autocomplete, Typography,
 } from '@mui/material';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
-import ScriptAutocomplete from '../common/ScriptAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
+import ScriptAutocomplete from '../shared/ScriptAutocomplete';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 

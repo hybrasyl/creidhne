@@ -5,7 +5,9 @@ export const DAMAGE_FLAGS = [
 ];
 
 export const CONDITIONS = [
-  'Freeze', 'Sleep', 'Paralyze', 'Blind', 'InvisibleToSelf', 'InvisibleToOthers',
-  'ForceAssail', 'Casting', 'MovementStop', 'CastingAllowed', 'DrowsyFading',
-  'Coma', 'Surrendered', 'Ethereal',
+  'Stun', 'Sleep', 'Root', 'Blind', 'Coma', 'Poison', 'Sight', 'Invisible', 'Mute',
+  'Invulnerable', 'Charm', 'ProhibitItemUse', 'ProhibitEquipChange', 'ProhibitSpeech',
+  'ProhibitWhisper', 'ProhibitShout', 'Disoriented', 'Disarm', 'Fear', 'ProhibitHpRegen',
+  'ProhibitMpRegen', 'ProhibitHpIncrease', 'ProhibitMpIncrease', 'ProhibitMpDecrease',
+  'ProhibitXpIncrease',
 ];

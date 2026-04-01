@@ -6,8 +6,8 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { useRecoilValue } from 'recoil';
-import { CLASS_TYPES, GENDERS, SLOT_RESTRICTION_TYPES, EQUIPMENT_SLOTS } from '../../../data/itemConstants';
-import { libraryIndexState } from '../../../recoil/atoms';
+import { CLASS_TYPES, GENDERS, SLOT_RESTRICTION_TYPES, EQUIPMENT_SLOTS } from '../../data/itemConstants';
+import { libraryIndexState } from '../../recoil/atoms';
 
 const ALL_CLASS_OPTIONS = CLASS_TYPES.filter((c) => c !== 'All');
 

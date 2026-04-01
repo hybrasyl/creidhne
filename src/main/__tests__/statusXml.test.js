@@ -177,19 +177,19 @@ describe('Field coverage — all fields', () => {
 
   it('parses onApply messages target and source', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onApply.messages.target).toEqual({ enabled: true, text: 'You feel poisoned!' })
-    expect(s.onApply.messages.source).toEqual({ enabled: true, text: 'You have poisoned your target.' })
+    expect(s.onApply.messages.find(m => m.type === 'target')).toEqual({ type: 'target', text: 'You feel poisoned!', key: '' })
+    expect(s.onApply.messages.find(m => m.type === 'source')).toEqual({ type: 'source', text: 'You have poisoned your target.', key: '' })
   })
 
-  it('parses onApply messages absent channels as disabled with empty text', async () => {
+  it('parses onApply messages absent channels are not present in the array', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onApply.messages.say).toEqual({ enabled: false, text: '' })
-    expect(s.onApply.messages.shout).toEqual({ enabled: false, text: '' })
+    expect(s.onApply.messages.find(m => m.type === 'say')).toBeUndefined()
+    expect(s.onApply.messages.find(m => m.type === 'shout')).toBeUndefined()
   })
 
   it('parses onApply heal in simple mode', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onApply.heal).toEqual({ mode: 'simple', simple: '10', formula: '' })
+    expect(s.onApply.heal).toEqual({ kind: 'Static', value: '10', min: '', max: '', formula: '' })
   })
 
   // --- onTick ---
@@ -199,9 +199,9 @@ describe('Field coverage — all fields', () => {
     const d = s.onTick.damage
     expect(d.element).toBe('Earth')
     expect(d.type).toBe('Magical')
-    expect(d.mode).toBe('formula')
+    expect(d.kind).toBe('Formula')
     expect(d.formula).toBe('level * 2')
-    expect(d.simple).toBe('')
+    expect(d.value).toBe('')
   })
 
   it('parses onTick damage flags', async () => {
@@ -238,13 +238,40 @@ describe('Field coverage — all fields', () => {
 
   it('parses onExpire messages say and group', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onExpire.messages.say).toEqual({ enabled: true, text: 'The poison has worn off.' })
-    expect(s.onExpire.messages.group).toEqual({ enabled: true, text: 'Your group member recovered from poison.' })
+    expect(s.onExpire.messages.find(m => m.type === 'say')).toEqual({ type: 'say', text: 'The poison has worn off.', key: '' })
+    expect(s.onExpire.messages.find(m => m.type === 'group')).toEqual({ type: 'group', text: 'Your group member recovered from poison.', key: '' })
   })
 
   it('parses onExpire heal in formula mode', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onExpire.heal).toEqual({ mode: 'formula', simple: '', formula: 'maxHp * 0.1' })
+    expect(s.onExpire.heal).toEqual({ kind: 'Formula', value: '', min: '', max: '', formula: 'maxHp * 0.1' })
+  })
+
+  it('parses heal and damage when both Simple and Formula children are present', async () => {
+    const xml = `<?xml version="1.0"?>
+<Status xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Test" Icon="0">
+  <Effects>
+    <OnApply>
+      <Heal>
+        <Simple Min="200" Max="400">0</Simple>
+        <Formula>((SOURCEINT*20)+(SOURCEWIS*20)+(SOURCEDMG*50))+750</Formula>
+      </Heal>
+      <Damage Type="Direct">
+        <Flags>None NoResistance NoThreat Nonlethal NoDodge NoCrit NoElement</Flags>
+        <Simple Min="99" Max="199">0</Simple>
+        <Formula>OldDamageFormula</Formula>
+      </Damage>
+    </OnApply>
+  </Effects>
+</Status>`
+    const s = await parseStatusXml(xml)
+    expect(s.onApply.heal).not.toBeNull()
+    expect(s.onApply.heal.kind).toBe('Formula')
+    expect(s.onApply.heal.formula).toBe('((SOURCEINT*20)+(SOURCEWIS*20)+(SOURCEDMG*50))+750')
+    expect(s.onApply.damage).not.toBeNull()
+    expect(s.onApply.damage.kind).toBe('Formula')
+    expect(s.onApply.damage.formula).toBe('OldDamageFormula')
+    expect(s.onApply.damage.type).toBe('Direct')
   })
 
   it('absent effect blocks default to all-null fields', async () => {
@@ -333,7 +360,7 @@ describe('Output structure', () => {
     castRestrictions: [{ type: 'use-castable', value: 'HealSpell' }],
     onApply: {
       animations: { targetId: '50', targetSpeed: '30', spellEffectId: '', spellEffectSpeed: '', soundId: '7' },
-      messages: { target: { enabled: true, text: 'You are burning!' }, source: { enabled: false, text: '' }, group: { enabled: false, text: '' }, say: { enabled: false, text: '' }, shout: { enabled: false, text: '' } },
+      messages: [{ type: 'target', text: 'You are burning!', key: '' }],
       heal: null,
       damage: null,
       statModifiers: null,
@@ -344,7 +371,7 @@ describe('Output structure', () => {
       animations: null,
       messages: null,
       heal: null,
-      damage: { element: 'Fire', type: 'Magical', flags: [], mode: 'simple', simple: '5', formula: '' },
+      damage: { element: 'Fire', type: 'Magical', flags: [], kind: 'Static', value: '5', min: '', max: '', formula: '' },
       statModifiers: { rows: [{ key: 'BonusStr', value: '1' }], elementalModifiers: [] },
       conditions: null,
       handler: null,

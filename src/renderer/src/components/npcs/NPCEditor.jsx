@@ -15,7 +15,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GridViewIcon from '@mui/icons-material/GridView';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import CommentField from '../shared/CommentField';
 import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
 import SpritePickerDialog from '../shared/SpritePickerDialog';

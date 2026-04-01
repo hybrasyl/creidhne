@@ -6,7 +6,7 @@ import {
   FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox,
   Autocomplete, Chip, Collapse, Snackbar, Alert,
 } from '@mui/material';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';

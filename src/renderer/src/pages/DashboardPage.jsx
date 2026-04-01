@@ -26,7 +26,7 @@ const INDEX_TYPES = [
   { key: 'elementtables',        label: 'Element Tables',  page: 'elements' },
   { key: 'localizations',        label: 'Localizations',   page: 'strings' },
   { key: 'serverconfigs',        label: 'Server Configs',  page: 'serverconfig' },
-  { key: 'scripts',              label: 'Scripts',         page: null },
+  { key: 'scripts',              label: 'Scripts',         page: null, tooltip: 'Coming Soon!' },
   { key: 'maps',                 label: 'Maps',            page: null, tooltip: 'Managed by Taliesin' },
   { key: 'worldmaps',            label: 'World Maps',      page: null, tooltip: 'Managed by Taliesin' },
 ];

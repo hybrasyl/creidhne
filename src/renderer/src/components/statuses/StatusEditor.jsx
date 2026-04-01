@@ -3,8 +3,12 @@ import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Switch, Select, MenuItem, FormControl, InputLabel, FormControlLabel,
   Checkbox, Autocomplete, Collapse, Alert, Snackbar,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
+import StringKeyField from '../shared/StringKeyField';
+import HealEditor from '../shared/HealEditor';
+import DamageEditor from '../shared/DamageEditor';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -13,23 +17,25 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import InfoIcon from '@mui/icons-material/Info';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import { ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants';
-import { DAMAGE_FLAGS, CONDITIONS, DAMAGE_TYPES } from '../../data/statusConstants';
+import { CONDITIONS } from '../../data/statusConstants';
 import CommentField from '../shared/CommentField';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const DEFAULT_ANIMATIONS = { targetId: '', targetSpeed: '', spellEffectId: '', spellEffectSpeed: '', soundId: '' };
-const DEFAULT_MESSAGES   = {
-  target: { enabled: false, text: '' }, source: { enabled: false, text: '' },
-  group:  { enabled: false, text: '' }, say:    { enabled: false, text: '' },
-  shout:  { enabled: false, text: '' },
-};
-const DEFAULT_HEAL       = { mode: 'simple', simple: '', formula: '' };
-const DEFAULT_DAMAGE     = { element: 'None', type: 'Direct', flags: [], mode: 'simple', simple: '', formula: '' };
+const DEFAULT_MESSAGES   = [];
+const MESSAGE_TYPES = [
+  { value: 'target', label: 'Target System' },
+  { value: 'source', label: 'Source System' },
+  { value: 'say',    label: 'Self Say'       },
+  { value: 'shout',  label: 'Self Shout'     },
+  { value: 'group',  label: 'Group'          },
+];
+const DEFAULT_HEAL       = { kind: 'Static', value: '', min: '', max: '', formula: '' };
+const DEFAULT_DAMAGE     = { element: 'None', type: 'Direct', flags: [], kind: 'Static', value: '', min: '', max: '', formula: '' };
 const DEFAULT_STAT_MODS  = { rows: [], elementalModifiers: [] };
 const DEFAULT_CONDITIONS = { set: [], unset: [] };
 const DEFAULT_HANDLER    = { function: '', scriptSource: '' };
@@ -117,136 +123,69 @@ function SubSection({ title, enabled, onEnable, open, onToggle, children }) {
 // ── Effect sub-section renderers ───────────────────────────────────────────────
 
 function UserFeedbackContent({ anim, onChange }) {
-  const set = (field) => (e) => onChange({ ...anim, [field]: e.target.value });
+  const set = (field) => (e) => onChange({ ...anim, [field]: e.target.value.replace(/\D/g, '') });
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <TextField label="Target Anim ID"    value={anim.targetId}         size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('targetId')} />
-        <TextField label="Target Anim Speed" value={anim.targetSpeed}      size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('targetSpeed')} />
+        <TextField label="Target Anim ID"    value={anim.targetId}         size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('targetId')}         inputProps={{ inputMode: 'numeric' }} />
+        <TextField label="Target Anim Speed" value={anim.targetSpeed}      size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('targetSpeed')}      inputProps={{ inputMode: 'numeric' }} />
       </Box>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <TextField label="Self Anim ID"      value={anim.spellEffectId}    size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectId')} />
-        <TextField label="Self Anim Speed"   value={anim.spellEffectSpeed} size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectSpeed')} />
+        <TextField label="Self Anim ID"      value={anim.spellEffectId}    size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectId')}    inputProps={{ inputMode: 'numeric' }} />
+        <TextField label="Self Anim Speed"   value={anim.spellEffectSpeed} size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectSpeed')} inputProps={{ inputMode: 'numeric' }} />
       </Box>
-      <TextField label="Sound ID" value={anim.soundId} size="small" sx={{ maxWidth: 200 }} onChange={set('soundId')} />
+      <TextField label="Sound ID" value={anim.soundId} size="small" sx={{ maxWidth: 200 }} onChange={set('soundId')} inputProps={{ inputMode: 'numeric' }} />
     </Box>
   );
 }
 
-function MessagesContent({ msgs, onChange }) {
-  const set    = (key, field) => (e) => onChange({ ...msgs, [key]: { ...msgs[key], [field]: e.target.value } });
-  const toggle = (key)        => (e) => onChange({ ...msgs, [key]: { ...msgs[key], enabled: e.target.checked } });
 
-  const rows = [
-    { key: 'target', label: 'Target System' },
-    { key: 'source', label: 'Source System' },
-    { key: 'say',    label: 'Self Say'       },
-    { key: 'shout',  label: 'Self Shout'     },
-    { key: 'group',  label: 'Group'          },
-  ];
+function MessagesContent({ msgs, onChange }) {
+  const usedTypes = msgs.map((m) => m.type);
+  const allUsed   = usedTypes.length >= MESSAGE_TYPES.length;
+
+  const addMsg = () => {
+    const next = MESSAGE_TYPES.find((t) => !usedTypes.includes(t.value));
+    if (!next) return;
+    onChange([...msgs, { type: next.value, text: '', key: '' }]);
+  };
+
+  const updateMsg = (i, updates) =>
+    onChange(msgs.map((m, idx) => idx === i ? { ...m, ...updates } : m));
+
+  const removeMsg = (i) =>
+    onChange(msgs.filter((_, idx) => idx !== i));
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {rows.map(({ key, label }) => (
-        <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FormControlLabel
-            control={<Checkbox size="small" checked={msgs[key].enabled} onChange={toggle(key)} />}
-            label={<Typography variant="body2" sx={{ minWidth: 110 }}>{label}</Typography>}
-            sx={{ m: 0 }}
-          />
-          <TextField size="small" sx={{ flex: 1 }} disabled={!msgs[key].enabled}
-            value={msgs[key].text} onChange={set(key, 'text')}
-            inputProps={{ maxLength: 50 }} />
-          {msgs[key].enabled && (
-            <Tooltip title="50 character client limitation">
-              <InfoIcon fontSize="small" color="action" sx={{ cursor: 'help' }} />
-            </Tooltip>
-          )}
-        </Box>
-      ))}
-    </Box>
-  );
-}
-
-function HealContent({ heal, onChange }) {
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <FormControl size="small" sx={{ maxWidth: 180 }}>
-        <InputLabel>Mode</InputLabel>
-        <Select value={heal.mode} label="Mode" onChange={(e) => onChange({ ...heal, mode: e.target.value })}>
-          <MenuItem value="simple">Simple</MenuItem>
-          <MenuItem value="formula">Formula</MenuItem>
-        </Select>
-      </FormControl>
-      {heal.mode === 'simple' && (
-        <TextField label="Simple Value" value={heal.simple} size="small" sx={{ maxWidth: 240 }}
-          onChange={(e) => onChange({ ...heal, simple: e.target.value })}
-          inputProps={{ inputMode: 'numeric' }} />
-      )}
-      {heal.mode === 'formula' && (
-        <TextField label="Formula" value={heal.formula} size="small" fullWidth multiline minRows={2}
-          onChange={(e) => onChange({ ...heal, formula: e.target.value })}
-          placeholder="Formula glossary coming soon…" />
-      )}
-    </Box>
-  );
-}
-
-function DamageContent({ damage, onChange }) {
-  const toggleFlag = (flag) => {
-    const next = damage.flags.includes(flag)
-      ? damage.flags.filter((f) => f !== flag)
-      : [...damage.flags, flag];
-    onChange({ ...damage, flags: next });
-  };
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>Element</InputLabel>
-          <Select value={damage.element} label="Element" onChange={(e) => onChange({ ...damage, element: e.target.value })}>
-            {ELEMENT_TYPES.map((el) => <MenuItem key={el} value={el}>{el}</MenuItem>)}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>Type</InputLabel>
-          <Select value={damage.type} label="Type" onChange={(e) => onChange({ ...damage, type: e.target.value })}>
-            {DAMAGE_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-          </Select>
-        </FormControl>
-      </Box>
+      {msgs.map((msg, i) => {
+        const available = MESSAGE_TYPES.filter((t) => t.value === msg.type || !usedTypes.includes(t.value));
+        return (
+          <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <FormControl size="small" sx={{ width: 150, flexShrink: 0 }}>
+              <InputLabel>Type</InputLabel>
+              <Select value={msg.type} label="Type"
+                onChange={(e) => updateMsg(i, { type: e.target.value })}>
+                {available.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <StringKeyField text={msg.text} stringKey={msg.key}
+              onChange={({ text, key }) => updateMsg(i, { text, key })} />
+            <IconButton size="small" color="error" onClick={() => removeMsg(i)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        );
+      })}
       <Box>
-        <Typography variant="caption" color="text.secondary">Flags (leave unchecked for None)</Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0, mt: 0.5 }}>
-          {DAMAGE_FLAGS.map((flag) => (
-            <FormControlLabel key={flag}
-              control={<Checkbox size="small" checked={damage.flags.includes(flag)} onChange={() => toggleFlag(flag)} />}
-              label={<Typography variant="body2">{flag}</Typography>}
-              sx={{ mr: 2, mb: 0 }}
-            />
-          ))}
-        </Box>
+        <Button size="small" startIcon={<AddIcon />} onClick={addMsg} disabled={allUsed}>
+          Add Message
+        </Button>
       </Box>
-      <FormControl size="small" sx={{ maxWidth: 180 }}>
-        <InputLabel>Mode</InputLabel>
-        <Select value={damage.mode} label="Mode" onChange={(e) => onChange({ ...damage, mode: e.target.value })}>
-          <MenuItem value="simple">Simple</MenuItem>
-          <MenuItem value="formula">Formula</MenuItem>
-        </Select>
-      </FormControl>
-      {damage.mode === 'simple' && (
-        <TextField label="Simple Value" value={damage.simple} size="small" sx={{ maxWidth: 240 }}
-          onChange={(e) => onChange({ ...damage, simple: e.target.value })}
-          inputProps={{ inputMode: 'numeric' }} />
-      )}
-      {damage.mode === 'formula' && (
-        <TextField label="Formula" value={damage.formula} size="small" fullWidth multiline minRows={2}
-          onChange={(e) => onChange({ ...damage, formula: e.target.value })}
-          placeholder="Formula glossary coming soon…" />
-      )}
     </Box>
   );
 }
+
 
 // ── Stat modifier row ──────────────────────────────────────────────────────────
 
@@ -500,7 +439,7 @@ function EffectAccordion({ title, data, onChange, readOnly = false, computedStat
   const upd = (field, val) => onChange({ ...data, [field]: val });
 
   const enableFeedback = (on) => { upd('animations',   on ? { ...DEFAULT_ANIMATIONS } : null); setOpenFeedback(on); };
-  const enableMessages = (on) => { upd('messages',     on ? { ...DEFAULT_MESSAGES }   : null); setOpenMessages(on); };
+  const enableMessages = (on) => { upd('messages',     on ? []                        : null); setOpenMessages(on); };
   const enableHeal     = (on) => { upd('heal',         on ? { ...DEFAULT_HEAL }       : null); setOpenHeal(on);     };
   const enableDamage   = (on) => { upd('damage',       on ? { ...DEFAULT_DAMAGE }     : null); setOpenDamage(on);   };
   const enableStats    = (on) => { upd('statModifiers', on ? { ...DEFAULT_STAT_MODS, elementalModifiers: [] } : null); setOpenStats(on); };
@@ -521,7 +460,7 @@ function EffectAccordion({ title, data, onChange, readOnly = false, computedStat
         <Box sx={{ p: 2 }}>
 
           <SubSection title="User Feedback"
-            enabled={!!data.animations} onEnable={readOnly ? undefined : enableFeedback}
+            enabled={!!data.animations} onEnable={enableFeedback}
             open={openFeedback} onToggle={() => setOpenFeedback((v) => !v)}>
             {data.animations
               ? <UserFeedbackContent anim={data.animations} onChange={(v) => upd('animations', v)} />
@@ -529,7 +468,7 @@ function EffectAccordion({ title, data, onChange, readOnly = false, computedStat
           </SubSection>
 
           <SubSection title="Messages"
-            enabled={!!data.messages} onEnable={readOnly ? undefined : enableMessages}
+            enabled={!!data.messages} onEnable={enableMessages}
             open={openMessages} onToggle={() => setOpenMessages((v) => !v)}>
             {data.messages
               ? <MessagesContent msgs={data.messages} onChange={(v) => upd('messages', v)} />
@@ -537,18 +476,18 @@ function EffectAccordion({ title, data, onChange, readOnly = false, computedStat
           </SubSection>
 
           <SubSection title="Heal Formula"
-            enabled={!!data.heal} onEnable={readOnly ? undefined : enableHeal}
+            enabled={!!data.heal} onEnable={enableHeal}
             open={openHeal} onToggle={() => setOpenHeal((v) => !v)}>
             {data.heal
-              ? <HealContent heal={data.heal} onChange={(v) => upd('heal', v)} />
+              ? <HealEditor value={data.heal} onChange={(v) => upd('heal', v)} />
               : <Typography variant="body2" color="text.secondary">Enable to add a heal formula.</Typography>}
           </SubSection>
 
           <SubSection title="Damage Formula"
-            enabled={!!data.damage} onEnable={readOnly ? undefined : enableDamage}
+            enabled={!!data.damage} onEnable={enableDamage}
             open={openDamage} onToggle={() => setOpenDamage((v) => !v)}>
             {data.damage
-              ? <DamageContent damage={data.damage} onChange={(v) => upd('damage', v)} />
+              ? <DamageEditor value={data.damage} onChange={(v) => upd('damage', v)} showElement />
               : <Typography variant="body2" color="text.secondary">Enable to add a damage formula.</Typography>}
           </SubSection>
 
@@ -598,10 +537,14 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
   const [fileName,       setFileName]       = useState(initialFileName || computeStatusFilename('status', status.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [castHint,       setCastHint]       = useState(false);
+  const [openProhibited,   setOpenProhibited]   = useState(false);
+  const [openCategories,   setOpenCategories]   = useState(false);
+  const [openRestrictions, setOpenRestrictions] = useState(false);
 
   const libraryIndex = useRecoilValue(libraryIndexState);
   const isDirtyRef = useRef(false);
-  const [dupSnack, setDupSnack] = useState(null);
+  const [dupSnack,      setDupSnack]      = useState(null);
+  const [mismatchDialog, setMismatchDialog] = useState(null); // null | mismatch[]
 
   useEffect(() => {
     setData(status);
@@ -609,10 +552,65 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
     setFileName(initialFileName || computeStatusFilename('status', status.name));
     setFileNameEdited(!!initialFileName);
     setCastHint(false);
+    setOpenProhibited(!!status.prohibitedMessage);
+    setOpenCategories(status.categories?.length > 0);
+    setOpenRestrictions(status.castRestrictions?.length > 0);
     isDirtyRef.current = false;
     setDupSnack(null);
     onDirtyChange?.(false);
+
+    // ── Mismatch check: string keys in meta vs current npcStringKeys ──────────
+    const npcStringKeys = libraryIndex.npcStringKeys || [];
+    const mismatches = [];
+
+    const checkKey = (field, key, storedText) => {
+      if (!key) return;
+      const found = npcStringKeys.find((s) => s.key === key);
+      if (found && found.message !== storedText)
+        mismatches.push({ field, key, storedText, currentText: found.message });
+    };
+
+    checkKey('Prohibited Message', status.prohibitedMessageKey, status.prohibitedMessage);
+
+    const chLabelMap = { target: 'Target', source: 'Source', say: 'Say', shout: 'Shout', group: 'Group' };
+    for (const [block, label] of [['onApply','OnApply'],['onTick','OnTick'],['onRemove','OnRemove'],['onExpire','OnExpire']]) {
+      const msgs = status[block]?.messages;
+      if (!Array.isArray(msgs)) continue;
+      for (const entry of msgs) {
+        if (!entry.key) continue;
+        checkKey(`${label} → ${chLabelMap[entry.type]}`, entry.key, entry.text);
+      }
+    }
+
+    if (mismatches.length) setMismatchDialog(mismatches);
   }, [status, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const resolveMismatches = (useUpdated) => {
+    setData((prev) => {
+      let next = { ...prev };
+      for (const mm of mismatchDialog) {
+        if (mm.field === 'Prohibited Message') {
+          next = useUpdated
+            ? { ...next, prohibitedMessage: mm.currentText }
+            : { ...next, prohibitedMessageKey: '' };
+        } else {
+          const [blockLabel, chLabel] = mm.field.split(' → ');
+          const blockKey = { OnApply: 'onApply', OnTick: 'onTick', OnRemove: 'onRemove', OnExpire: 'onExpire' }[blockLabel];
+          const chType   = { Target: 'target', Source: 'source', Say: 'say', Shout: 'shout', Group: 'group' }[chLabel];
+          if (blockKey && chType) {
+            const msgs = (next[blockKey].messages || []).map((entry) =>
+              entry.type === chType
+                ? (useUpdated ? { ...entry, text: mm.currentText } : { ...entry, key: '' })
+                : entry
+            );
+            next = { ...next, [blockKey]: { ...next[blockKey], messages: msgs } };
+          }
+        }
+      }
+      return next;
+    });
+    setMismatchDialog(null);
+  };
 
   // ── Duplicate detection ───────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
@@ -769,20 +767,22 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
                 value={data.name} onChange={set('name')} onBlur={handleNameBlur} inputProps={{ maxLength: 255 }}
               />
               <TextField label="Icon" size="small" sx={{ width: 130 }} value={data.icon}
-                onChange={set('icon')} inputProps={{ maxLength: 255 }} />
+                onChange={(e) => updateData((d) => ({ ...d, icon: e.target.value.replace(/\D/g, '') }))}
+                inputProps={{ inputMode: 'numeric' }} />
             </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-              <TextField label="Duration"     size="small" sx={{ width: 120 }} value={data.duration}     onChange={set('duration')} />
-              <TextField label="Tick"         size="small" sx={{ width: 100 }} value={data.tick}         onChange={set('tick')} />
-              <TextField label="Remove Chance" size="small" sx={{ width: 140 }} value={data.removeChance} onChange={set('removeChance')} />
+              <TextField label="Duration"     size="small" sx={{ width: 120 }} value={data.duration}
+                onChange={(e) => updateData((d) => ({ ...d, duration:     e.target.value.replace(/\D/g, '') }))} inputProps={{ inputMode: 'numeric' }} />
+              <TextField label="Tick"         size="small" sx={{ width: 100 }} value={data.tick}
+                onChange={(e) => updateData((d) => ({ ...d, tick:         e.target.value.replace(/\D/g, '') }))} inputProps={{ inputMode: 'numeric' }} />
+              <TextField label="Remove Chance" size="small" sx={{ width: 140 }} value={data.removeChance}
+                onChange={(e) => updateData((d) => ({ ...d, removeChance: e.target.value.replace(/\D/g, '') }))} inputProps={{ inputMode: 'numeric' }} />
               <FormControlLabel
                 control={<Checkbox size="small" checked={data.removeOnDeath}
                   onChange={(e) => updateData((d) => ({ ...d, removeOnDeath: e.target.checked }))} />}
                 label="Remove on Death"
               />
             </Box>
-            <TextField label="Prohibited Message" size="small" value={data.prohibitedMessage}
-              onChange={set('prohibitedMessage')} inputProps={{ maxLength: 255 }} />
             <CommentField value={data.comment} onChange={set('comment')} />
             <TextField
               label="Applied By" size="small" inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
@@ -791,9 +791,19 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
           </Box>
         </Paper>
 
+        {/* Prohibited Message */}
+        <Section title="Prohibited Message" open={openProhibited} onToggle={() => setOpenProhibited((v) => !v)}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <StringKeyField
+              text={data.prohibitedMessage} stringKey={data.prohibitedMessageKey}
+              pickerLabel="Prohibited Message"
+              onChange={({ text, key }) => updateData((d) => ({ ...d, prohibitedMessage: text, prohibitedMessageKey: key }))}
+            />
+          </Box>
+        </Section>
+
         {/* Categories */}
-        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>Categories</Typography>
+        <Section title="Categories" open={openCategories} onToggle={() => setOpenCategories((v) => !v)}>
           {data.categories.map((cat, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
               <ConstantAutocomplete indexKey="statusCategories" label="Category" value={cat} sx={{ flex: 1 }}
@@ -804,11 +814,10 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
             </Box>
           ))}
           <Button startIcon={<AddIcon />} size="small" onClick={addCategory}>Add Category</Button>
-        </Paper>
+        </Section>
 
         {/* Cast Restrictions */}
-        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>Cast Restrictions</Typography>
+        <Section title="Cast Restrictions" open={openRestrictions} onToggle={() => setOpenRestrictions((v) => !v)}>
           {(castHint || data.castRestrictions.length > 0) && (
             <Alert severity="info" icon={false} sx={{ mb: 1.5, py: 0 }}>
               Cast Restrictions operate off of Categories
@@ -838,7 +847,7 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
             </Box>
           ))}
           <Button startIcon={<AddIcon />} size="small" onClick={addRestriction}>Add New Restriction</Button>
-        </Paper>
+        </Section>
 
         {/* Effect accordions */}
         <EffectAccordion title="OnApply"  data={data.onApply}  onChange={setEffect('onApply')}  />
@@ -858,6 +867,26 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
           {dupSnack === 'active' ? `"${data.name}" already exists!` : `"${data.name}" exists in archive`}
         </Alert>
       </Snackbar>
+
+      <Dialog open={!!mismatchDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>String Key Mismatch</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 1 }}>
+            The following string keys no longer match the stored message text. This may mean the localization file was updated after this status was last saved.
+          </DialogContentText>
+          {(mismatchDialog || []).map((mm, i) => (
+            <Box key={i} sx={{ mb: 1.5 }}>
+              <Typography variant="body2" fontWeight={500}>{mm.field} — <code>{mm.key}</code></Typography>
+              <Typography variant="caption" color="text.secondary" display="block">Stored: {mm.storedText}</Typography>
+              <Typography variant="caption" color="text.secondary" display="block">Current: {mm.currentText}</Typography>
+            </Box>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => resolveMismatches(false)}>Keep as Custom</Button>
+          <Button variant="contained" onClick={() => resolveMismatches(true)}>Use Updated Strings</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

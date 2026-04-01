@@ -6,7 +6,7 @@ import {
   Select, MenuItem, FormControl, InputLabel, Collapse, Autocomplete,
   Checkbox, FormControlLabel, Chip, Snackbar, Alert,
 } from '@mui/material';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import SaveIcon from '@mui/icons-material/Save';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -22,7 +22,7 @@ import {
   computeBehaviorSetFilename,
 } from '../../data/behaviorSetConstants';
 import CommentField from '../shared/CommentField';
-import StatsTab from '../items/tabs/StatsTab';
+import StatsTab from '../shared/StatsTab';
 
 const DEFAULT_PREFIX = 'bvs';
 

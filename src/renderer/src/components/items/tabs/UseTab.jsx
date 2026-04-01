@@ -8,7 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../../recoil/atoms';
 import { PROC_EVENT_TYPES } from '../../../data/itemConstants';
-import ScriptAutocomplete from '../../common/ScriptAutocomplete';
+import ScriptAutocomplete from '../../shared/ScriptAutocomplete';
 import { RemoveStatusRow } from '../../castables/StatusesSection';
 
 const DEFAULT_TELEPORT = { map: '', x: 0, y: 0 };

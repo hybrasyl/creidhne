@@ -4,7 +4,7 @@ import {
   IconButton, InputLabel, MenuItem, Paper, Select, TextField, Typography,
   Autocomplete, Tooltip,
 } from '@mui/material';
-import ConstantAutocomplete from '../common/ConstantAutocomplete';
+import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import AddIcon       from '@mui/icons-material/Add';
 import DeleteIcon    from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
