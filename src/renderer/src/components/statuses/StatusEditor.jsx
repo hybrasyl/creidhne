@@ -9,10 +9,7 @@ import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import StringKeyField from '../shared/StringKeyField';
 import HealEditor from '../shared/HealEditor';
 import DamageEditor from '../shared/DamageEditor';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
+import EditorHeader from '../shared/EditorHeader';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -45,6 +42,13 @@ function computeStatusFilename(prefix, name) {
   if (!safe) return '';
   const p = (prefix || '').trim().toLowerCase().replace(/\s+/g, '_');
   return p ? `${p}_${safe}.xml` : `${safe}.xml`;
+}
+
+function derivePrefixFromFilename(initialFileName) {
+  if (!initialFileName) return 'status';
+  const base = initialFileName.replace(/\.xml$/i, '');
+  const idx = base.indexOf('_');
+  return idx > 0 ? base.slice(0, idx) : 'status';
 }
 
 // ── Computed remove/expire values ──────────────────────────────────────────────
@@ -533,8 +537,8 @@ function EffectAccordion({ title, data, onChange, readOnly = false, computedStat
 
 function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data,           setData]           = useState(status);
-  const [prefix,         setPrefix]         = useState('status');
-  const [fileName,       setFileName]       = useState(initialFileName || computeStatusFilename('status', status.name));
+  const [prefix,         setPrefix]         = useState(() => derivePrefixFromFilename(initialFileName));
+  const [fileName,       setFileName]       = useState(() => initialFileName || computeStatusFilename(derivePrefixFromFilename(initialFileName), status.name));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [castHint,       setCastHint]       = useState(false);
   const [openProhibited,   setOpenProhibited]   = useState(false);
@@ -548,8 +552,9 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
 
   useEffect(() => {
     setData(status);
-    setPrefix('status');
-    setFileName(initialFileName || computeStatusFilename('status', status.name));
+    const derivedPrefix = derivePrefixFromFilename(initialFileName);
+    setPrefix(derivedPrefix);
+    setFileName(initialFileName || computeStatusFilename(derivedPrefix, status.name));
     setFileNameEdited(!!initialFileName);
     setCastHint(false);
     setOpenProhibited(!!status.prohibitedMessage);
@@ -679,65 +684,20 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>{data.name || '(unnamed status)'}</Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive status">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive status">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave}>Save</Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {(() => {
-            const computedFileName = computeStatusFilename(prefix, data.name);
-            const recyclePending = !!initialFileName && fileName !== computedFileName;
-            const willRename     = !!initialFileName && fileName !== initialFileName;
-            const fileNameWarn   = recyclePending || willRename;
-            const helperText     = willRename
-              ? `Saving will create "${fileName}" and archive "${initialFileName}"`
-              : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
-            const recycleDisabled = fileName === computedFileName;
-            const recycleTooltip  = recycleDisabled
-              ? 'Filename is auto-computed'
-              : willRename ? 'Reset to computed filename' : 'Apply computed filename';
-            return (
-              <>
-                <TextField
-                  size="small" label="Filename" value={fileName}
-                  onChange={(e) => { markDirty(); setFileName(e.target.value); setFileNameEdited(true); }}
-                  sx={{
-                    flex: 1,
-                    ...(fileNameWarn && {
-                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                      '& .MuiFormHelperText-root': { color: 'warning.main' },
-                    }),
-                  }}
-                  inputProps={{ spellCheck: false }}
-                  helperText={helperText}
-                  FormHelperTextProps={{ sx: { mx: 0 } }}
-                />
-                <Tooltip title={recycleTooltip}>
-                  <span>
-                    <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled}>
-                      <AutorenewIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
-            );
-          })()}
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed status)'}
+        entityLabel="status"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeStatusFilename(prefix, data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirty(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={handleSave}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 

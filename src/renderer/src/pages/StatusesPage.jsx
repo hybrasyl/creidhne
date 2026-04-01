@@ -179,13 +179,28 @@ function StatusesPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${SUBDIR}/${fileName}`;
-      await window.electronAPI.saveStatus(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath  = isRename || !selectedFile
+        ? `${activeLibrary}/${SUBDIR}/${fileName}`
+        : selectedFile.path;
+
+      await window.electronAPI.saveStatus(newPath, data);
+      setEditingStatus(data);
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
+      }
+
       if (activeLibrary) {
+        await loadActiveFiles(activeLibrary);
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
       }

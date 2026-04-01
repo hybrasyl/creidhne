@@ -3,15 +3,12 @@ import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import ScriptAutocomplete from '../shared/ScriptAutocomplete';
+import EditorHeader from '../shared/EditorHeader';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox,
   Autocomplete, Chip, Collapse, Snackbar, Alert,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -245,65 +242,20 @@ function CastableEditor({
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed castable)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive castable">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive castable">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {(() => {
-            const computedFileName = computeCastableFilename(prefix, data.name);
-            const recyclePending = !!initialFileName && fileName !== computedFileName;
-            const willRename     = !!initialFileName && fileName !== initialFileName;
-            const fileNameWarn   = recyclePending || willRename;
-            const helperText     = willRename
-              ? `Saving will create "${fileName}" and archive "${initialFileName}"`
-              : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
-            const recycleDisabled = fileName === computedFileName;
-            return (
-              <>
-                <TextField
-                  size="small" label="Filename" value={fileName}
-                  onChange={(e) => { markDirty(); setFileName(e.target.value); setFileNameEdited(true); }}
-                  inputProps={{ spellCheck: false }}
-                  sx={{
-                    flex: 1,
-                    ...(fileNameWarn && {
-                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                      '& .MuiFormHelperText-root': { color: 'warning.main' },
-                    }),
-                  }}
-                  helperText={helperText}
-                />
-                <Tooltip title={recycleDisabled ? 'Filename is auto-computed' : willRename ? 'Reset to computed filename' : 'Apply computed filename'}>
-                  <span>
-                    <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled}>
-                      <AutorenewIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
-            );
-          })()}
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed castable)'}
+        entityLabel="castable"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeCastableFilename(prefix, data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirty(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={handleSave}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 

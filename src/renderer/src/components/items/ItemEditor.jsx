@@ -5,10 +5,7 @@ import {
   Snackbar,
 } from '@mui/material';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
+import EditorHeader from '../shared/EditorHeader';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -83,11 +80,13 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [warningsDismissed, setWarningsDismissed] = useState(false);
 
-  const [openAppearance, setOpenAppearance] = useState(true);
-  const [openPhysical, setOpenPhysical] = useState(true);
+  const [openFlags,        setOpenFlags]        = useState(item.properties.flags?.length > 0);
+  const [openCategories,   setOpenCategories]   = useState(item.properties.categories?.length > 0);
+  const [openAppearance,   setOpenAppearance]   = useState(true);
+  const [openPhysical,     setOpenPhysical]     = useState(true);
   const [openRestrictions, setOpenRestrictions] = useState(true);
-  const [openUse, setOpenUse] = useState(item.properties.use !== null);
-  const [openVendor, setOpenVendor] = useState(true);
+  const [openUse,          setOpenUse]          = useState(item.properties.use !== null);
+  const [openVendor,       setOpenVendor]       = useState(true);
 
   const isDirtyRef = useRef(false);
   const [dupSnack, setDupSnack] = useState(null);
@@ -97,6 +96,8 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
     setFileName(initialFileName || deriveFilename(item));
     setFileNameEdited(!!initialFileName);
     setWarningsDismissed(false);
+    setOpenFlags(item.properties.flags?.length > 0);
+    setOpenCategories(item.properties.categories?.length > 0);
     setOpenUse(item.properties.use !== null);
     isDirtyRef.current = false;
     setDupSnack(null);
@@ -197,73 +198,20 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed item)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive item">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive item">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {(() => {
-            const computedFileName = deriveFilename(data);
-            const recyclePending = !!initialFileName && fileName !== computedFileName;
-            const willRename     = !!initialFileName && fileName !== initialFileName;
-            const fileNameWarn   = recyclePending || willRename;
-            const helperText     = willRename
-              ? `Saving will create "${fileName}" and archive "${initialFileName}"`
-              : recyclePending ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)` : undefined;
-            const recycleDisabled = fileName === computedFileName;
-            const recycleTooltip  = recycleDisabled
-              ? 'Filename is auto-computed'
-              : willRename ? 'Reset to computed filename' : 'Apply computed filename';
-            return (
-              <>
-                <TextField
-                  size="small" label="Prefix" value={derivePrefix(data)}
-                  sx={{ width: 120 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  size="small" label="Filename" value={fileName}
-                  onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-                  sx={{
-                    flex: 1,
-                    ...(fileNameWarn && {
-                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                      '& .MuiFormHelperText-root': { color: 'warning.main' },
-                    }),
-                  }}
-                  inputProps={{ spellCheck: false }}
-                  helperText={helperText}
-                  FormHelperTextProps={{ sx: { mx: 0 } }}
-                />
-                <Tooltip title={recycleTooltip}>
-                  <span>
-                    <IconButton size="small" onClick={handleRegenerate} disabled={recycleDisabled}>
-                      <AutorenewIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
-            );
-          })()}
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed item)'}
+        entityLabel="item"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={deriveFilename(data)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
@@ -277,93 +225,104 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
 
-        {/* ── Basic — no accordion, always visible ── */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-          <TextField
-            label="Name" required value={data.name} size="small" inputProps={{ maxLength: 255 }}
-            onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
-            onBlur={handleNameBlur}
-            error={dupStatus === 'active'}
-            helperText={
-              dupStatus === 'active'   ? `"${data.name}" already exists` :
-              dupStatus === 'archived' ? `"${data.name}" exists in archive` :
-              undefined
-            }
-            sx={{
-              ...(dupStatus === 'archived' && {
-                '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                '& .MuiFormHelperText-root': { color: 'warning.main' },
-              }),
-            }}
-          />
-          <TextField label="Unidentified Name" value={data.unidentifiedName} size="small" inputProps={{ maxLength: 255 }}
-            onChange={(e) => updateData((d) => ({ ...d, unidentifiedName: e.target.value }))} />
-          <TextField label="Comment" value={data.comment} size="small" multiline minRows={2} inputProps={{ maxLength: 65534 }}
-            onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))} />
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FormControlLabel
-              control={
-                <Checkbox size="small" checked={data.includeInMetafile}
-                  onChange={(e) => updateData((d) => ({ ...d, includeInMetafile: e.target.checked }))} />
-              }
-              label="Include in Metafile"
-              sx={{ m: 0 }}
-            />
-            <TextField
-              label="Sold By" size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
-              value={(libraryIndex.itemVendors?.[data.name?.toLowerCase()] || []).join(', ') || 'Not sold by any NPC'}
-            />
-            <TextField
-              label="Found In" size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
-              value={(libraryIndex.itemLootSets?.[data.name?.toLowerCase()] || []).join(', ') || 'Not in any loot set'}
-            />
-          </Box>
-          <Autocomplete
-            multiple options={ITEM_TAGS} value={p.tags}
-            onChange={(_, val) => updateProperties({ tags: val })}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => <Chip key={option} label={option} size="small" {...getTagProps({ index })} />)
-            }
-            renderInput={(params) => <TextField {...params} size="small" label="Tags" />}
-          />
-
-          {/* Flags */}
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>Flags</Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-              {ITEM_FLAGS.map((flag) => (
-                <FormControlLabel
-                  key={flag}
-                  control={
-                    <Checkbox checked={p.flags.includes(flag)} onChange={() => toggleFlag(flag)} size="small" />
-                  }
-                  label={<Typography variant="body2">{flag}</Typography>}
-                  sx={{ width: '33%', m: 0 }}
-                />
-              ))}
+        {/* ── Basic info ── */}
+        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Row 1: Prefix, Name, Unidentified Name */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <TextField
+                size="small" label="Prefix" value={derivePrefix(data)} sx={{ width: 120 }}
+                inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Name" required value={data.name} size="small"
+                inputProps={{ maxLength: 255 }}
+                onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
+                onBlur={handleNameBlur}
+                error={dupStatus === 'active'}
+                helperText={
+                  dupStatus === 'active'   ? `"${data.name}" already exists` :
+                  dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                  undefined
+                }
+                sx={{
+                  flex: 1, minWidth: 160,
+                  ...(dupStatus === 'archived' && {
+                    '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                    '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                    '& .MuiFormHelperText-root': { color: 'warning.main' },
+                  }),
+                }}
+              />
+              <TextField
+                label="Unidentified Name" value={data.unidentifiedName} size="small"
+                sx={{ flex: 1, minWidth: 160 }} inputProps={{ maxLength: 255 }}
+                onChange={(e) => updateData((d) => ({ ...d, unidentifiedName: e.target.value }))}
+              />
             </Box>
+            {/* Row 2: Include in Metafile, Sold By, Found In */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox size="small" checked={data.includeInMetafile}
+                    onChange={(e) => updateData((d) => ({ ...d, includeInMetafile: e.target.checked }))} />
+                }
+                label="Include in Metafile"
+                sx={{ m: 0 }}
+              />
+              <TextField
+                label="Sold By" size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+                value={(libraryIndex.itemVendors?.[data.name?.toLowerCase()] || []).join(', ') || 'Not sold by any NPC'}
+              />
+              <TextField
+                label="Found In" size="small" sx={{ flex: 1, minWidth: 160 }} inputProps={{ readOnly: true }} InputLabelProps={{ shrink: true }}
+                value={(libraryIndex.itemLootSets?.[data.name?.toLowerCase()] || []).join(', ') || 'Not in any loot set'}
+              />
+            </Box>
+            {/* Row 3: Comment */}
+            <TextField
+              label="Comment" value={data.comment} size="small" multiline minRows={2}
+              inputProps={{ maxLength: 65534 }}
+              onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))}
+            />
+            <Autocomplete
+              multiple options={ITEM_TAGS} value={p.tags}
+              onChange={(_, val) => updateProperties({ tags: val })}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => <Chip key={option} label={option} size="small" {...getTagProps({ index })} />)
+              }
+              renderInput={(params) => <TextField {...params} size="small" label="Tags" />}
+            />
           </Box>
+        </Paper>
 
-          {/* Categories */}
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>Categories</Typography>
-            {p.categories.map((cat, index) => (
-              <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                <ConstantAutocomplete indexKey="itemCategories" label="Category" value={cat.name} sx={{ flex: 1 }}
-                  onChange={(val) => setCategory(index, val)} inputProps={{ maxLength: 255 }} />
-                <IconButton size="small" color="error" onClick={() => removeCategory(index)}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
+        {/* ── Flags ── */}
+        <Section title="Flags" open={openFlags} onToggle={() => setOpenFlags((v) => !v)}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+            {ITEM_FLAGS.map((flag) => (
+              <FormControlLabel
+                key={flag}
+                control={<Checkbox checked={p.flags.includes(flag)} onChange={() => toggleFlag(flag)} size="small" />}
+                label={<Typography variant="body2">{flag}</Typography>}
+                sx={{ width: '33%', m: 0 }}
+              />
             ))}
-            <Button startIcon={<AddIcon />} size="small" onClick={addCategory}>
-              Add Category
-            </Button>
           </Box>
-        </Box>
+        </Section>
 
-        <Divider sx={{ mb: 2 }} />
+        {/* ── Categories ── */}
+        <Section title="Categories" open={openCategories} onToggle={() => setOpenCategories((v) => !v)}>
+          {p.categories.map((cat, index) => (
+            <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+              <ConstantAutocomplete indexKey="itemCategories" label="Category" value={cat.name} sx={{ flex: 1 }}
+                onChange={(val) => setCategory(index, val)} inputProps={{ maxLength: 255 }} />
+              <IconButton size="small" color="error" onClick={() => removeCategory(index)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          <Button startIcon={<AddIcon />} size="small" onClick={addCategory}>Add Category</Button>
+        </Section>
 
         {/* ── Appearance ── */}
         <Section title="Appearance" open={openAppearance} onToggle={() => setOpenAppearance((v) => !v)}>
