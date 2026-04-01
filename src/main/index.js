@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import { promises as fs } from 'fs'
 import { createHash } from 'crypto'
 import { parseItemXml, serializeItemXml } from './itemXml'
@@ -21,6 +21,7 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
+import { listDir, readFile, writeFile, moveFile, archiveFile } from './fsHandlers'
 
 // Determine the path to use based on the operating system
 let userDataPath;
@@ -121,24 +122,9 @@ app.whenReady().then(() => {
   ipcMain.handle('open-directory', handleDirectoryOpen)
   ipcMain.handle('app:getVersion', () => app.getVersion())
 
-  ipcMain.handle('fs:listDir', async (_, dirPath) => {
-    try {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true })
-      return entries
-        .filter((e) => e.isFile() && e.name.endsWith('.xml'))
-        .map((e) => ({ name: e.name, path: join(dirPath, e.name) }))
-    } catch {
-      return []
-    }
-  })
-
-  ipcMain.handle('fs:readFile', async (_, filePath) => {
-    return fs.readFile(filePath, 'utf-8')
-  })
-
-  ipcMain.handle('fs:writeFile', async (_, filePath, content) => {
-    await fs.writeFile(filePath, content, 'utf-8')
-  })
+  ipcMain.handle('fs:listDir',   (_, dirPath)          => listDir(dirPath))
+  ipcMain.handle('fs:readFile',  (_, filePath)          => readFile(filePath))
+  ipcMain.handle('fs:writeFile', (_, filePath, content) => writeFile(filePath, content))
 
   ipcMain.handle('xml:loadItem', async (_, filePath) => {
     const xml = await fs.readFile(filePath, 'utf-8')
@@ -280,37 +266,8 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
-  ipcMain.handle('fs:moveFile', async (_, src, dest) => {
-    try {
-      await fs.access(dest)
-      return { conflict: true }
-    } catch {
-      // dest does not exist, safe to move
-    }
-    await fs.mkdir(dirname(dest), { recursive: true })
-    await fs.rename(src, dest)
-    return { success: true }
-  })
-
-  ipcMain.handle('fs:archiveFile', async (_, src, archiveDir) => {
-    const baseName = src.split(/[\\/]/).pop()
-    const ext  = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
-    const stem = ext ? baseName.slice(0, -ext.length) : baseName
-    await fs.mkdir(archiveDir, { recursive: true })
-    let dest = join(archiveDir, baseName)
-    let counter = 1
-    while (true) {
-      try {
-        await fs.access(dest)
-        dest = join(archiveDir, `${stem}_${counter}${ext}`)
-        counter++
-      } catch {
-        break
-      }
-    }
-    await fs.rename(src, dest)
-    return { success: true, archivedAs: dest.split(/[\\/]/).pop() }
-  })
+  ipcMain.handle('fs:moveFile',    (_, src, dest)          => moveFile(src, dest))
+  ipcMain.handle('fs:archiveFile', (_, src, archiveDir)    => archiveFile(src, archiveDir))
 
   // Handling settings load and save
   ipcMain.handle('settings:load', () => settingsManager.load())
