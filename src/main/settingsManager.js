@@ -53,15 +53,20 @@ export function createSettingsManager(userDataPath) {
     return { ...DEFAULTS }
   }
 
-  async function save(data) {
-    const content = JSON.stringify(data, null, 2)
-    await fs.mkdir(userDataPath, { recursive: true })
-    // 1. Write to tmp
-    await fs.writeFile(tmp, content, 'utf-8')
-    // 2. Rotate: current primary → backup
-    try { await fs.copyFile(primary, backup) } catch { /* primary may not exist yet */ }
-    // 3. Atomic rename tmp → primary
-    await fs.rename(tmp, primary)
+  let saveQueue = Promise.resolve()
+
+  function save(data) {
+    saveQueue = saveQueue.then(async () => {
+      const content = JSON.stringify(data, null, 2)
+      await fs.mkdir(userDataPath, { recursive: true })
+      // 1. Write to tmp
+      await fs.writeFile(tmp, content, 'utf-8')
+      // 2. Rotate: current primary → backup
+      try { await fs.copyFile(primary, backup) } catch { /* primary may not exist yet */ }
+      // 3. Atomic rename tmp → primary
+      await fs.rename(tmp, primary)
+    })
+    return saveQueue
   }
 
   return { load, save }
