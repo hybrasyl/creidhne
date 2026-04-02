@@ -12,14 +12,14 @@ import xml2js from 'xml2js'
 
 const FULL_XML = `<?xml version="1.0"?>
 <!-- Comment: Test loot set -->
-<LootSet xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="TestLoot">
-  <Table Rolls="2" Chance="75">
-    <Gold Min="10" Max="100" />
-    <Xp Min="5" Max="50" />
+<LootSet xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="TestLoot" InInventory="true">
+  <Table Rolls="2" Chance="75" InInventory="true">
     <Items Rolls="1" Chance="50">
       <Item Variants="Blessed Holy" Unique="false" Always="false" InInventory="true" Max="3">Iron Sword</Item>
       <Item>Gold Coin</Item>
     </Items>
+    <Gold Min="10" Max="100" />
+    <Xp Min="5" Max="50" />
   </Table>
 </LootSet>`
 
@@ -86,6 +86,16 @@ describe('Field coverage — all fields', () => {
     const l = await parseLootXml(FULL_XML)
     expect(l.table.xp.min).toBe('5')
     expect(l.table.xp.max).toBe('50')
+  })
+
+  it('parses LootSet InInventory as boolean', async () => {
+    const l = await parseLootXml(FULL_XML)
+    expect(l.inInventory).toBe(true)
+  })
+
+  it('parses LootTable InInventory as boolean', async () => {
+    const l = await parseLootXml(FULL_XML)
+    expect(l.table.inInventory).toBe(true)
   })
 
   it('parses items rolls and chance', async () => {
@@ -204,8 +214,10 @@ describe('Field coverage — minimal', () => {
 describe('Output structure', () => {
   const loot = {
     name: 'DropLoot',
+    inInventory: true,
     comment: '',
     table: {
+      inInventory: true,
       rolls: '3',
       chance: '100',
       gold: { min: '50', max: '200' },
@@ -258,14 +270,36 @@ describe('Output structure', () => {
     expect(items.$?.Chance).toBe('80')
   })
 
-  it('Item has text content, Variants, Unique, Always, and InInventory attributes', async () => {
+  it('Item has text content, Variants, and InInventory attributes; omits Unique and Always when false', async () => {
     const parsed = await parseRaw(serializeLootXml(loot))
     const item = parsed.LootSet.Table?.[0]?.Items?.[0]?.Item?.[0]
     expect(item._).toBe('Short Sword')
     expect(item.$?.Variants).toBe('Rusty')
-    expect(item.$?.Unique).toBe('false')
-    expect(item.$?.Always).toBe('false')
+    expect(item.$?.Unique).toBeUndefined()
+    expect(item.$?.Always).toBeUndefined()
     expect(item.$?.InInventory).toBe('true')
+  })
+
+  it('LootSet InInventory="true" is written when true', async () => {
+    const parsed = await parseRaw(serializeLootXml(loot))
+    expect(parsed.LootSet.$?.InInventory).toBe('true')
+  })
+
+  it('LootTable InInventory="true" is written when true', async () => {
+    const parsed = await parseRaw(serializeLootXml(loot))
+    expect(parsed.LootSet.Table?.[0]?.$?.InInventory).toBe('true')
+  })
+
+  it('LootSet InInventory is omitted when false', async () => {
+    const noInv = { ...loot, inInventory: false }
+    const parsed = await parseRaw(serializeLootXml(noInv))
+    expect(parsed.LootSet.$?.InInventory).toBeUndefined()
+  })
+
+  it('LootTable InInventory is omitted when false', async () => {
+    const noInv = { ...loot, table: { ...loot.table, inInventory: false } }
+    const parsed = await parseRaw(serializeLootXml(noInv))
+    expect(parsed.LootSet.Table?.[0]?.$?.InInventory).toBeUndefined()
   })
 
   it('omits Gold element when both min and max are empty', async () => {

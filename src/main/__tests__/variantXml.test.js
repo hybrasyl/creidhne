@@ -120,11 +120,6 @@ describe('Field coverage — all fields', () => {
     expect(app.hideBoots).toBe(false)
   })
 
-  it('computes styleEnabled true when bodyStyle or color is non-default', async () => {
-    const vg = await parseVariantXml(FULL_XML)
-    expect(vg.variants[0].properties.appearance.styleEnabled).toBe(true)
-  })
-
   it('parses flags', async () => {
     const vg = await parseVariantXml(FULL_XML)
     expect(vg.variants[0].properties.flags).toEqual(['Bound', 'Undiscardable'])
@@ -238,10 +233,10 @@ describe('Output structure', () => {
           tags: ['armor'],
           script: '',
           stackable: { max: '' },
-          appearance: { sprite: '50', equipSprite: '', displaySprite: '', styleEnabled: false, bodyStyle: 'Transparent', color: 'None', hideBoots: false },
+          appearance: { sprite: '50', equipSprite: '', displaySprite: '', bodyStyle: '', color: '', hideBoots: false },
           flags: [],
           physical: { value: '200', weight: '5', durability: '' },
-          restrictions: { level: { min: '1', max: '99' }, ab: null, class: 'Warrior', gender: 'Neutral', castables: [], slotRestrictions: [] },
+          restrictions: { level: { min: '', max: '' }, ab: null, class: 'Warrior', gender: 'Neutral', castables: [], slotRestrictions: [] },
           statModifiers: { rows: [{ key: 'BonusAc', value: '2' }], elementalModifiers: [] },
         },
       },
@@ -289,11 +284,16 @@ describe('Output structure', () => {
     expect(sm?.$?.BonusAc).toBe('2')
   })
 
-  it('Restrictions always contains Level and Class elements', async () => {
+  it('Restrictions contains Class element when class is set', async () => {
     const parsed = await parseRaw(serializeVariantXml(vg))
     const restr = parsed.VariantGroup.Variant?.[0]?.Properties?.[0]?.Restrictions?.[0]
-    expect(restr?.Level).toBeDefined()
-    expect(restr?.Class).toBeDefined()
+    expect(restr?.Class?.[0]).toBe('Warrior')
+  })
+
+  it('Restrictions omits Level when min and max are blank', async () => {
+    const parsed = await parseRaw(serializeVariantXml(vg))
+    const restr = parsed.VariantGroup.Variant?.[0]?.Properties?.[0]?.Restrictions?.[0]
+    expect(restr?.Level).toBeUndefined()
   })
 
   it('omits Gender element when Neutral', async () => {

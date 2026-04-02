@@ -17,10 +17,12 @@ const IGNORE_SUBDIR = 'lootsets/.ignore';
 
 const DEFAULT_LOOT = {
   name: '',
+  inInventory: false,
   comment: '',
   table: {
     rolls: '',
     chance: '',
+    inInventory: false,
     gold: { min: '', max: '' },
     xp: { min: '', max: '' },
     items: { rolls: '', chance: '', entries: [] },
@@ -171,13 +173,28 @@ function LootPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${LOOT_SUBDIR}/${fileName}`;
-      await window.electronAPI.saveLoot(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath = isRename || !selectedFile
+        ? `${activeLibrary}/${LOOT_SUBDIR}/${fileName}`
+        : selectedFile.path;
+
+      await window.electronAPI.saveLoot(newPath, data);
+      setEditingLoot(data);
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
+      }
+
       if (activeLibrary) {
+        await loadActiveFiles(activeLibrary);
         const section = await window.electronAPI.buildIndexSection(activeLibrary, LOOT_SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
       }

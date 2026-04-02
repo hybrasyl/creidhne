@@ -17,7 +17,7 @@ function RestrictionsTab({ data, onChange }) {
   const npcStringKeys = libraryIndex.npcStringKeys || [];
 
   const r = data.restrictions ?? {
-    level: { min: '1', max: '99' },
+    level: { min: '', max: '' },
     ab: null,
     class: '',
     gender: 'Neutral',
@@ -91,10 +91,10 @@ function RestrictionsTab({ data, onChange }) {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {/* Level, AB, Gender on one line */}
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <TextField label="Level Min" type="number" value={r.level.min} size="small" sx={{ width: 110 }}
-          onChange={setSubField('level', 'min')} inputProps={{ min: 0, max: 99 }} />
-        <TextField label="Level Max" type="number" value={r.level.max} size="small" sx={{ width: 110 }}
-          onChange={setSubField('level', 'max')} inputProps={{ min: 0, max: 99 }} />
+        <TextField label="Level Min" type="number" value={r.level.min} placeholder="1" size="small" sx={{ width: 110 }}
+          onChange={setSubField('level', 'min')} inputProps={{ min: 1, max: 99 }} />
+        <TextField label="Level Max" type="number" value={r.level.max} placeholder="99" size="small" sx={{ width: 110 }}
+          onChange={setSubField('level', 'max')} inputProps={{ min: 1, max: 99 }} />
         <TextField label="AB Min" type="number" value={r.ab?.min ?? ''} size="small" sx={{ width: 100 }}
           onChange={setAbField('min')} inputProps={{ min: 0, max: 99 }} />
         <TextField label="AB Max" type="number" value={r.ab?.max ?? ''} size="small" sx={{ width: 100 }}

@@ -165,13 +165,28 @@ function VariantsPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${VARIANTS_SUBDIR}/${fileName}`;
-      await window.electronAPI.saveVariantGroup(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath  = isRename || !selectedFile
+        ? `${activeLibrary}/${VARIANTS_SUBDIR}/${fileName}`
+        : selectedFile.path;
+
+      await window.electronAPI.saveVariantGroup(newPath, data);
+      setEditingVariantGroup(data);  // #6: sync editor to saved data before any selectedFile change
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });  // #5: associate with file after first save
+      }
+
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
       if (activeLibrary) {
+        await loadActiveFiles(activeLibrary);
         const section = await window.electronAPI.buildIndexSection(activeLibrary, VARIANTS_SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));
       }

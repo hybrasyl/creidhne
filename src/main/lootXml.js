@@ -32,10 +32,12 @@ function mapXmlToLoot(result, comment) {
 
   return {
     name: a(root, 'Name', ''),
+    inInventory: a(root, 'InInventory', 'false') === 'true',
     comment,
     table: {
       rolls: a(table, 'Rolls', ''),
       chance: a(table, 'Chance', ''),
+      inInventory: a(table, 'InInventory', 'false') === 'true',
       gold: { min: a(gold, 'Min', ''), max: a(gold, 'Max', '') },
       xp: { min: a(xp, 'Min', ''), max: a(xp, 'Max', '') },
       items: {
@@ -69,7 +71,24 @@ export function serializeLootXml(loot) {
 
 function buildXmlObject(loot) {
   const { table } = loot;
-  const tableNode = { $: omitEmpty({ Rolls: table.rolls, Chance: table.chance }) };
+  const tableAttrs = omitEmpty({ Rolls: table.rolls, Chance: table.chance });
+  if (table.inInventory) tableAttrs.InInventory = 'true';
+  const tableNode = { $: tableAttrs };
+
+  if (table.items.entries.length > 0 || table.items.rolls || table.items.chance) {
+    const itemsNode = { $: omitEmpty({ Rolls: table.items.rolls, Chance: table.items.chance }) };
+    itemsNode.Item = table.items.entries.map((entry) => {
+      const itemAttrs = omitEmpty({
+        Max: entry.max,
+        Variants: entry.variants.length ? entry.variants.join(' ') : undefined,
+      });
+      if (entry.unique) itemAttrs.Unique = 'true';
+      if (entry.always) itemAttrs.Always = 'true';
+      if (entry.inInventory) itemAttrs.InInventory = 'true';
+      return { _: entry.name, $: itemAttrs };
+    });
+    tableNode.Items = [itemsNode];
+  }
 
   if (table.gold.min || table.gold.max) {
     tableNode.Gold = [{ $: omitEmpty({ Min: table.gold.min, Max: table.gold.max }) }];
@@ -78,24 +97,12 @@ function buildXmlObject(loot) {
     tableNode.Xp = [{ $: omitEmpty({ Min: table.xp.min, Max: table.xp.max }) }];
   }
 
-  if (table.items.entries.length > 0 || table.items.rolls || table.items.chance) {
-    const itemsNode = { $: omitEmpty({ Rolls: table.items.rolls, Chance: table.items.chance }) };
-    itemsNode.Item = table.items.entries.map((entry) => ({
-      _: entry.name,
-      $: omitEmpty({
-        Max: entry.max,
-        Variants: entry.variants.length ? entry.variants.join(' ') : undefined,
-        Unique: String(entry.unique),
-        Always: String(entry.always),
-        InInventory: String(entry.inInventory),
-      }),
-    }));
-    tableNode.Items = [itemsNode];
-  }
+  const rootAttrs = omitEmpty({ xmlns: XMLNS, Name: loot.name });
+  if (loot.inInventory) rootAttrs.InInventory = 'true';
 
   return {
     LootSet: {
-      $: omitEmpty({ xmlns: XMLNS, Name: loot.name }),
+      $: rootAttrs,
       Table: [tableNode],
     },
   };

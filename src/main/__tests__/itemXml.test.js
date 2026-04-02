@@ -12,8 +12,7 @@ import xml2js from 'xml2js'
 //   only written to XML when false.
 // - _diagnostics.unknownStatKeys is computed on parse and not serialized back.
 //   A fixture with only known stat keys yields unknownStatKeys: [].
-// - styleEnabled is computed from bodyStyle/color/hideBoots on parse. The
-//   serializer only writes bodyStyle/color/hideBoots when styleEnabled is true.
+// - bodyStyle/color are empty string by default; serializer omits them when blank.
 // - Categories: the Unique attribute is parsed per-category but the serializer
 //   omits it (writes only the category name). A category with unique:true will
 //   lose that flag on round-trip. Round-trip fixture uses unique:false only.
@@ -168,9 +167,11 @@ describe('Field coverage — all fields', () => {
     expect(app.hideBoots).toBe(false)
   })
 
-  it('computes styleEnabled true when bodyStyle or color is non-default', async () => {
+  it('parses bodyStyle and color as non-empty strings when set', async () => {
     const item = await parseItemXml(FULL_XML)
-    expect(item.properties.appearance.styleEnabled).toBe(true)
+    const app = item.properties.appearance
+    expect(app.bodyStyle).toBe('ArmorBoots')
+    expect(app.color).toBe('Red')
   })
 
   it('parses categories', async () => {
@@ -384,11 +385,10 @@ describe('Field coverage — minimal', () => {
     expect(item.properties.tags).toEqual([])
   })
 
-  it('defaults appearance styleEnabled to false when no bodyStyle or color', async () => {
+  it('defaults appearance bodyStyle and color to empty string when absent', async () => {
     const item = await parseItemXml(MINIMAL_XML)
-    expect(item.properties.appearance.styleEnabled).toBe(false)
-    expect(item.properties.appearance.bodyStyle).toBe('Transparent')
-    expect(item.properties.appearance.color).toBe('None')
+    expect(item.properties.appearance.bodyStyle).toBe('')
+    expect(item.properties.appearance.color).toBe('')
   })
 
   it('defaults physical value, weight, durability to 1', async () => {
@@ -442,8 +442,8 @@ describe('Field coverage — minimal', () => {
   it('defaults restrictions level, class, gender', async () => {
     const item = await parseItemXml(MINIMAL_XML)
     const r = item.properties.restrictions
-    expect(r.level).toEqual({ min: '1', max: '99' })
-    expect(r.class).toBe('All')
+    expect(r.level).toEqual({ min: '', max: '' })
+    expect(r.class).toBe('')
     expect(r.gender).toBe('Neutral')
     expect(r.ab).toBeNull()
   })
@@ -481,7 +481,7 @@ describe('Output structure', () => {
     _diagnostics: { unknownStatKeys: [] },
     properties: {
       tags: ['weapon'],
-      appearance: { sprite: '50', equipSprite: '51', displaySprite: '', styleEnabled: true, bodyStyle: 'Transparent', color: 'Blue', hideBoots: false },
+      appearance: { sprite: '50', equipSprite: '51', displaySprite: '', bodyStyle: '', color: 'Blue', hideBoots: false },
       stackable: { max: '1' },
       physical: { value: '200', weight: '5', durability: '500' },
       categories: [{ name: 'Blade', unique: false }],
@@ -532,7 +532,7 @@ describe('Output structure', () => {
     expect(app.$?.Color).toBe('Blue')
   })
 
-  it('Appearance bodyStyle is omitted when Transparent even with styleEnabled', async () => {
+  it('Appearance bodyStyle is omitted when blank', async () => {
     const parsed = await parseRaw(serializeItemXml(item))
     const app = parsed.Item.Properties?.[0]?.Appearance?.[0]
     expect(app.$?.BodyStyle).toBeUndefined()

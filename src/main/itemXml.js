@@ -77,18 +77,14 @@ function mapXmlToItem(result) {
 }
 
 function parseAppearance(node) {
-  if (!node) return { sprite: '', equipSprite: '', displaySprite: '', styleEnabled: false, bodyStyle: 'Transparent', color: 'None', hideBoots: false };
-  const bodyStyle = a(node, 'BodyStyle', 'Transparent');
-  const color = a(node, 'Color', 'None');
-  const hideBoots = toBool(a(node, 'HideBoots'), false);
+  if (!node) return { sprite: '', equipSprite: '', displaySprite: '', bodyStyle: '', color: '', hideBoots: false };
   return {
     sprite: a(node, 'Sprite', ''),
     equipSprite: a(node, 'EquipSprite', ''),
     displaySprite: a(node, 'DisplaySprite', ''),
-    styleEnabled: bodyStyle !== 'Transparent' || color !== 'None' || hideBoots,
-    bodyStyle,
-    color,
-    hideBoots,
+    bodyStyle: a(node, 'BodyStyle', ''),
+    color: a(node, 'Color', ''),
+    hideBoots: toBool(a(node, 'HideBoots'), false),
   };
 }
 
@@ -180,9 +176,9 @@ function parseUse(node) {
 
 function parseRestrictions(node) {
   const defaults = {
-    level: { min: '1', max: '99' },
+    level: { min: '', max: '' },
     ab: null,
-    class: 'All',
+    class: '',
     gender: 'Neutral',
     castables: [],
     slotRestrictions: [],
@@ -192,12 +188,10 @@ function parseRestrictions(node) {
   const ab = first(node.Ab);
   const cast = first(node.Castables);
   const slots = first(node.SlotRestrictions);
-  const rawClass = first(node.Class, '');
-  const parsedClass = rawClass || 'All';
   return {
-    level: { min: a(lev, 'Min', '1'), max: a(lev, 'Max', '99') },
+    level: { min: a(lev, 'Min', ''), max: a(lev, 'Max', '') },
     ab: ab ? { min: a(ab, 'Min', '0'), max: a(ab, 'Max', '255') } : null,
-    class: parsedClass,
+    class: first(node.Class, ''),
     gender: first(node.Gender, 'Neutral'),
     castables: (cast?.Castable || []).map((c) => (typeof c === 'string' ? c : c._ ?? '')),
     slotRestrictions: (slots?.SlotRestriction || []).map((sr) => ({
@@ -258,16 +252,15 @@ function buildXmlObject(item) {
 
   if (p.tags.length) propsObj.$ = { Tags: p.tags.join(' ') };
 
-  propsObj.Appearance = [{ $: omitEmpty({
-    Sprite: String(p.appearance.sprite),
+  const appAttrs = omitEmpty({
+    Sprite: p.appearance.sprite !== '' ? String(p.appearance.sprite) : undefined,
     EquipSprite: p.appearance.equipSprite !== '' ? String(p.appearance.equipSprite) : undefined,
     DisplaySprite: p.appearance.displaySprite !== '' ? String(p.appearance.displaySprite) : undefined,
-    ...(p.appearance.styleEnabled ? {
-      BodyStyle: p.appearance.bodyStyle !== 'Transparent' ? p.appearance.bodyStyle : undefined,
-      Color: p.appearance.color !== 'None' ? p.appearance.color : undefined,
-      HideBoots: p.appearance.hideBoots ? 'true' : undefined,
-    } : {}),
-  }) }];
+    BodyStyle: p.appearance.bodyStyle || undefined,
+    Color: p.appearance.color || undefined,
+    HideBoots: p.appearance.hideBoots ? 'true' : undefined,
+  });
+  if (Object.keys(appAttrs).length) propsObj.Appearance = [{ $: appAttrs }];
 
   if (p.categories.length)
     propsObj.Categories = [{ Category: p.categories.map((c) => c.unique ? { _: c.name, $: { Unique: 'true' } } : c.name) }];
@@ -307,7 +300,10 @@ function buildXmlObject(item) {
     propsObj.Damage = [{ $: { SmallMin: String(p.damage.smallMin), SmallMax: String(p.damage.smallMax), LargeMin: String(p.damage.largeMin), LargeMax: String(p.damage.largeMax) } }];
 
   if (p.use) propsObj.Use = [buildUse(p.use)];
-  if (p.restrictions) propsObj.Restrictions = [buildRestrictions(p.restrictions)];
+  if (p.restrictions) {
+    const restrictionsNode = buildRestrictions(p.restrictions);
+    if (Object.keys(restrictionsNode).length) propsObj.Restrictions = [restrictionsNode];
+  }
 
   if (p.motions.length)
     propsObj.Motions = [{ Motion: p.motions.map((m) => ({ $: omitEmpty({ Id: String(m.id), Speed: String(m.speed) }) })) }];
@@ -362,8 +358,10 @@ const ALL_CLASSES = 'Peasant Wizard Rogue Monk Warrior Priest';
 
 function buildRestrictions(r) {
   const node = {};
-  node.Level = [{ $: omitEmpty({ Min: String(r.level?.min ?? '1'), Max: String(r.level?.max ?? '99') }) }];
-  node.Class = [r.class === 'All' ? ALL_CLASSES : (r.class || ALL_CLASSES)];
+  if (r.level?.min || r.level?.max)
+    node.Level = [{ $: omitEmpty({ Min: r.level.min || undefined, Max: r.level.max || undefined }) }];
+  const cls = r.class === 'All' ? ALL_CLASSES : (r.class || '');
+  if (cls) node.Class = [cls];
   if (r.ab) node.Ab = [{ $: omitEmpty({ Min: r.ab.min !== '0' ? String(r.ab.min) : undefined, Max: r.ab.max !== '255' ? String(r.ab.max) : undefined }) }];
   if (r.gender && r.gender !== 'Neutral') node.Gender = [r.gender];
   if (r.castables?.length) node.Castables = [{ Castable: r.castables }];

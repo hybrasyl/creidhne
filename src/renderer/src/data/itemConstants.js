@@ -1,7 +1,7 @@
-export const ITEM_BODY_STYLES = ['Transparent', 'Male', 'MaleBlack', 'MaleRed', 'Female'];
+export const ITEM_BODY_STYLES = ['', 'Transparent', 'Male', 'MaleBlack', 'MaleRed', 'Female'];
 
 export const ITEM_COLORS = [
-  'None', 'Black', 'Red', 'Auburn', 'Butter', 'Aqua', 'Blue', 'Plum', 'Forest', 'Green',
+  '', 'None', 'Black', 'Red', 'Auburn', 'Butter', 'Aqua', 'Blue', 'Plum', 'Forest', 'Green',
   'Sienna', 'Brown', 'Charcoal', 'Navy', 'Acorn', 'White', 'Pink', 'Honeydew', 'Orange',
   'Platinum', 'Midnight', 'Orchid', 'Lavender', 'Fuschia', 'Cerise', 'Ocean', 'HotPink',
   'Seafoam', 'Amethyst', 'Peach', 'Sky', 'Lime', 'Jade', 'Honey', 'Cobalt', 'Cocoa', 'Wine',
@@ -158,9 +158,8 @@ export const DEFAULT_ITEM = {
       sprite: '',
       equipSprite: '',
       displaySprite: '',
-      styleEnabled: false,
-      bodyStyle: 'Transparent',
-      color: 'None',
+      bodyStyle: '',
+      color: '',
       hideBoots: false,
     },
     stackable: { max: 1 },
@@ -177,9 +176,9 @@ export const DEFAULT_ITEM = {
     damage: null,
     use: null, // when enabled: { script, teleport, effect, sound, statuses: { add: [], remove: [] } }
     restrictions: {
-      level: { min: 1, max: 99 },
+      level: { min: '', max: '' },
       ab: null,
-      class: 'All',
+      class: '',
       gender: 'Neutral',
       castables: [],
       slotRestrictions: [],

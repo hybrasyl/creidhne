@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
-  Paper, Autocomplete, Collapse, Switch, Checkbox, FormControlLabel,
-  Snackbar, Alert,
+  Box, Typography, Divider, TextField, IconButton,
+  Paper, Autocomplete, Collapse, Checkbox, FormControlLabel,
+  Snackbar, Alert, Button,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -15,6 +11,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
+import EditorHeader from '../shared/EditorHeader';
 
 function deriveLootPrefix(fileName, name) {
   if (!fileName) return 'lts';
@@ -174,41 +171,24 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
       },
     }));
 
+  const computedFileName = computeLootFilename(prefix, data.name);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed loot set)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive Loot Set">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive Loot Set">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed loot set)'}
+        entityLabel="loot set"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computedFileName}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
@@ -217,7 +197,7 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
         {/* Basic info */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <TextField
                 label="Prefix" value={prefix} size="small" sx={{ width: 140 }}
                 onChange={handlePrefixChange}
@@ -243,6 +223,16 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
                 onBlur={handleNameBlur}
                 inputProps={{ maxLength: 255 }}
               />
+              <FormControlLabel
+                label="In Inventory"
+                sx={{ m: 0, alignSelf: 'center' }}
+                control={
+                  <Checkbox
+                    size="small" checked={data.inInventory}
+                    onChange={(e) => updateData((d) => ({ ...d, inInventory: e.target.checked }))}
+                  />
+                }
+              />
             </Box>
             <CommentField value={data.comment} onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))} />
           </Box>
@@ -251,7 +241,7 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
         {/* ── Table ── */}
         <Section title="Table" open={openTable} onToggle={() => setOpenTable((v) => !v)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <TextField
                 label="Number of Rolls" value={data.table.rolls} size="small" sx={{ flex: 1 }}
                 onChange={(e) => setTable('rolls', e.target.value)}
@@ -260,8 +250,18 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
                 label="Chance" value={data.table.chance} size="small" sx={{ flex: 1 }}
                 onChange={(e) => setTable('chance', e.target.value)}
               />
+              <FormControlLabel
+                label="In Inventory"
+                sx={{ m: 0, flexShrink: 0 }}
+                control={
+                  <Checkbox
+                    size="small" checked={data.table.inInventory}
+                    onChange={(e) => setTable('inInventory', e.target.checked)}
+                  />
+                }
+              />
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <TextField
                 label="Gold Min" value={data.table.gold.min} size="small" sx={{ flex: 1 }}
                 onChange={(e) => setGold('min', e.target.value)}
@@ -270,8 +270,6 @@ function LootEditor({ loot, initialFileName, isArchived, isExisting, onSave, onA
                 label="Gold Max" value={data.table.gold.max} size="small" sx={{ flex: 1 }}
                 onChange={(e) => setGold('max', e.target.value)}
               />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 label="XP Min" value={data.table.xp.min} size="small" sx={{ flex: 1 }}
                 onChange={(e) => setXp('min', e.target.value)}

@@ -326,62 +326,35 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
 
         {/* ── Appearance ── */}
         <Section title="Appearance" open={openAppearance} onToggle={() => setOpenAppearance((v) => !v)}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField label="Sprite" required type="number" value={p.appearance.sprite} size="small" sx={{ width: 140 }}
-                onChange={setPropField('appearance', 'sprite')} inputProps={{ min: 0, max: 65535 }} />
-              <TextField label="Equip Sprite" type="number" value={p.appearance.equipSprite} size="small" sx={{ width: 140 }}
-                onChange={setPropField('appearance', 'equipSprite')} inputProps={{ min: 0, max: 65535 }} />
-              <TextField label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
-                onChange={setPropField('appearance', 'displaySprite')} inputProps={{ min: 0, max: 65535 }} />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="body2" sx={{ flex: 1 }}>Style Override</Typography>
-              <Switch
-                size="small"
-                checked={p.appearance.styleEnabled}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  updateData((d) => ({
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <TextField label="Sprite" required type="number" value={p.appearance.sprite} size="small" sx={{ width: 140 }}
+              onChange={setPropField('appearance', 'sprite')} inputProps={{ min: 0, max: 65535 }} />
+            <TextField label="Equip Sprite" type="number" value={p.appearance.equipSprite} size="small" sx={{ width: 140 }}
+              onChange={setPropField('appearance', 'equipSprite')} inputProps={{ min: 0, max: 65535 }} />
+            <TextField label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
+              onChange={setPropField('appearance', 'displaySprite')} inputProps={{ min: 0, max: 65535 }} />
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>Body Style</InputLabel>
+              <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setPropField('appearance', 'bodyStyle')}>
+                {ITEM_BODY_STYLES.map((s) => <MenuItem key={s || '__blank'} value={s}>{s || '(none)'}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Color</InputLabel>
+              <Select value={p.appearance.color} label="Color" onChange={setPropField('appearance', 'color')}>
+                {ITEM_COLORS.map((c) => <MenuItem key={c || '__blank'} value={c}>{c || '(none)'}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControlLabel
+              control={
+                <Checkbox size="small" checked={p.appearance.hideBoots}
+                  onChange={(e) => updateData((d) => ({
                     ...d,
-                    properties: {
-                      ...d.properties,
-                      appearance: {
-                        ...d.properties.appearance,
-                        styleEnabled: checked,
-                        ...(checked ? {} : { bodyStyle: 'Transparent', color: 'None', hideBoots: false }),
-                      },
-                    },
-                  }));
-                }}
-              />
-            </Box>
-            {p.appearance.styleEnabled && (
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <InputLabel>Body Style</InputLabel>
-                  <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setPropField('appearance', 'bodyStyle')}>
-                    {ITEM_BODY_STYLES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <InputLabel>Color</InputLabel>
-                  <Select value={p.appearance.color} label="Color" onChange={setPropField('appearance', 'color')}>
-                    {ITEM_COLORS.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                  </Select>
-                </FormControl>
-                <FormControlLabel
-                  control={
-                    <Checkbox size="small" checked={p.appearance.hideBoots}
-                      onChange={(e) => updateData((d) => ({
-                        ...d,
-                        properties: { ...d.properties, appearance: { ...d.properties.appearance, hideBoots: e.target.checked } },
-                      }))} />
-                  }
-                  label="Hide Boots"
-                />
-              </Box>
-            )}
+                    properties: { ...d.properties, appearance: { ...d.properties.appearance, hideBoots: e.target.checked } },
+                  }))} />
+              }
+              label="Hide Boots"
+            />
           </Box>
         </Section>
 

@@ -72,18 +72,14 @@ function mapVariant(v) {
 }
 
 function parseAppearance(node) {
-  if (!node) return { sprite: '', equipSprite: '', displaySprite: '', styleEnabled: false, bodyStyle: 'Transparent', color: 'None', hideBoots: false };
-  const bodyStyle = a(node, 'BodyStyle', 'Transparent');
-  const color = a(node, 'Color', 'None');
-  const hideBoots = toBool(a(node, 'HideBoots'), false);
+  if (!node) return { sprite: '', equipSprite: '', displaySprite: '', bodyStyle: '', color: '', hideBoots: false };
   return {
     sprite: a(node, 'Sprite', ''),
     equipSprite: a(node, 'EquipSprite', ''),
     displaySprite: a(node, 'DisplaySprite', ''),
-    styleEnabled: bodyStyle !== 'Transparent' || color !== 'None' || hideBoots,
-    bodyStyle,
-    color,
-    hideBoots,
+    bodyStyle: a(node, 'BodyStyle', ''),
+    color: a(node, 'Color', ''),
+    hideBoots: toBool(a(node, 'HideBoots'), false),
   };
 }
 
@@ -114,9 +110,9 @@ function parseStatModifiers(node) {
 
 function parseRestrictions(node) {
   const defaults = {
-    level: { min: '1', max: '99' },
+    level: { min: '', max: '' },
     ab: null,
-    class: 'All',
+    class: '',
     gender: 'Neutral',
     castables: [],
     slotRestrictions: [],
@@ -125,14 +121,18 @@ function parseRestrictions(node) {
   const lev = first(node.Level);
   const ab = first(node.Ab);
   const cast = first(node.Castables);
-  const rawClass = first(node.Class, '');
+  const slots = first(node.SlotRestrictions);
   return {
-    level: { min: a(lev, 'Min', '1'), max: a(lev, 'Max', '99') },
+    level: { min: a(lev, 'Min', ''), max: a(lev, 'Max', '') },
     ab: ab ? { min: a(ab, 'Min', '0'), max: a(ab, 'Max', '255') } : null,
-    class: rawClass || 'All',
+    class: first(node.Class, ''),
     gender: first(node.Gender, 'Neutral'),
     castables: (cast?.Castable || []).map((c) => (typeof c === 'string' ? c : c._ ?? '')),
-    slotRestrictions: [],
+    slotRestrictions: (slots?.SlotRestriction || []).map((sr) => ({
+      type: a(sr, 'Type', 'ItemRequired'),
+      slot: a(sr, 'Slot', 'None'),
+      message: a(sr, 'Message', ''),
+    })),
   };
 }
 
@@ -169,18 +169,16 @@ function buildVariantProperties(p) {
   const propsObj = {};
   if (p.tags.length) propsObj.$ = { Tags: p.tags.join(' ') };
 
-  if (p.appearance.sprite !== '') {
-    propsObj.Appearance = [{ $: omitEmpty({
-      Sprite: String(p.appearance.sprite),
-      EquipSprite: p.appearance.equipSprite !== '' ? String(p.appearance.equipSprite) : undefined,
-      DisplaySprite: p.appearance.displaySprite !== '' ? String(p.appearance.displaySprite) : undefined,
-      ...(p.appearance.styleEnabled ? {
-        BodyStyle: p.appearance.bodyStyle !== 'Transparent' ? p.appearance.bodyStyle : undefined,
-        Color: p.appearance.color !== 'None' ? p.appearance.color : undefined,
-        HideBoots: p.appearance.hideBoots ? 'true' : undefined,
-      } : {}),
-    }) }];
-  }
+  const app = p.appearance;
+  const appAttrs = omitEmpty({
+    Sprite: app.sprite !== '' ? String(app.sprite) : undefined,
+    EquipSprite: app.equipSprite !== '' ? String(app.equipSprite) : undefined,
+    DisplaySprite: app.displaySprite !== '' ? String(app.displaySprite) : undefined,
+    BodyStyle: app.bodyStyle || undefined,
+    Color: app.color || undefined,
+    HideBoots: app.hideBoots ? 'true' : undefined,
+  });
+  if (Object.keys(appAttrs).length) propsObj.Appearance = [{ $: appAttrs }];
 
   if (p.flags.length) propsObj.Flags = [p.flags.join(' ')];
 
@@ -192,7 +190,8 @@ function buildVariantProperties(p) {
     }) }];
   }
 
-  propsObj.Restrictions = [buildRestrictions(p.restrictions)];
+  const restrictionsNode = buildRestrictions(p.restrictions);
+  if (Object.keys(restrictionsNode).length) propsObj.Restrictions = [restrictionsNode];
 
   if (p.script) propsObj.Script = [p.script];
 
@@ -219,10 +218,14 @@ const ALL_CLASSES = 'Peasant Wizard Rogue Monk Warrior Priest';
 
 function buildRestrictions(r) {
   const node = {};
-  node.Level = [{ $: omitEmpty({ Min: String(r.level?.min ?? '1'), Max: String(r.level?.max ?? '99') }) }];
-  node.Class = [r.class === 'All' ? ALL_CLASSES : (r.class || ALL_CLASSES)];
+  if (r.level?.min || r.level?.max)
+    node.Level = [{ $: omitEmpty({ Min: r.level.min || undefined, Max: r.level.max || undefined }) }];
+  const cls = r.class === 'All' ? ALL_CLASSES : (r.class || '');
+  if (cls) node.Class = [cls];
   if (r.ab) node.Ab = [{ $: omitEmpty({ Min: r.ab.min !== '0' ? String(r.ab.min) : undefined, Max: r.ab.max !== '255' ? String(r.ab.max) : undefined }) }];
   if (r.gender && r.gender !== 'Neutral') node.Gender = [r.gender];
   if (r.castables?.length) node.Castables = [{ Castable: r.castables }];
+  if (r.slotRestrictions?.length)
+    node.SlotRestrictions = [{ SlotRestriction: r.slotRestrictions.map((sr) => ({ $: { Type: sr.type, Slot: sr.slot, Message: sr.message } })) }];
   return node;
 }

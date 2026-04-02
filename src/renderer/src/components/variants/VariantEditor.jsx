@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
-  Paper, Collapse, Switch, Checkbox, FormControlLabel, Chip, Autocomplete,
+  Box, Button, Typography, Divider, TextField, IconButton,
+  Paper, Collapse, Checkbox, FormControlLabel, Chip, Autocomplete,
   FormControl, InputLabel, Select, MenuItem, Snackbar, Alert,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import EditorHeader from '../shared/EditorHeader';
 import StatsTab from '../shared/StatsTab';
 import RestrictionsTab from '../shared/RestrictionsTab';
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants';
@@ -45,13 +42,13 @@ const makeDefaultVariant = () => ({
     stackable: { max: '' },
     appearance: {
       sprite: '', equipSprite: '', displaySprite: '',
-      styleEnabled: false, bodyStyle: 'Transparent', color: 'None', hideBoots: false,
+      bodyStyle: '', color: '', hideBoots: false,
     },
     flags: [],
     physical: { value: '', weight: '', durability: '' },
     restrictions: {
-      level: { min: '1', max: '99' }, ab: null,
-      class: 'All', gender: 'Neutral', castables: [], slotRestrictions: [],
+      level: { min: '', max: '' }, ab: null,
+      class: '', gender: 'Neutral', castables: [], slotRestrictions: [],
     },
     statModifiers: { rows: [], elementalModifiers: [] },
   },
@@ -79,6 +76,7 @@ function Section({ title, open, onToggle, children }) {
 // ── Individual Variant Accordion ──────────────────────────────────────────────
 function VariantAccordion({ variant, index, onChange, onRemove }) {
   const [open, setOpen] = useState(true);
+  const [openFlags, setOpenFlags] = useState(false);
   const [openAppearance, setOpenAppearance] = useState(true);
   const [openPhysical, setOpenPhysical] = useState(true);
   const [openRestrictions, setOpenRestrictions] = useState(true);
@@ -100,16 +98,6 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
 
   const setAppearanceField = (field) => (e) =>
     updateProp('appearance', { ...p.appearance, [field]: e.target.value });
-
-  const setAppearanceCheck = (field) => (e) =>
-    updateProp('appearance', { ...p.appearance, [field]: e.target.checked });
-
-  const toggleStyle = (e) =>
-    updateProp('appearance', {
-      ...p.appearance,
-      styleEnabled: e.target.checked,
-      ...(e.target.checked ? {} : { bodyStyle: 'Transparent', color: 'None', hideBoots: false }),
-    });
 
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
@@ -134,7 +122,7 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
         <Divider />
         <Box sx={{ p: 2 }}>
 
-          {/* ── Header (no title): Name, Modifier, Script, Stackable Max, Tags, Flags ── */}
+          {/* ── Header (no title): Name, Modifier, Script, Stackable Max, Tags ── */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <TextField
@@ -170,73 +158,60 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
               renderInput={(params) => <TextField {...params} size="small" label="Tags" />}
             />
 
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>Flags</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-                {ITEM_FLAGS.map((flag) => (
-                  <FormControlLabel
-                    key={flag}
-                    control={
-                      <Checkbox checked={p.flags.includes(flag)} onChange={() => toggleFlag(flag)} size="small" />
-                    }
-                    label={<Typography variant="body2">{flag}</Typography>}
-                    sx={{ width: '33%', m: 0 }}
-                  />
-                ))}
-              </Box>
-            </Box>
           </Box>
 
           <Divider sx={{ mb: 2 }} />
 
+          {/* ── Flags ── */}
+          <Section title="Flags" open={openFlags} onToggle={() => setOpenFlags((v) => !v)}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+              {ITEM_FLAGS.map((flag) => (
+                <FormControlLabel
+                  key={flag}
+                  control={
+                    <Checkbox checked={p.flags.includes(flag)} onChange={() => toggleFlag(flag)} size="small" />
+                  }
+                  label={<Typography variant="body2">{flag}</Typography>}
+                  sx={{ width: '33%', m: 0 }}
+                />
+              ))}
+            </Box>
+          </Section>
+
           {/* ── Appearance ── */}
           <Section title="Appearance" open={openAppearance} onToggle={() => setOpenAppearance((v) => !v)}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  label="Sprite" type="number" value={p.appearance.sprite} size="small" sx={{ width: 140 }}
-                  onChange={setAppearanceField('sprite')} inputProps={{ min: 0, max: 65535 }}
-                />
-                <TextField
-                  label="Equip Sprite" type="number" value={p.appearance.equipSprite} size="small" sx={{ width: 140 }}
-                  onChange={setAppearanceField('equipSprite')} inputProps={{ min: 0, max: 65535 }}
-                />
-                <TextField
-                  label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
-                  onChange={setAppearanceField('displaySprite')} inputProps={{ min: 0, max: 65535 }}
-                />
-              </Box>
-              <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography variant="body2" sx={{ flex: 1 }}>Style Override</Typography>
-                  <Switch size="small" checked={p.appearance.styleEnabled} onChange={toggleStyle} />
-                </Box>
-                {p.appearance.styleEnabled && (
-                  <>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <FormControl size="small" sx={{ minWidth: 160 }}>
-                        <InputLabel>Body Style</InputLabel>
-                        <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setAppearanceField('bodyStyle')}>
-                          {ITEM_BODY_STYLES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                        </Select>
-                      </FormControl>
-                      <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Color</InputLabel>
-                        <Select value={p.appearance.color} label="Color" onChange={setAppearanceField('color')}>
-                          {ITEM_COLORS.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                        </Select>
-                      </FormControl>
-                      <FormControlLabel
-                        control={
-                          <Checkbox size="small" checked={p.appearance.hideBoots} onChange={setAppearanceCheck('hideBoots')} />
-                        }
-                        label="Hide Boots"
-                      />
-                    </Box>
-                  </>
-                )}
-              </Paper>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <TextField
+                label="Sprite" type="number" value={p.appearance.sprite} size="small" sx={{ width: 140 }}
+                onChange={setAppearanceField('sprite')} inputProps={{ min: 0, max: 65535 }}
+              />
+              <TextField
+                label="Equip Sprite" type="number" value={p.appearance.equipSprite} size="small" sx={{ width: 140 }}
+                onChange={setAppearanceField('equipSprite')} inputProps={{ min: 0, max: 65535 }}
+              />
+              <TextField
+                label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
+                onChange={setAppearanceField('displaySprite')} inputProps={{ min: 0, max: 65535 }}
+              />
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Body Style</InputLabel>
+                <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setAppearanceField('bodyStyle')}>
+                  {ITEM_BODY_STYLES.map((s) => <MenuItem key={s || '__blank'} value={s}>{s || '(none)'}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Color</InputLabel>
+                <Select value={p.appearance.color} label="Color" onChange={setAppearanceField('color')}>
+                  {ITEM_COLORS.map((c) => <MenuItem key={c || '__blank'} value={c}>{c || '(none)'}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Checkbox size="small" checked={p.appearance.hideBoots}
+                    onChange={(e) => updateProp('appearance', { ...p.appearance, hideBoots: e.target.checked })} />
+                }
+                label="Hide Boots"
+              />
             </Box>
           </Section>
 
@@ -362,39 +337,20 @@ function VariantEditor({ variantGroup, initialFileName, isArchived, isExisting, 
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed variant group)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive variant group">
-                <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive variant group">
-                <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small" label="Filename" value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed variant group)'}
+        entityLabel="variant group"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeVariantFilename(prefix, data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
