@@ -21,13 +21,10 @@ import xml2js from 'xml2js'
 const FULL_XML = `<?xml version="1.0"?>
 <!-- Comment: Test spawn group -->
 <SpawnGroup xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02"
-  Name="TestGroup" BaseLevel="10" ActiveFrom="06:00" ActiveTo="22:00"
-  DespawnAfter="30" Disabled="false" DespawnLoot="true">
-  <Loot>
-    <Set Name="common_drops" Rolls="1" Chance="100" />
-  </Loot>
+  Name="TestGroup" BaseLevel="10" DespawnAfter="30" Disabled="false">
   <Spawns>
-    <Spawn Name="Goblin" Flags="Immortal Unique">
+    <Spawn Name="Goblin" Flags="Immortal Unique"
+           ActiveFrom="06:00" ActiveTo="22:00" DespawnAfter="5" DespawnLoot="true">
       <Immunities>
         <Immunity Type="Element" MessageType="Say" Message="Ha!">Fire</Immunity>
       </Immunities>
@@ -41,7 +38,7 @@ const FULL_XML = `<?xml version="1.0"?>
       <Damage MinDmg="10" MaxDmg="50" Elements="Fire" />
       <Defense Ac="5" Mr="10" Elements="Wind" />
       <Spec MinCount="1" MaxCount="5" MaxPerInterval="2" Interval="30"
-            Limit="10" Percentage="75" Disabled="false" />
+            Limit="10" Percentage="75" Disabled="false" When="morning" />
       <Base Level="10" WeakChance="20" StrongChance="5" BehaviorSet="aggressive" />
       <Hostility>
         <Monsters ExceptCookie="friendly_town" />
@@ -52,6 +49,9 @@ const FULL_XML = `<?xml version="1.0"?>
       </SetCookies>
     </Spawn>
   </Spawns>
+  <Loot>
+    <Set Name="common_drops" Rolls="1" Chance="100" />
+  </Loot>
 </SpawnGroup>`
 
 const MINIMAL_XML = `<?xml version="1.0"?>
@@ -101,11 +101,9 @@ describe('Field coverage — all fields', () => {
     expect(sg.comment).toBe('Test spawn group')
   })
 
-  it('parses baseLevel, activeFrom, activeTo, despawnAfter', async () => {
+  it('parses baseLevel and despawnAfter', async () => {
     const sg = await parseSpawngroupXml(FULL_XML)
     expect(sg.baseLevel).toBe('10')
-    expect(sg.activeFrom).toBe('06:00')
-    expect(sg.activeTo).toBe('22:00')
     expect(sg.despawnAfter).toBe('30')
   })
 
@@ -114,9 +112,9 @@ describe('Field coverage — all fields', () => {
     expect(sg.disabled).toBe(false)
   })
 
-  it('parses despawnLoot as boolean', async () => {
+  it('parses despawnLoot as boolean on spawn', async () => {
     const sg = await parseSpawngroupXml(FULL_XML)
-    expect(sg.despawnLoot).toBe(true)
+    expect(sg.spawns[0].despawnLoot).toBe(true)
   })
 
   it('parses group-level loot sets', async () => {
@@ -178,6 +176,23 @@ describe('Field coverage — all fields', () => {
     expect(s.interval).toBe('30')
     expect(s.limit).toBe('10')
     expect(s.percentage).toBe('75')
+  })
+
+  it('parses spawn-level activeFrom and activeTo', async () => {
+    const sg = await parseSpawngroupXml(FULL_XML)
+    const sp = sg.spawns[0]
+    expect(sp.activeFrom).toBe('06:00')
+    expect(sp.activeTo).toBe('22:00')
+  })
+
+  it('parses spawn-level despawnAfter', async () => {
+    const sg = await parseSpawngroupXml(FULL_XML)
+    expect(sg.spawns[0].despawnAfter).toBe('5')
+  })
+
+  it('parses spec.when', async () => {
+    const sg = await parseSpawngroupXml(FULL_XML)
+    expect(sg.spawns[0].spec.when).toBe('morning')
   })
 
   it('parses spawn base', async () => {
@@ -247,18 +262,15 @@ describe('Field coverage — minimal', () => {
     expect(sg.comment).toBe('')
   })
 
-  it('defaults baseLevel, activeFrom, activeTo, despawnAfter to empty string', async () => {
+  it('defaults baseLevel and despawnAfter to empty string', async () => {
     const sg = await parseSpawngroupXml(MINIMAL_XML)
     expect(sg.baseLevel).toBe('')
-    expect(sg.activeFrom).toBe('')
-    expect(sg.activeTo).toBe('')
     expect(sg.despawnAfter).toBe('')
   })
 
-  it('defaults disabled and despawnLoot to false', async () => {
+  it('defaults disabled to false', async () => {
     const sg = await parseSpawngroupXml(MINIMAL_XML)
     expect(sg.disabled).toBe(false)
-    expect(sg.despawnLoot).toBe(false)
   })
 
   it('defaults group-level loot to empty array', async () => {
@@ -286,23 +298,24 @@ describe('Output structure', () => {
     prefix: '',
     comment: '',
     baseLevel: '5',
-    activeFrom: '',
-    activeTo: '',
     despawnAfter: '',
     disabled: true,
-    despawnLoot: false,
     loot: [{ name: 'shared_loot', rolls: '1', chance: '80' }],
     spawns: [
       {
         name: 'Rat',
         import: '',
         flags: ['Wandering'],
+        despawnAfter: '',
+        activeFrom: '',
+        activeTo: '',
+        despawnLoot: false,
         immunities: [{ type: 'Element', value: 'Water', messageType: 'Say', message: '' }],
         loot: [],
         coordinates: [{ x: '3', y: '7' }],
         combat: { minDmg: '5', maxDmg: '15', offensiveElement: '', ac: '', mr: '', defensiveElement: '' },
         base: { level: '5', weakChance: '', strongChance: '', behaviorSet: '' },
-        spec: { disabled: false, minCount: '2', maxCount: '4', maxPerInterval: '', interval: '60', limit: '', percentage: '' },
+        spec: { disabled: false, minCount: '2', maxCount: '4', maxPerInterval: '', interval: '60', limit: '', percentage: '', when: '' },
         hostility: { players: true, playerExceptCookie: '', playerOnlyCookie: '', monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '' },
         cookies: [],
       },

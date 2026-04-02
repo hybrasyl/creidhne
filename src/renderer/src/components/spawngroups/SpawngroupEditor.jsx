@@ -43,6 +43,10 @@ const makeDefaultSpawn = () => ({
   name: '',
   import: '',
   flags: [],
+  despawnAfter: '',
+  activeFrom: '',
+  activeTo: '',
+  despawnLoot: false,
   immunities: [],
   loot: [],
   coordinates: [],
@@ -55,6 +59,7 @@ const makeDefaultSpawn = () => ({
     disabled: false,
     minCount: '', maxCount: '', maxPerInterval: '',
     interval: '', limit: '', percentage: '',
+    when: '',
   },
   hostility: {
     players: false, playerExceptCookie: '', playerOnlyCookie: '',
@@ -358,6 +363,34 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
             />
           </Box>
 
+          {/* Row: Active From, Active To, Despawn After, Despawn Loot */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            <TextField
+              label="Active From" size="small" sx={{ width: 120 }}
+              value={spawn.activeFrom}
+              onChange={(e) => set('activeFrom', e.target.value)}
+            />
+            <TextField
+              label="Active To" size="small" sx={{ width: 120 }}
+              value={spawn.activeTo}
+              onChange={(e) => set('activeTo', e.target.value)}
+            />
+            <TextField
+              label="Despawn After" size="small" sx={{ width: 130 }}
+              value={spawn.despawnAfter}
+              onChange={(e) => set('despawnAfter', posInt(e.target.value))}
+              inputProps={{ inputMode: 'numeric' }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox size="small" checked={spawn.despawnLoot}
+                  onChange={(e) => set('despawnLoot', e.target.checked)} />
+              }
+              label={<Typography variant="body2">Despawn Loot</Typography>}
+              sx={{ m: 0 }}
+            />
+          </Box>
+
           {/* Immunities */}
           <Section title="Immunities" open={openImmunities} onToggle={() => setOpenImmunities((v) => !v)}>
             {spawn.immunities.map((row, i) => (
@@ -480,6 +513,16 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
           {/* Spawn Base */}
           <Section title="Spawn Base" open={openBase} onToggle={() => setOpenBase((v) => !v)}>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Autocomplete
+                freeSolo
+                options={libraryIndex.behaviorsets || []}
+                value={spawn.base.behaviorSet}
+                onInputChange={(_, val, reason) => { if (reason === 'input') setNested('base', 'behaviorSet', val); }}
+                onChange={(_, val) => setNested('base', 'behaviorSet', val ?? '')}
+                size="small"
+                sx={{ flex: 2, minWidth: 180 }}
+                renderInput={(params) => <TextField {...params} label="Behavior Set" />}
+              />
               <TextField
                 label="Level" size="small" sx={{ width: 90 }}
                 value={spawn.base.level}
@@ -550,6 +593,11 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   value={spawn.spec.percentage}
                   onChange={(e) => setNested('spec', 'percentage', posDec(e.target.value))}
                   inputProps={{ inputMode: 'decimal' }}
+                />
+                <TextField
+                  label="When" size="small" sx={{ width: 110 }}
+                  value={spawn.spec.when}
+                  onChange={(e) => setNested('spec', 'when', e.target.value)}
                 />
               </Box>
             </Box>
@@ -719,8 +767,13 @@ function SpawngroupEditor({
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-            {/* Line 1: Name + Prefix */}
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {/* Line 1: Prefix | Name | Base Level | Despawn After | Disabled */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <TextField
+                label="Prefix" size="small" sx={{ width: 130 }}
+                value={prefix} onChange={handlePrefixChange}
+                inputProps={{ maxLength: 64, spellCheck: false }}
+              />
               <TextField
                 label="Name" required size="small"
                 sx={{
@@ -741,48 +794,23 @@ function SpawngroupEditor({
                 inputProps={{ maxLength: 255 }}
               />
               <TextField
-                label="Prefix" size="small" sx={{ width: 150 }}
-                value={prefix} onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
-              />
-            </Box>
-
-            {/* Line 2: Base Level, Active From, Active To, Despawn After */}
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <TextField
                 label="Base Level" size="small" sx={{ width: 110 }}
                 value={data.baseLevel} onChange={set('baseLevel')}
                 inputProps={{ inputMode: 'numeric' }}
               />
               <TextField
-                label="Active From" size="small" sx={{ flex: 1, minWidth: 120 }}
-                value={data.activeFrom} onChange={set('activeFrom')}
-              />
-              <TextField
-                label="Active To" size="small" sx={{ flex: 1, minWidth: 120 }}
-                value={data.activeTo} onChange={set('activeTo')}
-              />
-              <TextField
-                label="Despawn After" size="small" sx={{ flex: 1, minWidth: 120 }}
+                label="Despawn After" size="small" sx={{ width: 130 }}
                 value={data.despawnAfter} onChange={set('despawnAfter')}
+                inputProps={{ inputMode: 'numeric' }}
               />
-            </Box>
-
-            {/* Line 3: Checkboxes */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <FormControlLabel
                 control={<Checkbox size="small" checked={data.disabled} onChange={setChecked('disabled')} />}
                 label={<Typography variant="body2">Disabled</Typography>}
-                sx={{ m: 0 }}
-              />
-              <FormControlLabel
-                control={<Checkbox size="small" checked={data.despawnLoot} onChange={setChecked('despawnLoot')} />}
-                label={<Typography variant="body2">Despawn Loot</Typography>}
-                sx={{ m: 0 }}
+                sx={{ m: 0, alignSelf: 'center' }}
               />
             </Box>
 
-            {/* Line 4: Comment */}
+            {/* Line 2: Comment */}
             <CommentField value={data.comment} onChange={set('comment')} />
 
           </Box>

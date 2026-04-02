@@ -83,6 +83,10 @@ function mapSpawn(spawnNode) {
     name: a(spawnNode, 'Name', ''),
     import: a(spawnNode, 'Import', ''),
     flags: a(spawnNode, 'Flags', '').split(' ').filter(Boolean),
+    despawnAfter: a(spawnNode, 'DespawnAfter', ''),
+    activeFrom: a(spawnNode, 'ActiveFrom', ''),
+    activeTo: a(spawnNode, 'ActiveTo', ''),
+    despawnLoot: a(spawnNode, 'DespawnLoot', 'false') === 'true',
     immunities: mapImmunities(spawnNode.Immunities),
     loot: mapLoot(first(spawnNode.Loot)),
     coordinates: (coordsNode?.Coordinate || []).map((c) => ({
@@ -111,6 +115,7 @@ function mapSpawn(spawnNode) {
       interval: a(spec, 'Interval', ''),
       limit: a(spec, 'Limit', ''),
       percentage: a(spec, 'Percentage', ''),
+      when: a(spec, 'When', ''),
     },
     hostility: mapHostility(first(spawnNode.Hostility)),
     cookies: mapCookies(first(spawnNode.SetCookies)),
@@ -126,11 +131,8 @@ function mapXmlToSpawngroup(result, comment) {
     name: a(root, 'Name', ''),
     prefix: '',
     baseLevel: a(root, 'BaseLevel', ''),
-    activeFrom: a(root, 'ActiveFrom', ''),
-    activeTo: a(root, 'ActiveTo', ''),
     despawnAfter: a(root, 'DespawnAfter', ''),
     disabled: a(root, 'Disabled', 'false') === 'true',
-    despawnLoot: a(root, 'DespawnLoot', 'false') === 'true',
     comment,
     loot: mapLoot(lootNode),
     spawns: (spawnsNode?.Spawn || []).map(mapSpawn),
@@ -189,13 +191,16 @@ function buildCookies(cookies) {
 }
 
 function buildSpawn(spawn) {
-  const node = {
-    $: omitEmpty({
-      Name: spawn.name,
-      Import: spawn.import,
-      Flags: spawn.flags?.length ? spawn.flags.join(' ') : undefined,
-    }),
-  };
+  const spawnAttrs = omitEmpty({
+    Name: spawn.name,
+    Import: spawn.import,
+    Flags: spawn.flags?.length ? spawn.flags.join(' ') : undefined,
+    DespawnAfter: spawn.despawnAfter,
+    ActiveFrom: spawn.activeFrom,
+    ActiveTo: spawn.activeTo,
+  });
+  if (spawn.despawnLoot) spawnAttrs.DespawnLoot = 'true';
+  const node = { $: spawnAttrs };
 
   const immunities = buildImmunities(spawn.immunities);
   if (immunities) node.Immunities = immunities;
@@ -222,6 +227,7 @@ function buildSpawn(spawn) {
     Interval: spawn.spec.interval,
     Limit: spawn.spec.limit,
     Percentage: spawn.spec.percentage,
+    When: spawn.spec.when,
   });
   if (spawn.spec.disabled) specAttrs.Disabled = 'true';
   if (Object.keys(specAttrs).length) node.Spec = [{ $: specAttrs }];
@@ -248,21 +254,18 @@ function buildXmlObject(sg) {
     xmlns: XMLNS,
     Name: sg.name,
     BaseLevel: sg.baseLevel,
-    ActiveFrom: sg.activeFrom,
-    ActiveTo: sg.activeTo,
     DespawnAfter: sg.despawnAfter,
   });
   if (sg.disabled) rootAttrs.Disabled = 'true';
-  if (sg.despawnLoot) rootAttrs.DespawnLoot = 'true';
 
   const node = { SpawnGroup: { $: rootAttrs } };
-
-  const loot = buildLoot(sg.loot);
-  if (loot) node.SpawnGroup.Loot = loot;
 
   if (sg.spawns?.length) {
     node.SpawnGroup.Spawns = [{ Spawn: sg.spawns.map(buildSpawn) }];
   }
+
+  const loot = buildLoot(sg.loot);
+  if (loot) node.SpawnGroup.Loot = loot;
 
   return node;
 }
