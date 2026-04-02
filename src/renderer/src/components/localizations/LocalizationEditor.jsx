@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
-  Paper, Collapse, Drawer, List, ListItem, ListItemText,
+  Paper, Drawer, List, ListItem, ListItemText, Tabs, Tab,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ArchiveIcon from '@mui/icons-material/Archive';
@@ -9,8 +9,6 @@ import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CommentField from '../shared/CommentField';
@@ -47,25 +45,6 @@ function deriveLocalizationPrefix(fileName, locale) {
 function computeFileName(prefix, locale) {
   const safe = (locale || '').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
   return safe ? `${prefix || 'str'}_${safe}.xml` : '';
-}
-
-// ── Collapsible section wrapper ───────────────────────────────────────────────
-function Section({ title, open, onToggle, children }) {
-  return (
-    <Paper variant="outlined" sx={{ mb: 2 }}>
-      <Box
-        sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, cursor: 'pointer', userSelect: 'none' }}
-        onClick={onToggle}
-      >
-        <Typography variant="subtitle2" sx={{ flex: 1 }}>{title}</Typography>
-        {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-      </Box>
-      <Collapse in={open}>
-        <Divider />
-        <Box sx={{ p: 2 }}>{children}</Box>
-      </Collapse>
-    </Paper>
-  );
 }
 
 // ── Key + Message row ─────────────────────────────────────────────────────────
@@ -106,6 +85,12 @@ function ResponseRow({ call, response, onChangeCall, onChangeResponse, onDelete 
   );
 }
 
+// ── Tab panel wrapper ─────────────────────────────────────────────────────────
+function TabPanel({ active, children }) {
+  if (!active) return null;
+  return <Box sx={{ p: 2 }}>{children}</Box>;
+}
+
 // ── Main editor ───────────────────────────────────────────────────────────────
 function LocalizationEditor({ localization, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data, setData] = useState(localization);
@@ -113,10 +98,7 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
   const [fileName, setFileName] = useState(initialFileName || computeFileName(deriveLocalizationPrefix(initialFileName, localization.locale), localization.locale));
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [varsOpen, setVarsOpen] = useState(false);
-  const [openCommon, setOpenCommon] = useState(localization.common.length > 0);
-  const [openMerchant, setOpenMerchant] = useState(localization.merchant.length > 0);
-  const [openMonster, setOpenMonster] = useState(localization.monsterSpeak.length > 0);
-  const [openNpc, setOpenNpc] = useState(localization.npcResponses.length > 0);
+  const [activeTab, setActiveTab] = useState(0);
 
   const isDirtyRef = useRef(false);
 
@@ -126,10 +108,7 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
     setPrefix(derivedPrefix);
     setFileName(initialFileName || computeFileName(derivedPrefix, localization.locale));
     setFileNameEdited(!!initialFileName);
-    setOpenCommon(localization.common.length > 0);
-    setOpenMerchant(localization.merchant.length > 0);
-    setOpenMonster(localization.monsterSpeak.length > 0);
-    setOpenNpc(localization.npcResponses.length > 0);
+    setActiveTab(0);
     isDirtyRef.current = false;
     onDirtyChange?.(false);
   }, [localization, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -174,6 +153,12 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
     update((d) => ({ ...d, merchant: d.merchant.map((s, idx) => idx === i ? { ...s, [field]: val } : s) }));
   const removeMerchant = (i) => update((d) => ({ ...d, merchant: d.merchant.filter((_, idx) => idx !== i) }));
 
+  // ── NpcSpeak ──────────────────────────────────────────────────────────────
+  const addNpcSpeak    = () => update((d) => ({ ...d, npcSpeak: [...d.npcSpeak, { key: '', message: '' }] }));
+  const setNpcSpeak    = (i, field, val) =>
+    update((d) => ({ ...d, npcSpeak: d.npcSpeak.map((s, idx) => idx === i ? { ...s, [field]: val } : s) }));
+  const removeNpcSpeak = (i) => update((d) => ({ ...d, npcSpeak: d.npcSpeak.filter((_, idx) => idx !== i) }));
+
   // ── MonsterSpeak ──────────────────────────────────────────────────────────
   const addMonster    = () => update((d) => ({ ...d, monsterSpeak: [...d.monsterSpeak, { key: '', message: '' }] }));
   const setMonster    = (i, field, val) =>
@@ -185,6 +170,76 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
   const setNpc    = (i, field, val) =>
     update((d) => ({ ...d, npcResponses: d.npcResponses.map((r, idx) => idx === i ? { ...r, [field]: val } : r) }));
   const removeNpc = (i) => update((d) => ({ ...d, npcResponses: d.npcResponses.filter((_, idx) => idx !== i) }));
+
+  const TABS = [
+    {
+      label: 'Common',
+      count: data.common.length,
+      add: addCommon,
+      addLabel: 'Add String',
+      content: data.common.map((s, i) => (
+        <StringRow key={i} keyVal={s.key} message={s.message}
+          onChangeKey={(v) => setCommon(i, 'key', v)}
+          onChangeMessage={(v) => setCommon(i, 'message', v)}
+          onDelete={() => removeCommon(i)}
+        />
+      )),
+    },
+    {
+      label: 'Merchant',
+      count: data.merchant.length,
+      add: addMerchant,
+      addLabel: 'Add String',
+      content: data.merchant.map((s, i) => (
+        <StringRow key={i} keyVal={s.key} message={s.message}
+          onChangeKey={(v) => setMerchant(i, 'key', v)}
+          onChangeMessage={(v) => setMerchant(i, 'message', v)}
+          onDelete={() => removeMerchant(i)}
+        />
+      )),
+    },
+    {
+      label: 'NPC Speak',
+      count: data.npcSpeak.length,
+      add: addNpcSpeak,
+      addLabel: 'Add String',
+      content: data.npcSpeak.map((s, i) => (
+        <StringRow key={i} keyVal={s.key} message={s.message}
+          onChangeKey={(v) => setNpcSpeak(i, 'key', v)}
+          onChangeMessage={(v) => setNpcSpeak(i, 'message', v)}
+          onDelete={() => removeNpcSpeak(i)}
+        />
+      )),
+    },
+    {
+      label: 'Monster',
+      count: data.monsterSpeak.length,
+      add: addMonster,
+      addLabel: 'Add String',
+      content: data.monsterSpeak.map((s, i) => (
+        <StringRow key={i} keyVal={s.key} message={s.message}
+          onChangeKey={(v) => setMonster(i, 'key', v)}
+          onChangeMessage={(v) => setMonster(i, 'message', v)}
+          onDelete={() => removeMonster(i)}
+        />
+      )),
+    },
+    {
+      label: 'NPC Response',
+      count: data.npcResponses.length,
+      add: addNpc,
+      addLabel: 'Add Response',
+      content: data.npcResponses.map((r, i) => (
+        <ResponseRow key={i} call={r.call} response={r.response}
+          onChangeCall={(v) => setNpc(i, 'call', v)}
+          onChangeResponse={(v) => setNpc(i, 'response', v)}
+          onDelete={() => removeNpc(i)}
+        />
+      )),
+    },
+  ];
+
+  const tab = TABS[activeTab];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -223,91 +278,53 @@ function LocalizationEditor({ localization, initialFileName, isArchived, isExist
         </Tooltip>
       </Box>
 
-      {/* ── Prefix + Locale Name ── */}
-      <Box sx={{ display: 'flex', gap: 1, pb: 1, flexShrink: 0 }}>
-        <TextField
-          label="Prefix" size="small" value={prefix} sx={{ width: 140 }}
-          onChange={handlePrefixChange}
-          inputProps={{ maxLength: 64, spellCheck: false }}
-        />
-        <TextField
-          label="Locale Name" value={data.locale} size="small" sx={{ flex: 1 }}
-          onChange={(e) => update((d) => ({ ...d, locale: e.target.value }))}
-          inputProps={{ spellCheck: false }}
-          helperText="Format: en-us"
-        />
-      </Box>
+      {/* ── Metadata on Paper ── */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 1, flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+          <TextField
+            label="Prefix" size="small" value={prefix} sx={{ width: 140 }}
+            onChange={handlePrefixChange}
+            inputProps={{ maxLength: 64, spellCheck: false }}
+          />
+          <TextField
+            label="Locale Name" value={data.locale} size="small" sx={{ flex: 1 }}
+            onChange={(e) => update((d) => ({ ...d, locale: e.target.value }))}
+            inputProps={{ spellCheck: false }}
+            helperText="Format: en-us"
+          />
+        </Box>
+        <CommentField value={data.comment} onChange={(e) => update((d) => ({ ...d, comment: e.target.value }))} sx={{ mb: 1 }} />
+        <Box>
+          <Tooltip title="View $ variables">
+            <Button size="small" startIcon={<InfoOutlinedIcon />} onClick={() => setVarsOpen(true)}>
+              Variables
+            </Button>
+          </Tooltip>
+        </Box>
+      </Paper>
 
-      {/* ── Comment ── */}
-      <CommentField value={data.comment} onChange={(e) => update((d) => ({ ...d, comment: e.target.value }))} sx={{ mb: 1, flexShrink: 0 }} />
-
-      {/* ── Variables button ── */}
-      <Box sx={{ mb: 1, flexShrink: 0 }}>
-        <Tooltip title="View $ variables">
-          <Button size="small" startIcon={<InfoOutlinedIcon />} onClick={() => setVarsOpen(true)}>
-            Variables
-          </Button>
-        </Tooltip>
-      </Box>
-
-      <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
-      {/* ── Accordions ── */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        <Section title="Common" open={openCommon} onToggle={() => setOpenCommon((v) => !v)}>
-          {data.common.map((s, i) => (
-            <StringRow
-              key={i}
-              keyVal={s.key} message={s.message}
-              onChangeKey={(v) => setCommon(i, 'key', v)}
-              onChangeMessage={(v) => setCommon(i, 'message', v)}
-              onDelete={() => removeCommon(i)}
-            />
+      {/* ── Tabs on Paper ── */}
+      <Paper variant="outlined" sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Tabs
+          value={activeTab} onChange={(_, v) => setActiveTab(v)}
+          sx={{ flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}
+          variant="scrollable" scrollButtons="auto"
+        >
+          {TABS.map((t, i) => (
+            <Tab key={i} label={`${t.label}${t.count > 0 ? ` (${t.count})` : ''}`} />
           ))}
-          <Button size="small" startIcon={<AddIcon />} onClick={addCommon}>Add Common String</Button>
-        </Section>
-
-        <Section title="Merchant" open={openMerchant} onToggle={() => setOpenMerchant((v) => !v)}>
-          {data.merchant.map((s, i) => (
-            <StringRow
-              key={i}
-              keyVal={s.key} message={s.message}
-              onChangeKey={(v) => setMerchant(i, 'key', v)}
-              onChangeMessage={(v) => setMerchant(i, 'message', v)}
-              onDelete={() => removeMerchant(i)}
-            />
-          ))}
-          <Button size="small" startIcon={<AddIcon />} onClick={addMerchant}>Add Merchant String</Button>
-        </Section>
-
-        <Section title="Monster" open={openMonster} onToggle={() => setOpenMonster((v) => !v)}>
-          {data.monsterSpeak.map((s, i) => (
-            <StringRow
-              key={i}
-              keyVal={s.key} message={s.message}
-              onChangeKey={(v) => setMonster(i, 'key', v)}
-              onChangeMessage={(v) => setMonster(i, 'message', v)}
-              onDelete={() => removeMonster(i)}
-            />
-          ))}
-          <Button size="small" startIcon={<AddIcon />} onClick={addMonster}>Add Monster String</Button>
-        </Section>
-
-        <Section title="NPC Response" open={openNpc} onToggle={() => setOpenNpc((v) => !v)}>
-          {data.npcResponses.map((r, i) => (
-            <ResponseRow
-              key={i}
-              call={r.call} response={r.response}
-              onChangeCall={(v) => setNpc(i, 'call', v)}
-              onChangeResponse={(v) => setNpc(i, 'response', v)}
-              onDelete={() => removeNpc(i)}
-            />
-          ))}
-          <Button size="small" startIcon={<AddIcon />} onClick={addNpc}>Add NPC Response</Button>
-        </Section>
-
-        <Box sx={{ height: 32 }} />
-      </Box>
+        </Tabs>
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Box sx={{ p: 2 }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={tab.add}>
+                {tab.addLabel}
+              </Button>
+            </Box>
+            {tab.content}
+          </Box>
+        </Box>
+      </Paper>
 
       {/* ── Variables Drawer ── */}
       <Drawer anchor="right" open={varsOpen} onClose={() => setVarsOpen(false)}>

@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
+  Box, Button, Typography, Divider, TextField, IconButton,
   Paper, Autocomplete, Snackbar, Alert,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
+import EditorHeader from '../shared/EditorHeader';
 
 function deriveRecipePrefix(fileName, name) {
   if (!fileName) return 'recipe';
@@ -117,47 +114,20 @@ function RecipeEditor({ recipe, initialFileName, isArchived, isExisting, onSave,
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed recipe)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive recipe">
-                <IconButton size="small" onClick={onArchive}>
-                  <ArchiveIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive recipe">
-                <IconButton size="small" onClick={onUnarchive}>
-                  <UnarchiveIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small"
-            label="Filename"
-            value={fileName}
-            onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); setFileNameEdited(true); }}
-            sx={{ flex: 1 }}
-            inputProps={{ spellCheck: false }}
-          />
-          <Tooltip title="Regenerate from name">
-            <IconButton size="small" onClick={handleRegenerate}>
-              <AutorenewIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed recipe)'}
+        entityLabel="recipe"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeRecipeFilename(prefix, data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
 

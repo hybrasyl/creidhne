@@ -6,8 +6,8 @@ import xml2js from 'xml2js'
 // Fixtures
 // ---------------------------------------------------------------------------
 
-// Four optional string sections: Common, Merchant, MonsterSpeak, NpcResponses.
-// Common/Merchant/MonsterSpeak hold <String Key="...">message</String> entries.
+// Five string sections: Common, Merchant, NpcSpeak, MonsterSpeak, NpcResponses.
+// Common/Merchant/NpcSpeak/MonsterSpeak hold <String Key="...">message</String> entries.
 // NpcResponses holds <Response Call="...">message</Response> entries.
 // All sections are omitted from output XML when empty.
 
@@ -21,6 +21,9 @@ const FULL_XML = `<?xml version="1.0" encoding="utf-8"?>
   <Merchant>
     <String Key="welcome">Welcome to my shop!</String>
   </Merchant>
+  <NpcSpeak>
+    <String Key="npcgreeting">Greetings, friend.</String>
+  </NpcSpeak>
   <MonsterSpeak>
     <String Key="aggro">You dare enter my lair?</String>
   </MonsterSpeak>
@@ -92,6 +95,12 @@ describe('Field coverage — all fields', () => {
     expect(l.merchant[0]).toEqual({ key: 'welcome', message: 'Welcome to my shop!' })
   })
 
+  it('parses npcSpeak strings', async () => {
+    const l = await parseLocalizationXml(FULL_XML)
+    expect(l.npcSpeak).toHaveLength(1)
+    expect(l.npcSpeak[0]).toEqual({ key: 'npcgreeting', message: 'Greetings, friend.' })
+  })
+
   it('parses monsterSpeak strings', async () => {
     const l = await parseLocalizationXml(FULL_XML)
     expect(l.monsterSpeak).toHaveLength(1)
@@ -135,6 +144,11 @@ describe('Field coverage — minimal', () => {
     expect(l.merchant).toEqual([])
   })
 
+  it('defaults npcSpeak to empty array', async () => {
+    const l = await parseLocalizationXml(MINIMAL_XML)
+    expect(l.npcSpeak).toEqual([])
+  })
+
   it('defaults monsterSpeak to empty array', async () => {
     const l = await parseLocalizationXml(MINIMAL_XML)
     expect(l.monsterSpeak).toEqual([])
@@ -160,6 +174,7 @@ describe('Output structure', () => {
     comment: '',
     common: [{ key: 'hello', message: 'Hello!' }],
     merchant: [{ key: 'buy', message: 'Buy something.' }],
+    npcSpeak: [{ key: 'npcline', message: 'Well met.' }],
     monsterSpeak: [{ key: 'roar', message: 'Roar!' }],
     npcResponses: [{ call: 'greet', response: 'Greetings!' }],
   }
@@ -188,6 +203,13 @@ describe('Output structure', () => {
     expect(s._).toBe('Buy something.')
   })
 
+  it('NpcSpeak/String has Key attribute and text content', async () => {
+    const parsed = await parseRaw(serializeLocalizationXml(loc))
+    const s = parsed.Localization.NpcSpeak?.[0]?.String?.[0]
+    expect(s.$?.Key).toBe('npcline')
+    expect(s._).toBe('Well met.')
+  })
+
   it('MonsterSpeak/String has Key attribute and text content', async () => {
     const parsed = await parseRaw(serializeLocalizationXml(loc))
     const s = parsed.Localization.MonsterSpeak?.[0]?.String?.[0]
@@ -210,6 +232,11 @@ describe('Output structure', () => {
   it('omits Merchant element when empty', async () => {
     const parsed = await parseRaw(serializeLocalizationXml({ ...loc, merchant: [] }))
     expect(parsed.Localization.Merchant).toBeUndefined()
+  })
+
+  it('omits NpcSpeak element when empty', async () => {
+    const parsed = await parseRaw(serializeLocalizationXml({ ...loc, npcSpeak: [] }))
+    expect(parsed.Localization.NpcSpeak).toBeUndefined()
   })
 
   it('omits MonsterSpeak element when empty', async () => {

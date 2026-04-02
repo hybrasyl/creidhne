@@ -34,6 +34,7 @@ function mapXmlToLocalization(result, comment) {
     comment,
     common:       strList(first(root.Common)),
     merchant:     strList(first(root.Merchant)),
+    npcSpeak:     strList(first(root.NpcSpeak)),
     monsterSpeak: strList(first(root.MonsterSpeak)),
     npcResponses: (first(root.NpcResponses)?.Response || []).map((r) => ({
       call:     r?.$?.Call ?? '',
@@ -61,6 +62,7 @@ function buildXmlObject(loc) {
 
   if (loc.common?.length)       root.Common       = [{ String: toStr(loc.common) }];
   if (loc.merchant?.length)     root.Merchant     = [{ String: toStr(loc.merchant) }];
+  if (loc.npcSpeak?.length)     root.NpcSpeak     = [{ String: toStr(loc.npcSpeak) }];
   if (loc.monsterSpeak?.length) root.MonsterSpeak = [{ String: toStr(loc.monsterSpeak) }];
   if (loc.npcResponses?.length)
     root.NpcResponses = [{ Response: loc.npcResponses.map((r) => ({ $: { Call: r.call }, _: r.response })) }];

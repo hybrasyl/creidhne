@@ -20,6 +20,7 @@ const DEFAULT_LOCALIZATION = {
   comment: '',
   common: [],
   merchant: [],
+  npcSpeak: [],
   monsterSpeak: [],
   npcResponses: [],
 };
@@ -147,7 +148,7 @@ function StringsPage() {
   const doNew = () => {
     setSelectedFile(null);
     setLoadError(null);
-    setEditingLocalization({ ...DEFAULT_LOCALIZATION, common: [], merchant: [], monsterSpeak: [], npcResponses: [] });
+    setEditingLocalization({ ...DEFAULT_LOCALIZATION });
   };
   const handleNew = () => guard(doNew);
 
@@ -170,12 +171,29 @@ function StringsPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${LOCALIZATIONS_SUBDIR}/${fileName}`;
-      await window.electronAPI.saveLocalization(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath = isRename || !selectedFile
+        ? `${activeLibrary}/${LOCALIZATIONS_SUBDIR}/${fileName}`
+        : selectedFile.path;
+
+      await window.electronAPI.saveLocalization(newPath, data);
+      setEditingLocalization(data);
       markClean();
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary);
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        await loadActiveFiles(activeLibrary);
+        await loadArchivedFiles(activeLibrary);
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });
+        await loadActiveFiles(activeLibrary);
+      }
+
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, LOCALIZATIONS_SUBDIR);
         setLibraryIndex((prev) => ({ ...prev, ...section }));

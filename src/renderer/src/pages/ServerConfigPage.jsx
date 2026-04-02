@@ -6,12 +6,14 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import ArchiveIcon from '@mui/icons-material/Archive';
 import { activeLibraryState } from '../recoil/atoms';
 import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor';
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const SUBDIR = 'serverconfigs';
+const IGNORE_SUBDIR = 'serverconfigs/.ignore';
 
 export const DEFAULT_SERVERCONFIG = {
   name: '',
@@ -43,19 +45,28 @@ export const DEFAULT_SERVERCONFIG = {
   formulas: {},
 };
 
-function FileListPanel({ files, selectedFile, onSelect, onNew }) {
+function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, showArchived, onToggleArchived }) {
   const [search, setSearch] = React.useState('');
-  const filtered = search.trim()
-    ? files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
-    : files;
+  const filtered = (list) =>
+    search.trim() ? list.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())) : list;
+
+  const filteredActive = filtered(files);
+  const filteredArchived = filtered(archivedFiles);
 
   return (
     <Box sx={{ width: 240, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Box sx={{ p: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="subtitle2">Server Configs</Typography>
-        <Tooltip title="New Server Config">
-          <Button size="small" startIcon={<AddIcon />} onClick={onNew}>New</Button>
-        </Tooltip>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Tooltip title={showArchived ? 'Hide Archived' : 'Show Archived'}>
+            <IconButton size="small" onClick={onToggleArchived} color={showArchived ? 'primary' : 'default'}>
+              <ArchiveIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="New Server Config">
+            <Button size="small" startIcon={<AddIcon />} onClick={onNew}>New</Button>
+          </Tooltip>
+        </Box>
       </Box>
       <Box sx={{ px: 1, pb: 1 }}>
         <TextField
@@ -66,25 +77,47 @@ function FileListPanel({ files, selectedFile, onSelect, onNew }) {
       </Box>
       <Divider />
       <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {files.length === 0 ? (
+        {files.length === 0 && !showArchived ? (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
             No configs found. Check that a library is set in Settings.
           </Typography>
-        ) : filtered.length === 0 ? (
+        ) : filteredActive.length === 0 && (!showArchived || filteredArchived.length === 0) ? (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>No matches.</Typography>
         ) : (
-          <List dense disablePadding>
-            {filtered.map((file) => (
-              <ListItem key={file.path} disablePadding>
-                <ListItemButton selected={selectedFile?.path === file.path} onClick={() => onSelect(file)}>
-                  <ListItemText
-                    primary={file.name.replace(/\.xml$/i, '')}
-                    primaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
+          <>
+            <List dense disablePadding>
+              {filteredActive.map((file) => (
+                <ListItem key={file.path} disablePadding>
+                  <ListItemButton selected={selectedFile?.path === file.path} onClick={() => onSelect(file)}>
+                    <ListItemText
+                      primary={file.name.replace(/\.xml$/i, '')}
+                      primaryTypographyProps={{ noWrap: true, variant: 'body2' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+            {showArchived && filteredArchived.length > 0 && (
+              <>
+                <Divider sx={{ my: 0.5 }} />
+                <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, py: 0.5, display: 'block' }}>
+                  Archived
+                </Typography>
+                <List dense disablePadding>
+                  {filteredArchived.map((file) => (
+                    <ListItem key={file.path} disablePadding>
+                      <ListItemButton selected={selectedFile?.path === file.path} onClick={() => onSelect(file)}>
+                        <ListItemText
+                          primary={file.name.replace(/\.xml$/i, '')}
+                          primaryTypographyProps={{ noWrap: true, variant: 'body2', color: 'text.secondary' }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </>
+            )}
+          </>
         )}
       </Box>
     </Box>
@@ -94,8 +127,10 @@ function FileListPanel({ files, selectedFile, onSelect, onNew }) {
 function ServerConfigPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
   const [files, setFiles] = useState([]);
+  const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingConfig, setEditingConfig] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
 
@@ -108,10 +143,23 @@ function ServerConfigPage() {
     setFiles(items);
   };
 
+  const loadArchivedFiles = async (library) => {
+    if (!library) { setArchivedFiles([]); return; }
+    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`);
+    setArchivedFiles(items.map((f) => ({ ...f, archived: true })));
+  };
+
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setSelectedFile(null); setEditingConfig(null); return; }
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingConfig(null); return; }
     loadFiles(activeLibrary);
+    loadArchivedFiles(activeLibrary);
   }, [activeLibrary]);
+
+  const handleToggleArchived = async () => {
+    const next = !showArchived;
+    setShowArchived(next);
+    if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
+  };
 
   const doNew = () => {
     setSelectedFile(null);
@@ -136,16 +184,60 @@ function ServerConfigPage() {
 
   const handleSave = async (data, fileName) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${SUBDIR}/${fileName}`;
-      await window.electronAPI.saveServerConfig(filePath, data);
+      const isRename = !!(selectedFile && fileName !== selectedFile.name);
+      const newPath  = isRename || !selectedFile
+        ? `${activeLibrary}/${SUBDIR}/${fileName}`
+        : selectedFile.path;
+
+      await window.electronAPI.saveServerConfig(newPath, data);
+      setEditingConfig(data);  // #6: sync editor to saved data before any selectedFile change
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        );
+        setSelectedFile({ name: fileName, path: newPath });
+        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+      } else if (!selectedFile) {
+        setSelectedFile({ name: fileName, path: newPath });  // #5: associate with file after first save
+      }
+
       markClean();
-      if (!selectedFile && activeLibrary) await loadFiles(activeLibrary);
+      if (activeLibrary) await loadFiles(activeLibrary);
     } catch (err) {
       console.error('Failed to save server config:', err);
       setSnackbar({ message: `Failed to save: ${err?.message}`, severity: 'error' });
     }
+  };
+
+  const handleArchive = async () => {
+    if (!selectedFile || !activeLibrary) return;
+    const result = await window.electronAPI.moveFile(
+      selectedFile.path,
+      `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
+    );
+    if (result?.conflict) { setSnackbar({ message: 'An archived config with this name already exists.', severity: 'error' }); return; }
+    markClean();
+    setSelectedFile(null); setEditingConfig(null);
+    await loadFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
+  };
+
+  const handleUnarchive = async () => {
+    if (!selectedFile || !activeLibrary) return;
+    const result = await window.electronAPI.moveFile(
+      selectedFile.path,
+      `${activeLibrary}/${SUBDIR}/${selectedFile.name}`
+    );
+    if (result?.conflict) {
+      setSnackbar({ message: 'An active config with this name already exists. Rename the archived file before unarchiving.', severity: 'error' });
+      return;
+    }
+    markClean();
+    setSelectedFile(null); setEditingConfig(null);
+    await loadFiles(activeLibrary);
+    await loadArchivedFiles(activeLibrary);
   };
 
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
@@ -153,8 +245,9 @@ function ServerConfigPage() {
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       <FileListPanel
-        files={files} selectedFile={selectedFile}
+        files={files} archivedFiles={archivedFiles} selectedFile={selectedFile}
         onSelect={handleSelect} onNew={handleNew}
+        showArchived={showArchived} onToggleArchived={handleToggleArchived}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (
@@ -166,7 +259,10 @@ function ServerConfigPage() {
             config={editingConfig}
             initialFileName={selectedFile?.name ?? null}
             isExisting={!!selectedFile}
+            isArchived={selectedFile?.archived === true}
             onSave={handleSave}
+            onArchive={handleArchive}
+            onUnarchive={handleUnarchive}
             onDirtyChange={handleDirtyChange}
             saveRef={saveRef}
           />

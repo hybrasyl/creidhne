@@ -4,8 +4,8 @@ import {
   Paper, Collapse, Switch, Tabs, Tab, Select, MenuItem, FormControl,
   InputLabel, FormControlLabel, Checkbox,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
+import EditorHeader from '../shared/EditorHeader';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -161,23 +161,25 @@ function NetworkInfoRow({ label, value, onChange }) {
 function GeneralTab({ data, updateData }) {
   const setField = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <TextField size="small" label="Name" value={data.name} onChange={setField('name')} sx={{ flex: 1 }} />
-        <TextField size="small" label="Locale" value={data.locale} onChange={setField('locale')} sx={{ width: 120 }} inputProps={{ spellCheck: false }} />
-        <TextField size="small" label="Environment" value={data.environment} onChange={setField('environment')} sx={{ width: 120 }} inputProps={{ spellCheck: false }} />
-        <TextField size="small" label="Element Table" value={data.elementTable} onChange={setField('elementTable')} sx={{ width: 140 }} inputProps={{ spellCheck: false }} />
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField size="small" label="Name" value={data.name} onChange={setField('name')} sx={{ flex: 1 }} />
+          <TextField size="small" label="Locale" value={data.locale} onChange={setField('locale')} sx={{ width: 120 }} inputProps={{ spellCheck: false }} />
+          <TextField size="small" label="Environment" value={data.environment} onChange={setField('environment')} sx={{ width: 120 }} inputProps={{ spellCheck: false }} />
+          <TextField size="small" label="Element Table" value={data.elementTable} onChange={setField('elementTable')} sx={{ width: 140 }} inputProps={{ spellCheck: false }} />
+        </Box>
+        <TextField
+          size="small" label="MOTD" value={data.motd} onChange={setField('motd')}
+          multiline minRows={3} inputProps={{ maxLength: 65534 }}
+        />
+        <TextField
+          size="small" label="World Data Directory" value={data.worldDataDir} onChange={setField('worldDataDir')}
+          helperText="Server-side path to the world data folder (not in schema, but read by the server)"
+          inputProps={{ spellCheck: false }}
+        />
       </Box>
-      <TextField
-        size="small" label="MOTD" value={data.motd} onChange={setField('motd')}
-        multiline minRows={3} inputProps={{ maxLength: 65534 }}
-      />
-      <TextField
-        size="small" label="World Data Directory" value={data.worldDataDir} onChange={setField('worldDataDir')}
-        helperText="Server-side path to the world data folder (not in schema, but read by the server)"
-        inputProps={{ spellCheck: false }}
-      />
-    </Box>
+    </Paper>
   );
 }
 
@@ -567,6 +569,9 @@ function HandlersTab({ data, updateData }) {
 }
 
 function LoggingTab({ data, updateData }) {
+  const [openDensity, setOpenDensity] = useState(true);
+  const [openStreams, setOpenStreams] = useState(true);
+
   const setLogging = (field) => (val) =>
     updateData((d) => ({ ...d, logging: { ...d.logging, [field]: val } }));
   const setLog = (i, field, val) =>
@@ -579,7 +584,7 @@ function LoggingTab({ data, updateData }) {
   const log = data.logging || {};
   return (
     <Box>
-      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+      <Section title="Logging Density" open={openDensity} onToggle={() => setOpenDensity((v) => !v)}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <LevelSelect label="Minimum Level" value={log.minimumLevel} onChange={setLogging('minimumLevel')} options={LOG_LEVELS} sx={{ width: 160 }} />
           <FormControlLabel
@@ -591,18 +596,20 @@ function LoggingTab({ data, updateData }) {
             label={<Typography variant="body2">JSON Output</Typography>}
           />
         </Box>
-      </Paper>
-      {(log.logs || []).map((l, i) => (
-        <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-          <LevelSelect label="Type" value={l.type} onChange={(val) => setLog(i, 'type', val)} options={LOG_TYPES} sx={{ width: 160 }} />
-          <TextField size="small" label="Destination" value={l.destination} onChange={(e) => setLog(i, 'destination', e.target.value)} sx={{ flex: 1 }} inputProps={{ spellCheck: false }} />
-          <LevelSelect label="Level" value={l.level} onChange={(val) => setLog(i, 'level', val)} options={LOG_LEVELS} sx={{ width: 130 }} />
-          <IconButton size="small" color="error" onClick={() => removeLog(i)}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ))}
-      <Button size="small" startIcon={<AddIcon />} onClick={addLog}>Add Log Stream</Button>
+      </Section>
+      <Section title="Logging Streams" open={openStreams} onToggle={() => setOpenStreams((v) => !v)}>
+        {(log.logs || []).map((l, i) => (
+          <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+            <LevelSelect label="Type" value={l.type} onChange={(val) => setLog(i, 'type', val)} options={LOG_TYPES} sx={{ width: 160 }} />
+            <TextField size="small" label="Destination" value={l.destination} onChange={(e) => setLog(i, 'destination', e.target.value)} sx={{ flex: 1 }} inputProps={{ spellCheck: false }} />
+            <LevelSelect label="Level" value={l.level} onChange={(val) => setLog(i, 'level', val)} options={LOG_LEVELS} sx={{ width: 130 }} />
+            <IconButton size="small" color="error" onClick={() => removeLog(i)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ))}
+        <Button size="small" startIcon={<AddIcon />} onClick={addLog}>Add Log Stream</Button>
+      </Section>
     </Box>
   );
 }
@@ -772,7 +779,7 @@ function AdvancedTab({ data, updateData }) {
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function ServerConfigEditor({ config, initialFileName, isExisting, onSave, onDirtyChange, saveRef }) {
+function ServerConfigEditor({ config, initialFileName, isExisting, isArchived, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const [data, setData] = useState(config);
   const [fileName, setFileName] = useState(initialFileName || 'config.xml');
   const [activeTab, setActiveTab] = useState(0);
@@ -800,21 +807,20 @@ function ServerConfigEditor({ config, initialFileName, isExisting, onSave, onDir
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || fileName.replace(/\.xml$/i, '')}
-          </Typography>
-          <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={() => onSave(data, fileName)}>
-            Save
-          </Button>
-        </Box>
-        <TextField
-          size="small" label="Filename" value={fileName}
-          onChange={(e) => { markDirtyLocal(); setFileName(e.target.value); }}
-          sx={{ maxWidth: 320 }} inputProps={{ spellCheck: false }}
-        />
-      </Box>
+      <EditorHeader
+        title={data.name || fileName.replace(/\.xml$/i, '')}
+        entityLabel="server config"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={fileName}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); }}
+        onRegenerate={() => {}}
+        onSave={() => onSave(data, fileName)}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ flexShrink: 0 }} />
 

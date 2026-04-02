@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, Tooltip, IconButton,
-  Snackbar, Alert,
+  Box, Button, Typography, Divider, TextField, IconButton,
+  Snackbar, Alert, Paper,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import SaveIcon from '@mui/icons-material/Save';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CommentField from '../shared/CommentField';
+import EditorHeader from '../shared/EditorHeader';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 
@@ -49,6 +48,7 @@ function ElementTableEditor({
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
   const [focusedCell, setFocusedCell] = useState(null); // { row, col }
   const [dupSnack, setDupSnack] = useState(null);
+  const [elementsOpen, setElementsOpen] = useState(true);
 
   const isDirtyRef = useRef(false);
 
@@ -208,93 +208,167 @@ function ElementTableEditor({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Header bar ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, flexShrink: 0 }}>
-        <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-          {name || '(unnamed table)'}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {isExisting && !isArchived && (
-            <Tooltip title="Archive Table">
-              <IconButton size="small" onClick={onArchive}><ArchiveIcon fontSize="small" /></IconButton>
-            </Tooltip>
-          )}
-          {isExisting && isArchived && (
-            <Tooltip title="Unarchive Table">
-              <IconButton size="small" onClick={onUnarchive}><UnarchiveIcon fontSize="small" /></IconButton>
-            </Tooltip>
-          )}
-          <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave}>
-            Save
-          </Button>
-        </Box>
-      </Box>
-
-      {/* ── Filename row ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <TextField
-          size="small" label="Filename" value={fileName}
-          onChange={(e) => { setFileName(e.target.value); setFileNameEdited(true); markDirty(); }}
-          sx={{ flex: 1 }} inputProps={{ spellCheck: false }}
-        />
-        <Tooltip title="Regenerate from name">
-          <IconButton size="small" onClick={handleRegenerate}><AutorenewIcon fontSize="small" /></IconButton>
-        </Tooltip>
-      </Box>
+      {/* ── Header ── */}
+      <EditorHeader
+        title={name || '(unnamed table)'}
+        entityLabel="element table"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeFileName(prefix, name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => { setFileName(val); setFileNameEdited(true); markDirty(); }}
+        onRegenerate={handleRegenerate}
+        onSave={handleSave}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
 
       <Divider sx={{ mb: 1.5, flexShrink: 0 }} />
 
-      {/* ── Name + Comment ── */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 1.5, flexShrink: 0, flexWrap: 'wrap' }}>
-        <TextField
-          label="Prefix" size="small" value={prefix} sx={{ width: 140 }}
-          onChange={handlePrefixChange}
-          inputProps={{ maxLength: 64, spellCheck: false }}
-        />
-        <TextField
-          label="Name" size="small" value={name}
-          sx={{
-            width: 200,
-            ...(dupStatus === 'archived' && {
-              '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-              '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-              '& .MuiFormHelperText-root': { color: 'warning.main' },
-            }),
-          }}
-          error={dupStatus === 'active'}
-          helperText={
-            dupStatus === 'active'   ? `"${name}" already exists` :
-            dupStatus === 'archived' ? `"${name}" exists in archive` :
-            undefined
-          }
-          onChange={(e) => handleNameChange(e.target.value)}
-          onBlur={handleNameBlur}
-          inputProps={{ maxLength: 128 }}
-        />
-        <CommentField value={comment}
-          onChange={(e) => { setComment(e.target.value); markDirty(); }}
-          sx={{ flex: 1 }}
-        />
-      </Box>
+      {/* ── Metadata on Paper ── */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 1.5, flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <TextField
+            label="Prefix" size="small" value={prefix} sx={{ width: 140 }}
+            onChange={handlePrefixChange}
+            inputProps={{ maxLength: 64, spellCheck: false }}
+          />
+          <TextField
+            label="Name" size="small" value={name}
+            sx={{
+              width: 200,
+              ...(dupStatus === 'archived' && {
+                '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                '& .MuiFormHelperText-root': { color: 'warning.main' },
+              }),
+            }}
+            error={dupStatus === 'active'}
+            helperText={
+              dupStatus === 'active'   ? `"${name}" already exists` :
+              dupStatus === 'archived' ? `"${name}" exists in archive` :
+              undefined
+            }
+            onChange={(e) => handleNameChange(e.target.value)}
+            onBlur={handleNameBlur}
+            inputProps={{ maxLength: 128 }}
+          />
+          <CommentField value={comment}
+            onChange={(e) => { setComment(e.target.value); markDirty(); }}
+            sx={{ flex: 1 }}
+          />
+        </Box>
+      </Paper>
 
-      {/* ── Help tip ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5, flexShrink: 0 }}>
-        <InfoOutlinedIcon fontSize="small" color="action" />
-        <Typography variant="caption" color="text.secondary">
-          Enter values as whole-number percentages — 80 = 80% (×0.8), 100 = no change (×1.0), 150 = 150% (×1.5).
-          Row = source element (attacker); column = target element (defender).
-          The highlighted cell shows the reverse interaction.
-        </Typography>
-      </Box>
-
-      <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
-      {/* ── Add element ── */}
-      <Box sx={{ mb: 1, flexShrink: 0 }}>
-        <Button size="small" startIcon={<AddIcon />} onClick={handleAddElement} variant="outlined">
-          Add Element
-        </Button>
-      </Box>
+      {/* ── Elements accordion ── */}
+      <Paper variant="outlined" sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, cursor: 'pointer', userSelect: 'none', flexShrink: 0 }}
+          onClick={() => setElementsOpen((v) => !v)}
+        >
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>Elements</Typography>
+          {elementsOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+        </Box>
+        {elementsOpen && (
+          <>
+            <Divider sx={{ flexShrink: 0 }} />
+            <Box sx={{ p: 2, flexShrink: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+                <InfoOutlinedIcon fontSize="small" color="action" />
+                <Typography variant="caption" color="text.secondary">
+                  Enter values as whole-number percentages — 80 = 80% (×0.8), 100 = no change (×1.0), 150 = 150% (×1.5).
+                  Row = source element (attacker); column = target element (defender).
+                  The highlighted cell shows the reverse interaction.
+                </Typography>
+              </Box>
+              <Button size="small" startIcon={<AddIcon />} onClick={handleAddElement} variant="outlined">
+                Add Element
+              </Button>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2 }}>
+              <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <thead>
+                  <tr>
+                    <th style={stickyCorner} />
+                    {elements.map((el, ci) => (
+                      <th key={ci} style={stickyColHeader(ci)}>
+                        {el || `(${ci + 1})`}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {elements.map((el, ri) => (
+                    <tr key={ri}>
+                      {/* Row name + delete */}
+                      <td style={stickyRowHeader}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <input
+                            type="text"
+                            value={el}
+                            onChange={(e) => handleRenameElement(ri, e.target.value)}
+                            style={{
+                              width: 110, fontSize: 12,
+                              border: `1px solid ${borderColor}`,
+                              borderRadius: 3, padding: '2px 5px',
+                              background: 'transparent',
+                              color: 'inherit',
+                            }}
+                          />
+                          <IconButton size="small" color="error" onClick={() => handleDeleteElement(ri)}>
+                            <DeleteIcon style={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Box>
+                      </td>
+                      {/* Value cells */}
+                      {elements.map((_, ci) => {
+                        const mirror = isMirrorCell(ri, ci);
+                        const isSelf = ri === ci;
+                        return (
+                          <td
+                            key={ci}
+                            style={{
+                              borderBottom: cellBorder,
+                              borderRight: cellBorder,
+                              padding: 2,
+                              background: mirror
+                                ? (theme.palette.mode === 'dark' ? '#3d1a1a' : '#fff5f5')
+                                : isSelf
+                                  ? (theme.palette.mode === 'dark' ? '#1a2a1a' : '#f5fff5')
+                                  : undefined,
+                              outline: mirror ? '2px solid #f44336' : undefined,
+                              outlineOffset: -2,
+                            }}
+                          >
+                            <input
+                              type="number"
+                              min={0}
+                              max={9999}
+                              value={matrix[ri]?.[ci] ?? ''}
+                              onChange={(e) => handleCellChange(ri, ci, e.target.value)}
+                              onFocus={() => setFocusedCell({ row: ri, col: ci })}
+                              onBlur={() => setFocusedCell(null)}
+                              style={{
+                                width: 64, fontSize: 12,
+                                border: `1px solid ${borderColor}`,
+                                borderRadius: 3, padding: '2px 4px',
+                                textAlign: 'right',
+                                background: 'transparent',
+                                color: 'inherit',
+                              }}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Box>
+          </>
+        )}
+      </Paper>
 
       <Snackbar
         open={!!dupSnack}
@@ -308,89 +382,6 @@ function ElementTableEditor({
             : `"${name}" exists in archive`}
         </Alert>
       </Snackbar>
-
-      {/* ── Grid ── */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
-              <th style={stickyCorner} />
-              {elements.map((el, ci) => (
-                <th key={ci} style={stickyColHeader(ci)}>
-                  {el || `(${ci + 1})`}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {elements.map((el, ri) => (
-              <tr key={ri}>
-                {/* Row name + delete */}
-                <td style={stickyRowHeader}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <input
-                      type="text"
-                      value={el}
-                      onChange={(e) => handleRenameElement(ri, e.target.value)}
-                      style={{
-                        width: 110, fontSize: 12,
-                        border: `1px solid ${borderColor}`,
-                        borderRadius: 3, padding: '2px 5px',
-                        background: 'transparent',
-                        color: 'inherit',
-                      }}
-                    />
-                    <IconButton size="small" color="error" onClick={() => handleDeleteElement(ri)}>
-                      <DeleteIcon style={{ fontSize: 14 }} />
-                    </IconButton>
-                  </Box>
-                </td>
-                {/* Value cells */}
-                {elements.map((_, ci) => {
-                  const mirror = isMirrorCell(ri, ci);
-                  const isSelf = ri === ci;
-                  return (
-                    <td
-                      key={ci}
-                      style={{
-                        borderBottom: cellBorder,
-                        borderRight: cellBorder,
-                        padding: 2,
-                        background: mirror
-                          ? (theme.palette.mode === 'dark' ? '#3d1a1a' : '#fff5f5')
-                          : isSelf
-                            ? (theme.palette.mode === 'dark' ? '#1a2a1a' : '#f5fff5')
-                            : undefined,
-                        outline: mirror ? '2px solid #f44336' : undefined,
-                        outlineOffset: -2,
-                      }}
-                    >
-                      <input
-                        type="number"
-                        min={0}
-                        max={9999}
-                        value={matrix[ri]?.[ci] ?? ''}
-                        onChange={(e) => handleCellChange(ri, ci, e.target.value)}
-                        onFocus={() => setFocusedCell({ row: ri, col: ci })}
-                        onBlur={() => setFocusedCell(null)}
-                        style={{
-                          width: 64, fontSize: 12,
-                          border: `1px solid ${borderColor}`,
-                          borderRadius: 3, padding: '2px 4px',
-                          textAlign: 'right',
-                          background: 'transparent',
-                          color: 'inherit',
-                        }}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Box>
-
 
     </Box>
   );
