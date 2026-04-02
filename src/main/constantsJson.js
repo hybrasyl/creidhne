@@ -1,5 +1,5 @@
-import { join } from 'path'
 import { promises as fs } from 'fs'
+import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
 
 const EMPTY = {
   vendorTabs:         [],
@@ -13,7 +13,7 @@ const EMPTY = {
 }
 
 export function getConstantsPath(libraryPath) {
-  return join(libraryPath, 'constants.json')
+  return getCreidhneFilePath(libraryPath, 'constants.json')
 }
 
 export async function loadConstants(libraryPath) {
@@ -26,5 +26,6 @@ export async function loadConstants(libraryPath) {
 }
 
 export async function saveConstants(libraryPath, data) {
+  await ensureCreidhneDir(libraryPath)
   await fs.writeFile(getConstantsPath(libraryPath), JSON.stringify(data, null, 2), 'utf-8')
 }

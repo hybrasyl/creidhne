@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { promises as fs } from 'fs'
-import { createHash } from 'crypto'
+import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
 import { parseNpcXml, serializeNpcXml } from './npcXml'
@@ -15,6 +15,7 @@ import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { exportCastablesExcelCSV } from './exportCastablesJson.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
+import { loadFormulas, saveFormulas } from './formulasJson.js'
 import { extractMeta } from './xmlCommentUtils.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
@@ -299,11 +300,7 @@ app.whenReady().then(() => {
   }
   const ELEM_NAME_REGEX = /<Name>([^<]+)<\/Name>/g
 
-  const getIndexDir = () => join(app.getPath('userData'), 'indexes')
-  const getIndexPath = (libraryPath) => {
-    const hash = createHash('sha256').update(libraryPath).digest('hex').slice(0, 16)
-    return join(getIndexDir(), `${hash}.json`)
-  }
+  const getIndexPath = (libraryPath) => getCreidhneFilePath(libraryPath, 'index.json')
 
   async function walkDir(dir, ext, base, results = []) {
     try {
@@ -786,7 +783,7 @@ app.whenReady().then(() => {
     await scanCookieNames(scriptsDir)
     index.cookieNames = [...cookieNamesSet].sort()
 
-    await fs.mkdir(getIndexDir(), { recursive: true })
+    await ensureCreidhneDir(libraryPath)
     await fs.writeFile(getIndexPath(libraryPath), JSON.stringify(index, null, 2), 'utf-8')
 
     return { success: true, builtAt: index.builtAt }
@@ -1164,7 +1161,7 @@ app.whenReady().then(() => {
       const indexPath = getIndexPath(libraryPath)
       let existing = {}
       try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-      await fs.mkdir(getIndexDir(), { recursive: true })
+      await ensureCreidhneDir(libraryPath)
       await fs.writeFile(indexPath, JSON.stringify({ ...existing, ...result }, null, 2), 'utf-8')
     } catch { /* persist failure is non-fatal */ }
 
@@ -1228,7 +1225,7 @@ app.whenReady().then(() => {
     const indexPath = getIndexPath(libraryPath)
     let idx = {}
     try { idx = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-    await fs.mkdir(getIndexDir(), { recursive: true })
+    await ensureCreidhneDir(libraryPath)
     await fs.writeFile(indexPath, JSON.stringify(updater(idx), null, 2), 'utf-8')
   }
 
@@ -1438,6 +1435,18 @@ app.whenReady().then(() => {
   ipcMain.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
     if (!libraryPath) return
     await saveConstants(libraryPath, data)
+  })
+
+  // --- Formulas ---
+
+  ipcMain.handle('formulas:load', async (_, libraryPath) => {
+    if (!libraryPath) return { globals: {}, templates: [], formulas: [] }
+    return loadFormulas(libraryPath)
+  })
+
+  ipcMain.handle('formulas:save', async (_, libraryPath, data) => {
+    if (!libraryPath) return
+    await saveFormulas(libraryPath, data)
   })
 
   ipcMain.handle('dialog:saveFile', async (_, defaultName, content) => {

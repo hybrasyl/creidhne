@@ -63,6 +63,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanCookies: (libraryPath) => ipcRenderer.invoke('constants:scanCookies', libraryPath),
   loadUserConstants: (libraryPath) => ipcRenderer.invoke('constants:loadUserConstants', libraryPath),
   saveUserConstants: (libraryPath, data) => ipcRenderer.invoke('constants:saveUserConstants', libraryPath, data),
+  loadFormulas: (libraryPath) => ipcRenderer.invoke('formulas:load', libraryPath),
+  saveFormulas: (libraryPath, data) => ipcRenderer.invoke('formulas:save', libraryPath, data),
   exportCastablesCSV: (libraryPath) => ipcRenderer.invoke('export:castablesCSV', libraryPath),
   exportCastablesJSON: (libraryPath) => ipcRenderer.invoke('export:castablesJSON', libraryPath),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
