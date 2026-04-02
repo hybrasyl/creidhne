@@ -378,6 +378,16 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                       }
                       label={<Typography variant="body2">Allow Dead</Typography>}
                     />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={data.roles.disableForget ?? false}
+                          onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, disableForget: e.target.checked } }))}
+                          size="small"
+                        />
+                      }
+                      label={<Typography variant="body2">Disable Forget</Typography>}
+                    />
                   </Box>
                 </Box>
           </Box>
@@ -447,20 +457,6 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           })}
           <Button size="small" startIcon={<AddIcon />} onClick={addString}>Add String</Button>
         </Section>
-
-        {/* ── Roles options ── */}
-        <Box sx={{ mb: 1 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={data.roles.disableForget ?? false}
-                onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, disableForget: e.target.checked } }))}
-              />
-            }
-            label={<Typography variant="body2">Disable Forget</Typography>}
-          />
-        </Box>
 
         {/* ── Bank ── */}
         <Section
