@@ -334,7 +334,7 @@ describe('castableXml — minimal', () => {
   it('parses name', () => expect(c.name).toBe('MinSpell'));
   it('comment defaults to empty string', () => expect(c.comment).toBe(''));
   it('meta defaults to all false', () => {
-    expect(c.meta).toEqual({ isTest: false, isGM: false, givenViaScript: false, deprecated: false, specialty: '' });
+    expect(c.meta).toEqual({ isTest: false, isGM: false, givenViaScript: false, deprecated: false, specialty: '', healFormulaName: '', damageFormulaName: '' });
   });
   it('lines defaults to empty string', () => expect(c.lines).toBe(''));
   it('cooldown defaults to empty string', () => expect(c.cooldown).toBe(''));
@@ -544,5 +544,74 @@ describe('castableXml — output structure', () => {
   });
   it('Reactors not serialized at top level of Castable', () => {
     expect(raw.Castable.Reactors).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. Formula damage — no Simple element
+// ---------------------------------------------------------------------------
+
+describe('castableXml — Formula damage omits Simple', () => {
+  it('serializing Formula damage does not emit a Simple element', async () => {
+    const castable = await parseCastableXml(MINIMAL_XML);
+    castable.damage = { kind: 'Formula', type: 'Physical', flags: [], value: '', min: '', max: '', formula: 'Str * 3' };
+    const raw = await rawParse(serializeCastableXml(castable));
+    expect(raw.Castable.Effects[0].Damage[0].Simple).toBeUndefined();
+  });
+
+  it('serializing Formula damage emits a Formula element', async () => {
+    const castable = await parseCastableXml(MINIMAL_XML);
+    castable.damage = { kind: 'Formula', type: 'Magical', flags: [], value: '', min: '', max: '', formula: 'Int * 2' };
+    const raw = await rawParse(serializeCastableXml(castable));
+    expect(raw.Castable.Effects[0].Damage[0].Formula[0]).toBe('Int * 2');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. formulaName meta round-trip
+// ---------------------------------------------------------------------------
+
+describe('castableXml — formulaName meta round-trip', () => {
+  const META_XML = `<?xml version="1.0"?>
+<!-- creidhne:meta {"healFormulaName":"cure_base","damageFormulaName":"mon_base_st1"} -->
+<Castable xmlns="${XMLNS}">
+  <Name>MetaSpell</Name>
+  <Effects>
+    <Heal><Formula>Hp * 0.5</Formula></Heal>
+    <Damage Type="Physical"><Flags>None</Flags><Formula>Str * 3</Formula></Damage>
+  </Effects>
+</Castable>`;
+
+  it('parses healFormulaName from meta comment into heal.formulaName', async () => {
+    const c = await parseCastableXml(META_XML);
+    expect(c.heal.formulaName).toBe('cure_base');
+  });
+
+  it('parses damageFormulaName from meta comment into damage.formulaName', async () => {
+    const c = await parseCastableXml(META_XML);
+    expect(c.damage.formulaName).toBe('mon_base_st1');
+  });
+
+  it('serializing with formulaName writes healFormulaName to meta comment', async () => {
+    const c = await parseCastableXml(MINIMAL_XML);
+    c.heal = { kind: 'Formula', value: '', min: '', max: '', formula: 'Hp * 0.5', formulaName: 'cure_base' };
+    const xml = serializeCastableXml(c);
+    expect(xml).toContain('"healFormulaName":"cure_base"');
+  });
+
+  it('serializing with formulaName writes damageFormulaName to meta comment', async () => {
+    const c = await parseCastableXml(MINIMAL_XML);
+    c.damage = { kind: 'Formula', type: 'Physical', flags: [], value: '', min: '', max: '', formula: 'Str * 3', formulaName: 'mon_base_st1' };
+    const xml = serializeCastableXml(c);
+    expect(xml).toContain('"damageFormulaName":"mon_base_st1"');
+  });
+
+  it('round-trips formulaName through serialize → parse', async () => {
+    const c = await parseCastableXml(MINIMAL_XML);
+    c.heal = { kind: 'Formula', value: '', min: '', max: '', formula: 'Hp * 0.5', formulaName: 'cure_base' };
+    c.damage = { kind: 'Formula', type: 'Physical', flags: [], value: '', min: '', max: '', formula: 'Str * 3', formulaName: 'mon_base_st1' };
+    const c2 = await parseCastableXml(serializeCastableXml(c));
+    expect(c2.heal.formulaName).toBe('cure_base');
+    expect(c2.damage.formulaName).toBe('mon_base_st1');
   });
 });

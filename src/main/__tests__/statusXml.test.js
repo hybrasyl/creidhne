@@ -461,3 +461,53 @@ describe('Output structure', () => {
     expect(hdlr?.Function?.[0]).toBe('onBurnExpire')
   })
 })
+
+// ---------------------------------------------------------------------------
+// Test 5: formulaNames meta round-trip
+// ---------------------------------------------------------------------------
+
+describe('formulaNames meta round-trip', () => {
+  const META_XML = `<?xml version="1.0"?>
+<!-- creidhne:meta {"formulaNames":{"onTick":{"damage":"mon_base_st1"},"onExpire":{"heal":"cure_base"}}} -->
+<Status xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Test">
+  <Effects>
+    <OnTick>
+      <Damage Type="Magical"><Flags>Normal</Flags><Formula>level * 2</Formula></Damage>
+    </OnTick>
+    <OnExpire>
+      <Heal><Formula>maxHp * 0.1</Formula></Heal>
+    </OnExpire>
+  </Effects>
+</Status>`
+
+  it('parses formulaNames from meta into onTick.damage.formulaName', async () => {
+    const s = await parseStatusXml(META_XML)
+    expect(s.onTick.damage.formulaName).toBe('mon_base_st1')
+  })
+
+  it('parses formulaNames from meta into onExpire.heal.formulaName', async () => {
+    const s = await parseStatusXml(META_XML)
+    expect(s.onExpire.heal.formulaName).toBe('cure_base')
+  })
+
+  it('formulaName is absent when not in meta', async () => {
+    const s = await parseStatusXml(META_XML)
+    expect(s.onTick.heal).toBeNull()
+    expect(s.onExpire.damage).toBeNull()
+  })
+
+  it('serializing with formulaName writes formulaNames to meta comment', async () => {
+    const s = await parseStatusXml(META_XML)
+    const xml = serializeStatusXml(s)
+    expect(xml).toContain('"formulaNames"')
+    expect(xml).toContain('"mon_base_st1"')
+    expect(xml).toContain('"cure_base"')
+  })
+
+  it('round-trips formulaName through serialize → parse', async () => {
+    const s = await parseStatusXml(META_XML)
+    const s2 = await parseStatusXml(serializeStatusXml(s))
+    expect(s2.onTick.damage.formulaName).toBe('mon_base_st1')
+    expect(s2.onExpire.heal.formulaName).toBe('cure_base')
+  })
+})

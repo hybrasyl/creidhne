@@ -28,6 +28,18 @@ function injectStatusMeta(xml, status) {
   }
   if (Object.keys(msgBlocks).length) payload.msgs = msgBlocks;
 
+  const fnBlocks = {};
+  for (const block of ['onApply', 'onTick', 'onRemove', 'onExpire']) {
+    const healName   = status[block]?.heal?.formulaName;
+    const damageName = status[block]?.damage?.formulaName;
+    if (healName || damageName) {
+      fnBlocks[block] = {};
+      if (healName)   fnBlocks[block].heal   = healName;
+      if (damageName) fnBlocks[block].damage = damageName;
+    }
+  }
+  if (Object.keys(fnBlocks).length) payload.formulaNames = fnBlocks;
+
   if (!Object.keys(payload).length) return xml;
   return xml.replace(/(<Status[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`);
 }
@@ -151,7 +163,7 @@ function mapHandler(handlerNode) {
   };
 }
 
-function mapEffectBlock(blockNode, msgKeys) {
+function mapEffectBlock(blockNode, msgKeys, formulaNames) {
   const b = first(blockNode);
   if (!b) return makeDefaultEffectBlock();
 
@@ -181,11 +193,14 @@ function mapEffectBlock(blockNode, msgKeys) {
     }
   }
 
+  const fn  = formulaNames || {};
+  const heal   = mapHeal(b.Heal);
+  const damage = mapDamage(b.Damage);
   return {
     animations,
     messages:      mapMessages(b.Messages, msgKeys),
-    heal:          mapHeal(b.Heal),
-    damage:        mapDamage(b.Damage),
+    heal:          heal   && fn.heal   ? { ...heal,   formulaName: fn.heal }   : heal,
+    damage:        damage && fn.damage ? { ...damage, formulaName: fn.damage } : damage,
     statModifiers: mapStatModifiers(b.StatModifiers),
     conditions:    mapConditions(b.Conditions),
     handler:       mapHandler(b.Handler),
@@ -215,10 +230,10 @@ function mapXmlToStatus(result, comment, meta) {
       if (receive) result.push({ type: 'receive-castable', value: receive });
       return result;
     }),
-    onApply:  mapEffectBlock(effects?.OnApply,  msgs.onApply),
-    onTick:   mapEffectBlock(effects?.OnTick,   msgs.onTick),
-    onRemove: mapEffectBlock(effects?.OnRemove, msgs.onRemove),
-    onExpire: mapEffectBlock(effects?.OnExpire, msgs.onExpire),
+    onApply:  mapEffectBlock(effects?.OnApply,  msgs.onApply,  (meta.formulaNames || {}).onApply),
+    onTick:   mapEffectBlock(effects?.OnTick,   msgs.onTick,   (meta.formulaNames || {}).onTick),
+    onRemove: mapEffectBlock(effects?.OnRemove, msgs.onRemove, (meta.formulaNames || {}).onRemove),
+    onExpire: mapEffectBlock(effects?.OnExpire, msgs.onExpire, (meta.formulaNames || {}).onExpire),
   };
 }
 

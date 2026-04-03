@@ -15,7 +15,7 @@ import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { exportCastablesExcelCSV } from './exportCastablesJson.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
-import { loadFormulas, saveFormulas } from './formulasJson.js'
+import { loadFormulas, saveFormulas, importFormulas } from './formulasJson.js'
 import { extractMeta } from './xmlCommentUtils.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
@@ -1447,6 +1447,19 @@ app.whenReady().then(() => {
   ipcMain.handle('formulas:save', async (_, libraryPath, data) => {
     if (!libraryPath) return
     await saveFormulas(libraryPath, data)
+  })
+
+  ipcMain.handle('formulas:import', async (_, libraryPath) => {
+    if (!libraryPath) return null
+    const window = BrowserWindow.getFocusedWindow()
+    const { canceled, filePaths } = await dialog.showOpenDialog(window, {
+      title: 'Import Formula Library',
+      filters: [{ name: 'Lua Files', extensions: ['lua'] }],
+      properties: ['openFile'],
+    })
+    if (canceled || !filePaths[0]) return null
+    const existing = await loadFormulas(libraryPath)
+    return importFormulas(filePaths[0], existing)
   })
 
   ipcMain.handle('dialog:saveFile', async (_, defaultName, content) => {

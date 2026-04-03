@@ -396,11 +396,14 @@ function mapReactors(reactorsNode) {
 
 function mapXmlToCastable(result, xmlString) {
   const root = result.Castable;
+  const meta = extractMeta(xmlString);
+  const heal = mapHeal(root.Effects);
+  const damage = mapDamage(root.Effects);
 
   return {
     name:             first(root.Name, ''),
     comment:          extractComment(xmlString),
-    meta:             extractMeta(xmlString),
+    meta,
     lines:            a(root, 'Lines',            ''),
     cooldown:         a(root, 'Cooldown',         ''),
     icon:             a(root, 'Icon',             ''),
@@ -423,8 +426,8 @@ function mapXmlToCastable(result, xmlString) {
     scriptOverride:   mapScriptOverride(root.Effects),
     sound:            mapSound(root.Effects),
     animations:       mapAnimations(root.Effects),
-    heal:             mapHeal(root.Effects),
-    damage:           mapDamage(root.Effects),
+    heal:             heal   && meta.healFormulaName   ? { ...heal,   formulaName: meta.healFormulaName }   : heal,
+    damage:           damage && meta.damageFormulaName ? { ...damage, formulaName: meta.damageFormulaName } : damage,
     statuses:         mapStatuses(root.Effects),
     restrictions:     mapRestrictions(root.Restrictions),
     reactors:         mapReactors(first(root.Effects)?.Reactors),
@@ -635,7 +638,6 @@ function buildXmlObject(castable) {
       const flagsStr = (flags || []).join(' ') || 'None';
       const damageContent = { $: { Type: type || 'Physical' }, Flags: [flagsStr] };
       if (kind === 'Formula') {
-        damageContent.Simple  = ['0'];
         if (formula) damageContent.Formula = [formula];
       } else if (kind === 'Variable') {
         damageContent.Simple = [{ $: { Min: min || '0', Max: max || '0' }, _: '0' }];
@@ -729,8 +731,11 @@ export function serializeCastableXml(castable) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' },
   });
+  const metaToWrite = { ...(castable.meta || {}) };
+  if (castable.heal?.formulaName)   metaToWrite.healFormulaName   = castable.heal.formulaName;
+  if (castable.damage?.formulaName) metaToWrite.damageFormulaName = castable.damage.formulaName;
   let xml = injectComment(builder.buildObject(buildXmlObject(castable)), castable.comment, 'Castable');
-  xml = injectMeta(xml, castable.meta, 'Castable');
+  xml = injectMeta(xml, metaToWrite, 'Castable');
   if (castable.maxLevel?.deprecated) {
     xml = xml.replace(/(\s*)<MaxLevel([^/]*)\/>/,
       (_, indent, attrs) => `${indent}<!--<MaxLevel${attrs}/>-->`);

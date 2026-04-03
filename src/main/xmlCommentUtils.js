@@ -18,7 +18,7 @@ export function injectComment(xml, comment, rootTag) {
   return xml.replace(new RegExp(`(<${rootTag}[^>]*>)`), `$1\n  <!-- Comment: ${comment} -->`);
 }
 
-const META_DEFAULTS = { isTest: false, isGM: false, givenViaScript: false, deprecated: false, specialty: '' };
+const META_DEFAULTS = { isTest: false, isGM: false, givenViaScript: false, deprecated: false, specialty: '', healFormulaName: '', damageFormulaName: '' };
 
 /**
  * Extracts the `<!-- creidhne:meta {...} -->` annotation from raw XML.
@@ -36,7 +36,7 @@ export function extractMeta(xmlString) {
  * No-op if all values are defaults (keeps existing files clean).
  */
 export function injectMeta(xml, meta, rootTag) {
-  if (!meta || (!meta.isTest && !meta.isGM && !meta.givenViaScript && !meta.deprecated && !meta.specialty)) return xml;
+  if (!meta || (!meta.isTest && !meta.isGM && !meta.givenViaScript && !meta.deprecated && !meta.specialty && !meta.healFormulaName && !meta.damageFormulaName)) return xml;
   const json = JSON.stringify(meta);
   return xml.replace(new RegExp(`(<${rootTag}[^>]*>)`), `$1\n  <!-- creidhne:meta ${json} -->`);
 }
