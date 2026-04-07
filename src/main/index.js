@@ -463,6 +463,25 @@ app.whenReady().then(() => {
               const name = nameMatch[1].trim()
               if (name && !names.includes(name)) names.push(name)
             }
+          } else if (type === 'maps') {
+            // Extract <Name> for name list, plus Id/X/Y for mapDetails
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+              const idMatch = /\bId="(\d+)"/.exec(content)
+              const xMatch = /\bX="(\d+)"/.exec(content)
+              const yMatch = /\bY="(\d+)"/.exec(content)
+              if (idMatch && xMatch && yMatch) {
+                if (!index.mapDetails) index.mapDetails = []
+                index.mapDetails.push({
+                  id: parseInt(idMatch[1], 10),
+                  name,
+                  x: parseInt(xMatch[1], 10),
+                  y: parseInt(yMatch[1], 10),
+                })
+              }
+            }
           } else {
             ELEM_NAME_REGEX.lastIndex = 0
             let match
@@ -948,6 +967,24 @@ app.whenReady().then(() => {
             const name = nameMatch[1].trim()
             if (name && !names.includes(name)) names.push(name)
           }
+        } else if (section === 'maps') {
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+            const idMatch = /\bId="(\d+)"/.exec(content)
+            const xMatch = /\bX="(\d+)"/.exec(content)
+            const yMatch = /\bY="(\d+)"/.exec(content)
+            if (idMatch && xMatch && yMatch) {
+              if (!result.mapDetails) result.mapDetails = []
+              result.mapDetails.push({
+                id: parseInt(idMatch[1], 10),
+                name,
+                x: parseInt(xMatch[1], 10),
+                y: parseInt(yMatch[1], 10),
+              })
+            }
+          }
         } else {
           ELEM_NAME_REGEX.lastIndex = 0
           let match
@@ -958,6 +995,7 @@ app.whenReady().then(() => {
         }
       }
       names.sort()
+      if (result.mapDetails) result.mapDetails.sort((a, b) => a.id - b.id)
     } catch { /* dir may not exist */ }
 
     result[section] = names
