@@ -1,0 +1,535 @@
+{
+  "Book": {
+    "Type": "comboBox",
+    "Options": [
+      "PrimarySkill",
+      "SecondarySkill",
+      "UtilitySkill",
+      "PrimarySpell",
+      "SecondarySpell",
+      "UtilitySpell"
+    ]
+  },
+  "VisualEffectType": {
+    "Type": "comboBox",
+    "Options": [
+      "Targets",
+      "AllTiles",
+      "Caster"
+    ]
+  },
+  "WeaponTypeList": {
+    "Type": "ltdMultiSelect",
+    "Options": [],
+    "maxItems": 5
+  },
+  "RestrictionType": {
+    "Type": "comboBox",
+    "Options": [
+      "Equipped",
+      "NotEquipped",
+      "InInventory",
+      "NotInInventory"
+    ]
+  },
+  "MasteryModifier": {
+    "Type": "comboBox",
+    "Options": [
+      "Damage",
+      "Heal",
+      "MissRate",
+      "FailRate"
+    ]
+  },
+  "MasteryModifierList": {
+    "Type": "unrMultiSelect",
+    "Options": "MasteryModifier"
+  },
+  "ElementalModifierType": {
+    "Type": "comboBox",
+    "Options": [
+      "Augment",
+      "Resistance"
+    ]
+  },
+  "DamageFlags": {
+    "Type": "ltdMultiSelect",
+    "Options": [
+      "None",
+      "NoResistance",
+      "NoThreat",
+      "Nonlethal",
+      "NoDodge",
+      "NoCrit",
+      "NoElement"
+    ]
+  },
+  "SpellUseType": {
+    "Type": "comboBox",
+    "Options": [
+      "Unusable",
+      "Prompt",
+      "Target",
+      "FourDigit",
+      "ThreeDigit",
+      "NoTarget",
+      "TwoDigit",
+      "OneDigit"
+    ]
+  },
+  "IntentFlags": {
+    "Type": "comboBox",
+    "Options": [
+      "Hostile",
+      "Friendly",
+      "Pvp",
+      "Group",
+      "Self"
+    ]
+  },
+  "RotationType": {
+    "Type": "comboBox",
+    "Options": [
+      "Offense",
+      "Defense",
+      "OnDeath",
+      "NearDeath",
+      "Assail"
+    ]
+  },
+  "IntentDirection": {
+    "Type": "comboBox",
+    "Options": [
+      "None",
+      "Front",
+      "Back",
+      "Left",
+      "Right"
+    ]
+  },
+  "IntentFlagsList": {
+    "Type": "ltdMultiSelect",
+    "Options": [],
+    "maxItems": 5
+  },
+  "ItemColor": {
+    "Type": "comboBox",
+    "Options": [
+      "None",
+      "Black",
+      "Red",
+      "Auburn",
+      "Butter",
+      "Aqua",
+      "Blue",
+      "Plum",
+      "Forest",
+      "Green",
+      "Sienna",
+      "Brown",
+      "Charcoal",
+      "Navy",
+      "Acorn",
+      "White",
+      "Pink",
+      "Honeydew",
+      "Orange",
+      "Platinum",
+      "Midnight",
+      "Orchid",
+      "Lavender",
+      "Fuschia",
+      "Cerise",
+      "Ocean",
+      "HotPink",
+      "Seafoam",
+      "Amethyst",
+      "Peach",
+      "Sky",
+      "Lime",
+      "Jade",
+      "Honey",
+      "Cobalt",
+      "Cocoa",
+      "Wine",
+      "Kelp",
+      "Wine2",
+      "Teal",
+      "Copper",
+      "Curry",
+      "Moss",
+      "Grass",
+      "Lapis",
+      "Maroon",
+      "TiNfOiL",
+      "Aquamarine",
+      "Leaf",
+      "Purple",
+      "Scarlet",
+      "Lemon",
+      "Puce",
+      "Coral",
+      "Crimson",
+      "Gold",
+      "Silver",
+      "Fire",
+      "Stormy",
+      "Cherry",
+      "Mint",
+      "Cerulean",
+      "Twilight",
+      "Quartz",
+      "Turquoise",
+      "Peridot",
+      "Nebula",
+      "Bubblegum",
+      "Cyan",
+      "Sable",
+      "Mauve",
+      "Dusk"
+    ]
+  },
+  "ItemBodyStyle": {
+    "Type": "comboBox",
+    "Options": [
+      "Transparent",
+      "Male",
+      "MaleBlack",
+      "MaleRed",
+      "Female"
+    ]
+  },
+  "ItemFlags": {
+    "Type": "ltdMultiSelect",
+    "Options": [
+      "Bound",
+      "Depositable",
+      "Enchantable",
+      "Consecratable",
+      "Tailorable",
+      "Smithable",
+      "Exchangeable",
+      "Vendorable",
+      "Perishable",
+      "UniqueInventory",
+      "MasterOnly",
+      "UniqueEquipped",
+      "Identifiable",
+      "Undamageable",
+      "Consumable"
+    ]
+  },
+  "CreatureCondition": {
+    "Type": "ltdMultiSelect",
+    "Options": [
+      "Stun",
+      "Sleep",
+      "Root",
+      "Blind",
+      "Coma",
+      "Poison",
+      "Sight",
+      "Invisible",
+      "Mute",
+      "Invulnerable",
+      "Charm",
+      "ProhibitItemUse",
+      "ProhibitEquipChange",
+      "ProhibitSpeech",
+      "ProhibitWhisper",
+      "ProhibitShout",
+      "Disoriented",
+      "Disarm",
+      "Fear",
+      "ProhibitHpRegen",
+      "ProhibitMpRegen",
+      "ProhibitHpIncrease",
+      "ProhibitMpIncrease",
+      "ProhibitMpDecrease",
+      "ProhibitXpIncrease"
+    ],
+    "maxItems": 22
+  },
+  "Class": {
+    "Type": "comboBox",
+    "Options": [
+      "Peasant",
+      "Warrior",
+      "Rogue",
+      "Wizard",
+      "Priest",
+      "Monk",
+      "None"
+    ]
+  },
+  "ItemTag": {
+    "Type": "comboBox",
+    "Options": [
+      "Junk",
+      "Common",
+      "Reagent",
+      "Magic",
+      "Rare",
+      "Masterwork",
+      "Legendary",
+      "Artifact",
+      "Religious",
+      "Social",
+      "Academic",
+      "Quest",
+      "Political",
+      "Currency",
+      "Peasantware",
+      "Armor",
+      "Weapon",
+      "Contraption",
+      "Food",
+      "Tool",
+      "Adornment"
+    ]
+  },
+  "ItemTagList": {
+    "Type": "unrMultiSelect"
+  },
+  "ClassList": {
+    "Type": "unrMultiSelect",
+    "Options": "Class"
+  },
+  "Gender": {
+    "Type": "comboBox",
+    "Options": [
+      "Neutral",
+      "Male",
+      "Female"
+    ]
+  },
+  "ElementType": {
+    "Type": "comboBox",
+    "Options": [
+      "None",
+      "Fire",
+      "Water",
+      "Wind",
+      "Earth",
+      "Light",
+      "Dark",
+      "Wood",
+      "Metal",
+      "Undead",
+      "RandomTemuair",
+      "RandomExpanded",
+      "Necklace",
+      "Belt",
+      "Current"
+    ]
+  },
+  "ElementList": {
+    "Type": "unrMultiSelect",
+    "Options": "ElementType"
+  },
+  "IntentType": {
+    "Type": "comboBox",
+    "Options": [
+      "Hostile",
+      "Passive",
+      "Neutral"
+    ]
+  },
+  "WeaponType": {
+    "Type": "comboBox",
+    "Options": [
+      "OneHand",
+      "TwoHand",
+      "Dagger",
+      "Staff",
+      "Claw",
+      "None"
+    ]
+  },
+  "DamageType": {
+    "Type": "comboBox",
+    "Options": [
+      "Direct",
+      "Physical",
+      "Magical",
+      "Elemental"
+    ]
+  },
+  "EquipmentSlot": {
+    "Type": "comboBox",
+    "Options": [
+      "None",
+      "Weapon",
+      "Armor",
+      "Shield",
+      "Helmet",
+      "Earring",
+      "Necklace",
+      "LeftHand",
+      "RightHand",
+      "LeftArm",
+      "RightArm",
+      "Waist",
+      "Leg",
+      "Foot",
+      "FirstAcc",
+      "Trousers",
+      "Coat",
+      "SecondAcc",
+      "ThirdAcc",
+      "Gauntlet",
+      "Ring"
+    ]
+  },
+  "Direction": {
+    "Type": "comboBox",
+    "Options": [
+      "North",
+      "East",
+      "South",
+      "West"
+    ]
+  },
+  "MapFlags": {
+    "Type": "ltdMultiSelect",
+    "Options": [
+      "Snow",
+      "Rain",
+      "Dark",
+      "NoMap",
+      "Winter"
+    ],
+    "maxItems": 5
+  },
+  "NpcJobList": {
+    "Type": "ltdMultiSelect",
+    "Options": [
+      "Vend",
+      "Bank",
+      "Train",
+      "Repair",
+      "Post"
+    ],
+    "maxItems": 5
+  },
+  "StatType": {
+    "Type": "comboBox",
+    "Options": [
+      "Str",
+      "Int",
+      "Con",
+      "Wis",
+      "Dex"
+    ]
+  },
+  "NpcRepairType": {
+    "Type": "comboBox",
+    "Options": [
+      "Armor",
+      "Weapon",
+      "All"
+    ]
+  },
+  "VariantProperty": {
+    "Type": "textField",
+    "Pattern": "-{0,1}[0-9]*%{0,1}"
+  },
+  "VariantInteger": {
+    "Type": "textField",
+    "Notes": "0-255 only"
+  },
+  "BoardType": {
+    "Type": "comboBox",
+    "Options": [
+      "Messageboard",
+      "Sign"
+    ]
+  },
+  "SlotRestrictionType": {
+    "Type": "comboBox",
+    "Options": [
+      "ItemRequired",
+      "ItemProhibited"
+    ]
+  },
+  "CreatureTargetPriority": {
+    "Type": "comboBox",
+    "Options": [
+      "None",
+      "Self",
+      "AllAllies",
+      "RandomAlly",
+      "Attacker",
+      "HighThreat",
+      "LowThreat",
+      "AttackingCaster",
+      "AttackingHealer",
+      "RandomAttacker",
+      "AttackingGroup",
+      "AllyWithLowestHp",
+      "AllyWithLowestMp",
+      "AllyWithHighestHp",
+      "AllyWithHighestMp",
+      "AllyWithLessThanMaxHp",
+      "AllyWithLessThanMaxMp",
+      "AllyWithStatusConditions",
+      "AllyWithNoStatusConditions"
+    ]
+  },
+  "CreatureStatAlloc": {
+    "Type": "unrMultiSelect",
+    "Options": "StatType"
+  },
+  "CreatureImmunityType": {
+    "Type": "comboBox",
+    "Options": [
+      "Element",
+      "Castable",
+      "Status",
+      "StatusCategory",
+      "CastableCategory"
+    ]
+  },
+  "ProcEventType": {
+    "Type": "comboBox",
+    "Options": [
+      "OnUse",
+      "OnCast",
+      "OnHit",
+      "OnDeath",
+      "OnSpawn"
+    ]
+  },
+  "SpawnFlags": {
+    "Type": "ltdMultiSelect",
+    "Options": [
+      "Active",
+      "MovementDisabled",
+      "AiDisabled",
+      "DeathDisabled"
+    ],
+    "maxItems": 3
+  },
+  "ScriptSource": {
+    "Type": "comboBox",
+    "Options": [
+      "Target",
+      "Caster"
+    ]
+  },
+  "SkippedImport": {
+    "Types": []
+  },
+  "IgnoredImports": {
+    "Types": [
+      "CharacterName",
+      "CharacterNameList",
+      "String5",
+      "String8",
+      "String16",
+      "OddByte",
+      "IpAddress",
+      "MessageType"
+    ]
+  }
+}
