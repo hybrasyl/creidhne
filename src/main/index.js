@@ -456,8 +456,8 @@ app.whenReady().then(() => {
                 }
               }
             }
-          } else if (type === 'variantgroups') {
-            // Only the first <Name> is the group name; nested <Variant><Name> are variant names
+          } else if (type === 'variantgroups' || type === 'worldmaps') {
+            // Only the first <Name> is the group/map name; nested <Variant><Name> / <Point><Name> are not top-level
             const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
             if (nameMatch) {
               const name = nameMatch[1].trim()
