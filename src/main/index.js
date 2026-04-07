@@ -464,7 +464,7 @@ app.whenReady().then(() => {
               if (name && !names.includes(name)) names.push(name)
             }
           } else if (type === 'maps') {
-            // Extract <Name> for name list, plus Id/X/Y for mapDetails
+            // Extract <Name> for name list, plus Id/X/Y/filename for mapDetails
             const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
             if (nameMatch) {
               const name = nameMatch[1].trim()
@@ -477,6 +477,7 @@ app.whenReady().then(() => {
                 index.mapDetails.push({
                   id: parseInt(idMatch[1], 10),
                   name,
+                  filename: file.name,
                   x: parseInt(xMatch[1], 10),
                   y: parseInt(yMatch[1], 10),
                 })
@@ -494,6 +495,34 @@ app.whenReady().then(() => {
         names.sort()
       } catch { /* dir may not exist */ }
       index[type] = names
+
+      if (type === 'maps') {
+        if (index.mapDetails) index.mapDetails.sort((a, b) => a.id - b.id)
+        else index.mapDetails = []
+        const ignoredMapDetails = []
+        try {
+          const ignoredMapsDir = join(dirPath, '.ignore')
+          const ignoredEntries = await fs.readdir(ignoredMapsDir, { withFileTypes: true })
+          for (const file of ignoredEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(ignoredMapsDir, file.name), 'utf-8')
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            const idMatch = /\bId="(\d+)"/.exec(content)
+            const xMatch = /\bX="(\d+)"/.exec(content)
+            const yMatch = /\bY="(\d+)"/.exec(content)
+            if (idMatch && xMatch && yMatch) {
+              ignoredMapDetails.push({
+                id: parseInt(idMatch[1], 10),
+                name: nameMatch ? nameMatch[1].trim() : '',
+                filename: file.name,
+                x: parseInt(xMatch[1], 10),
+                y: parseInt(yMatch[1], 10),
+              })
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        ignoredMapDetails.sort((a, b) => a.id - b.id)
+        index.ignoredMapDetails = ignoredMapDetails
+      }
 
       if (type === 'castables') {
         const archivedNames = []
@@ -980,6 +1009,7 @@ app.whenReady().then(() => {
               result.mapDetails.push({
                 id: parseInt(idMatch[1], 10),
                 name,
+                filename: file.name,
                 x: parseInt(xMatch[1], 10),
                 y: parseInt(yMatch[1], 10),
               })
@@ -1000,6 +1030,32 @@ app.whenReady().then(() => {
 
     result[section] = names
     if (result.elementnames) result.elementnames.sort()
+
+    if (section === 'maps') {
+      const ignoredMapDetails = []
+      try {
+        const ignoredMapsDir = join(dirPath, '.ignore')
+        const ignoredEntries = await fs.readdir(ignoredMapsDir, { withFileTypes: true })
+        for (const file of ignoredEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(ignoredMapsDir, file.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          const idMatch = /\bId="(\d+)"/.exec(content)
+          const xMatch = /\bX="(\d+)"/.exec(content)
+          const yMatch = /\bY="(\d+)"/.exec(content)
+          if (idMatch && xMatch && yMatch) {
+            ignoredMapDetails.push({
+              id: parseInt(idMatch[1], 10),
+              name: nameMatch ? nameMatch[1].trim() : '',
+              filename: file.name,
+              x: parseInt(xMatch[1], 10),
+              y: parseInt(yMatch[1], 10),
+            })
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      ignoredMapDetails.sort((a, b) => a.id - b.id)
+      result.ignoredMapDetails = ignoredMapDetails
+    }
 
     if (section === 'castables') {
       const archivedNames = []
