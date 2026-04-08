@@ -24,21 +24,12 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
 import { listDir, readFile, writeFile, moveFile, archiveFile } from './fsHandlers'
 
-// Determine the path to use based on the operating system
-let userDataPath;
+// Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
+const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
+const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne');
+app.setPath('userData', cachePath);
 
-if (process.platform === 'win32') {
-  userDataPath = join(app.getPath('home'), 'AppData', 'Local', 'Erisco', 'Creidhne');
-} else {
-  userDataPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
-}
-
-// Set the userData path
-app.setPath('userData', userDataPath);
-
-const settingsManager = createSettingsManager(userDataPath)
-
-//console.log('Settings directory:', join(app.getPath('appData'), 'Erisco', 'Creidhne'));
+const settingsManager = createSettingsManager(settingsPath)
 
 let closeConfirmed = false
 
@@ -276,7 +267,7 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:save', (_, data) => settingsManager.save(data))
 
   ipcMain.handle('get-user-data-path', async () => {
-    return app.getPath('userData')
+    return settingsPath
   })
 
   // --- Library index (persistent, per-library) ---
