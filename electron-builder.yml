@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: my-app
+appId: com.darkages.creidhne
+productName: Creidhne
 directories:
   buildResources: build
 files:
@@ -8,35 +8,18 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!xsd/**'
+  - '!scripts/**'
+  - '!vitest.config.{js,ts,mjs,cjs}'
+  - '!eslint.config.{js,ts,mjs,cjs}'
 asarUnpack:
   - resources/**
 win:
-  executableName: my-app
-nsis:
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: ${productName}
-  uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
-mac:
-  entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
-linux:
+  executableName: Creidhne
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
+    - target: portable
+      arch:
+        - x64
+portable:
+  artifactName: ${name}-${version}-portable.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates

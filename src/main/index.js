@@ -24,21 +24,12 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
 import { listDir, readFile, writeFile, moveFile, archiveFile } from './fsHandlers'
 
-// Determine the path to use based on the operating system
-let userDataPath;
+// Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
+const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
+const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne');
+app.setPath('userData', cachePath);
 
-if (process.platform === 'win32') {
-  userDataPath = join(app.getPath('home'), 'AppData', 'Local', 'Erisco', 'Creidhne');
-} else {
-  userDataPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
-}
-
-// Set the userData path
-app.setPath('userData', userDataPath);
-
-const settingsManager = createSettingsManager(userDataPath)
-
-//console.log('Settings directory:', join(app.getPath('appData'), 'Erisco', 'Creidhne'));
+const settingsManager = createSettingsManager(settingsPath)
 
 let closeConfirmed = false
 
@@ -276,7 +267,7 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:save', (_, data) => settingsManager.save(data))
 
   ipcMain.handle('get-user-data-path', async () => {
-    return app.getPath('userData')
+    return settingsPath
   })
 
   // --- Library index (persistent, per-library) ---
@@ -456,12 +447,32 @@ app.whenReady().then(() => {
                 }
               }
             }
-          } else if (type === 'variantgroups') {
-            // Only the first <Name> is the group name; nested <Variant><Name> are variant names
+          } else if (type === 'variantgroups' || type === 'worldmaps') {
+            // Only the first <Name> is the group/map name; nested <Variant><Name> / <Point><Name> are not top-level
             const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !names.includes(name)) names.push(name)
+            }
+          } else if (type === 'maps') {
+            // Extract <Name> for name list, plus Id/X/Y/filename for mapDetails
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            if (nameMatch) {
+              const name = nameMatch[1].trim()
+              if (name && !names.includes(name)) names.push(name)
+              const idMatch = /\bId="(\d+)"/.exec(content)
+              const xMatch = /\bX="(\d+)"/.exec(content)
+              const yMatch = /\bY="(\d+)"/.exec(content)
+              if (idMatch && xMatch && yMatch) {
+                if (!index.mapDetails) index.mapDetails = []
+                index.mapDetails.push({
+                  id: parseInt(idMatch[1], 10),
+                  name,
+                  filename: file.name,
+                  x: parseInt(xMatch[1], 10),
+                  y: parseInt(yMatch[1], 10),
+                })
+              }
             }
           } else {
             ELEM_NAME_REGEX.lastIndex = 0
@@ -475,6 +486,34 @@ app.whenReady().then(() => {
         names.sort()
       } catch { /* dir may not exist */ }
       index[type] = names
+
+      if (type === 'maps') {
+        if (index.mapDetails) index.mapDetails.sort((a, b) => a.id - b.id)
+        else index.mapDetails = []
+        const ignoredMapDetails = []
+        try {
+          const ignoredMapsDir = join(dirPath, '.ignore')
+          const ignoredEntries = await fs.readdir(ignoredMapsDir, { withFileTypes: true })
+          for (const file of ignoredEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+            const content = await fs.readFile(join(ignoredMapsDir, file.name), 'utf-8')
+            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+            const idMatch = /\bId="(\d+)"/.exec(content)
+            const xMatch = /\bX="(\d+)"/.exec(content)
+            const yMatch = /\bY="(\d+)"/.exec(content)
+            if (idMatch && xMatch && yMatch) {
+              ignoredMapDetails.push({
+                id: parseInt(idMatch[1], 10),
+                name: nameMatch ? nameMatch[1].trim() : '',
+                filename: file.name,
+                x: parseInt(xMatch[1], 10),
+                y: parseInt(yMatch[1], 10),
+              })
+            }
+          }
+        } catch { /* .ignore may not exist */ }
+        ignoredMapDetails.sort((a, b) => a.id - b.id)
+        index.ignoredMapDetails = ignoredMapDetails
+      }
 
       if (type === 'castables') {
         const archivedNames = []
@@ -948,6 +987,25 @@ app.whenReady().then(() => {
             const name = nameMatch[1].trim()
             if (name && !names.includes(name)) names.push(name)
           }
+        } else if (section === 'maps') {
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch) {
+            const name = nameMatch[1].trim()
+            if (name && !names.includes(name)) names.push(name)
+            const idMatch = /\bId="(\d+)"/.exec(content)
+            const xMatch = /\bX="(\d+)"/.exec(content)
+            const yMatch = /\bY="(\d+)"/.exec(content)
+            if (idMatch && xMatch && yMatch) {
+              if (!result.mapDetails) result.mapDetails = []
+              result.mapDetails.push({
+                id: parseInt(idMatch[1], 10),
+                name,
+                filename: file.name,
+                x: parseInt(xMatch[1], 10),
+                y: parseInt(yMatch[1], 10),
+              })
+            }
+          }
         } else {
           ELEM_NAME_REGEX.lastIndex = 0
           let match
@@ -958,10 +1016,37 @@ app.whenReady().then(() => {
         }
       }
       names.sort()
+      if (result.mapDetails) result.mapDetails.sort((a, b) => a.id - b.id)
     } catch { /* dir may not exist */ }
 
     result[section] = names
     if (result.elementnames) result.elementnames.sort()
+
+    if (section === 'maps') {
+      const ignoredMapDetails = []
+      try {
+        const ignoredMapsDir = join(dirPath, '.ignore')
+        const ignoredEntries = await fs.readdir(ignoredMapsDir, { withFileTypes: true })
+        for (const file of ignoredEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+          const content = await fs.readFile(join(ignoredMapsDir, file.name), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          const idMatch = /\bId="(\d+)"/.exec(content)
+          const xMatch = /\bX="(\d+)"/.exec(content)
+          const yMatch = /\bY="(\d+)"/.exec(content)
+          if (idMatch && xMatch && yMatch) {
+            ignoredMapDetails.push({
+              id: parseInt(idMatch[1], 10),
+              name: nameMatch ? nameMatch[1].trim() : '',
+              filename: file.name,
+              x: parseInt(xMatch[1], 10),
+              y: parseInt(yMatch[1], 10),
+            })
+          }
+        }
+      } catch { /* .ignore may not exist */ }
+      ignoredMapDetails.sort((a, b) => a.id - b.id)
+      result.ignoredMapDetails = ignoredMapDetails
+    }
 
     if (section === 'castables') {
       const archivedNames = []
