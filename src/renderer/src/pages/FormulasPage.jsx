@@ -161,7 +161,10 @@ function FormulasPage() {
   };
 
   const doImport = async () => {
-    if (!activeLibrary) return;
+    if (!activeLibrary) {
+      setSnackbar({ message: 'No library selected. Open a library from Settings first.', severity: 'error' });
+      return;
+    }
     try {
       const result = await window.electronAPI.importFormulas(activeLibrary);
       if (!result) return; // user cancelled
