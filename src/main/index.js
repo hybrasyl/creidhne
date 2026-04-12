@@ -1525,7 +1525,7 @@ app.whenReady().then(() => {
   // --- Formulas ---
 
   ipcMain.handle('formulas:load', async (_, libraryPath) => {
-    if (!libraryPath) return { globals: {}, templates: [], formulas: [] }
+    if (!libraryPath) return { settings: {}, patterns: [], formulas: [] }
     return loadFormulas(libraryPath)
   })
 

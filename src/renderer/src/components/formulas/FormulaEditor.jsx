@@ -6,7 +6,7 @@ import {
 import SaveIcon from '@mui/icons-material/Save';
 import CommentField from '../shared/CommentField';
 
-const CATEGORIES = ['damage', 'heal', 'stat', 'cast_cost', 'general'];
+const CATEGORIES = ['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general'];
 
 function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange, saveRef }) {
   const [data, setData] = useState(formula);

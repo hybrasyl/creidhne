@@ -15,7 +15,8 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const CATEGORY_COLORS = {
-  damage: 'error', heal: 'success', stat: 'info', cast_cost: 'warning', general: 'default',
+  damage: 'error', heal: 'success', conversion: 'secondary', shield: 'primary',
+  stat: 'info', cast_cost: 'warning', general: 'default',
 };
 
 const DEFAULT_FORMULA = { id: null, name: '', description: '', category: 'damage', formula: '' };
@@ -89,7 +90,7 @@ function FormulaListPanel({ formulas, selectedId, onSelect, onNew, onImport, onD
 // ── Page ──────────────────────────────────────────────────────────────────────
 function FormulasPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
-  const [formulasData, setFormulasData] = useState({ globals: {}, templates: [], formulas: [] });
+  const [formulasData, setFormulasData] = useState({ settings: {}, patterns: [], formulas: [] });
   const [selectedId, setSelectedId] = useState(null);
   const [editingFormula, setEditingFormula] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -99,7 +100,7 @@ function FormulasPage() {
     handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Formula');
 
   const loadData = async (library) => {
-    if (!library) { setFormulasData({ globals: {}, templates: [], formulas: [] }); return; }
+    if (!library) { setFormulasData({ settings: {}, patterns: [], formulas: [] }); return; }
     setLoading(true);
     try {
       const data = await window.electronAPI.loadFormulas(library);

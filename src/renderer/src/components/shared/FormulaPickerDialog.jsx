@@ -9,7 +9,8 @@ import { useRecoilValue } from 'recoil';
 import { activeLibraryState } from '../../recoil/atoms';
 
 const CATEGORY_COLORS = {
-  damage: 'error', heal: 'success', stat: 'info', cast_cost: 'warning', general: 'default',
+  damage: 'error', heal: 'success', conversion: 'secondary', shield: 'primary',
+  stat: 'info', cast_cost: 'warning', general: 'default',
 };
 
 /**
@@ -68,7 +69,7 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
             InputLabelProps={{ shrink: true }}
           >
             <option value="">All</option>
-            {['damage', 'heal', 'stat', 'cast_cost', 'general'].map((c) => (
+            {['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general'].map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </TextField>
