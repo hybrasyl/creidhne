@@ -5,6 +5,7 @@ import {
   FormControl, InputLabel, Select, MenuItem, Tooltip,
   Accordion, AccordionSummary, AccordionDetails, IconButton,
   InputAdornment, Table, TableHead, TableBody, TableRow, TableCell,
+  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -13,7 +14,9 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import {
   BUDGET_MODES, BUDGET_APPLICATIONS, DEFAULT_BUDGET_MODIFIER,
   COEFFICIENT_GROUPS, DEFAULT_SETTINGS,
+  FORMULA_CONSTANTS, FORMULA_CONSTANT_KEYS,
 } from '../../data/formulaConstants';
+import BUILTIN_PATTERNS from '../../data/formulaPatterns';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
@@ -23,6 +26,7 @@ function mergeSettings(saved) {
     budgetModifier: { ...DEFAULT_BUDGET_MODIFIER, ...saved?.budgetModifier },
     customVariables: { ...(saved?.customVariables || {}) },
     coefficients: { ...(saved?.coefficients || {}) },
+    defaultPatternId: saved?.defaultPatternId ?? null,
   };
 }
 
@@ -159,13 +163,49 @@ function BudgetModifierTab({ settings, onChange }) {
 
       <Divider />
 
+      {/* Formula Constants */}
+      <Box>
+        <Typography variant="subtitle2" gutterBottom>Formula Constants</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          Scalar values referenced by formula patterns. These are stored alongside custom variables.
+        </Typography>
+        <Table size="small" sx={{ mb: 1 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Value</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {FORMULA_CONSTANTS.map((fc) => (
+              <TableRow key={fc.key}>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{fc.key}</Typography>
+                </TableCell>
+                <TableCell>
+                  <TextField size="small" variant="standard" type="number" sx={{ width: 100 }}
+                    value={vars[fc.key] ?? ''} placeholder={String(fc.default)}
+                    onChange={(e) => setVar(fc.key, e.target.value === '' ? '' : Number(e.target.value))} />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="caption" color="text.secondary">{fc.description}</Typography>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+
+      <Divider />
+
       {/* Custom Variables */}
       <Box>
         <Typography variant="subtitle2" gutterBottom>Custom Variables</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Free-form constants available to patterns and formulas.
+          Additional free-form constants available to patterns and formulas.
         </Typography>
-        {Object.keys(vars).length > 0 && (
+        {Object.keys(vars).filter((k) => !FORMULA_CONSTANT_KEYS.includes(k)).length > 0 && (
           <Table size="small" sx={{ mb: 1 }}>
             <TableHead>
               <TableRow>
@@ -175,7 +215,7 @@ function BudgetModifierTab({ settings, onChange }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {Object.entries(vars).map(([key, val]) => (
+              {Object.entries(vars).filter(([k]) => !FORMULA_CONSTANT_KEYS.includes(k)).map(([key, val]) => (
                 <TableRow key={key}>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{key}</Typography>
@@ -307,19 +347,99 @@ function CoefficientsTab({ settings, onChange }) {
   );
 }
 
-// ── Patterns Tab (placeholder) ───────────────────────────────────────────────
-function PatternsTab() {
+// ── Parameter type labels ─────────────────────────────────────────────────────
+const PARAM_TYPE_CHIPS = {
+  number:        { label: 'Number',       color: 'default' },
+  rand:          { label: 'Random',       color: 'info' },
+  stat_block:    { label: 'Stat Block',   color: 'success' },
+  setting:       { label: 'Setting',      color: 'warning' },
+  coefficient:   { label: 'Coefficient',  color: 'error' },
+  castable_cost: { label: 'Castable',     color: 'secondary' },
+};
+
+// ── Patterns Tab ─────────────────────────────────────────────────────────────
+function PatternsTab({ settings, onChange }) {
+  const defaultId = settings.defaultPatternId;
+
+  const handleSetDefault = (e, id) => {
+    e.stopPropagation(); // prevent accordion toggle
+    onChange({ ...settings, defaultPatternId: id === defaultId ? null : id });
+  };
+
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="subtitle2" gutterBottom>Patterns</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Curated formula patterns will be available here. Patterns define the structural shape
-        of a formula (e.g. "New Hybrasyl", "DA Classic") and expose parameters that the
-        formula editor fills in to assemble the final NCalc string.
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        Coming soon.
-      </Typography>
+    <Box sx={{ p: 2, overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ mb: 1 }}>
+        <Typography variant="subtitle2" gutterBottom>Formula Patterns</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Patterns define the structural shape of a formula. Click the "Default" chip to
+          set which pattern is pre-selected when creating new formulas.
+        </Typography>
+      </Box>
+
+      {BUILTIN_PATTERNS.map((pattern) => {
+        const isDefault = defaultId === pattern.id;
+        return (
+          <Accordion key={pattern.id} disableGutters
+            sx={{ '&:before': { display: 'none' }, boxShadow: 'none', border: 1,
+                  borderColor: isDefault ? 'success.main' : 'divider',
+                  borderWidth: isDefault ? 2 : 1 }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, mr: 1 }}>
+                <Typography variant="subtitle2">{pattern.name}</Typography>
+                <Chip
+                  label={isDefault ? 'Default' : 'Set Default'}
+                  size="small"
+                  color={isDefault ? 'success' : 'default'}
+                  variant={isDefault ? 'filled' : 'outlined'}
+                  onClick={(e) => handleSetDefault(e, pattern.id)}
+                  sx={{ height: 22, fontSize: '0.7rem', cursor: 'pointer' }}
+                />
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ pt: 0 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                {pattern.description}
+              </Typography>
+
+              {/* Structure preview */}
+              <Box sx={{ bgcolor: 'action.hover', borderRadius: 1, p: 1.5, mb: 1.5, fontFamily: 'monospace',
+                          fontSize: '0.8rem', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                {pattern.structure}
+              </Box>
+
+              {/* Parameters */}
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                Parameters
+              </Typography>
+              <Table size="small">
+                <TableBody>
+                  {pattern.parameters.map((p) => {
+                    const chip = PARAM_TYPE_CHIPS[p.type] || { label: p.type, color: 'default' };
+                    return (
+                      <TableRow key={p.key} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                        <TableCell sx={{ width: '30%', py: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.label}</Typography>
+                            <Chip label={chip.label} size="small" color={chip.color}
+                              sx={{ height: 18, fontSize: '0.65rem' }} />
+                            {p.optional && (
+                              <Chip label="Optional" size="small" variant="outlined"
+                                sx={{ height: 18, fontSize: '0.65rem' }} />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ py: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary">{p.description}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </AccordionDetails>
+          </Accordion>
+        );
+      })}
     </Box>
   );
 }
@@ -343,8 +463,8 @@ function FormulaSettingsDialog({ open, onClose, settings: savedSettings, onSave 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
-      PaperProps={{ sx: { height: '80vh', display: 'flex', flexDirection: 'column' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth
+      PaperProps={{ sx: { height: '85vh', display: 'flex', flexDirection: 'column' } }}>
       <DialogTitle sx={{ pb: 0 }}>Formula Settings</DialogTitle>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
@@ -357,7 +477,7 @@ function FormulaSettingsDialog({ open, onClose, settings: savedSettings, onSave 
         <Box sx={{ height: '100%', overflow: 'auto' }}>
           {tab === 0 && <BudgetModifierTab settings={local} onChange={setLocal} />}
           {tab === 1 && <CoefficientsTab settings={local} onChange={setLocal} />}
-          {tab === 2 && <PatternsTab />}
+          {tab === 2 && <PatternsTab settings={local} onChange={setLocal} />}
         </Box>
       </DialogContent>
       <DialogActions>

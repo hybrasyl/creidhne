@@ -9,6 +9,20 @@ export const DEFAULT_BUDGET_MODIFIER = {
   cooldown: { baseline: 6, step: 0.01, cap: 0.2 },
 };
 
+// ── Formula Constants (known scalar variables used by patterns) ───────────────
+// These are stored in settings.customVariables but displayed in a dedicated
+// "Formula Constants" section above free-form custom variables.
+export const FORMULA_CONSTANTS = [
+  { key: 'LevelUpper', label: 'Level Upper', default: 110,
+    description: 'Upper level constant for inverse-level scaling. Used by Old Hybrasyl pattern.' },
+  { key: 'LevelDiv',   label: 'Level Divisor', default: 10,
+    description: 'Divisor for inverse-level scaling. Used by Old Hybrasyl pattern.' },
+  { key: 'Divisor',    label: 'New Divisor', default: 1500,
+    description: 'Stat block divisor for multiplicative scaling. Used by New Hybrasyl pattern.' },
+];
+
+export const FORMULA_CONSTANT_KEYS = FORMULA_CONSTANTS.map((c) => c.key);
+
 // ── Coefficient Definitions ──────────────────────────────────────────────────
 // Each group maps to a collapsible section in the Globals modal.
 // Keys are the canonical coefficient identifiers used in formulas.json.
@@ -78,4 +92,5 @@ export const DEFAULT_SETTINGS = {
   budgetModifier: { ...DEFAULT_BUDGET_MODIFIER },
   customVariables: {},
   coefficients: {},   // keyed by coefficient key → { spell: number|null, skill: number|null }
+  defaultPatternId: null, // id of the default builtin pattern for new formulas
 };

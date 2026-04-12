@@ -325,6 +325,10 @@ app.whenReady().then(() => {
               const name = nameMatch[1].trim()
               if (name && !names.includes(name)) {
                 names.push(name)
+                // Store name → filename mapping for quick lookup
+                if (!index.castableFilenames) index.castableFilenames = {}
+                index.castableFilenames[name] = file.name
+
                 const classMatch = /<Castable[^>]+Class="([^"]*)"/.exec(content)
                 if (classMatch) {
                   if (!index.castableClasses) index.castableClasses = {}
@@ -1545,6 +1549,45 @@ app.whenReady().then(() => {
     if (canceled || !filePaths[0]) return null
     const existing = await loadFormulas(libraryPath)
     return importFormulas(filePaths[0], existing)
+  })
+
+  ipcMain.handle('formulas:castableInfo', async (_, libraryPath, castableName) => {
+    if (!libraryPath || !castableName) return null
+    try {
+      // Try the index filename map first
+      let filename = null
+      try {
+        const indexData = JSON.parse(await fs.readFile(getIndexPath(libraryPath), 'utf-8'))
+        filename = indexData?.castableFilenames?.[castableName]
+      } catch { /* index not available */ }
+
+      // Fallback: scan directory files for matching <Name> element
+      if (!filename) {
+        const castDir = join(libraryPath, 'castables')
+        const entries = await fs.readdir(castDir)
+        const nameLower = castableName.toLowerCase()
+        for (const entry of entries.filter((e) => e.endsWith('.xml'))) {
+          const content = await fs.readFile(join(castDir, entry), 'utf-8')
+          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
+          if (nameMatch && nameMatch[1].trim().toLowerCase() === nameLower) {
+            filename = entry
+            break
+          }
+        }
+      }
+
+      if (!filename) return null
+      const filePath = join(libraryPath, 'castables', filename)
+      const xml = await fs.readFile(filePath, 'utf-8')
+      const castable = await parseCastableXml(xml)
+      return {
+        lines: castable.lines ? Number(castable.lines) : null,
+        cooldown: castable.cooldown ? Number(castable.cooldown) : null,
+        book: castable.book || null,
+      }
+    } catch {
+      return null
+    }
   })
 
   ipcMain.handle('dialog:saveFile', async (_, defaultName, content) => {

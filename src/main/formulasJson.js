@@ -11,8 +11,13 @@ const DEFAULT_BUDGET_MODIFIER = {
 
 const DEFAULT_SETTINGS = {
   budgetModifier: { ...DEFAULT_BUDGET_MODIFIER },
-  customVariables: {},
+  customVariables: {
+    LevelUpper: 110,
+    LevelDiv: 10,
+    Divisor: 1500,
+  },
   coefficients: {},
+  defaultPatternId: null,
 }
 
 const EMPTY = {

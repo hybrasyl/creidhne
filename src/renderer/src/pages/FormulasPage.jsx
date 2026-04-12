@@ -21,7 +21,7 @@ const CATEGORY_COLORS = {
   stat: 'info', cast_cost: 'warning', general: 'default',
 };
 
-const DEFAULT_FORMULA = { id: null, name: '', description: '', category: 'damage', formula: '' };
+const DEFAULT_FORMULA = { id: null, name: '', description: '', category: 'damage', formula: '', patternId: null };
 
 // ── List panel ────────────────────────────────────────────────────────────────
 function FormulaListPanel({ formulas, selectedId, onSelect, onNew, onImport, onDelete, onSettings }) {
@@ -126,7 +126,11 @@ function FormulasPage() {
 
   const doNew = () => {
     setSelectedId(null);
-    setEditingFormula({ ...DEFAULT_FORMULA, id: crypto.randomUUID() });
+    setEditingFormula({
+      ...DEFAULT_FORMULA,
+      id: crypto.randomUUID(),
+      patternId: formulasData.settings?.defaultPatternId || null,
+    });
   };
   const handleNew = () => guard(doNew);
 
@@ -233,6 +237,7 @@ function FormulasPage() {
             onSave={handleSave}
             onDirtyChange={handleDirtyChange}
             saveRef={saveRef}
+            settings={formulasData.settings}
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
