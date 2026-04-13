@@ -34,9 +34,9 @@ export function assembleFormula(ncalcTemplate, paramValues, paramDefs) {
   // Remove weapon damage term when weapon is disabled
   const weaponDef = paramDefs.find((d) => d.key === 'WeaponCoeff');
   if (weaponDef && !paramValues._weaponEnabled) {
-    // Remove "+ SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff}" or similar
-    result = result.replace(/\s*\+\s*\(?\s*SOURCEWEAPON\w+\s*\*\s*\{WeaponCoeff\}\s*\)?/g, '');
-    result = result.replace(/\(?\s*SOURCEWEAPON\w+\s*\*\s*\{WeaponCoeff\}\s*\)?\s*\+\s*/g, '');
+    // Remove "+ SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff}" (don't touch surrounding parens)
+    result = result.replace(/\s*\+\s*SOURCEWEAPON\w+\s*\*\s*\{WeaponCoeff\}/g, '');
+    result = result.replace(/SOURCEWEAPON\w+\s*\*\s*\{WeaponCoeff\}\s*\+\s*/g, '');
   }
 
   // ── Main substitution pass ────────────────────────────────────────────────
