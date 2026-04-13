@@ -2,10 +2,55 @@ import { promises as fs } from 'fs'
 import { randomUUID } from 'crypto'
 import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
 
+const DEFAULT_BUDGET_MODIFIER = {
+  mode: 'none',
+  application: 'additive',
+  lines: { baseline: 4, step: 0.03, cap: null },
+  cooldown: { baseline: 6, step: 0.01, cap: 0.2 },
+}
+
+const DEFAULT_SETTINGS = {
+  budgetModifier: { ...DEFAULT_BUDGET_MODIFIER },
+  customVariables: {
+    LevelUpper: 110,
+    LevelDiv: 10,
+    Divisor: 1500,
+  },
+  coefficients: {},
+  defaultPatternId: null,
+}
+
 const EMPTY = {
-  globals:   {},
-  templates: [],
+  settings:  { ...DEFAULT_SETTINGS },
+  patterns:  [],
   formulas:  [],
+}
+
+/**
+ * Migrate legacy formulas.json that used { globals, templates } to the new
+ * { settings, patterns } shape.  Returns a new object — never mutates input.
+ */
+function migrateIfNeeded(data) {
+  if (!data.globals && !data.templates) return data
+
+  const migrated = { ...data }
+
+  // globals → settings.customVariables (old globals were free-form key/value)
+  if (data.globals && !data.settings) {
+    migrated.settings = {
+      ...DEFAULT_SETTINGS,
+      customVariables: { ...data.globals },
+    }
+  }
+  delete migrated.globals
+
+  // templates → patterns
+  if (data.templates && !data.patterns) {
+    migrated.patterns = [...data.templates]
+  }
+  delete migrated.templates
+
+  return migrated
 }
 
 export function getFormulasPath(libraryPath) {
@@ -14,8 +59,13 @@ export function getFormulasPath(libraryPath) {
 
 export async function loadFormulas(libraryPath) {
   try {
-    const data = JSON.parse(await fs.readFile(getFormulasPath(libraryPath), 'utf-8'))
-    return { ...EMPTY, ...data }
+    const raw = JSON.parse(await fs.readFile(getFormulasPath(libraryPath), 'utf-8'))
+    const data = migrateIfNeeded(raw)
+    return {
+      settings: { ...DEFAULT_SETTINGS, ...data.settings },
+      patterns: data.patterns || [],
+      formulas: data.formulas || [],
+    }
   } catch {
     return { ...EMPTY }
   }

@@ -9,19 +9,22 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { activeLibraryState } from '../recoil/atoms';
 import FormulaEditor from '../components/formulas/FormulaEditor';
+import FormulaSettingsDialog from '../components/formulas/FormulaSettingsDialog';
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
 const CATEGORY_COLORS = {
-  damage: 'error', heal: 'success', stat: 'info', cast_cost: 'warning', general: 'default',
+  damage: 'error', heal: 'success', conversion: 'secondary', shield: 'primary',
+  stat: 'info', cast_cost: 'warning', general: 'default',
 };
 
-const DEFAULT_FORMULA = { id: null, name: '', description: '', category: 'damage', formula: '' };
+const DEFAULT_FORMULA = { id: null, name: '', description: '', category: 'damage', formula: '', patternId: null };
 
 // ── List panel ────────────────────────────────────────────────────────────────
-function FormulaListPanel({ formulas, selectedId, onSelect, onNew, onImport, onDelete }) {
+function FormulaListPanel({ formulas, selectedId, onSelect, onNew, onImport, onDelete, onSettings }) {
   const [search, setSearch] = React.useState('');
   const filtered = search.trim()
     ? formulas.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
@@ -32,6 +35,11 @@ function FormulaListPanel({ formulas, selectedId, onSelect, onNew, onImport, onD
       <Box sx={{ p: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="subtitle2">Formulas</Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Tooltip title="Formula Settings">
+            <IconButton size="small" onClick={onSettings}>
+              <SettingsIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Import from Lua">
             <IconButton size="small" onClick={onImport}>
               <FileUploadIcon fontSize="small" />
@@ -89,17 +97,18 @@ function FormulaListPanel({ formulas, selectedId, onSelect, onNew, onImport, onD
 // ── Page ──────────────────────────────────────────────────────────────────────
 function FormulasPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
-  const [formulasData, setFormulasData] = useState({ globals: {}, templates: [], formulas: [] });
+  const [formulasData, setFormulasData] = useState({ settings: {}, patterns: [], formulas: [] });
   const [selectedId, setSelectedId] = useState(null);
   const [editingFormula, setEditingFormula] = useState(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { markDirty, markClean, saveRef, guard, dialogOpen,
     handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Formula');
 
   const loadData = async (library) => {
-    if (!library) { setFormulasData({ globals: {}, templates: [], formulas: [] }); return; }
+    if (!library) { setFormulasData({ settings: {}, patterns: [], formulas: [] }); return; }
     setLoading(true);
     try {
       const data = await window.electronAPI.loadFormulas(library);
@@ -117,7 +126,11 @@ function FormulasPage() {
 
   const doNew = () => {
     setSelectedId(null);
-    setEditingFormula({ ...DEFAULT_FORMULA, id: crypto.randomUUID() });
+    setEditingFormula({
+      ...DEFAULT_FORMULA,
+      id: crypto.randomUUID(),
+      patternId: formulasData.settings?.defaultPatternId || null,
+    });
   };
   const handleNew = () => guard(doNew);
 
@@ -161,7 +174,10 @@ function FormulasPage() {
   };
 
   const doImport = async () => {
-    if (!activeLibrary) return;
+    if (!activeLibrary) {
+      setSnackbar({ message: 'No library selected. Open a library from Settings first.', severity: 'error' });
+      return;
+    }
     try {
       const result = await window.electronAPI.importFormulas(activeLibrary);
       if (!result) return; // user cancelled
@@ -184,6 +200,17 @@ function FormulasPage() {
   };
   const handleImport = () => guard(doImport);
 
+  const handleSettingsSave = async (newSettings) => {
+    const next = { ...formulasData, settings: newSettings };
+    try {
+      await window.electronAPI.saveFormulas(activeLibrary, next);
+      setFormulasData(next);
+      setSnackbar({ message: 'Settings saved.', severity: 'success' });
+    } catch (err) {
+      setSnackbar({ message: `Failed to save settings: ${err?.message ?? 'Unknown error'}`, severity: 'error' });
+    }
+  };
+
   const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
 
   return (
@@ -195,6 +222,7 @@ function FormulasPage() {
         onNew={handleNew}
         onImport={handleImport}
         onDelete={handleDelete}
+        onSettings={() => setSettingsOpen(true)}
       />
       <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loading ? (
@@ -209,6 +237,7 @@ function FormulasPage() {
             onSave={handleSave}
             onDirtyChange={handleDirtyChange}
             saveRef={saveRef}
+            settings={formulasData.settings}
           />
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -219,6 +248,12 @@ function FormulasPage() {
         )}
       </Box>
 
+      <FormulaSettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={formulasData.settings}
+        onSave={handleSettingsSave}
+      />
       <UnsavedChangesDialog
         open={dialogOpen} label="Formula"
         onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
