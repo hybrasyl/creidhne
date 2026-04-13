@@ -224,13 +224,20 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
   const assembledFormula = useMemo(() => {
     if (!selectedPattern) return '';
     // Build resolved param values with settings and coefficient injected
+    // Per-formula overrides take precedence over global values
     const resolved = { ...paramValues };
     for (const p of selectedPattern.parameters) {
       if (p.type === 'setting' && p.settingKey) {
-        resolved[p.key] = settings?.customVariables?.[p.settingKey] ?? 0;
+        const overrideKey = `_override_${p.key}`;
+        resolved[p.key] = paramValues[overrideKey] != null
+          ? paramValues[overrideKey]
+          : (settings?.customVariables?.[p.settingKey] ?? 0);
       }
       if (p.type === 'coefficient') {
-        resolved[p.key] = resolvedCoefficient ?? 0;
+        const overrideKey = '_override_Coefficient';
+        resolved[p.key] = paramValues[overrideKey] != null
+          ? paramValues[overrideKey]
+          : (resolvedCoefficient ?? 0);
       }
     }
     return assembleFormula(selectedPattern.ncalc, resolved, selectedPattern.parameters);
@@ -613,23 +620,87 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                 </Paper>
               )}
 
-              {/* Settings (read-only display) */}
-              {settingParams.length > 0 && (
+              {/* Settings + Coefficient with per-formula overrides */}
+              {(settingParams.length > 0 || coeffParam) && (
                 <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>Formula Constants</Typography>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {settingParams.map((p) => (
-                      <SettingParam key={p.key} paramDef={p} settings={settings} />
-                    ))}
+                  <Typography variant="subtitle2" gutterBottom>Formula Constants & Coefficient</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {settingParams.map((p) => {
+                      const overrideKey = `_override_${p.key}`;
+                      const isOverridden = paramValues[overrideKey] != null;
+                      const globalVal = settings?.customVariables?.[p.settingKey];
+                      return (
+                        <Box key={p.key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox size="small" checked={isOverridden}
+                                onChange={(e) => {
+                                  markDirtyLocal();
+                                  if (e.target.checked) {
+                                    updateParam(overrideKey, globalVal ?? 0);
+                                  } else {
+                                    updateParam(overrideKey, null);
+                                  }
+                                }} />
+                            }
+                            label={<Typography variant="body2">{p.label}</Typography>}
+                            sx={{ minWidth: 130 }}
+                          />
+                          {isOverridden ? (
+                            <TextField size="small" type="number" label="Override" sx={{ width: 120 }}
+                              value={paramValues[overrideKey] ?? ''}
+                              onChange={(e) => updateParam(overrideKey, e.target.value === '' ? null : Number(e.target.value))} />
+                          ) : (
+                            <TextField size="small" label="Default" value={globalVal ?? '—'} disabled sx={{ width: 120 }}
+                              inputProps={{ style: { fontFamily: 'monospace' } }} />
+                          )}
+                          {isOverridden && (
+                            <Typography variant="caption" color="warning.main">
+                              overrides global ({globalVal ?? '—'})
+                            </Typography>
+                          )}
+                        </Box>
+                      );
+                    })}
+                    {coeffParam && (() => {
+                      const overrideKey = '_override_Coefficient';
+                      const isOverridden = paramValues[overrideKey] != null;
+                      return (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox size="small" checked={isOverridden}
+                                onChange={(e) => {
+                                  markDirtyLocal();
+                                  if (e.target.checked) {
+                                    updateParam(overrideKey, resolvedCoefficient ?? 0);
+                                  } else {
+                                    updateParam(overrideKey, null);
+                                  }
+                                }} />
+                            }
+                            label={<Typography variant="body2">Coefficient</Typography>}
+                            sx={{ minWidth: 130 }}
+                          />
+                          {isOverridden ? (
+                            <TextField size="small" type="number" label="Override" sx={{ width: 120 }}
+                              inputProps={{ step: 0.01 }}
+                              value={paramValues[overrideKey] ?? ''}
+                              onChange={(e) => updateParam(overrideKey, e.target.value === '' ? null : Number(e.target.value))} />
+                          ) : (
+                            <TextField size="small" label="Calculated" value={resolvedCoefficient ?? '—'} disabled sx={{ width: 120 }}
+                              inputProps={{ style: { fontFamily: 'monospace' } }} />
+                          )}
+                          {isOverridden && (
+                            <Typography variant="caption" color="warning.main">
+                              overrides calculated ({resolvedCoefficient ?? '—'})
+                            </Typography>
+                          )}
+                          <Chip label={coeffKey} size="small" variant="outlined" sx={{ fontFamily: 'monospace' }} />
+                        </Box>
+                      );
+                    })()}
                   </Box>
-                </Paper>
-              )}
-
-              {/* Coefficient (read-only from coefficient section above) */}
-              {coeffParam && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>{coeffParam.label}</Typography>
-                  <CoefficientParam value={resolvedCoefficient} coeffKey={coeffKey} spellOrSkill={spellOrSkill} />
                 </Paper>
               )}
 
