@@ -18,6 +18,7 @@ import '../data/effectData';
 import '../data/khanData';
 import '../data/npcPortraitData';
 import '../data/iconData';
+import '../data/nationCrestData';
 
 const STATUS_COLORS = {
   green:  '#2e7d32',
