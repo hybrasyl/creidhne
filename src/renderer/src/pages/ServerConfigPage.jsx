@@ -51,6 +51,7 @@ function ServerConfigPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingConfig, setEditingConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
@@ -71,9 +72,12 @@ function ServerConfigPage() {
   };
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingConfig(null); return; }
-    loadFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingConfig(null); setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      loadFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -176,6 +180,7 @@ function ServerConfigPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (

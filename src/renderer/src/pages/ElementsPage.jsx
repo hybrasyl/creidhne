@@ -28,6 +28,7 @@ function ElementsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingTable, setEditingTable] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [loadingTable, setLoadingTable] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -49,9 +50,12 @@ function ElementsPage() {
   };
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingTable(null); return; }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingTable(null); setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -164,6 +168,7 @@ function ElementsPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (

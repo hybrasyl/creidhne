@@ -22,6 +22,7 @@ function BehaviorsPage() {
   const [archivedFiles,      setArchivedFiles]      = useState([]);
   const [selectedFile,       setSelectedFile]       = useState(null);
   const [editingBehaviorSet, setEditingBehaviorSet] = useState(null);
+  const [loading,            setLoading]            = useState(true);
   const [loadingBehaviorSet, setLoadingBehaviorSet] = useState(false);
   const [showArchived,       setShowArchived]       = useState(false);
   const [loadError,          setLoadError]          = useState(null);
@@ -45,10 +46,14 @@ function BehaviorsPage() {
   useEffect(() => {
     if (!activeLibrary) {
       setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingBehaviorSet(null);
+      setLoading(false);
       return;
     }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
@@ -166,6 +171,7 @@ function BehaviorsPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (

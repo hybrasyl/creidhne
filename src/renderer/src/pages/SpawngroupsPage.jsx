@@ -32,6 +32,7 @@ function SpawngroupsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingSpawngroup, setEditingSpawngroup] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [loadingSpawngroup, setLoadingSpawngroup] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -53,9 +54,12 @@ function SpawngroupsPage() {
   };
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingSpawngroup(null); return; }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingSpawngroup(null); setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -153,6 +157,7 @@ function SpawngroupsPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (

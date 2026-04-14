@@ -23,6 +23,7 @@ function ItemsPage() {
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [loadingItem, setLoadingItem] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -50,10 +51,14 @@ function ItemsPage() {
       setArchivedFiles([]);
       setSelectedFile(null);
       setEditingItem(null);
+      setLoading(false);
       return;
     }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -176,6 +181,7 @@ function ItemsPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
 
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

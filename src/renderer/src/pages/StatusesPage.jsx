@@ -43,6 +43,7 @@ function StatusesPage() {
   const [archivedFiles,  setArchivedFiles]  = useState([]);
   const [selectedFile,   setSelectedFile]   = useState(null);
   const [editingStatus,  setEditingStatus]  = useState(null);
+  const [loading,        setLoading]        = useState(true);
   const [loadingStatus,  setLoadingStatus]  = useState(false);
   const [showArchived,   setShowArchived]   = useState(false);
   const [loadError,      setLoadError]      = useState(null);
@@ -64,9 +65,12 @@ function StatusesPage() {
   };
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingStatus(null); return; }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingStatus(null); setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
@@ -179,6 +183,7 @@ function StatusesPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (

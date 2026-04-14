@@ -26,6 +26,7 @@ function CastablesPage() {
   const [archivedFiles,   setArchivedFiles]   = useState([]);
   const [selectedFile,    setSelectedFile]    = useState(null);
   const [editingCastable, setEditingCastable] = useState(null);
+  const [loading,         setLoading]         = useState(true);
   const [loadingCastable, setLoadingCastable] = useState(false);
   const [showArchived,    setShowArchived]    = useState(false);
   const [loadError,       setLoadError]       = useState(null);
@@ -47,9 +48,12 @@ function CastablesPage() {
   };
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingCastable(null); return; }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingCastable(null); setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
@@ -180,6 +184,7 @@ function CastablesPage() {
         showArchived={showArchived}
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (
