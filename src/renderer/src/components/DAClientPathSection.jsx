@@ -9,7 +9,10 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import { useRecoilState } from 'recoil';
 import { clientPathState } from '../recoil/atoms';
-import { clearArchiveCache } from '../utils/daClient';
+import { clearAllClientCaches } from '../utils/daClient';
+// Side-effect imports: register per-picker cache clearers.
+import '../data/itemSpriteData';
+import '../data/itemColorData';
 
 const STATUS_COLORS = {
   green:  '#2e7d32',
@@ -86,12 +89,12 @@ const DAClientPathSection = () => {
   const handleBrowse = async () => {
     const dir = await window.electronAPI.openDirectory();
     if (!dir) return;
-    clearArchiveCache();
+    clearAllClientCaches();
     setClientPath(dir);
   };
 
   const handleClear = () => {
-    clearArchiveCache();
+    clearAllClientCaches();
     setClientPath(null);
   };
 

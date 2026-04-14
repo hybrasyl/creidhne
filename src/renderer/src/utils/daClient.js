@@ -62,3 +62,27 @@ export async function loadArchive(clientPath, archiveName) {
 export function clearArchiveCache() {
   archiveCache.clear()
 }
+
+// ── Cache clearing registry ───────────────────────────────────────────────────
+// Picker data modules (e.g. itemSpriteData.js) register a cleanup fn so that
+// DAClientPathSection can flush everything at once when clientPath changes,
+// without knowing which pickers exist.
+
+const cacheClearers = new Set()
+
+/**
+ * Register a function to be called when client-path caches should be flushed.
+ * Returns an unregister function.
+ */
+export function registerCacheClearer(fn) {
+  cacheClearers.add(fn)
+  return () => cacheClearers.delete(fn)
+}
+
+/** Flush every registered cache plus the archive cache. */
+export function clearAllClientCaches() {
+  for (const fn of cacheClearers) {
+    try { fn() } catch { /* keep flushing others */ }
+  }
+  clearArchiveCache()
+}

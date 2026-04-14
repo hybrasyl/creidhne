@@ -6,10 +6,14 @@ import {
 } from '@mui/material';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import EditorHeader from '../shared/EditorHeader';
+import ItemSpritePicker from '../shared/ItemSpritePicker';
+import ColorSwatch from '../shared/ColorSwatch';
+import { useItemColorSwatches } from '../../data/itemColorData';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import HelpIcon from '@mui/icons-material/Help';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import StatsTab from '../shared/StatsTab';
@@ -72,6 +76,7 @@ function derivePrefix(data) {
 
 function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = [], onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
   const libraryIndex = useRecoilValue(libraryIndexState);
+  const colorSwatches = useItemColorSwatches();
   const castableNames = libraryIndex.castables || [];
   const variantGroupNames = libraryIndex.variantgroups || [];
 
@@ -327,12 +332,25 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
         {/* ── Appearance ── */}
         <Section title="Appearance" open={openAppearance} onToggle={() => setOpenAppearance((v) => !v)}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <TextField label="Sprite" required type="number" value={p.appearance.sprite} size="small" sx={{ width: 140 }}
-              onChange={setPropField('appearance', 'sprite')} inputProps={{ min: 0, max: 65535 }} />
-            <TextField label="Equip Sprite" type="number" value={p.appearance.equipSprite} size="small" sx={{ width: 140 }}
-              onChange={setPropField('appearance', 'equipSprite')} inputProps={{ min: 0, max: 65535 }} />
+            <ItemSpritePicker
+              value={p.appearance.sprite}
+              onChange={(val) => setPropField('appearance', 'sprite')({ target: { value: val } })}
+              required
+              helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
+            />
+            <ItemSpritePicker
+              label="Equip Sprite"
+              value={p.appearance.equipSprite}
+              onChange={(val) => setPropField('appearance', 'equipSprite')({ target: { value: val } })}
+              helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
+            />
             <TextField label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
               onChange={setPropField('appearance', 'displaySprite')} inputProps={{ min: 0, max: 65535 }} />
+            <Tooltip title="Overlay applied to the character model. Only used for Weapon, Armor, Shield, Helmet, Foot, Trousers, Coat, SecondAcc, and ThirdAcc slots." placement="top">
+              <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                <HelpIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <FormControl size="small" sx={{ minWidth: 160 }}>
               <InputLabel>Body Style</InputLabel>
               <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setPropField('appearance', 'bodyStyle')}>
@@ -341,8 +359,29 @@ function ItemEditor({ item, initialFileName, isArchived, isExisting, warnings = 
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Color</InputLabel>
-              <Select value={p.appearance.color} label="Color" onChange={setPropField('appearance', 'color')}>
-                {ITEM_COLORS.map((c) => <MenuItem key={c || '__blank'} value={c}>{c || '(none)'}</MenuItem>)}
+              <Select
+                value={p.appearance.color}
+                label="Color"
+                onChange={setPropField('appearance', 'color')}
+                renderValue={(val) => (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>{val || '(none)'}</span>
+                    {colorSwatches && val && <ColorSwatch colors={colorSwatches.get(val)} />}
+                  </Box>
+                )}
+              >
+                {ITEM_COLORS.map((c) => (
+                  <MenuItem key={c || '__blank'} value={c}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                      <span>{c || '(none)'}</span>
+                      {colorSwatches && c && (
+                        <Box sx={{ ml: 'auto' }}>
+                          <ColorSwatch colors={colorSwatches.get(c)} />
+                        </Box>
+                      )}
+                    </Box>
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControlLabel
