@@ -2,7 +2,7 @@ import React from 'react';
 import { AppBar, Box } from '@mui/material';
 import MainToolbar from '../components/MainToolbar';
 
-function MainLayout({ children, navigate }) {
+function MainLayout({ children, navigate, rightPanel }) {
   return (
     <Box
       sx={{
@@ -20,8 +20,11 @@ function MainLayout({ children, navigate }) {
       >
         <MainToolbar navigate={navigate} />
       </AppBar>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {children}
+      <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'row', minHeight: 0 }}>
+        <Box component="main" sx={{ flex: 1, minWidth: 0, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {children}
+        </Box>
+        {rightPanel}
       </Box>
     </Box>
   );

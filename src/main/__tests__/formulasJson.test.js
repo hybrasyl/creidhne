@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { join } from 'path';
 
 const mockFs = {
   readFile: vi.fn(),
@@ -9,12 +10,21 @@ const mockFs = {
 vi.mock('fs', () => ({ promises: mockFs }));
 vi.mock('crypto', () => ({ randomUUID: () => 'test-uuid-1234' }));
 
-const { loadFormulas, saveFormulas, importFormulas } = await import('../formulasJson.js');
+const { getFormulasPath, loadFormulas, saveFormulas, importFormulas } = await import('../formulasJson.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockFs.mkdir.mockResolvedValue(undefined);
   mockFs.writeFile.mockResolvedValue(undefined);
+});
+
+// ── getFormulasPath ──────────────────────────────────────────────────────────
+
+describe('getFormulasPath', () => {
+  it('points to formulas.json inside .creidhne', () => {
+    expect(getFormulasPath('/worlds/test/xml'))
+      .toBe(join('/worlds/test/xml', '..', '.creidhne', 'formulas.json'));
+  });
 });
 
 // ── loadFormulas ─────────────────────────────────────────────────────────────
@@ -82,6 +92,31 @@ describe('loadFormulas', () => {
     expect(result.settings.customVariables.LevelUpper).toBe(110);
     expect(result.settings.customVariables.LevelDiv).toBe(10);
     expect(result.settings.customVariables.Divisor).toBe(1500);
+  });
+
+  it('returns defaults when file is malformed JSON', async () => {
+    mockFs.readFile.mockResolvedValue('not json at all {');
+    const result = await loadFormulas('/world/xml');
+    expect(result.formulas).toEqual([]);
+    expect(result.patterns).toEqual([]);
+  });
+});
+
+// ── saveFormulas ─────────────────────────────────────────────────────────────
+
+describe('saveFormulas', () => {
+  it('ensures .creidhne dir then writes pretty JSON', async () => {
+    const data = { settings: {}, patterns: [], formulas: [{ id: '1', name: 'X', formula: 'LVL' }] };
+    await saveFormulas('/worlds/test/xml', data);
+    expect(mockFs.mkdir).toHaveBeenCalledWith(
+      expect.stringContaining('.creidhne'),
+      { recursive: true },
+    );
+    expect(mockFs.writeFile).toHaveBeenCalledWith(
+      getFormulasPath('/worlds/test/xml'),
+      JSON.stringify(data, null, 2),
+      'utf-8',
+    );
   });
 });
 

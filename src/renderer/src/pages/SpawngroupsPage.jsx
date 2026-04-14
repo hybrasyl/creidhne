@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import {
-  Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Tooltip,
-  TextField, InputAdornment, IconButton, Snackbar, Alert, CircularProgress,
+  Box, Typography, Divider, Button, Tooltip,
+  IconButton, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import ArchiveIcon from '@mui/icons-material/Archive';
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import SpawngroupEditor from '../components/spawngroups/SpawngroupEditor';
+import EditorFileListPanel from '../components/shared/EditorFileListPanel';
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
 
@@ -26,92 +24,15 @@ const DEFAULT_SPAWNGROUP = {
   spawns: [],
 };
 
-function FileListPanel({ files, archivedFiles, selectedFile, onSelect, onNew, showArchived, onToggleArchived }) {
-  const [search, setSearch] = React.useState('');
-  const filtered = (list) =>
-    search.trim() ? list.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())) : list;
-
-  const filteredActive = filtered(files);
-  const filteredArchived = filtered(archivedFiles);
-
-  return (
-    <Box sx={{ width: 240, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Box sx={{ p: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2">Spawn Groups</Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title={showArchived ? 'Hide Archived' : 'Show Archived'}>
-            <IconButton size="small" onClick={onToggleArchived} color={showArchived ? 'primary' : 'default'}>
-              <ArchiveIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="New Spawn Group">
-            <Button size="small" startIcon={<AddIcon />} onClick={onNew}>New</Button>
-          </Tooltip>
-        </Box>
-      </Box>
-      <Box sx={{ px: 1, pb: 1 }}>
-        <TextField
-          size="small" fullWidth placeholder="Filter..." value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-        />
-      </Box>
-      <Divider />
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {files.length === 0 && !showArchived ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-            No spawn groups found. Check that a library is set in Settings.
-          </Typography>
-        ) : filteredActive.length === 0 && (!showArchived || filteredArchived.length === 0) ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>No matches.</Typography>
-        ) : (
-          <>
-            <List dense disablePadding>
-              {filteredActive.map((file) => (
-                <ListItem key={file.path} disablePadding>
-                  <ListItemButton selected={selectedFile?.path === file.path} onClick={() => onSelect(file)}>
-                    <ListItemText
-                      primary={file.name.replace(/\.xml$/i, '')}
-                      primaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-            {showArchived && filteredArchived.length > 0 && (
-              <>
-                <Divider sx={{ my: 0.5 }} />
-                <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, py: 0.5, display: 'block' }}>
-                  Archived
-                </Typography>
-                <List dense disablePadding>
-                  {filteredArchived.map((file) => (
-                    <ListItem key={file.path} disablePadding>
-                      <ListItemButton selected={selectedFile?.path === file.path} onClick={() => onSelect(file)}>
-                        <ListItemText
-                          primary={file.name.replace(/\.xml$/i, '')}
-                          primaryTypographyProps={{ noWrap: true, variant: 'body2', color: 'text.secondary' }}
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
-              </>
-            )}
-          </>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
 function SpawngroupsPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
-  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
+  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState);
+  const namesByFilename = libraryIndex?.spawngroupsNamesByFilename;
   const [files, setFiles] = useState([]);
   const [archivedFiles, setArchivedFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingSpawngroup, setEditingSpawngroup] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [loadingSpawngroup, setLoadingSpawngroup] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -133,9 +54,12 @@ function SpawngroupsPage() {
   };
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingSpawngroup(null); return; }
-    loadActiveFiles(activeLibrary);
-    loadArchivedFiles(activeLibrary);
+    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingSpawngroup(null); setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      loadActiveFiles(activeLibrary),
+      loadArchivedFiles(activeLibrary),
+    ]).finally(() => setLoading(false));
   }, [activeLibrary]);
 
   const handleToggleArchived = async () => {
@@ -222,10 +146,18 @@ function SpawngroupsPage() {
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      <FileListPanel
-        files={files} archivedFiles={archivedFiles} selectedFile={selectedFile}
-        onSelect={handleSelect} onNew={handleNew}
-        showArchived={showArchived} onToggleArchived={handleToggleArchived}
+      <EditorFileListPanel
+        title="Spawn Groups"
+        entityLabel="Spawn Group"
+        files={files}
+        archivedFiles={archivedFiles}
+        selectedFile={selectedFile}
+        onSelect={handleSelect}
+        onNew={handleNew}
+        showArchived={showArchived}
+        onToggleArchived={handleToggleArchived}
+        namesByFilename={namesByFilename}
+        loading={loading}
       />
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (
