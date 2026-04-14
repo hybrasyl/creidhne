@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { useRecoilState } from 'recoil';
-import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState, dirtyEditorState, recentPagesState } from './recoil/atoms'; // Import Recoil atoms
+import { themeState, librariesState, currentPageState, activeLibraryState, libraryIndexState, dirtyEditorState, recentPagesState, clientPathState } from './recoil/atoms'; // Import Recoil atoms
 import hybrasylTheme from './themes/hybrasyl';
 import chadulTheme from './themes/chadul';
 import danaanTheme from './themes/danaan';
@@ -23,6 +23,7 @@ function App() {
   const [, setCurrentPage] = useRecoilState(currentPageState); // Manage current page with Recoil
   const [, setRecentPages] = useRecoilState(recentPagesState);
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState);
+  const [clientPath, setClientPath] = useRecoilState(clientPathState);
   const [, setLibraryIndex] = useRecoilState(libraryIndexState);
   const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState);
   const [pendingNav, setPendingNav] = useState(null);
@@ -37,10 +38,11 @@ function App() {
       setTheme(themes[settings.theme] ? settings.theme : 'hybrasyl');
       setLibraries(settings.libraries || []);
       setActiveLibrary(settings.activeLibrary || null);
+      setClientPath(settings.clientPath || null);
     }
 
     fetchSettings();
-  }, [setTheme, setLibraries, setActiveLibrary]);
+  }, [setTheme, setLibraries, setActiveLibrary, setClientPath]);
 
   // Load persisted index from disk whenever active library changes
   useEffect(() => {
@@ -69,8 +71,9 @@ function App() {
       libraries,
       activeLibrary, // Save the active library
       theme,
+      clientPath,
     });
-  }, [theme, libraries, activeLibrary]);
+  }, [theme, libraries, activeLibrary, clientPath]);
 
   const pushRecentPage = useCallback((page) => {
     if (page === 'dashboard') return;

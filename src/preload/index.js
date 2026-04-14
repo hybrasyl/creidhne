@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listDir: (dirPath) => ipcRenderer.invoke('fs:listDir', dirPath),
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
+  readBinaryFile: (filePath) => ipcRenderer.invoke('fs:readBinaryFile', filePath),
+  checkClientPath: (clientPath) => ipcRenderer.invoke('fs:checkClientPath', clientPath),
   loadItem: (filePath) => ipcRenderer.invoke('xml:loadItem', filePath),
   saveItem: (filePath, itemData) => ipcRenderer.invoke('xml:saveItem', filePath, itemData),
   loadRecipe: (filePath) => ipcRenderer.invoke('xml:loadRecipe', filePath),

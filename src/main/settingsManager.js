@@ -5,6 +5,7 @@ const DEFAULTS = {
   libraries: [],
   activeLibrary: null,
   theme: 'light',
+  clientPath: null,
 }
 
 function validate(data) {
@@ -18,6 +19,7 @@ function withDefaults(data) {
     libraries: Array.isArray(data?.libraries) ? data.libraries : DEFAULTS.libraries,
     activeLibrary: data?.activeLibrary ?? DEFAULTS.activeLibrary,
     theme: typeof data?.theme === 'string' ? data.theme : DEFAULTS.theme,
+    clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath,
   }
 }
 

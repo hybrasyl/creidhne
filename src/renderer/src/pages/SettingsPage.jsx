@@ -3,6 +3,7 @@ import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button } fr
 import { useRecoilState } from 'recoil';
 import { themeState } from '../recoil/atoms';
 import ManageLibraries from '../components/ManageLibraries';
+import DAClientPathSection from '../components/DAClientPathSection';
 import AboutDialog from '../components/AboutDialog';
 
 const THEMES = [
@@ -38,6 +39,7 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         onAddLibrary={onAddLibrary}
         onRemoveLibrary={onRemoveLibrary}
       />
+      <DAClientPathSection />
       <Box sx={{ mt: 4 }}>
         <Button variant="outlined" size="small" onClick={() => setAboutOpen(true)}>
           About Creidhne

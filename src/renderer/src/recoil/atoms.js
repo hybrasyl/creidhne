@@ -22,6 +22,11 @@ export const activeLibraryState = atom({
   default: null, // Default to no active library
 });
 
+export const clientPathState = atom({
+  key: 'clientPathState',
+  default: null, // Path to Dark Ages client install directory
+});
+
 export const librariesState = atom({
   key: 'librariesState',
   default: [],
