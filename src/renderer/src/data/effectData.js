@@ -30,16 +30,56 @@ async function getPaletteLookup(clientPath) {
   const cached = paletteLookupCache.get(clientPath)
   if (cached) return cached
   const archive = await loadArchive(clientPath, ARCHIVE)
-  const lookup = PaletteLookup.fromArchive('mefc', archive)
+  // Palette files are `eff*.pal`; the table is `effpal.tbl` (single file, no
+  // number). Use fromArchivePatterns(tablePattern, palettePattern, archive).
+  const lookup = PaletteLookup.fromArchivePatterns('effpal', 'eff', archive)
   try {
-    const palEntries = archive.getEntriesByPattern('mefc', '.pal')
-    const tblEntries = archive.getEntriesByPattern('mefc', '.tbl')
+    const palEntries = archive.getEntriesByPattern('eff', '.pal')
+    const tblEntries = archive.getEntriesByPattern('effpal', '.tbl')
     const palIds = Array.from(lookup.palettes.keys()).sort((a, b) => a - b)
     // eslint-disable-next-line no-console
     console.log(
-      `[effectData] ${ARCHIVE}: ${palEntries.length} mefc*.pal, ${tblEntries.length} mefc*.tbl;`,
+      `[effectData] ${ARCHIVE}: ${palEntries.length} eff*.pal, ${tblEntries.length} effpal*.tbl;`,
       `PaletteLookup has ${palIds.length} palette ids (range ${palIds[0]}..${palIds[palIds.length - 1]})`
     )
+
+    // Diagnostic: what palette numbers does the table reference vs. what
+    // exists in the archive? Split by luminance-blend convention (≥1000).
+    const paletteIdSet = new Set(palIds)
+    const referencedByTable = new Set()
+    for (const v of lookup.table.entries.values()) referencedByTable.add(v)
+    for (const v of lookup.table.overrides.values()) referencedByTable.add(v)
+    const refSorted = Array.from(referencedByTable).sort((a, b) => a - b)
+    const smallRefs = refSorted.filter((n) => n < 1000)
+    const largeRefs = refSorted.filter((n) => n >= 1000)
+    const missingSmall = smallRefs.filter((n) => !paletteIdSet.has(n))
+    const missingAfterSubtract = largeRefs.filter((n) => !paletteIdSet.has(n - 1000))
+    // eslint-disable-next-line no-console
+    console.log(
+      `[effectData] table references ${refSorted.length} palette ids;`,
+      `small (<1000): ${smallRefs.length} [${smallRefs.slice(0, 10).join(',')}${smallRefs.length > 10 ? ',…' : ''}];`,
+      `large (≥1000): ${largeRefs.length} [${largeRefs.slice(0, 10).join(',')}${largeRefs.length > 10 ? ',…' : ''}]`
+    )
+    if (missingSmall.length || missingAfterSubtract.length) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[effectData] palette numbers referenced but not in archive:`,
+        `small missing: [${missingSmall.join(',')}];`,
+        `large (after -1000) missing: [${missingAfterSubtract.join(',')}]`
+      )
+    }
+    // Expose for ad-hoc console inspection:
+    //   window.__daEffectPalette(311)  → logs table entry for effect 311
+    if (typeof window !== 'undefined') {
+      window.__daEffectPalette = (id) => {
+        const rawEntry = lookup.table.entries.get(Number(id))
+        const rawOverride = lookup.table.overrides.get(Number(id))
+        const rawFinal = lookup.table.getPaletteNumber(Number(id))
+        // eslint-disable-next-line no-console
+        console.log(`[effectData] effect ${id}: entries=${rawEntry ?? '∅'}, overrides=${rawOverride ?? '∅'}, getPaletteNumber=${rawFinal}`)
+        return { entry: rawEntry, override: rawOverride, final: rawFinal }
+      }
+    }
   } catch { /* diagnostics only */ }
   paletteLookupCache.set(clientPath, lookup)
   return lookup
@@ -103,10 +143,37 @@ export async function getEffectIndex(clientPath) {
   return result
 }
 
+// Compute the tight bounding box of all non-null frames, then normalize each
+// frame's (left, top) so the animation renders at origin (0, 0). Returns
+// { width, height, frames } where frames have their left/top adjusted.
+function tightBoundsAndNormalize(rawFrames) {
+  let minLeft = Infinity, minTop = Infinity
+  let maxRight = -Infinity, maxBottom = -Infinity
+  for (const f of rawFrames) {
+    if (!f) continue
+    if (f.left < minLeft) minLeft = f.left
+    if (f.top < minTop) minTop = f.top
+    const r = f.left + f.bitmap.width
+    const b = f.top + f.bitmap.height
+    if (r > maxRight) maxRight = r
+    if (b > maxBottom) maxBottom = b
+  }
+  if (!Number.isFinite(minLeft)) return { width: 1, height: 1, frames: rawFrames }
+  const width = Math.max(1, maxRight - minLeft)
+  const height = Math.max(1, maxBottom - minTop)
+  const frames = rawFrames.map((f) => (f ? { bitmap: f.bitmap, left: f.left - minLeft, top: f.top - minTop } : null))
+  return { width, height, frames }
+}
+
 async function renderEpfFrames(loaded, id, clientPath) {
   const epf = loaded.file
   const lookup = await getPaletteLookup(clientPath)
-  let palette = lookup.getPaletteForId(Number(id))
+  // getPaletteForId throws when the referenced palette isn't present (common
+  // for 4-digit luminance-blended entries where N-1000 isn't in the archive).
+  let palette = null
+  try {
+    palette = lookup.getPaletteForId(Number(id))
+  } catch { /* fall through to fallback */ }
   if (!palette) {
     palette = lookup.palettes.get(0)
     if (!palette) {
@@ -117,52 +184,41 @@ async function renderEpfFrames(loaded, id, clientPath) {
     if (!fallbackWarnedIds.has(Number(id))) {
       fallbackWarnedIds.add(Number(id))
       // eslint-disable-next-line no-console
-      console.warn(`[effectData] effect id ${id} has no palette table entry; using palette 0 default`)
+      console.warn(`[effectData] effect id ${id}: palette unavailable, using palette 0 default`)
     }
   }
 
-  const frames = []
+  const rawFrames = []
   for (const frame of epf.frames) {
-    if (!frame || !frame.data || frame.data.length === 0) { frames.push(null); continue }
+    if (!frame || !frame.data || frame.data.length === 0) { rawFrames.push(null); continue }
     const w = frame.right - frame.left
     const h = frame.bottom - frame.top
-    if (w <= 0 || h <= 0) { frames.push(null); continue }
+    if (w <= 0 || h <= 0) { rawFrames.push(null); continue }
     try {
       const rgba = renderEpf(frame, palette)
       const bitmap = await createImageBitmap(toImageData(rgba))
-      frames.push({ bitmap, left: frame.left, top: frame.top })
+      rawFrames.push({ bitmap, left: frame.left, top: frame.top })
     } catch {
-      frames.push(null)
+      rawFrames.push(null)
     }
   }
-  return { width: epf.pixelWidth, height: epf.pixelHeight, frames, defaultFrameIntervalMs: null }
+  return { ...tightBoundsAndNormalize(rawFrames), defaultFrameIntervalMs: null }
 }
 
 async function renderEfaFrames(loaded) {
   const efa = loaded.file
-  let maxRight = 0
-  let maxBottom = 0
-  const frames = []
+  const rawFrames = []
   for (const frame of efa.frames) {
     try {
       const rgba = renderEfa(frame, efa.blendingType)
-      if (!rgba || rgba.width === 0 || rgba.height === 0) { frames.push(null); continue }
+      if (!rgba || rgba.width === 0 || rgba.height === 0) { rawFrames.push(null); continue }
       const bitmap = await createImageBitmap(toImageData(rgba))
-      const left = frame.left || 0
-      const top = frame.top || 0
-      frames.push({ bitmap, left, top })
-      if (left + bitmap.width > maxRight) maxRight = left + bitmap.width
-      if (top + bitmap.height > maxBottom) maxBottom = top + bitmap.height
+      rawFrames.push({ bitmap, left: frame.left || 0, top: frame.top || 0 })
     } catch {
-      frames.push(null)
+      rawFrames.push(null)
     }
   }
-  return {
-    width: Math.max(1, maxRight),
-    height: Math.max(1, maxBottom),
-    frames,
-    defaultFrameIntervalMs: efa.frameIntervalMs || null,
-  }
+  return { ...tightBoundsAndNormalize(rawFrames), defaultFrameIntervalMs: efa.frameIntervalMs || null }
 }
 
 /**

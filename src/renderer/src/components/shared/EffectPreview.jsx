@@ -4,16 +4,16 @@ import { useRecoilValue } from 'recoil';
 import { clientPathState } from '../../recoil/atoms';
 import { getEffectFrames } from '../../data/effectData';
 
-// Common convention: speed = ticks, tick ≈ 100ms. frameDuration = speed * 100ms.
-// Minimum clamp so a speed of 0 still animates at something.
-const MS_PER_TICK = 100;
-const MIN_FRAME_MS = 30;
+// Speed in DA client = milliseconds per frame directly.
+// If the XML speed field is empty/0, default to 100ms.
+const DEFAULT_MS = 100;
+const MIN_FRAME_MS = 1;
 
 function frameDurationMs(speed, defaultMs) {
   const n = Number(speed);
-  if (Number.isFinite(n) && n > 0) return Math.max(MIN_FRAME_MS, n * MS_PER_TICK);
+  if (Number.isFinite(n) && n > 0) return Math.max(MIN_FRAME_MS, n);
   if (defaultMs && defaultMs > 0) return Math.max(MIN_FRAME_MS, defaultMs);
-  return MS_PER_TICK;
+  return DEFAULT_MS;
 }
 
 /**
