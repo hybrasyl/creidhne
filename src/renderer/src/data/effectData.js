@@ -146,7 +146,7 @@ export async function getEffectIndex(clientPath) {
 // Compute the tight bounding box of all non-null frames, then normalize each
 // frame's (left, top) so the animation renders at origin (0, 0). Returns
 // { width, height, frames } where frames have their left/top adjusted.
-function tightBoundsAndNormalize(rawFrames) {
+export function tightBoundsAndNormalize(rawFrames) {
   let minLeft = Infinity, minTop = Infinity
   let maxRight = -Infinity, maxBottom = -Infinity
   for (const f of rawFrames) {

@@ -16,6 +16,7 @@ import '../data/itemColorData';
 import '../data/soundData';
 import '../data/effectData';
 import '../data/khanData';
+import '../data/npcPortraitData';
 
 const STATUS_COLORS = {
   green:  '#2e7d32',

@@ -12,6 +12,8 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
+import NpcPortraitCanvas from '../shared/NpcPortraitCanvas';
+import NpcPortraitPickerDialog from '../shared/NpcPortraitPickerDialog';
 import CommentField from '../shared/CommentField';
 import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
 import SpritePickerDialog from '../shared/SpritePickerDialog';
@@ -122,6 +124,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
   const [openVend, setOpenVend] = useState(npc.roles.vend !== null);
   const [openTrain, setOpenTrain] = useState(npc.roles.train !== null);
   const [spritePickerOpen, setSpritePickerOpen] = useState(false);
+  const [portraitPickerOpen, setPortraitPickerOpen] = useState(false);
 
   const isDirtyRef = useRef(false);
 
@@ -269,7 +272,7 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
       roles: { ...d.roles, train: { ...d.roles.train, castables: d.roles.train.castables.filter((_, idx) => idx !== i) } },
     }));
 
-  const SPRITE_PREVIEW = 96;
+  const SPRITE_PREVIEW = 128;
   const spritePreviewKey = keyFromSprite(data.sprite);
   const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null;
   const spritePreviewFrame = spritePreviewMeta ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW) : null;
@@ -298,100 +301,116 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Basic info */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-                {/* Left: big sprite preview + browse button */}
-                <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: SPRITE_PREVIEW, height: SPRITE_PREVIEW, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
-                    {spritePreviewFrame && (
-                      <Box sx={{ width: spritePreviewFrame.clipW, height: spritePreviewFrame.clipH, overflow: 'hidden', flexShrink: 0 }}>
-                        <img src={spriteUrl(spritePreviewKey)} alt={spritePreviewKey} draggable={false} style={spritePreviewFrame.imgStyle} />
-                      </Box>
-                    )}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+            {/* Sprite card */}
+            <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1, width: SPRITE_PREVIEW }}>
+              <TextField
+                label="Sprite" type="number" size="small"
+                value={data.sprite}
+                onChange={(e) => updateData((d) => ({ ...d, sprite: e.target.value }))}
+                inputProps={{ min: 1, max: 9999 }}
+              />
+              <Box sx={{ width: SPRITE_PREVIEW, height: SPRITE_PREVIEW, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
+                {spritePreviewFrame && (
+                  <Box sx={{ width: spritePreviewFrame.clipW, height: spritePreviewFrame.clipH, overflow: 'hidden', flexShrink: 0 }}>
+                    <img src={spriteUrl(spritePreviewKey)} alt={spritePreviewKey} draggable={false} style={spritePreviewFrame.imgStyle} />
                   </Box>
-                  <Button size="small" startIcon={<GridViewIcon />} onClick={() => setSpritePickerOpen(true)}>
-                    Browse
-                  </Button>
-                </Box>
-                {/* Right: field rows */}
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {/* Row 1: Prefix | Name | Display Name */}
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField
-                      label="Prefix" value={computedPrefix}
-                      size="small" sx={{ width: 140 }} inputProps={{ readOnly: true, spellCheck: false }}
+                )}
+              </Box>
+              <Button size="small" fullWidth startIcon={<GridViewIcon />} onClick={() => setSpritePickerOpen(true)}>
+                Browse
+              </Button>
+            </Box>
+
+            {/* Portrait card */}
+            <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1, width: SPRITE_PREVIEW }}>
+              <TextField
+                label="Portrait" size="small"
+                value={data.portrait || ''}
+                onChange={set('portrait')}
+                inputProps={{ maxLength: 255 }}
+              />
+              <NpcPortraitCanvas filename={data.portrait} size={SPRITE_PREVIEW} />
+              <Button size="small" fullWidth startIcon={<GridViewIcon />} onClick={() => setPortraitPickerOpen(true)}>
+                Browse
+              </Button>
+            </Box>
+
+            {/* Right stack */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Row 1: Prefix | Name | Display Name */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  label="Prefix" value={computedPrefix}
+                  size="small" sx={{ width: 140 }} inputProps={{ readOnly: true, spellCheck: false }}
+                />
+                <TextField
+                  label="Name" value={data.name} onChange={set('name')} onBlur={handleNameBlur}
+                  size="small" required inputProps={{ maxLength: 255 }}
+                  error={dupStatus === 'active'}
+                  helperText={
+                    dupStatus === 'active'   ? `"${data.name}" already exists` :
+                    dupStatus === 'archived' ? `"${data.name}" exists in archive` :
+                    undefined
+                  }
+                  sx={{
+                    flex: 1,
+                    ...(dupStatus === 'archived' && {
+                      '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                      '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                      '& .MuiFormHelperText-root': { color: 'warning.main' },
+                    }),
+                  }}
+                />
+                <TextField
+                  label="Display Name" value={data.displayName} onChange={set('displayName')}
+                  size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
+                />
+              </Box>
+
+              {/* Row 2: Job | Location */}
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <ConstantAutocomplete
+                  indexKey="npcJobs" label="Job"
+                  value={data.meta?.job || ''}
+                  onChange={setMetaField('job')}
+                  size="small" sx={{ flex: 1 }}
+                  inputProps={{ maxLength: 64 }}
+                />
+                <TextField
+                  label="Location" value={data.meta?.location || ''} onChange={(e) => setMetaField('location')(e.target.value)}
+                  size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 128 }}
+                />
+              </Box>
+
+              {/* Row 3: Comment */}
+              <CommentField value={data.comment} onChange={set('comment')} fullWidth />
+
+              {/* Row 4: Checkboxes */}
+              <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={data.allowDead}
+                      onChange={(e) => updateData((d) => ({ ...d, allowDead: e.target.checked }))}
+                      size="small"
                     />
-                    <TextField
-                      label="Name" value={data.name} onChange={set('name')} onBlur={handleNameBlur}
-                      size="small" required inputProps={{ maxLength: 255 }}
-                      error={dupStatus === 'active'}
-                      helperText={
-                        dupStatus === 'active'   ? `"${data.name}" already exists` :
-                        dupStatus === 'archived' ? `"${data.name}" exists in archive` :
-                        undefined
-                      }
-                      sx={{
-                        flex: 1,
-                        ...(dupStatus === 'archived' && {
-                          '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                          '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                          '& .MuiFormHelperText-root': { color: 'warning.main' },
-                        }),
-                      }}
+                  }
+                  label={<Typography variant="body2">Allow Dead</Typography>}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={data.roles.disableForget ?? false}
+                      onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, disableForget: e.target.checked } }))}
+                      size="small"
                     />
-                    <TextField
-                      label="Display Name" value={data.displayName} onChange={set('displayName')}
-                      size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
-                    />
-                  </Box>
-                  {/* Row 2: Sprite # | Portrait */}
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField
-                      label="Sprite" type="number" value={data.sprite}
-                      onChange={(e) => updateData((d) => ({ ...d, sprite: e.target.value }))}
-                      size="small" sx={{ width: 100 }} inputProps={{ min: 1, max: 9999 }}
-                    />
-                    <TextField
-                      label="Portrait" value={data.portrait} onChange={set('portrait')}
-                      size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 255 }}
-                    />
-                  </Box>
-                  {/* Row 3: Job | Location | Allow Dead */}
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <ConstantAutocomplete
-                      indexKey="npcJobs" label="Job"
-                      value={data.meta?.job || ''}
-                      onChange={setMetaField('job')}
-                      size="small" sx={{ flex: 1 }}
-                      inputProps={{ maxLength: 64 }}
-                    />
-                    <TextField
-                      label="Location" value={data.meta?.location || ''} onChange={(e) => setMetaField('location')(e.target.value)}
-                      size="small" sx={{ flex: 1 }} inputProps={{ maxLength: 128 }}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={data.allowDead}
-                          onChange={(e) => updateData((d) => ({ ...d, allowDead: e.target.checked }))}
-                          size="small"
-                        />
-                      }
-                      label={<Typography variant="body2">Allow Dead</Typography>}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={data.roles.disableForget ?? false}
-                          onChange={(e) => updateData((d) => ({ ...d, roles: { ...d.roles, disableForget: e.target.checked } }))}
-                          size="small"
-                        />
-                      }
-                      label={<Typography variant="body2">Disable Forget</Typography>}
-                    />
-                  </Box>
-                </Box>
+                  }
+                  label={<Typography variant="body2">Disable Forget</Typography>}
+                />
+              </Box>
+            </Box>
           </Box>
-          <CommentField value={data.comment} onChange={set('comment')} fullWidth sx={{ mt: 2 }} />
         </Paper>
         <SpritePickerDialog
           open={spritePickerOpen}
@@ -400,6 +419,15 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
           onChange={(key) => {
             updateData((d) => ({ ...d, sprite: String(parseInt(key.replace('monster', ''), 10)) }));
             setSpritePickerOpen(false);
+          }}
+        />
+        <NpcPortraitPickerDialog
+          open={portraitPickerOpen}
+          value={data.portrait}
+          onClose={() => setPortraitPickerOpen(false)}
+          onChange={(filename) => {
+            updateData((d) => ({ ...d, portrait: filename }));
+            setPortraitPickerOpen(false);
           }}
         />
 

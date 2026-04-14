@@ -11,7 +11,7 @@ import { DataArchive } from '@eriscorp/dalib-ts'
 
 const archiveCache = new Map() // key: full archive path, value: DataArchive
 
-function joinPath(clientPath, relative) {
+export function joinPath(clientPath, relative) {
   // Both '/' and '\' work on Windows for fs APIs. Normalize separators in the
   // relative part so callers can pass either.
   const sep = clientPath.includes('\\') ? '\\' : '/'

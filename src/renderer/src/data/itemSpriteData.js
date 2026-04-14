@@ -99,7 +99,7 @@ function warnFallbackOnce(epfNum) {
  * the EPF and should be hidden from the picker grid — though a user can still
  * type the numeric id manually.
  */
-function isFrameBlank(frame) {
+export function isFrameBlank(frame) {
   if (!frame || !frame.data || frame.data.length === 0) return true
   const { left, top, right, bottom } = frame
   if (right <= left || bottom <= top) return true

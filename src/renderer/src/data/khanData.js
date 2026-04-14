@@ -35,7 +35,7 @@ export const CATEGORY_DEFAULTS = {
   // C: accessories — use global default until confirmed.
 }
 
-function defaultsFor(category) {
+export function defaultsFor(category) {
   const first = Array.isArray(category) ? category[0] : category
   return CATEGORY_DEFAULTS[String(first || '').toUpperCase()] || GLOBAL_DEFAULT
 }
@@ -85,7 +85,7 @@ const KHAN_RANGES = [
   { start: 'T', end: 'Z', suffix: 'tz' },
 ]
 
-function khanArchiveName(category, gender) {
+export function khanArchiveName(category, gender) {
   const letter = String(category || '').toUpperCase()
   const g = String(gender || '').toLowerCase()
   if (!letter || (g !== 'm' && g !== 'w')) return null
@@ -94,7 +94,7 @@ function khanArchiveName(category, gender) {
   return `khan${g}${range.suffix}.dat`
 }
 
-function entryName(category, gender, displaySprite, pose) {
+export function entryName(category, gender, displaySprite, pose) {
   const id = String(Number(displaySprite)).padStart(3, '0')
   return `${gender.toUpperCase()}${category.toUpperCase()}${id}${pose}.epf`
 }
