@@ -8,6 +8,7 @@ import {
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import SoundPicker from '../shared/SoundPicker';
 import EffectPicker from '../shared/EffectPicker';
+import IconPicker from '../shared/IconPicker';
 import StringKeyField from '../shared/StringKeyField';
 import HealEditor from '../shared/HealEditor';
 import DamageEditor from '../shared/DamageEditor';
@@ -739,9 +740,11 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
                 }
                 value={data.name} onChange={set('name')} onBlur={handleNameBlur} inputProps={{ maxLength: 255 }}
               />
-              <TextField label="Icon" size="small" sx={{ width: 130 }} value={data.icon}
-                onChange={(e) => updateData((d) => ({ ...d, icon: e.target.value.replace(/\D/g, '') }))}
-                inputProps={{ inputMode: 'numeric' }} />
+              <IconPicker
+                type="spell"
+                value={data.icon}
+                onChange={(val) => updateData((d) => ({ ...d, icon: String(val).replace(/\D/g, '') }))}
+              />
             </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               <TextField label="Duration"     size="small" sx={{ width: 120 }} value={data.duration}

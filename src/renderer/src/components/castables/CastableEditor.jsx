@@ -4,6 +4,8 @@ import { libraryIndexState } from '../../recoil/atoms';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import ScriptAutocomplete from '../shared/ScriptAutocomplete';
 import EditorHeader from '../shared/EditorHeader';
+import IconPicker from '../shared/IconPicker';
+import { typeFromBook } from '../../data/iconData';
 import {
   Box, Button, Typography, Divider, TextField, Tooltip, IconButton, Paper,
   Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox,
@@ -304,10 +306,10 @@ function CastableEditor({
                 value={data.cooldown} onChange={set('cooldown')}
                 inputProps={{ inputMode: 'numeric' }}
               />
-              <TextField
-                label="Icon" size="small" sx={{ width: 100 }}
-                value={data.icon} onChange={set('icon')}
-                inputProps={{ inputMode: 'numeric' }}
+              <IconPicker
+                type={typeFromBook(data.book)}
+                value={data.icon}
+                onChange={(val) => set('icon')({ target: { value: val } })}
               />
               <FormControl size="small" sx={{ minWidth: 180 }}>
                 <InputLabel>Book</InputLabel>
