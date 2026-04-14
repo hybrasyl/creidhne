@@ -17,6 +17,7 @@ import MainLayout from './components/MainLayout';
 import PageRenderer from './components/PageRenderer';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
 import UpdateSnackbar from './components/UpdateSnackbar';
+import ReferencePanel from './components/reference/ReferencePanel';
 import { stopSound } from './data/soundData';
 
 function App() {
@@ -175,7 +176,7 @@ function App() {
   return (
     <ThemeProvider theme={themes[theme] ?? hybrasylTheme}>
       <CssBaseline />
-      <MainLayout navigate={handleNavigate}>
+      <MainLayout navigate={handleNavigate} rightPanel={<ReferencePanel />}>
         <PageRenderer
           libraries={libraries}
           onAddLibrary={handleAddLibrary}

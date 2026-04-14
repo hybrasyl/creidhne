@@ -49,3 +49,13 @@ export const recentPagesState = atom({
     catch { return []; }
   })(),
 });
+
+export const referencePanelOpenState = atom({
+  key: 'referencePanelOpenState',
+  default: false,
+});
+
+export const referenceSelectionState = atom({
+  key: 'referenceSelectionState',
+  default: null, // null | { type: 'castable'|'status'|'item'|'creature', name: string }
+});

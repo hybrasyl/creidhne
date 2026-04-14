@@ -24,6 +24,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
 import { listDir, readFile, writeFile, moveFile, archiveFile, readBinaryFile, checkClientPath } from './fsHandlers'
 import { checkForUpdates } from './updateCheck.js'
+import { loadReference } from './referenceLoader.js'
 
 // Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
 const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
@@ -115,6 +116,7 @@ app.whenReady().then(() => {
   ipcMain.handle('open-directory', handleDirectoryOpen)
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
+  ipcMain.handle('reference:load', (_, libraryPath, type, name) => loadReference(libraryPath, type, name))
 
   ipcMain.handle('fs:listDir',         (_, dirPath)          => listDir(dirPath))
   ipcMain.handle('fs:readFile',        (_, filePath)          => readFile(filePath))

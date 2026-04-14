@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
+  loadReference: (libraryPath, type, name) => ipcRenderer.invoke('reference:load', libraryPath, type, name),
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
   confirmClose: () => ipcRenderer.send('app:confirm-close'),
 });
