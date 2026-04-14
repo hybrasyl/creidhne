@@ -313,6 +313,17 @@ app.whenReady().then(() => {
     return results
   }
 
+  // Records a filename→name mapping per type for the shared FileListPanel
+  // to filter and display by the inner <Name> rather than the bare filename.
+  // Same map key is used for both active and archived files (filenames are
+  // unique within a type across both dirs).
+  const recordFilenameName = (index, type, filename, name) => {
+    if (!name || !filename) return
+    const key = `${type}NamesByFilename`
+    if (!index[key]) index[key] = {}
+    index[key][filename] = name
+  }
+
   ipcMain.handle('index:build', async (_, libraryPath) => {
     const index = { libraryPath, builtAt: new Date().toISOString() }
 
@@ -334,6 +345,7 @@ app.whenReady().then(() => {
                 // Store name → filename mapping for quick lookup
                 if (!index.castableFilenames) index.castableFilenames = {}
                 index.castableFilenames[name] = file.name
+                recordFilenameName(index, type, file.name, name)
 
                 const classMatch = /<Castable[^>]+Class="([^"]*)"/.exec(content)
                 if (classMatch) {
@@ -361,6 +373,7 @@ app.whenReady().then(() => {
             if (localeMatch) {
               const name = localeMatch[1].trim()
               if (name && !names.includes(name)) names.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
             // Extract NPC response call → response text map
             const npcCallRegex = /<Response[^>]+Call="([^"]+)"[^>]*>([^<]*)<\/Response>/g
@@ -393,6 +406,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !names.includes(name)) names.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
             if (!index.creatureTypes) index.creatureTypes = []
             const typeRegex = /<Type[^>]+Name="([^"]+)"/g
@@ -406,12 +420,14 @@ app.whenReady().then(() => {
             if (match) {
               const name = match[1].trim()
               if (name && !names.includes(name)) names.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           } else if (type === 'npcs') {
             const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
             if (nameMatch) {
               const npcName = nameMatch[1].trim()
               if (npcName && !names.includes(npcName)) names.push(npcName)
+              recordFilenameName(index, type, file.name, npcName)
               const trainMatch = /<Train>([\s\S]*?)<\/Train>/.exec(content)
               if (trainMatch) {
                 if (!index.castableTrainers) index.castableTrainers = {}
@@ -463,6 +479,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !names.includes(name)) names.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           } else if (type === 'maps') {
             // Extract <Name> for name list, plus Id/X/Y/filename for mapDetails
@@ -487,10 +504,15 @@ app.whenReady().then(() => {
           } else {
             ELEM_NAME_REGEX.lastIndex = 0
             let match
+            let firstName = null
             while ((match = ELEM_NAME_REGEX.exec(content)) !== null) {
               const name = match[1].trim()
               if (name && !names.includes(name)) names.push(name)
+              if (name && firstName === null) firstName = name
             }
+            // Only record the first <Name> as the file's identifier; some types
+            // (e.g., nations) legitimately have multiple <Name> elements.
+            recordFilenameName(index, type, file.name, firstName)
           }
         }
         names.sort()
@@ -536,6 +558,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -552,6 +575,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -568,6 +592,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -584,6 +609,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -600,6 +626,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -616,6 +643,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -632,6 +660,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -648,6 +677,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -664,6 +694,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -680,6 +711,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -696,6 +728,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
@@ -712,6 +745,7 @@ app.whenReady().then(() => {
             if (nameMatch) {
               const name = nameMatch[1].trim()
               if (name && !archivedNames.includes(name)) archivedNames.push(name)
+              recordFilenameName(index, type, file.name, name)
             }
           }
         } catch { /* .ignore may not exist */ }
