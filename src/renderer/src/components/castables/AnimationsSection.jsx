@@ -1,5 +1,7 @@
 import React from 'react';
 import { Box, TextField, Typography, Divider, Switch, FormControlLabel, Button } from '@mui/material';
+import SoundPicker from '../shared/SoundPicker';
+import EffectPicker from '../shared/EffectPicker';
 
 const PLAYER_CLASSES = [
   { key: 'peasant', label: 'Peasant' },
@@ -72,11 +74,23 @@ function AnimationGroup({ group, onChange }) {
       ))}
       <Box sx={{ mt: 1.5 }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>Spell Effect</Typography>
-        <MotionRow label="Effect" motion={group.spellEffect || EMPTY_MOTION} onChange={setSpellEffect} />
+        <EffectPicker
+          label="Effect ID" speedLabel="Speed"
+          effectId={(group.spellEffect || EMPTY_MOTION).id}
+          speed={(group.spellEffect || EMPTY_MOTION).speed}
+          onEffectIdChange={(val) => setSpellEffect({ ...(group.spellEffect || EMPTY_MOTION), id: val })}
+          onSpeedChange={(val) => setSpellEffect({ ...(group.spellEffect || EMPTY_MOTION), speed: val })}
+        />
       </Box>
       <Box sx={{ mt: 1.5 }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>Target</Typography>
-        <MotionRow label="Target" motion={group.target || EMPTY_MOTION} onChange={setTarget} />
+        <EffectPicker
+          label="Effect ID" speedLabel="Speed"
+          effectId={(group.target || EMPTY_MOTION).id}
+          speed={(group.target || EMPTY_MOTION).speed}
+          onEffectIdChange={(val) => setTarget({ ...(group.target || EMPTY_MOTION), id: val })}
+          onSpeedChange={(val) => setTarget({ ...(group.target || EMPTY_MOTION), speed: val })}
+        />
       </Box>
     </Box>
   );
@@ -127,11 +141,11 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
       {/* Sound */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Typography variant="body2" sx={{ flexShrink: 0 }}>Sound</Typography>
-        <TextField
-          label="Sound ID" size="small" sx={{ width: 120 }}
+        <SoundPicker
+          label="Sound ID"
+          width={120}
           value={sound?.id || ''}
-          onChange={(e) => onSoundChange({ id: e.target.value.replace(/\D/g, '') })}
-          inputProps={{ inputMode: 'numeric' }}
+          onChange={(val) => onSoundChange({ id: String(val).replace(/\D/g, '') })}
         />
       </Box>
 

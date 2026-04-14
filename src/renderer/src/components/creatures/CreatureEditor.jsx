@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
 import EditorHeader from '../shared/EditorHeader';
+import SoundPicker from '../shared/SoundPicker';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -320,11 +321,11 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     onChange={(e) => set('maxDmg', e.target.value)}
                     inputProps={{ maxLength: 32 }}
                   />
-                  <TextField
-                    label="Assail Sound" size="small" sx={{ width: 120 }}
+                  <SoundPicker
+                    label="Assail Sound"
+                    width={120}
                     value={data.assailSound}
-                    onChange={(e) => set('assailSound', e.target.value)}
-                    inputProps={{ maxLength: 32 }}
+                    onChange={(val) => set('assailSound', val)}
                   />
                 </Box>
                 {/* Row 3: Description */}
@@ -546,11 +547,11 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
                     onChange={set('maxDmg')}
                     inputProps={{ maxLength: 32 }}
                   />
-                  <TextField
-                    label="Assail Sound" size="small" sx={{ width: 120 }}
+                  <SoundPicker
+                    label="Assail Sound"
+                    width={120}
                     value={data.assailSound}
-                    onChange={set('assailSound')}
-                    inputProps={{ maxLength: 32 }}
+                    onChange={(val) => set('assailSound')({ target: { value: val } })}
                   />
                 </Box>
                 {/* Row 3: Description */}

@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditorHeader from '../shared/EditorHeader';
+import EffectPicker from '../shared/EffectPicker';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -512,7 +513,13 @@ function HandlersTab({ data, updateData }) {
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                 <TextField size="small" label="Coma Text" value={death.coma.value} onChange={setDeathSub('coma', 'value')} sx={{ flex: 1 }} />
                 <TextField size="small" label="Timeout (s)" value={death.coma.timeout} onChange={setDeathSub('coma', 'timeout')} sx={{ width: 110 }} />
-                <TextField size="small" label="Effect ID" value={death.coma.effect} onChange={setDeathSub('coma', 'effect')} sx={{ width: 100 }} />
+                <EffectPicker
+                  label="Effect ID"
+                  showSpeed={false}
+                  effectId={death.coma.effect}
+                  onEffectIdChange={(val) => setDeathSub('coma', 'effect')({ target: { value: val } })}
+                />
+
               </Box>
             </Box>
             <Box>

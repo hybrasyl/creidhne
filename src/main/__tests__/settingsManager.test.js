@@ -18,7 +18,7 @@ const PRIMARY   = join(USER_DATA, 'settings.json')
 const BACKUP    = join(USER_DATA, 'settings.bak.json')
 const TMP       = join(USER_DATA, 'settings.tmp.json')
 
-const VALID = { libraries: ['/lib1'], activeLibrary: '/lib1', theme: 'hybrasyl' }
+const VALID = { libraries: ['/lib1'], activeLibrary: '/lib1', theme: 'hybrasyl', clientPath: null }
 
 describe('settingsManager', () => {
   let manager
@@ -72,7 +72,7 @@ describe('settingsManager', () => {
     it('returns defaults when both files are unreadable', async () => {
       mockFs.readFile.mockRejectedValue(new Error('ENOENT'))
       const result = await manager.load()
-      expect(result).toEqual({ libraries: [], activeLibrary: null, theme: 'light' })
+      expect(result).toEqual({ libraries: [], activeLibrary: null, theme: 'light', clientPath: null })
     })
 
     it('returns defaults when data fails validation (no libraries array)', async () => {
@@ -80,7 +80,7 @@ describe('settingsManager', () => {
         .mockResolvedValueOnce(JSON.stringify({ theme: 'hybrasyl' }))
         .mockRejectedValueOnce(new Error('ENOENT'))
       const result = await manager.load()
-      expect(result).toEqual({ libraries: [], activeLibrary: null, theme: 'light' })
+      expect(result).toEqual({ libraries: [], activeLibrary: null, theme: 'light', clientPath: null })
     })
 
     it('fills in missing optional fields with defaults', async () => {

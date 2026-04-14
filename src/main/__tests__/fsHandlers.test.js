@@ -12,7 +12,7 @@ const mockFs = {
 
 vi.mock('fs', () => ({ promises: mockFs }))
 
-const { listDir, readFile, writeFile, moveFile, archiveFile } = await import('../fsHandlers.js')
+const { listDir, readFile, writeFile, moveFile, archiveFile, readBinaryFile, checkClientPath, KNOWN_DAT_FILES } = await import('../fsHandlers.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -90,6 +90,69 @@ describe('moveFile', () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT'))
     await moveFile('/src/item.xml', '/dest/subdir/item.xml')
     expect(mockFs.mkdir).toHaveBeenCalledWith('/dest/subdir', { recursive: true })
+  })
+})
+
+// ─── readBinaryFile ──────────────────────────────────────────────────────────
+
+describe('readBinaryFile', () => {
+  it('reads without utf-8 encoding (raw bytes)', async () => {
+    const buf = Buffer.from([0x00, 0x01, 0xff, 0xaa])
+    mockFs.readFile.mockResolvedValue(buf)
+    const result = await readBinaryFile('/path/blob.dat')
+    expect(mockFs.readFile).toHaveBeenCalledWith('/path/blob.dat')
+    expect(result).toBe(buf)
+  })
+})
+
+// ─── checkClientPath ─────────────────────────────────────────────────────────
+
+describe('checkClientPath', () => {
+  it('returns gray status when clientPath is null or empty', async () => {
+    const a = await checkClientPath(null)
+    const b = await checkClientPath('')
+    const c = await checkClientPath(undefined)
+    expect(a).toEqual({ status: 'gray', files: [] })
+    expect(b).toEqual({ status: 'gray', files: [] })
+    expect(c).toEqual({ status: 'gray', files: [] })
+  })
+
+  it('returns red when no expected files exist', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await checkClientPath('/not/da/client')
+    expect(result.status).toBe('red')
+    expect(result.files.length).toBe(KNOWN_DAT_FILES.length)
+    expect(result.files.every((f) => !f.found)).toBe(true)
+  })
+
+  it('returns green when every expected file exists', async () => {
+    mockFs.access.mockResolvedValue(undefined) // every access succeeds
+    const result = await checkClientPath('/real/da/client')
+    expect(result.status).toBe('green')
+    expect(result.files.every((f) => f.found)).toBe(true)
+  })
+
+  it('returns yellow when some files exist and some are missing', async () => {
+    // First file present, the rest missing
+    mockFs.access.mockImplementation((path) =>
+      path.endsWith(KNOWN_DAT_FILES[0].rel.replace(/\\/g, '/')) || path.endsWith(KNOWN_DAT_FILES[0].rel)
+        ? Promise.resolve()
+        : Promise.reject(new Error('ENOENT'))
+    )
+    const result = await checkClientPath('/partial/client')
+    expect(result.status).toBe('yellow')
+    expect(result.files.some((f) => f.found)).toBe(true)
+    expect(result.files.some((f) => !f.found)).toBe(true)
+  })
+
+  it('returns a file entry per KNOWN_DAT_FILES with rel, category, and found', async () => {
+    mockFs.access.mockResolvedValue(undefined)
+    const result = await checkClientPath('/client')
+    for (const f of result.files) {
+      expect(f).toHaveProperty('rel')
+      expect(f).toHaveProperty('category')
+      expect(f).toHaveProperty('found')
+    }
   })
 })
 

@@ -7,6 +7,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../../recoil/atoms';
+import SoundPicker from '../../shared/SoundPicker';
+import EffectPicker from '../../shared/EffectPicker';
 import { PROC_EVENT_TYPES } from '../../../data/itemConstants';
 import ScriptAutocomplete from '../../shared/ScriptAutocomplete';
 import { RemoveStatusRow } from '../../castables/StatusesSection';
@@ -107,11 +109,15 @@ function UseTab({ data, onChange }) {
             <Switch size="small" checked={u.effect !== null} onChange={toggleSub('effect', DEFAULT_EFFECT)} />
           </Box>
           {u.effect !== null && (
-            <Box sx={{ display: 'flex', gap: 2, pl: 2, mb: 2 }}>
-              <TextField label="Effect ID" type="number" value={u.effect.id} onChange={setSubField('effect', 'id')}
-                inputProps={{ min: 0, max: 65535 }} size="small" sx={{ width: 130 }} />
-              <TextField label="Speed" type="number" value={u.effect.speed} onChange={setSubField('effect', 'speed')}
-                inputProps={{ min: 0, max: 255 }} size="small" sx={{ width: 110 }} />
+            <Box sx={{ pl: 2, mb: 2 }}>
+              <EffectPicker
+                label="Effect ID"
+                speedLabel="Speed"
+                effectId={u.effect.id}
+                speed={u.effect.speed}
+                onEffectIdChange={(val) => setSubField('effect', 'id')({ target: { value: val } })}
+                onSpeedChange={(val) => setSubField('effect', 'speed')({ target: { value: val } })}
+              />
             </Box>
           )}
 
@@ -122,8 +128,12 @@ function UseTab({ data, onChange }) {
           </Box>
           {u.sound !== null && (
             <Box sx={{ pl: 2, mb: 2 }}>
-              <TextField label="Sound ID" type="number" value={u.sound.id} onChange={setSubField('sound', 'id')}
-                inputProps={{ min: 0, max: 255 }} size="small" sx={{ width: 130 }} />
+              <SoundPicker
+                label="Sound ID"
+                width={130}
+                value={u.sound.id}
+                onChange={(val) => setSubField('sound', 'id')({ target: { value: val } })}
+              />
             </Box>
           )}
 

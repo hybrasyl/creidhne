@@ -6,6 +6,9 @@ import {
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
+import SoundPicker from '../shared/SoundPicker';
+import EffectPicker from '../shared/EffectPicker';
+import IconPicker from '../shared/IconPicker';
 import StringKeyField from '../shared/StringKeyField';
 import HealEditor from '../shared/HealEditor';
 import DamageEditor from '../shared/DamageEditor';
@@ -130,15 +133,26 @@ function UserFeedbackContent({ anim, onChange }) {
   const set = (field) => (e) => onChange({ ...anim, [field]: e.target.value.replace(/\D/g, '') });
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <TextField label="Target Anim ID"    value={anim.targetId}         size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('targetId')}         inputProps={{ inputMode: 'numeric' }} />
-        <TextField label="Target Anim Speed" value={anim.targetSpeed}      size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('targetSpeed')}      inputProps={{ inputMode: 'numeric' }} />
-      </Box>
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <TextField label="Self Anim ID"      value={anim.spellEffectId}    size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectId')}    inputProps={{ inputMode: 'numeric' }} />
-        <TextField label="Self Anim Speed"   value={anim.spellEffectSpeed} size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectSpeed')} inputProps={{ inputMode: 'numeric' }} />
-      </Box>
-      <TextField label="Sound ID" value={anim.soundId} size="small" sx={{ maxWidth: 200 }} onChange={set('soundId')} inputProps={{ inputMode: 'numeric' }} />
+      <EffectPicker
+        label="Target ID" speedLabel="Target Speed"
+        effectId={anim.targetId}
+        speed={anim.targetSpeed}
+        onEffectIdChange={(val) => set('targetId')({ target: { value: val } })}
+        onSpeedChange={(val) => set('targetSpeed')({ target: { value: val } })}
+      />
+      <EffectPicker
+        label="Self ID" speedLabel="Self Speed"
+        effectId={anim.spellEffectId}
+        speed={anim.spellEffectSpeed}
+        onEffectIdChange={(val) => set('spellEffectId')({ target: { value: val } })}
+        onSpeedChange={(val) => set('spellEffectSpeed')({ target: { value: val } })}
+      />
+      <SoundPicker
+        label="Sound ID"
+        width={200}
+        value={anim.soundId}
+        onChange={(val) => set('soundId')({ target: { value: String(val).replace(/\D/g, '') } })}
+      />
     </Box>
   );
 }
@@ -726,9 +740,11 @@ function StatusEditor({ status, initialFileName, isArchived, isExisting, onSave,
                 }
                 value={data.name} onChange={set('name')} onBlur={handleNameBlur} inputProps={{ maxLength: 255 }}
               />
-              <TextField label="Icon" size="small" sx={{ width: 130 }} value={data.icon}
-                onChange={(e) => updateData((d) => ({ ...d, icon: e.target.value.replace(/\D/g, '') }))}
-                inputProps={{ inputMode: 'numeric' }} />
+              <IconPicker
+                type="spell"
+                value={data.icon}
+                onChange={(val) => updateData((d) => ({ ...d, icon: String(val).replace(/\D/g, '') }))}
+              />
             </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               <TextField label="Duration"     size="small" sx={{ width: 120 }} value={data.duration}

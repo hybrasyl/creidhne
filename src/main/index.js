@@ -22,7 +22,7 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
-import { listDir, readFile, writeFile, moveFile, archiveFile } from './fsHandlers'
+import { listDir, readFile, writeFile, moveFile, archiveFile, readBinaryFile, checkClientPath } from './fsHandlers'
 
 // Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
 const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
@@ -114,9 +114,11 @@ app.whenReady().then(() => {
   ipcMain.handle('open-directory', handleDirectoryOpen)
   ipcMain.handle('app:getVersion', () => app.getVersion())
 
-  ipcMain.handle('fs:listDir',   (_, dirPath)          => listDir(dirPath))
-  ipcMain.handle('fs:readFile',  (_, filePath)          => readFile(filePath))
-  ipcMain.handle('fs:writeFile', (_, filePath, content) => writeFile(filePath, content))
+  ipcMain.handle('fs:listDir',         (_, dirPath)          => listDir(dirPath))
+  ipcMain.handle('fs:readFile',        (_, filePath)          => readFile(filePath))
+  ipcMain.handle('fs:writeFile',       (_, filePath, content) => writeFile(filePath, content))
+  ipcMain.handle('fs:readBinaryFile',  (_, filePath)          => readBinaryFile(filePath))
+  ipcMain.handle('fs:checkClientPath', (_, clientPath)        => checkClientPath(clientPath))
 
   ipcMain.handle('xml:loadItem', async (_, filePath) => {
     const xml = await fs.readFile(filePath, 'utf-8')

@@ -9,14 +9,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import GridViewIcon from '@mui/icons-material/GridView';
-import FlagIcon from '@mui/icons-material/Flag';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
 import EditorHeader from '../shared/EditorHeader';
-import FlagPickerDialog from '../shared/FlagPickerDialog';
+import NationCrestCanvas from '../shared/NationCrestCanvas';
+import NationCrestPickerDialog from '../shared/NationCrestPickerDialog';
 
-const FLAG_IMAGE_COUNT = 13;
 const FLAG_PREVIEW = 80;
 
 function computeNationFilename(prefix, name) {
@@ -93,9 +92,6 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
   const [openTerritory, setOpenTerritory] = useState(nation.territory !== null);
 
   const isDirtyRef = useRef(false);
-
-  const flagNum = parseInt(data.flag, 10);
-  const flagHasImage = flagNum >= 1 && flagNum <= FLAG_IMAGE_COUNT;
 
   // ── Duplicate detection ────────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
@@ -212,16 +208,7 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
           <Box sx={{ display: 'flex', gap: 2 }}>
             {/* Left: flag preview + browse button */}
             <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: .8 }}>
-              <Box sx={{
-                width: FLAG_PREVIEW, height: FLAG_PREVIEW,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover',
-              }}>
-                {flagHasImage
-                  ? <img src={`./nations/${flagNum}.webp`} alt={`Flag ${flagNum}`} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  : <FlagIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
-                }
-              </Box>
+              <NationCrestCanvas flagNum={data.flag} size={FLAG_PREVIEW} />
               <Button size="small" startIcon={<GridViewIcon />} onClick={() => setFlagPickerOpen(true)}>
                 Browse
               </Button>
@@ -345,11 +332,11 @@ function NationEditor({ nation, initialFileName, isArchived, isExisting, onSave,
         <Box sx={{ height: 32 }} />
       </Box>
 
-      <FlagPickerDialog
+      <NationCrestPickerDialog
         open={flagPickerOpen}
         value={data.flag}
         onClose={() => setFlagPickerOpen(false)}
-        onChange={(val) => { updateData((d) => ({ ...d, flag: val })); }}
+        onChange={(val) => { updateData((d) => ({ ...d, flag: String(val) })); setFlagPickerOpen(false); }}
       />
 
       <Snackbar
