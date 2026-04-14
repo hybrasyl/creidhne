@@ -14,6 +14,7 @@ import { clearAllClientCaches } from '../utils/daClient';
 import '../data/itemSpriteData';
 import '../data/itemColorData';
 import '../data/soundData';
+import '../data/effectData';
 
 const STATUS_COLORS = {
   green:  '#2e7d32',
