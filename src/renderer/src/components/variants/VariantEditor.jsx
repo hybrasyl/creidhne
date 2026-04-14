@@ -12,6 +12,7 @@ import EditorHeader from '../shared/EditorHeader';
 import StatsTab from '../shared/StatsTab';
 import RestrictionsTab from '../shared/RestrictionsTab';
 import ItemSpritePicker from '../shared/ItemSpritePicker';
+import DisplaySpritePicker from '../shared/DisplaySpritePicker';
 import ColorSwatch from '../shared/ColorSwatch';
 import { useItemColorSwatches } from '../../data/itemColorData';
 import HelpIcon from '@mui/icons-material/Help';
@@ -197,15 +198,12 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                 onChange={(val) => setAppearanceField('equipSprite')({ target: { value: val } })}
                 helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
               />
-              <TextField
-                label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
-                onChange={setAppearanceField('displaySprite')} inputProps={{ min: 0, max: 65535 }}
+              <DisplaySpritePicker
+                slot={p.equipment?.slot}
+                value={p.appearance.displaySprite}
+                onChange={(val) => setAppearanceField('displaySprite')({ target: { value: val } })}
+                helpTooltip="Overlay applied to the character model. Only used for Weapon, Armor, Shield, Helmet, Foot, Trousers, Coat, SecondAcc, and ThirdAcc slots."
               />
-              <Tooltip title="Overlay applied to the character model. Only used for Weapon, Armor, Shield, Helmet, Foot, Trousers, Coat, SecondAcc, and ThirdAcc slots." placement="top">
-                <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                  <HelpIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <InputLabel>Body Style</InputLabel>
                 <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setAppearanceField('bodyStyle')}>

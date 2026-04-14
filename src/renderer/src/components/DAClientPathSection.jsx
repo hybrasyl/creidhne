@@ -15,6 +15,7 @@ import '../data/itemSpriteData';
 import '../data/itemColorData';
 import '../data/soundData';
 import '../data/effectData';
+import '../data/khanData';
 
 const STATUS_COLORS = {
   green:  '#2e7d32',
