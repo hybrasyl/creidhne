@@ -16,6 +16,7 @@ const themes = {
 import MainLayout from './components/MainLayout';
 import PageRenderer from './components/PageRenderer';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
+import UpdateSnackbar from './components/UpdateSnackbar';
 import { stopSound } from './data/soundData';
 
 function App() {
@@ -195,6 +196,7 @@ function App() {
         onDiscard={handleCloseDiscard}
         onCancel={handleCloseCancel}
       />
+      <UpdateSnackbar />
     </ThemeProvider>
   );
 }

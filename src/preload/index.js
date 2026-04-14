@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportCastablesJSON: (libraryPath) => ipcRenderer.invoke('export:castablesJSON', libraryPath),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
+  checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
   confirmClose: () => ipcRenderer.send('app:confirm-close'),
 });
