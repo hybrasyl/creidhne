@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box, Button, Typography, Divider, TextField, IconButton,
+  Box, Button, Typography, Divider, TextField, IconButton, Tooltip,
   Paper, Collapse, Checkbox, FormControlLabel, Chip, Autocomplete,
   FormControl, InputLabel, Select, MenuItem, Snackbar, Alert,
 } from '@mui/material';
@@ -11,6 +11,10 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import EditorHeader from '../shared/EditorHeader';
 import StatsTab from '../shared/StatsTab';
 import RestrictionsTab from '../shared/RestrictionsTab';
+import ItemSpritePicker from '../shared/ItemSpritePicker';
+import ColorSwatch from '../shared/ColorSwatch';
+import { useItemColorSwatches } from '../../data/itemColorData';
+import HelpIcon from '@mui/icons-material/Help';
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../recoil/atoms';
@@ -98,6 +102,7 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
 
   const setAppearanceField = (field) => (e) =>
     updateProp('appearance', { ...p.appearance, [field]: e.target.value });
+  const colorSwatches = useItemColorSwatches();
 
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
@@ -181,18 +186,26 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
           {/* ── Appearance ── */}
           <Section title="Appearance" open={openAppearance} onToggle={() => setOpenAppearance((v) => !v)}>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <TextField
-                label="Sprite" type="number" value={p.appearance.sprite} size="small" sx={{ width: 140 }}
-                onChange={setAppearanceField('sprite')} inputProps={{ min: 0, max: 65535 }}
+              <ItemSpritePicker
+                value={p.appearance.sprite}
+                onChange={(val) => setAppearanceField('sprite')({ target: { value: val } })}
+                helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
               />
-              <TextField
-                label="Equip Sprite" type="number" value={p.appearance.equipSprite} size="small" sx={{ width: 140 }}
-                onChange={setAppearanceField('equipSprite')} inputProps={{ min: 0, max: 65535 }}
+              <ItemSpritePicker
+                label="Equip Sprite"
+                value={p.appearance.equipSprite}
+                onChange={(val) => setAppearanceField('equipSprite')({ target: { value: val } })}
+                helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
               />
               <TextField
                 label="Display Sprite" type="number" value={p.appearance.displaySprite} size="small" sx={{ width: 140 }}
                 onChange={setAppearanceField('displaySprite')} inputProps={{ min: 0, max: 65535 }}
               />
+              <Tooltip title="Overlay applied to the character model. Only used for Weapon, Armor, Shield, Helmet, Foot, Trousers, Coat, SecondAcc, and ThirdAcc slots." placement="top">
+                <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                  <HelpIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <InputLabel>Body Style</InputLabel>
                 <Select value={p.appearance.bodyStyle} label="Body Style" onChange={setAppearanceField('bodyStyle')}>
@@ -201,8 +214,29 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
               </FormControl>
               <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>Color</InputLabel>
-                <Select value={p.appearance.color} label="Color" onChange={setAppearanceField('color')}>
-                  {ITEM_COLORS.map((c) => <MenuItem key={c || '__blank'} value={c}>{c || '(none)'}</MenuItem>)}
+                <Select
+                  value={p.appearance.color}
+                  label="Color"
+                  onChange={setAppearanceField('color')}
+                  renderValue={(val) => (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span>{val || '(none)'}</span>
+                      {colorSwatches && val && <ColorSwatch colors={colorSwatches.get(val)} />}
+                    </Box>
+                  )}
+                >
+                  {ITEM_COLORS.map((c) => (
+                    <MenuItem key={c || '__blank'} value={c}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                        <span>{c || '(none)'}</span>
+                        {colorSwatches && c && (
+                          <Box sx={{ ml: 'auto' }}>
+                            <ColorSwatch colors={colorSwatches.get(c)} />
+                          </Box>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
               <FormControlLabel

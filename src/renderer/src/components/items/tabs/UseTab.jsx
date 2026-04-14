@@ -7,6 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState } from '../../../recoil/atoms';
+import SoundPicker from '../../shared/SoundPicker';
 import { PROC_EVENT_TYPES } from '../../../data/itemConstants';
 import ScriptAutocomplete from '../../shared/ScriptAutocomplete';
 import { RemoveStatusRow } from '../../castables/StatusesSection';
@@ -122,8 +123,12 @@ function UseTab({ data, onChange }) {
           </Box>
           {u.sound !== null && (
             <Box sx={{ pl: 2, mb: 2 }}>
-              <TextField label="Sound ID" type="number" value={u.sound.id} onChange={setSubField('sound', 'id')}
-                inputProps={{ min: 0, max: 255 }} size="small" sx={{ width: 130 }} />
+              <SoundPicker
+                label="Sound ID"
+                width={130}
+                value={u.sound.id}
+                onChange={(val) => setSubField('sound', 'id')({ target: { value: val } })}
+              />
             </Box>
           )}
 

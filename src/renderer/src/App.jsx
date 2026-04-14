@@ -16,11 +16,12 @@ const themes = {
 import MainLayout from './components/MainLayout';
 import PageRenderer from './components/PageRenderer';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
+import { stopSound } from './data/soundData';
 
 function App() {
   const [theme, setTheme] = useRecoilState(themeState);
   const [libraries, setLibraries] = useRecoilState(librariesState);
-  const [, setCurrentPage] = useRecoilState(currentPageState); // Manage current page with Recoil
+  const [currentPage, setCurrentPage] = useRecoilState(currentPageState); // Manage current page with Recoil
   const [, setRecentPages] = useRecoilState(recentPagesState);
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState);
   const [clientPath, setClientPath] = useRecoilState(clientPathState);
@@ -74,6 +75,12 @@ function App() {
       clientPath,
     });
   }, [theme, libraries, activeLibrary, clientPath]);
+
+  // Stop any sound preview on page navigation — keeps playback from bleeding
+  // across editors.
+  useEffect(() => {
+    stopSound();
+  }, [currentPage]);
 
   const pushRecentPage = useCallback((page) => {
     if (page === 'dashboard') return;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, TextField, Typography, Divider, Switch, FormControlLabel, Button } from '@mui/material';
+import SoundPicker from '../shared/SoundPicker';
 
 const PLAYER_CLASSES = [
   { key: 'peasant', label: 'Peasant' },
@@ -127,11 +128,11 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
       {/* Sound */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Typography variant="body2" sx={{ flexShrink: 0 }}>Sound</Typography>
-        <TextField
-          label="Sound ID" size="small" sx={{ width: 120 }}
+        <SoundPicker
+          label="Sound ID"
+          width={120}
           value={sound?.id || ''}
-          onChange={(e) => onSoundChange({ id: e.target.value.replace(/\D/g, '') })}
-          inputProps={{ inputMode: 'numeric' }}
+          onChange={(val) => onSoundChange({ id: String(val).replace(/\D/g, '') })}
         />
       </Box>
 

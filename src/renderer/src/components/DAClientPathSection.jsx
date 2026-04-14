@@ -13,6 +13,7 @@ import { clearAllClientCaches } from '../utils/daClient';
 // Side-effect imports: register per-picker cache clearers.
 import '../data/itemSpriteData';
 import '../data/itemColorData';
+import '../data/soundData';
 
 const STATUS_COLORS = {
   green:  '#2e7d32',

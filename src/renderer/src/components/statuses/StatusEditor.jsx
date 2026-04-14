@@ -6,6 +6,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
 import ConstantAutocomplete from '../shared/ConstantAutocomplete';
+import SoundPicker from '../shared/SoundPicker';
 import StringKeyField from '../shared/StringKeyField';
 import HealEditor from '../shared/HealEditor';
 import DamageEditor from '../shared/DamageEditor';
@@ -138,7 +139,12 @@ function UserFeedbackContent({ anim, onChange }) {
         <TextField label="Self Anim ID"      value={anim.spellEffectId}    size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectId')}    inputProps={{ inputMode: 'numeric' }} />
         <TextField label="Self Anim Speed"   value={anim.spellEffectSpeed} size="small" sx={{ flex: 1, minWidth: 140 }} onChange={set('spellEffectSpeed')} inputProps={{ inputMode: 'numeric' }} />
       </Box>
-      <TextField label="Sound ID" value={anim.soundId} size="small" sx={{ maxWidth: 200 }} onChange={set('soundId')} inputProps={{ inputMode: 'numeric' }} />
+      <SoundPicker
+        label="Sound ID"
+        width={200}
+        value={anim.soundId}
+        onChange={(val) => set('soundId')({ target: { value: String(val).replace(/\D/g, '') } })}
+      />
     </Box>
   );
 }
