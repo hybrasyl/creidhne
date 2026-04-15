@@ -259,6 +259,15 @@ export const STATIC_VARIABLES = [
   { key: 'DAMAGE', label: 'Current Damage (reactive/incoming formulas)' },
 ];
 
+// ── Authoring-time substitution variables ───────────────────────────────────
+// These appear in formula *source* while editing but are replaced with literal
+// numbers at XML-save time. The server's NCalc never sees them. Used to
+// parameterize formulas against a specific castable without baking the value
+// in by hand. The damage calculator treats them as explicit inputs.
+export const AUTHORING_VARIABLES = [
+  { key: 'ACQUIREDLEVEL', label: 'Acquired Level (per-castable, substituted at save time)' },
+];
+
 // ── Server gap variables (wired but no properties tagged) ────────────────────
 // CASTABLE* and ITEM* prefixes exist in FormulaParser.cs but no C# classes
 // have [FormulaVariable] properties. These silently produce nothing at runtime.

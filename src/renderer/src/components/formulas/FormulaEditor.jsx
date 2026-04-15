@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box, Button, TextField, Typography, FormControl, InputLabel, Select, MenuItem,
   Snackbar, Alert, Divider, Checkbox, FormControlLabel, Autocomplete, Paper, Chip,
+  Accordion, AccordionSummary, AccordionDetails, Stack,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState, activeLibraryState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
@@ -489,8 +491,16 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
           )}
         </Paper>
 
+        {/* All formula-builder inputs grouped into one accordion */}
+        <Accordion variant="outlined" defaultExpanded disableGutters>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="subtitle2">Formula builder — coefficient · base · weapon · stats · constants</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={2} divider={<Divider flexItem />}>
+
         {/* Coefficient Selection */}
-        <Paper variant="outlined" sx={{ p: 2 }}>
+        <Box>
           <Typography variant="subtitle2" gutterBottom>Coefficient</Typography>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -524,7 +534,7 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
               </Typography>
             </Box>
           </Box>
-        </Paper>
+        </Box>
 
         {/* Pattern Parameters */}
         {selectedPattern && (() => {
@@ -542,11 +552,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
             && p.type !== 'stat_block' && p.type !== 'setting',
           );
 
-          return (
-            <>
-              {/* Base Damage section */}
-              {(baseParam || randParam) && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+          // Return an ARRAY (not a Fragment) so each section becomes a real
+          // Stack child and inherits dividers + spacing.
+          return [
+              /* Base Damage section */
+              (baseParam || randParam) && (
+                <Box key="base">
                   <Typography variant="subtitle2" gutterBottom>Base Damage</Typography>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     {baseParam && (
@@ -591,12 +602,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       );
                     })()}
                   </Box>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Weapon Damage section */}
-              {weaponParam && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Weapon Damage section */
+              weaponParam && (
+                <Box key="weapon">
                   <Typography variant="subtitle2" gutterBottom>Weapon Damage</Typography>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <FormControlLabel
@@ -621,23 +632,23 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       </>
                     )}
                   </Box>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Stat Block section */}
-              {statParams.map((p) => (
-                <Paper key={p.key} variant="outlined" sx={{ p: 2 }}>
+              /* Stat Block section — spread so each gets its own Stack slot */
+              ...statParams.map((p) => (
+                <Box key={`stat-${p.key}`}>
                   <Typography variant="subtitle2" gutterBottom>{p.label}</Typography>
                   <StatBlockBuilder
                     rows={paramValues[p.key] || []}
                     onChange={(rows) => updateParam(p.key, rows)}
                   />
-                </Paper>
-              ))}
+                </Box>
+              )),
 
-              {/* Castable Cost (DA Classic) */}
-              {costParam && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Castable Cost (DA Classic) */
+              costParam && (
+                <Box key="cost">
                   <Typography variant="subtitle2" gutterBottom>{costParam.label}</Typography>
                   <NumberParam
                     value={paramValues[costParam.key]} label="Mana Cost"
@@ -646,12 +657,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                     Enter the castable's static MP cost. Percentage-based costs are not supported.
                   </Typography>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Settings + Coefficient with per-formula overrides */}
-              {(settingParams.length > 0 || coeffParam) && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Settings + Coefficient with per-formula overrides */
+              (settingParams.length > 0 || coeffParam) && (
+                <Box key="constants">
                   <Typography variant="subtitle2" gutterBottom>Formula Constants & Coefficient</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {settingParams.map((p) => {
@@ -730,12 +741,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       );
                     })()}
                   </Box>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Any remaining params */}
-              {otherParams.length > 0 && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Any remaining params */
+              otherParams.length > 0 && (
+                <Box key="other">
                   <Typography variant="subtitle2" gutterBottom>Other Parameters</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {otherParams.map((p) => (
@@ -748,11 +759,13 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       </Box>
                     ))}
                   </Box>
-                </Paper>
-              )}
-            </>
-          );
+                </Box>
+              ),
+          ].filter(Boolean);
         })()}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
 
         {/* Assembled Formula */}
         {selectedPattern && assembledFormula && (

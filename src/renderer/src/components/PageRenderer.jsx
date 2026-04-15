@@ -21,6 +21,7 @@ import BehaviorsPage from '../pages/BehaviorsPage';
 import ConstantsPage from '../pages/ConstantsPage';
 import ServerConfigPage from '../pages/ServerConfigPage';
 import ExportsPage from '../pages/ExportsPage';
+import DamageCalculatorPage from '../pages/DamageCalculatorPage';
 
 const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const currentPage = useRecoilValue(currentPageState);
@@ -72,6 +73,8 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       return <ServerConfigPage />;
     case 'exports':
       return <ExportsPage />;
+    case 'damage-calculator':
+      return <DamageCalculatorPage />;
     default:
       return <DashboardPage />;
   }

@@ -18,6 +18,7 @@ import {
   GiTalk,
   GiMagickTrick,
   GiPotionBall,
+  GiCalculator,
   GiPull,
   GiBootKick,
   GiDoubleDiaphragm,
@@ -194,6 +195,11 @@ const MainToolbar = ({ navigate }) => {
         <Tooltip title="Formulas">
           <IconButton onClick={() => navigate('formulas')} sx={btnSx}>
             <GiPotionBall />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Damage Calculator">
+          <IconButton onClick={() => navigate('damage-calculator')} sx={btnSx}>
+            <GiCalculator />
           </IconButton>
         </Tooltip>
         <Tooltip title="Lua Helpers">
