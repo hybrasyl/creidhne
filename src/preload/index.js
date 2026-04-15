@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveStatus: (filePath, statusData) => ipcRenderer.invoke('xml:saveStatus', filePath, statusData),
   loadCastable: (filePath) => ipcRenderer.invoke('xml:loadCastable', filePath),
   saveCastable: (filePath, castableData) => ipcRenderer.invoke('xml:saveCastable', filePath, castableData),
+  castableAddCategoryBulk: (libraryPath, castableNames, categoryName) =>
+    ipcRenderer.invoke('castable:addCategoryBulk', libraryPath, castableNames, categoryName),
   loadBehaviorSet: (filePath) => ipcRenderer.invoke('xml:loadBehaviorSet', filePath),
   saveBehaviorSet: (filePath, bvsData) => ipcRenderer.invoke('xml:saveBehaviorSet', filePath, bvsData),
   loadSpawngroup: (filePath) => ipcRenderer.invoke('xml:loadSpawngroup', filePath),
@@ -75,6 +77,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
   loadReference: (libraryPath, type, name) => ipcRenderer.invoke('reference:load', libraryPath, type, name),
+  onIndexBuildProgress: (callback) => {
+    const listener = (_, event) => callback(event);
+    ipcRenderer.on('index:build-progress', listener);
+    return () => ipcRenderer.removeListener('index:build-progress', listener);
+  },
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
   confirmClose: () => ipcRenderer.send('app:confirm-close'),
 });

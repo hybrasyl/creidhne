@@ -25,6 +25,14 @@ import { createSettingsManager } from './settingsManager'
 import { listDir, readFile, writeFile, moveFile, archiveFile, readBinaryFile, checkClientPath } from './fsHandlers'
 import { checkForUpdates } from './updateCheck.js'
 import { loadReference } from './referenceLoader.js'
+import {
+  buildIndexInWorker,
+  buildSectionInWorker,
+  loadIndex,
+  getIndexStatus,
+  deleteIndex,
+} from './indexService.js'
+import { saveSection } from '@eriscorp/hybindex-ts'
 
 // Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
 const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
@@ -276,1048 +284,51 @@ app.whenReady().then(() => {
     return settingsPath
   })
 
-  // --- Library index (persistent, per-library) ---
-
-  const INDEX_DIRS = [
-    'castables', 'creatures', 'creaturebehaviorsets', 'elementtables', 'items',
-    'localizations', 'lootsets', 'maps', 'nations', 'npcs', 'recipes',
-    'serverconfigs', 'spawngroups', 'statuses', 'variantgroups', 'worldmaps',
-  ]
-  // Types that store the identifier as an attribute on the root element.
-  // Value is the attribute name to extract. All others use <Name> child element.
-  const ATTR_NAME_MAP = {
-    statuses:             'Name',
-    creatures:            'Name',
-    creaturebehaviorsets: 'Name',
-    elementtables:        'Name',
-    lootsets:             'Name',
-    serverconfigs:        'Name',
-    spawngroups:          'Name',
-    localizations:        'Locale',
-  }
-  const ELEM_NAME_REGEX = /<Name>([^<]+)<\/Name>/g
-
-  const getIndexPath = (libraryPath) => getCreidhneFilePath(libraryPath, 'index.json')
-
-  async function walkDir(dir, ext, base, results = []) {
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true })
-      for (const e of entries) {
-        const full = join(dir, e.name)
-        if (e.isDirectory()) await walkDir(full, ext, base, results)
-        else if (e.isFile() && e.name.endsWith(ext)) {
-          results.push(full.slice(base.length + 1).replace(/\\/g, '/').replace(/\.[^.]+$/, ''))
-        }
-      }
-    } catch { /* dir may not exist */ }
-    return results
-  }
-
-  // Records a filename→name mapping per type for the shared FileListPanel
-  // to filter and display by the inner <Name> rather than the bare filename.
-  // Same map key is used for both active and archived files (filenames are
-  // unique within a type across both dirs).
-  const recordFilenameName = (index, type, filename, name) => {
-    if (!name || !filename) return
-    const key = `${type}NamesByFilename`
-    if (!index[key]) index[key] = {}
-    index[key][filename] = name
-  }
+  // --- Library index (via @eriscorp/hybindex-ts utilityProcess worker) ---
 
   ipcMain.handle('index:build', async (_, libraryPath) => {
-    const index = { libraryPath, builtAt: new Date().toISOString() }
-
-    for (const type of INDEX_DIRS) {
-      const dirPath = join(libraryPath, type)
-      const names = []
-      const attrName = ATTR_NAME_MAP[type]
-      try {
-        const entries = await fs.readdir(dirPath, { withFileTypes: true })
-        for (const file of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(dirPath, file.name), 'utf-8')
-          if (type === 'castables') {
-            // Extract first <Name> element and root Class attribute per file
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !names.includes(name)) {
-                names.push(name)
-                // Store name → filename mapping for quick lookup
-                if (!index.castableFilenames) index.castableFilenames = {}
-                index.castableFilenames[name] = file.name
-                recordFilenameName(index, type, file.name, name)
-
-                const classMatch = /<Castable[^>]+Class="([^"]*)"/.exec(content)
-                if (classMatch) {
-                  if (!index.castableClasses) index.castableClasses = {}
-                  index.castableClasses[name] = classMatch[1].trim()
-                }
-                const statusesMatch = /<Statuses>([\s\S]*?)<\/Statuses>/.exec(content)
-                if (statusesMatch) {
-                  if (!index.statusCasters) index.statusCasters = {}
-                  const addRegex = /<Add[^>]*>([^<]+)<\/Add>/g
-                  let am
-                  while ((am = addRegex.exec(statusesMatch[1])) !== null) {
-                    const key = am[1].trim().toLowerCase()
-                    if (key) {
-                      if (!index.statusCasters[key]) index.statusCasters[key] = []
-                      if (!index.statusCasters[key].includes(name)) index.statusCasters[key].push(name)
-                    }
-                  }
-                }
-              }
-            }
-          } else if (type === 'localizations') {
-            // Extract Locale name for the names list
-            const localeMatch = /\bLocale="([^"]+)"/.exec(content)
-            if (localeMatch) {
-              const name = localeMatch[1].trim()
-              if (name && !names.includes(name)) names.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-            // Extract NPC response call → response text map
-            const npcCallRegex = /<Response[^>]+Call="([^"]+)"[^>]*>([^<]*)<\/Response>/g
-            let callMatch
-            while ((callMatch = npcCallRegex.exec(content)) !== null) {
-              const call = callMatch[1].trim()
-              const response = callMatch[2].trim()
-              if (call) {
-                if (!index.npcResponseCalls) index.npcResponseCalls = {}
-                index.npcResponseCalls[call] = response
-              }
-            }
-            // Extract string keys from Common, Merchant, MonsterSpeak
-            if (!index.npcStringKeys) index.npcStringKeys = []
-            for (const [tag, label] of [['Common', 'Common'], ['Merchant', 'Merchant'], ['MonsterSpeak', 'Monster']]) {
-              const sectionMatch = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`).exec(content)
-              if (!sectionMatch) continue
-              const strRegex = /<String[^>]+Key="([^"]+)"[^>]*>([^<]*)<\/String>/g
-              let sm
-              while ((sm = strRegex.exec(sectionMatch[0])) !== null) {
-                const key = sm[1].trim()
-                const message = sm[2].trim()
-                if (key && !index.npcStringKeys.some((s) => s.key === key && s.category === label)) {
-                  index.npcStringKeys.push({ key, message, category: label })
-                }
-              }
-            }
-          } else if (type === 'creatures') {
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !names.includes(name)) names.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-            if (!index.creatureTypes) index.creatureTypes = []
-            const typeRegex = /<Type[^>]+Name="([^"]+)"/g
-            let tm
-            while ((tm = typeRegex.exec(content)) !== null) {
-              const tn = tm[1].trim()
-              if (tn && !index.creatureTypes.includes(tn)) index.creatureTypes.push(tn)
-            }
-          } else if (attrName) {
-            const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
-            if (match) {
-              const name = match[1].trim()
-              if (name && !names.includes(name)) names.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          } else if (type === 'npcs') {
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const npcName = nameMatch[1].trim()
-              if (npcName && !names.includes(npcName)) names.push(npcName)
-              recordFilenameName(index, type, file.name, npcName)
-              const trainMatch = /<Train>([\s\S]*?)<\/Train>/.exec(content)
-              if (trainMatch) {
-                if (!index.castableTrainers) index.castableTrainers = {}
-                const castableRegex = /<Castable[^>]+Name="([^"]+)"/g
-                let cm
-                while ((cm = castableRegex.exec(trainMatch[1])) !== null) {
-                  const key = cm[1].trim().toLowerCase()
-                  if (!index.castableTrainers[key]) index.castableTrainers[key] = []
-                  if (!index.castableTrainers[key].includes(npcName)) index.castableTrainers[key].push(npcName)
-                }
-              }
-              const vendMatch = /<Vend>([\s\S]*?)<\/Vend>/.exec(content)
-              if (vendMatch) {
-                if (!index.itemVendors) index.itemVendors = {}
-                const vendItemRegex = /<Item[^>]+Name="([^"]+)"/g
-                let vm
-                while ((vm = vendItemRegex.exec(vendMatch[1])) !== null) {
-                  const key = vm[1].trim().toLowerCase()
-                  if (key) {
-                    if (!index.itemVendors[key]) index.itemVendors[key] = []
-                    if (!index.itemVendors[key].includes(npcName)) index.itemVendors[key].push(npcName)
-                  }
-                }
-              }
-            }
-          } else if (type === 'lootsets') {
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const lootSetName = nameMatch[1].trim()
-              if (lootSetName && !names.includes(lootSetName)) names.push(lootSetName)
-              if (!index.itemLootSets) index.itemLootSets = {}
-              const itemsBlockRegex = /<Items[^>]*>([\s\S]*?)<\/Items>/g
-              let ib
-              while ((ib = itemsBlockRegex.exec(content)) !== null) {
-                const itemRegex = /<Item[^>]*>([^<]+)<\/Item>/g
-                let im
-                while ((im = itemRegex.exec(ib[1])) !== null) {
-                  const key = im[1].trim().toLowerCase()
-                  if (key) {
-                    if (!index.itemLootSets[key]) index.itemLootSets[key] = []
-                    if (!index.itemLootSets[key].includes(lootSetName)) index.itemLootSets[key].push(lootSetName)
-                  }
-                }
-              }
-            }
-          } else if (type === 'variantgroups' || type === 'worldmaps') {
-            // Only the first <Name> is the group/map name; nested <Variant><Name> / <Point><Name> are not top-level
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !names.includes(name)) names.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          } else if (type === 'maps') {
-            // Extract <Name> for name list, plus Id/X/Y/filename for mapDetails
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !names.includes(name)) names.push(name)
-              const idMatch = /\bId="(\d+)"/.exec(content)
-              const xMatch = /\bX="(\d+)"/.exec(content)
-              const yMatch = /\bY="(\d+)"/.exec(content)
-              if (idMatch && xMatch && yMatch) {
-                if (!index.mapDetails) index.mapDetails = []
-                index.mapDetails.push({
-                  id: parseInt(idMatch[1], 10),
-                  name,
-                  filename: file.name,
-                  x: parseInt(xMatch[1], 10),
-                  y: parseInt(yMatch[1], 10),
-                })
-              }
-            }
-          } else {
-            ELEM_NAME_REGEX.lastIndex = 0
-            let match
-            let firstName = null
-            while ((match = ELEM_NAME_REGEX.exec(content)) !== null) {
-              const name = match[1].trim()
-              if (name && !names.includes(name)) names.push(name)
-              if (name && firstName === null) firstName = name
-            }
-            // Only record the first <Name> as the file's identifier; some types
-            // (e.g., nations) legitimately have multiple <Name> elements.
-            recordFilenameName(index, type, file.name, firstName)
-          }
-        }
-        names.sort()
-      } catch { /* dir may not exist */ }
-      index[type] = names
-
-      if (type === 'maps') {
-        if (index.mapDetails) index.mapDetails.sort((a, b) => a.id - b.id)
-        else index.mapDetails = []
-        const ignoredMapDetails = []
-        try {
-          const ignoredMapsDir = join(dirPath, '.ignore')
-          const ignoredEntries = await fs.readdir(ignoredMapsDir, { withFileTypes: true })
-          for (const file of ignoredEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(ignoredMapsDir, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            const idMatch = /\bId="(\d+)"/.exec(content)
-            const xMatch = /\bX="(\d+)"/.exec(content)
-            const yMatch = /\bY="(\d+)"/.exec(content)
-            if (idMatch && xMatch && yMatch) {
-              ignoredMapDetails.push({
-                id: parseInt(idMatch[1], 10),
-                name: nameMatch ? nameMatch[1].trim() : '',
-                filename: file.name,
-                x: parseInt(xMatch[1], 10),
-                y: parseInt(yMatch[1], 10),
-              })
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        ignoredMapDetails.sort((a, b) => a.id - b.id)
-        index.ignoredMapDetails = ignoredMapDetails
-      }
-
-      if (type === 'castables') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedCastables = archivedNames.sort()
-      }
-      if (type === 'creatures') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedCreatures = archivedNames.sort()
-      }
-      if (type === 'creaturebehaviorsets') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedCreaturebehaviorsets = archivedNames.sort()
-      }
-      if (type === 'spawngroups') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedSpawngroups = archivedNames.sort()
-      }
-      if (type === 'lootsets') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedLootsets = archivedNames.sort()
-      }
-      if (type === 'statuses') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedStatuses = archivedNames.sort()
-      }
-      if (type === 'npcs') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedNpcs = archivedNames.sort()
-      }
-      if (type === 'nations') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedNations = archivedNames.sort()
-      }
-      if (type === 'items') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedItems = archivedNames.sort()
-      }
-      if (type === 'variantgroups') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedVariantgroups = archivedNames.sort()
-      }
-      if (type === 'recipes') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedRecipes = archivedNames.sort()
-      }
-      if (type === 'elementtables') {
-        const archivedNames = []
-        try {
-          const archivedDirPath = join(dirPath, '.ignore')
-          const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-          for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-            const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-            const nameMatch = /\bName="([^"]+)"/.exec(content)
-            if (nameMatch) {
-              const name = nameMatch[1].trim()
-              if (name && !archivedNames.includes(name)) archivedNames.push(name)
-              recordFilenameName(index, type, file.name, name)
-            }
-          }
-        } catch { /* .ignore may not exist */ }
-        index.archivedElementtables = archivedNames.sort()
-      }
-    }
-
-    // Collect element row names from all element table files
-    const elementNamesSet = new Set()
-    try {
-      const etDir = join(libraryPath, 'elementtables')
-      const etEntries = await fs.readdir(etDir, { withFileTypes: true })
-      for (const file of etEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-        const content = await fs.readFile(join(etDir, file.name), 'utf-8')
-        const elemRegex = /<Source[^>]+Element="([^"]+)"/g
-        let m
-        while ((m = elemRegex.exec(content)) !== null) {
-          if (m[1].trim()) elementNamesSet.add(m[1].trim())
-        }
-      }
-    } catch { /* dir may not exist */ }
-    index.elementnames = [...elementNamesSet].sort()
-
-    const scriptsDir = join(libraryPath, '..', 'scripts')
-    index.scripts = (await walkDir(scriptsDir, '.lua', scriptsDir)).sort()
-
-    const scanCatDetails = async (dir) => {
-      const catMap = {}
-      try {
-        const entries = await fs.readdir(dir, { withFileTypes: true })
-        for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(dir, entry.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
-          const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
-          const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
-          if (!catSection) continue
-          const body = catSection[1]
-          const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
-          const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
-          let m
-          while ((m = catElemRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) { if (!catMap[c]) catMap[c] = { count: 0, usedBy: [] }; catMap[c].count++; if (catMap[c].usedBy.length < 5) catMap[c].usedBy.push(itemName) } }
-          while ((m = catAttrRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) { if (!catMap[c]) catMap[c] = { count: 0, usedBy: [] }; catMap[c].count++; if (catMap[c].usedBy.length < 5) catMap[c].usedBy.push(itemName) } }
-        }
-      } catch { /* dir may not exist */ }
-      return Object.entries(catMap)
-        .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
-        .sort((a, b) => a.name.localeCompare(b.name))
-    }
-    const itemCatDetails      = await scanCatDetails(join(libraryPath, 'items'))
-    const castableCatDetails  = await scanCatDetails(join(libraryPath, 'castables'))
-    const statusCatDetails    = await scanCatDetails(join(libraryPath, 'statuses'))
-    index.itemCategories          = itemCatDetails.map(c => c.name)
-    index.castableCategories      = castableCatDetails.map(c => c.name)
-    index.statusCategories        = statusCatDetails.map(c => c.name)
-    index.itemCategoryDetails     = itemCatDetails
-    index.castableCategoryDetails = castableCatDetails
-    index.statusCategoryDetails   = statusCatDetails
-
-    const vendorTabsSet = new Set()
-    try {
-      const itemsDir = join(libraryPath, 'items')
-      for (const entry of (await fs.readdir(itemsDir, { withFileTypes: true })).filter(e => e.isFile() && e.name.endsWith('.xml'))) {
-        const content = await fs.readFile(join(itemsDir, entry.name), 'utf-8')
-        const shopTabRegex = /\bShopTab="([^"]+)"/g
-        let m
-        while ((m = shopTabRegex.exec(content)) !== null) { if (m[1].trim()) vendorTabsSet.add(m[1].trim()) }
-      }
-    } catch { /* dir may not exist */ }
-    index.vendorTabs = [...vendorTabsSet].sort()
-
-    const npcJobsSet = new Set()
-    try {
-      const npcsDir = join(libraryPath, 'npcs')
-      for (const entry of (await fs.readdir(npcsDir, { withFileTypes: true })).filter(e => e.isFile() && e.name.endsWith('.xml'))) {
-        const namePart = entry.name.replace(/\.xml$/i, '')
-        const idx = namePart.indexOf('_')
-        if (idx > 0) {
-          const prefix = namePart.slice(0, idx)
-          if (prefix && prefix.toLowerCase() !== 'npc') npcJobsSet.add(prefix)
-        }
-      }
-    } catch { /* dir may not exist */ }
-    index.npcJobs = [...npcJobsSet].sort()
-
-    const creatureFamiliesSet = new Set()
-    try {
-      const creaturesDir = join(libraryPath, 'creatures')
-      for (const entry of (await fs.readdir(creaturesDir, { withFileTypes: true })).filter(e => e.isFile() && e.name.endsWith('.xml'))) {
-        const namePart = entry.name.replace(/\.xml$/i, '')
-        const idx = namePart.indexOf('_')
-        if (idx > 0) {
-          const prefix = namePart.slice(0, idx)
-          if (prefix) creatureFamiliesSet.add(prefix)
-        }
-      }
-    } catch { /* dir may not exist */ }
-    index.creatureFamilies = [...creatureFamiliesSet].sort()
-
-    const cookieNamesSet = new Set()
-    const cookieRegexBuild = /\w+\.setcookie\s*\(\s*"([^"]+)"/gi
-    const scanCookieNames = async (dir) => {
-      try {
-        const entries = await fs.readdir(dir, { withFileTypes: true })
-        for (const entry of entries) {
-          const full = join(dir, entry.name)
-          if (entry.isDirectory()) await scanCookieNames(full)
-          else if (entry.isFile() && entry.name.endsWith('.lua')) {
-            const content = await fs.readFile(full, 'utf-8')
-            cookieRegexBuild.lastIndex = 0
-            let m
-            while ((m = cookieRegexBuild.exec(content)) !== null) {
-              if (m[1]) cookieNamesSet.add(m[1])
-            }
-          }
-        }
-      } catch { /* dir may not exist */ }
-    }
-    await scanCookieNames(scriptsDir)
-    index.cookieNames = [...cookieNamesSet].sort()
-
-    await ensureCreidhneDir(libraryPath)
-    await fs.writeFile(getIndexPath(libraryPath), JSON.stringify(index, null, 2), 'utf-8')
-
+    const index = await buildIndexInWorker(libraryPath)
     return { success: true, builtAt: index.builtAt }
   })
 
-  ipcMain.handle('index:buildSection', async (_, libraryPath, section) => {
-    const attrName = ATTR_NAME_MAP[section]
-    const dirPath = join(libraryPath, section)
-    const names = []
-    const result = {}
+  ipcMain.handle('index:buildSection', (_, libraryPath, section) => buildSectionInWorker(libraryPath, section))
 
-    try {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true })
-      for (const file of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-        const content = await fs.readFile(join(dirPath, file.name), 'utf-8')
-        if (section === 'castables') {
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !names.includes(name)) {
-              names.push(name)
-              const classMatch = /<Castable[^>]+Class="([^"]*)"/.exec(content)
-              if (classMatch) {
-                if (!result.castableClasses) result.castableClasses = {}
-                result.castableClasses[name] = classMatch[1].trim()
-              }
-              const statusesMatch = /<Statuses>([\s\S]*?)<\/Statuses>/.exec(content)
-              if (statusesMatch) {
-                const addMatch = /<Add>([\s\S]*?)<\/Add>/.exec(statusesMatch[1])
-                if (addMatch) {
-                  if (!result.statusCasters) result.statusCasters = {}
-                  const statusRegex = /<Status[^>]*>([^<]+)<\/Status>/g
-                  let sm
-                  while ((sm = statusRegex.exec(addMatch[1])) !== null) {
-                    const key = sm[1].trim().toLowerCase()
-                    if (key) {
-                      if (!result.statusCasters[key]) result.statusCasters[key] = []
-                      if (!result.statusCasters[key].includes(name)) result.statusCasters[key].push(name)
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } else if (section === 'localizations') {
-          const localeMatch = /\bLocale="([^"]+)"/.exec(content)
-          if (localeMatch) {
-            const name = localeMatch[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-          }
-          const npcCallRegex = /<Response[^>]+Call="([^"]+)"[^>]*>([^<]*)<\/Response>/g
-          let callMatch
-          while ((callMatch = npcCallRegex.exec(content)) !== null) {
-            const call = callMatch[1].trim()
-            const response = callMatch[2].trim()
-            if (call) {
-              if (!result.npcResponseCalls) result.npcResponseCalls = {}
-              result.npcResponseCalls[call] = response
-            }
-          }
-          // Extract string keys from Common, Merchant, MonsterSpeak
-          if (!result.npcStringKeys) result.npcStringKeys = []
-          for (const [tag, label] of [['Common', 'Common'], ['Merchant', 'Merchant'], ['MonsterSpeak', 'Monster']]) {
-            const sectionMatch = new RegExp(`<${tag}>[\\s\\S]*?<\\/${tag}>`).exec(content)
-            if (!sectionMatch) continue
-            const strRegex = /<String[^>]+Key="([^"]+)"[^>]*>([^<]*)<\/String>/g
-            let sm
-            while ((sm = strRegex.exec(sectionMatch[0])) !== null) {
-              const key = sm[1].trim()
-              const message = sm[2].trim()
-              if (key && !result.npcStringKeys.some((s) => s.key === key && s.category === label)) {
-                result.npcStringKeys.push({ key, message, category: label })
-              }
-            }
-          }
-        } else if (section === 'elementtables') {
-          // Extract table Name attribute
-          const match = /\bName="([^"]+)"/.exec(content)
-          if (match) {
-            const name = match[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-          }
-          // Also collect element row names for the elementnames index key
-          if (!result.elementnames) result.elementnames = []
-          const elemRegex = /<Source[^>]+Element="([^"]+)"/g
-          let em
-          while ((em = elemRegex.exec(content)) !== null) {
-            if (em[1].trim() && !result.elementnames.includes(em[1].trim())) result.elementnames.push(em[1].trim())
-          }
-        } else if (section === 'creatures') {
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-          }
-          if (!result.creatureTypes) result.creatureTypes = []
-          const typeRegex = /<Type[^>]+Name="([^"]+)"/g
-          let tm
-          while ((tm = typeRegex.exec(content)) !== null) {
-            const tn = tm[1].trim()
-            if (tn && !result.creatureTypes.includes(tn)) result.creatureTypes.push(tn)
-          }
-        } else if (attrName) {
-          const match = new RegExp(`\\b${attrName}="([^"]+)"`).exec(content)
-          if (match) {
-            const name = match[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-          }
-        } else if (section === 'npcs') {
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const npcName = nameMatch[1].trim()
-            if (npcName && !names.includes(npcName)) names.push(npcName)
-            const trainMatch = /<Train>([\s\S]*?)<\/Train>/.exec(content)
-            if (trainMatch) {
-              if (!result.castableTrainers) result.castableTrainers = {}
-              const castableRegex = /<Castable[^>]+Name="([^"]+)"/g
-              let cm
-              while ((cm = castableRegex.exec(trainMatch[1])) !== null) {
-                const key = cm[1].trim().toLowerCase()
-                if (!result.castableTrainers[key]) result.castableTrainers[key] = []
-                if (!result.castableTrainers[key].includes(npcName)) result.castableTrainers[key].push(npcName)
-              }
-            }
-            const vendMatch = /<Vend>([\s\S]*?)<\/Vend>/.exec(content)
-            if (vendMatch) {
-              if (!result.itemVendors) result.itemVendors = {}
-              const vendItemRegex = /<Item[^>]+Name="([^"]+)"/g
-              let vm
-              while ((vm = vendItemRegex.exec(vendMatch[1])) !== null) {
-                const key = vm[1].trim().toLowerCase()
-                if (key) {
-                  if (!result.itemVendors[key]) result.itemVendors[key] = []
-                  if (!result.itemVendors[key].includes(npcName)) result.itemVendors[key].push(npcName)
-                }
-              }
-            }
-          }
-        } else if (section === 'lootsets') {
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const lootSetName = nameMatch[1].trim()
-            if (lootSetName && !names.includes(lootSetName)) names.push(lootSetName)
-            if (!result.itemLootSets) result.itemLootSets = {}
-            const itemsBlockRegex = /<Items[^>]*>([\s\S]*?)<\/Items>/g
-            let ib
-            while ((ib = itemsBlockRegex.exec(content)) !== null) {
-              const itemRegex = /<Item[^>]*>([^<]+)<\/Item>/g
-              let im
-              while ((im = itemRegex.exec(ib[1])) !== null) {
-                const key = im[1].trim().toLowerCase()
-                if (key) {
-                  if (!result.itemLootSets[key]) result.itemLootSets[key] = []
-                  if (!result.itemLootSets[key].includes(lootSetName)) result.itemLootSets[key].push(lootSetName)
-                }
-              }
-            }
-          }
-        } else if (section === 'variantgroups') {
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-          }
-        } else if (section === 'maps') {
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-            const idMatch = /\bId="(\d+)"/.exec(content)
-            const xMatch = /\bX="(\d+)"/.exec(content)
-            const yMatch = /\bY="(\d+)"/.exec(content)
-            if (idMatch && xMatch && yMatch) {
-              if (!result.mapDetails) result.mapDetails = []
-              result.mapDetails.push({
-                id: parseInt(idMatch[1], 10),
-                name,
-                filename: file.name,
-                x: parseInt(xMatch[1], 10),
-                y: parseInt(yMatch[1], 10),
-              })
-            }
-          }
-        } else {
-          ELEM_NAME_REGEX.lastIndex = 0
-          let match
-          while ((match = ELEM_NAME_REGEX.exec(content)) !== null) {
-            const name = match[1].trim()
-            if (name && !names.includes(name)) names.push(name)
-          }
-        }
+  ipcMain.handle('index:load',   (_, libraryPath) => loadIndex(libraryPath))
+  ipcMain.handle('index:status', (_, libraryPath) => getIndexStatus(libraryPath))
+  ipcMain.handle('index:delete', (_, libraryPath) => deleteIndex(libraryPath))
+
+  // Bulk-add a category to each of the given castables (by display Name).
+  // Used by the Spell Books tab in Constants: after persisting the spellbook
+  // definition to constants.json, propagate the spellbook's name as a category
+  // onto each listed castable's XML. Returns a per-castable result summary.
+  ipcMain.handle('castable:addCategoryBulk', async (_, libraryPath, castableNames, categoryName) => {
+    if (!libraryPath || !Array.isArray(castableNames) || !categoryName) {
+      return { updated: [], unchanged: [], failed: [{ name: '(invalid args)', error: 'Missing libraryPath, castableNames, or categoryName' }] }
+    }
+    const index = await loadIndex(libraryPath)
+    const filenames = index?.castableFilenames || {}
+    const updated = []
+    const unchanged = []
+    const failed = []
+    for (const name of castableNames) {
+      const filename = filenames[name]
+      if (!filename) { failed.push({ name, error: 'Not found in index' }); continue }
+      const filePath = join(libraryPath, 'castables', filename)
+      try {
+        const xml = await fs.readFile(filePath, 'utf-8')
+        const castable = await parseCastableXml(xml)
+        const categories = Array.isArray(castable.categories) ? [...castable.categories] : []
+        if (categories.includes(categoryName)) { unchanged.push(name); continue }
+        categories.push(categoryName)
+        const next = { ...castable, categories }
+        const outXml = serializeCastableXml(next)
+        await fs.writeFile(filePath, outXml, 'utf-8')
+        updated.push(name)
+      } catch (err) {
+        failed.push({ name, error: err?.message || String(err) })
       }
-      names.sort()
-      if (result.mapDetails) result.mapDetails.sort((a, b) => a.id - b.id)
-    } catch { /* dir may not exist */ }
-
-    result[section] = names
-    if (result.elementnames) result.elementnames.sort()
-
-    if (section === 'maps') {
-      const ignoredMapDetails = []
-      try {
-        const ignoredMapsDir = join(dirPath, '.ignore')
-        const ignoredEntries = await fs.readdir(ignoredMapsDir, { withFileTypes: true })
-        for (const file of ignoredEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(ignoredMapsDir, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          const idMatch = /\bId="(\d+)"/.exec(content)
-          const xMatch = /\bX="(\d+)"/.exec(content)
-          const yMatch = /\bY="(\d+)"/.exec(content)
-          if (idMatch && xMatch && yMatch) {
-            ignoredMapDetails.push({
-              id: parseInt(idMatch[1], 10),
-              name: nameMatch ? nameMatch[1].trim() : '',
-              filename: file.name,
-              x: parseInt(xMatch[1], 10),
-              y: parseInt(yMatch[1], 10),
-            })
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      ignoredMapDetails.sort((a, b) => a.id - b.id)
-      result.ignoredMapDetails = ignoredMapDetails
     }
-
-    if (section === 'castables') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedCastables = archivedNames.sort()
-    }
-    if (section === 'creatures') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedCreatures = archivedNames.sort()
-    }
-    if (section === 'creaturebehaviorsets') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedCreaturebehaviorsets = archivedNames.sort()
-    }
-    if (section === 'spawngroups') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedSpawngroups = archivedNames.sort()
-    }
-    if (section === 'lootsets') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedLootsets = archivedNames.sort()
-    }
-    if (section === 'statuses') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedStatuses = archivedNames.sort()
-    }
-    if (section === 'npcs') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedNpcs = archivedNames.sort()
-    }
-    if (section === 'nations') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedNations = archivedNames.sort()
-    }
-    if (section === 'items') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedItems = archivedNames.sort()
-    }
-    if (section === 'variantgroups') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedVariantgroups = archivedNames.sort()
-    }
-    if (section === 'recipes') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedRecipes = archivedNames.sort()
-    }
-    if (section === 'elementtables') {
-      const archivedNames = []
-      try {
-        const archivedDirPath = join(dirPath, '.ignore')
-        const archivedEntries = await fs.readdir(archivedDirPath, { withFileTypes: true })
-        for (const file of archivedEntries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(archivedDirPath, file.name), 'utf-8')
-          const nameMatch = /\bName="([^"]+)"/.exec(content)
-          if (nameMatch) {
-            const name = nameMatch[1].trim()
-            if (name && !archivedNames.includes(name)) archivedNames.push(name)
-          }
-        }
-      } catch { /* .ignore may not exist */ }
-      result.archivedElementtables = archivedNames.sort()
-    }
-
-    // Merge into persisted index so Dashboard stats stay current
-    try {
-      const indexPath = getIndexPath(libraryPath)
-      let existing = {}
-      try { existing = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-      await ensureCreidhneDir(libraryPath)
-      await fs.writeFile(indexPath, JSON.stringify({ ...existing, ...result }, null, 2), 'utf-8')
-    } catch { /* persist failure is non-fatal */ }
-
-    return result
-  })
-
-  ipcMain.handle('index:load', async (_, libraryPath) => {
-    try {
-      const content = await fs.readFile(getIndexPath(libraryPath), 'utf-8')
-      return JSON.parse(content)
-    } catch {
-      return null
-    }
-  })
-
-  ipcMain.handle('index:status', async (_, libraryPath) => {
-    try {
-      const content = await fs.readFile(getIndexPath(libraryPath), 'utf-8')
-      const { builtAt } = JSON.parse(content)
-      return { exists: true, builtAt }
-    } catch {
-      return { exists: false }
-    }
-  })
-
-  ipcMain.handle('index:delete', async (_, libraryPath) => {
-    try { await fs.unlink(getIndexPath(libraryPath)) } catch { /* may not exist */ }
+    return { updated, unchanged, failed }
   })
 
   // --- Constants (XSD simple types, categories, cookies) ---
@@ -1349,13 +360,12 @@ app.whenReady().then(() => {
     return result.sort((a, b) => a.name.localeCompare(b.name))
   })
 
-  // Helper: read index, apply updater fn, write back
-  const updateIndex = async (libraryPath, updater) => {
-    const indexPath = getIndexPath(libraryPath)
-    let idx = {}
-    try { idx = JSON.parse(await fs.readFile(indexPath, 'utf-8')) } catch { /* no index yet */ }
-    await ensureCreidhneDir(libraryPath)
-    await fs.writeFile(indexPath, JSON.stringify(updater(idx), null, 2), 'utf-8')
+  // Merge a set of index fields into the per-type files via hybindex-ts.
+  // Each field routes to its owning file via FIELD_TO_FILE; the type argument
+  // only affects the _meta.builtAt bump — any type works for aggregates.
+  const updateIndexFields = async (libraryPath, fields) => {
+    if (!fields || !Object.keys(fields).length) return
+    await saveSection(libraryPath, 'castables', fields)
   }
 
   ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
@@ -1392,15 +402,14 @@ app.whenReady().then(() => {
     await scanDir(join(libraryPath, 'castables'), result.castables)
     await scanDir(join(libraryPath, 'statuses'), result.statuses)
     try {
-      await updateIndex(libraryPath, idx => ({
-        ...idx,
+      await updateIndexFields(libraryPath, {
         itemCategories:          result.items.map(c => c.name),
         castableCategories:      result.castables.map(c => c.name),
         statusCategories:        result.statuses.map(c => c.name),
         itemCategoryDetails:     result.items,
         castableCategoryDetails: result.castables,
         statusCategoryDetails:   result.statuses,
-      }))
+      })
     } catch { /* non-fatal */ }
     return result
   })
@@ -1429,11 +438,10 @@ app.whenReady().then(() => {
       .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
       .sort((a, b) => a.name.localeCompare(b.name))
     try {
-      await updateIndex(libraryPath, idx => ({
-        ...idx,
+      await updateIndexFields(libraryPath, {
         vendorTabs:        details.map(t => t.name),
         vendorTabDetails:  details,
-      }))
+      })
     } catch { /* non-fatal */ }
     return details
   })
@@ -1461,11 +469,10 @@ app.whenReady().then(() => {
       .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
       .sort((a, b) => a.name.localeCompare(b.name))
     try {
-      await updateIndex(libraryPath, idx => ({
-        ...idx,
+      await updateIndexFields(libraryPath, {
         npcJobs:        details.map(j => j.name),
         npcJobDetails:  details,
-      }))
+      })
     } catch { /* non-fatal */ }
     return details
   })
@@ -1495,11 +502,10 @@ app.whenReady().then(() => {
       .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
       .sort((a, b) => a.name.localeCompare(b.name))
     try {
-      await updateIndex(libraryPath, idx => ({
-        ...idx,
+      await updateIndexFields(libraryPath, {
         creatureFamilies:        details.map(f => f.name),
         creatureFamilyDetails:   details,
-      }))
+      })
     } catch { /* non-fatal */ }
     return details
   })
@@ -1532,10 +538,9 @@ app.whenReady().then(() => {
     await scanDir(scriptsDir, scriptsDir)
     cookies.sort((a, b) => a.name.localeCompare(b.name))
     try {
-      await updateIndex(libraryPath, idx => ({
-        ...idx,
+      await updateIndexFields(libraryPath, {
         cookieNames: [...new Set(cookies.map(c => c.name))].sort(),
-      }))
+      })
     } catch { /* non-fatal */ }
     return cookies
   })
@@ -1597,7 +602,7 @@ app.whenReady().then(() => {
       // Try the index filename map first
       let filename = null
       try {
-        const indexData = JSON.parse(await fs.readFile(getIndexPath(libraryPath), 'utf-8'))
+        const indexData = await loadIndex(libraryPath)
         filename = indexData?.castableFilenames?.[castableName]
       } catch { /* index not available */ }
 
@@ -1646,8 +651,8 @@ app.whenReady().then(() => {
 
     let castableTrainers = {}
     try {
-      const content = await fs.readFile(getIndexPath(libraryPath), 'utf-8')
-      castableTrainers = JSON.parse(content).castableTrainers || {}
+      const indexData = await loadIndex(libraryPath)
+      castableTrainers = indexData?.castableTrainers || {}
     } catch { /* no index — trainers will be empty */ }
 
     const ALL_CLASSES = ['Warrior', 'Wizard', 'Priest', 'Rogue', 'Monk', 'Peasant']

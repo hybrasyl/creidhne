@@ -138,6 +138,32 @@ function CoefficientParam({ value, coeffKey, spellOrSkill }) {
   );
 }
 
+// ── Used-by panel ───────────────────────────────────────────────────────────
+// Reads hybindex-ts reverse-index fields from the library index. Read-only;
+// empty state is a single muted line.
+function UsedByPanel({ formulaName, libraryIndex }) {
+  const castables = (formulaName && libraryIndex?.formulaUsedByCastables?.[formulaName]) || [];
+  const statuses  = (formulaName && libraryIndex?.formulaUsedByStatuses?.[formulaName]) || [];
+  const total = castables.length + statuses.length;
+  return (
+    <Paper variant="outlined" sx={{ px: 2, py: 1 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+        Used by {total > 0 ? `(${total})` : ''}
+      </Typography>
+      {total === 0 ? (
+        <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+          Not referenced by any castable or status.
+        </Typography>
+      ) : (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {castables.map((n) => <Chip key={`c-${n}`} size="small" label={n} variant="outlined" />)}
+          {statuses.map((n)  => <Chip key={`s-${n}`} size="small" label={n} variant="outlined" color="secondary" />)}
+        </Box>
+      )}
+    </Paper>
+  );
+}
+
 // ── Main Editor ──────────────────────────────────────────────────────────────
 function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange, saveRef, settings }) {
   const [data, setData] = useState(formula);
@@ -388,6 +414,9 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
           onChange={(e) => updateData((d) => ({ ...d, description: e.target.value }))}
           fullWidth
         />
+
+        {/* Used by — reverse index from libraryIndex (read-only) */}
+        <UsedByPanel formulaName={data.name} libraryIndex={libraryIndex} />
 
         {/* Castable / Status Reference */}
         <Paper variant="outlined" sx={{ p: 2 }}>

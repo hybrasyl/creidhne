@@ -22,6 +22,7 @@ const EMPTY_CONSTANTS = {
   npcJobs: [],
   creatureFamilies: [],
   motions: [],
+  spellBooks: [],
 };
 
 // ─── Simple Types Tab ──────────────────────────────────────────────────────────
@@ -899,6 +900,253 @@ function MotionsTab({ userConstants, onChange }) {
   );
 }
 
+// ─── Spell Books Tab ───────────────────────────────────────────────────────────
+//
+// A "spell book" is a named collection of castables. Saving the book writes
+// the list to constants.json AND adds the book's name as a category onto
+// each selected castable (so BehaviorSets can reference the category).
+//
+// UI: left panel lists existing books; right panel edits the active book
+// with a dual-list picker (Available ↔ In book) and > / >> / < / << buttons.
+
+function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIndexUpdated }) {
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [draft, setDraft] = useState({ name: '', castables: [] });
+  const [leftSel, setLeftSel] = useState(new Set());
+  const [rightSel, setRightSel] = useState(new Set());
+  const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState(null);
+
+  const selectedBook = useMemo(
+    () => (selectedBookId ? (spellBooks || []).find(b => b.id === selectedBookId) : null),
+    [selectedBookId, spellBooks],
+  );
+
+  // Sync draft when switching books
+  useEffect(() => {
+    if (selectedBook) {
+      setDraft({ name: selectedBook.name || '', castables: [...(selectedBook.castables || [])] });
+    } else {
+      setDraft({ name: '', castables: [] });
+    }
+    setLeftSel(new Set());
+    setRightSel(new Set());
+  }, [selectedBookId, selectedBook]);
+
+  const allCastables = libraryIndex?.castables || [];
+  const available = useMemo(() => {
+    const inBook = new Set(draft.castables);
+    const q = search.trim().toLowerCase();
+    return allCastables.filter(n => !inBook.has(n) && (!q || n.toLowerCase().includes(q)));
+  }, [allCastables, draft.castables, search]);
+
+  const handleNew = () => {
+    const id = crypto.randomUUID();
+    const next = [...(spellBooks || []), { id, name: 'New Spell Book', castables: [] }];
+    onChange(next);
+    setSelectedBookId(id);
+  };
+
+  const handleDelete = () => {
+    if (!selectedBookId) return;
+    onChange((spellBooks || []).filter(b => b.id !== selectedBookId));
+    setSelectedBookId(null);
+  };
+
+  const commitDraft = (partial) => {
+    if (!selectedBookId) return;
+    const merged = { ...draft, ...partial };
+    setDraft(merged);
+    onChange((spellBooks || []).map(b => b.id === selectedBookId ? { ...b, ...merged } : b));
+  };
+
+  const moveRight = (all = false) => {
+    const moving = all ? available : available.filter(n => leftSel.has(n));
+    if (!moving.length) return;
+    commitDraft({ castables: [...draft.castables, ...moving].sort() });
+    setLeftSel(new Set());
+  };
+
+  const moveLeft = (all = false) => {
+    const keep = all ? [] : draft.castables.filter(n => !rightSel.has(n));
+    commitDraft({ castables: keep });
+    setRightSel(new Set());
+  };
+
+  const toggleSel = (setSel, value) => (event) => {
+    setSel(prev => {
+      const next = new Set(prev);
+      if (event.shiftKey || event.ctrlKey || event.metaKey) {
+        if (next.has(value)) next.delete(value); else next.add(value);
+      } else {
+        next.clear();
+        next.add(value);
+      }
+      return next;
+    });
+  };
+
+  const handleSaveAndApply = async () => {
+    if (!selectedBookId || !activeLibrary || !draft.name.trim()) return;
+    setSaving(true);
+    try {
+      const result = await window.electronAPI.castableAddCategoryBulk(
+        activeLibrary, draft.castables, draft.name.trim(),
+      );
+      const { updated = [], unchanged = [], failed = [] } = result || {};
+      const msg = `${updated.length} updated, ${unchanged.length} already had category, ${failed.length} failed.`;
+      setSnackbar({ message: msg, severity: failed.length ? 'warning' : 'success' });
+      // Request a castables section re-index so libraryIndex picks up the new category
+      if (updated.length) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, 'castables');
+        onIndexUpdated?.(section);
+      }
+    } catch (err) {
+      setSnackbar({ message: `Save failed: ${err?.message || err}`, severity: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Box sx={{ height: '100%', display: 'flex', overflow: 'hidden' }}>
+      {/* Left: list of books */}
+      <Box sx={{ width: 220, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>Spell Books</Typography>
+          <Tooltip title="New spell book">
+            <IconButton size="small" onClick={handleNew}><AddIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        </Box>
+        <Divider />
+        <List dense disablePadding sx={{ overflow: 'auto', flex: 1 }}>
+          {(spellBooks || []).map(book => (
+            <ListItem key={book.id} disablePadding>
+              <ListItemButton
+                selected={book.id === selectedBookId}
+                onClick={() => setSelectedBookId(book.id)}
+              >
+                <ListItemText
+                  primary={book.name || '(unnamed)'}
+                  secondary={`${(book.castables || []).length} castables`}
+                  primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                  secondaryTypographyProps={{ variant: 'caption' }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+          {(spellBooks || []).length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+              No spell books yet.
+            </Typography>
+          )}
+        </List>
+      </Box>
+
+      {/* Right: editor */}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden', minWidth: 0 }}>
+        {!selectedBook ? (
+          <Typography variant="body2" color="text.secondary">
+            Select a spell book or create a new one.
+          </Typography>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
+              <TextField
+                size="small" label="Name" sx={{ flex: 1, maxWidth: 360 }}
+                value={draft.name}
+                onChange={(e) => commitDraft({ name: e.target.value })}
+              />
+              <Tooltip title="Delete spell book">
+                <IconButton size="small" onClick={handleDelete}><DeleteIcon fontSize="small" /></IconButton>
+              </Tooltip>
+            </Box>
+
+            <Box sx={{ flex: 1, display: 'flex', gap: 1, minHeight: 0 }}>
+              {/* Available */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Typography variant="caption" color="text.secondary">Available ({available.length})</Typography>
+                <TextField
+                  size="small" placeholder="Filter…" sx={{ mb: 0.5 }}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+                />
+                <Box sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                  <List dense disablePadding>
+                    {available.map(n => (
+                      <ListItemButton
+                        key={n}
+                        selected={leftSel.has(n)}
+                        onClick={toggleSel(setLeftSel, n)}
+                        onDoubleClick={() => { commitDraft({ castables: [...draft.castables, n].sort() }); }}
+                      >
+                        <ListItemText primary={n} primaryTypographyProps={{ variant: 'body2', noWrap: true }} />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Box>
+              </Box>
+
+              {/* Move buttons */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.5 }}>
+                <Button size="small" variant="outlined" onClick={() => moveRight(false)} disabled={leftSel.size === 0}>&gt;</Button>
+                <Button size="small" variant="outlined" onClick={() => moveRight(true)} disabled={available.length === 0}>&gt;&gt;</Button>
+                <Button size="small" variant="outlined" onClick={() => moveLeft(false)} disabled={rightSel.size === 0}>&lt;</Button>
+                <Button size="small" variant="outlined" onClick={() => moveLeft(true)} disabled={draft.castables.length === 0}>&lt;&lt;</Button>
+              </Box>
+
+              {/* In book */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Typography variant="caption" color="text.secondary">In spell book ({draft.castables.length})</Typography>
+                <Box sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, mt: '22px' /* align with left col */ }}>
+                  <List dense disablePadding>
+                    {draft.castables.map(n => (
+                      <ListItemButton
+                        key={n}
+                        selected={rightSel.has(n)}
+                        onClick={toggleSel(setRightSel, n)}
+                        onDoubleClick={() => commitDraft({ castables: draft.castables.filter(x => x !== n) })}
+                      >
+                        <ListItemText primary={n} primaryTypographyProps={{ variant: 'body2', noWrap: true }} />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Box>
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Button
+                variant="contained"
+                onClick={handleSaveAndApply}
+                disabled={saving || !draft.name.trim() || draft.castables.length === 0 || !activeLibrary}
+                startIcon={saving ? <CircularProgress size={14} color="inherit" /> : null}
+              >
+                {saving ? 'Applying…' : 'Save & apply category to castables'}
+              </Button>
+              <Typography variant="caption" color="text.secondary">
+                Writes "{draft.name.trim() || '…'}" as a category onto {draft.castables.length} castable XML file{draft.castables.length === 1 ? '' : 's'}.
+              </Typography>
+            </Box>
+          </>
+        )}
+      </Box>
+
+      {snackbar && (
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar(null)}
+          sx={{ position: 'absolute', bottom: 16, right: 16, zIndex: 10 }}
+        >
+          {snackbar.message}
+        </Alert>
+      )}
+    </Box>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -911,6 +1159,7 @@ const TABS = [
   { label: 'Status Categories' },
   { label: 'Cookies' },
   { label: 'Motions' },
+  { label: 'Spell Books' },
 ];
 
 function ConstantsPage() {
@@ -1086,6 +1335,15 @@ function ConstantsPage() {
           <MotionsTab
             userConstants={userConstants}
             onChange={handleChange}
+          />
+        )}
+        {tab === 9 && (
+          <SpellBooksTab
+            spellBooks={userConstants.spellBooks || []}
+            onChange={(books) => handleChange({ ...userConstants, spellBooks: books })}
+            activeLibrary={activeLibrary}
+            libraryIndex={libraryIndex}
+            onIndexUpdated={handleIndexUpdated}
           />
         )}
       </Box>
