@@ -4,14 +4,16 @@ import {
   ListItemButton, ListItemText, Autocomplete, Alert, Paper, Table, TableBody,
   TableCell, TableHead, TableRow, Stack, Checkbox, Dialog, DialogTitle,
   DialogContent, DialogActions, Button, Accordion, AccordionSummary,
-  AccordionDetails,
+  AccordionDetails, Popover,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import FormulaSparkline from '../components/formulas/FormulaSparkline';
 import { useRecoilValue } from 'recoil';
-import { activeLibraryState } from '../recoil/atoms';
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
 import {
   compile, UnknownVariableError, UnknownFunctionError,
 } from '../utils/formulaEval';
@@ -168,13 +170,48 @@ function TestPlayerDialog({ open, initialPlayer, onClose, onSave, onDelete }) {
   );
 }
 
+// ── Sweep helper + colors ───────────────────────────────────────────────────
+// Color palette for multi-line sparklines. Cycled by player index.
+const SPARKLINE_COLORS = ['#1976d2', '#d32f2f', '#388e3c', '#ed6c02', '#9c27b0', '#0288d1'];
+
+/**
+ * Build per-level [level, value] points for a formula + player + context.
+ * Substitutes SOURCELEVEL for each level 1..maxLevel; other vars held constant.
+ * Uses the Avg pass for RAND / weapon (midpoints). Skips levels that fail
+ * to evaluate (e.g. division by zero at some level).
+ */
+function sweepFormula({ compiled, player, weaponConfig, castableContextConfig, overrideMap, maxLevel = 99 }) {
+  const base = buildBaseVars(player);
+  if (castableContextConfig?.acquiredLevelSet) base.ACQUIREDLEVEL = castableContextConfig.acquiredLevel;
+  const avgVars = { ...withRandAndWeapon(base, weaponConfig, 'avg'), ...overrideMap };
+  const points = [];
+  for (let lvl = 1; lvl <= maxLevel; lvl++) {
+    try {
+      const v = compiled({ ...avgVars, SOURCELEVEL: lvl });
+      if (Number.isFinite(v)) points.push([lvl, v]);
+    } catch { /* skip this level */ }
+  }
+  return points;
+}
+
 // ── Result block for one player ─────────────────────────────────────────────
 
-function PlayerResultRow({ player, low, avg, high }) {
+function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
   const cell = (r) => (r?.error ? `err: ${r.error}` : formatNum(r?.value));
   return (
     <TableRow>
-      <TableCell>{player.name} <Typography component="span" variant="caption" color="text.secondary">(L{player.level})</Typography></TableCell>
+      <TableCell>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <span>{player.name} <Typography component="span" variant="caption" color="text.secondary">(L{player.level})</Typography></span>
+          {onOpenSparkline && (
+            <Tooltip title="Show level sweep (L1→99) for this player">
+              <IconButton size="small" onClick={(e) => onOpenSparkline(e.currentTarget, player.id)}>
+                <ShowChartIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
+      </TableCell>
       <TableCell align="right">{cell(low)}</TableCell>
       <TableCell align="right">{cell(avg)}</TableCell>
       <TableCell align="right">{cell(high)}</TableCell>
@@ -186,6 +223,7 @@ function PlayerResultRow({ player, low, avg, high }) {
 
 export default function DamageCalculatorPage() {
   const activeLibrary = useRecoilValue(activeLibraryState);
+  const libraryIndex = useRecoilValue(libraryIndexState);
 
   const [testPlayers, setTestPlayers] = useState([]);
   const [formulas, setFormulas] = useState([]);
@@ -201,6 +239,8 @@ export default function DamageCalculatorPage() {
   const [overrides, setOverrides] = useState([
     { name: '', value: '' }, { name: '', value: '' }, { name: '', value: '' },
   ]);
+  // Sparkline popover state: null | { anchorEl, kind: 'player' | 'overlay', playerId? }
+  const [sparkAnchor, setSparkAnchor] = useState(null);
 
   useEffect(() => {
     if (!activeLibrary) { setTestPlayers([]); setFormulas([]); return; }
@@ -317,6 +357,36 @@ export default function DamageCalculatorPage() {
     return { parseError: null, unknown: [], assumedZero: globalAssumed, perPlayer };
   }, [selectedPlayers, formulaText, weaponConfig, castableContextConfig, overrideMap]);
 
+  // Sparkline data builder — recompiles formula and sweeps SOURCELEVEL 1..99.
+  // Cheap enough to compute on popover open.
+  const sparklineLines = useMemo(() => {
+    if (!sparkAnchor || !formulaText.trim() || !selectedPlayers.length) return null;
+    let compiled;
+    try { compiled = compile(formulaText); } catch { return null; }
+    const shared = { weaponConfig, castableContextConfig, overrideMap };
+
+    if (sparkAnchor.kind === 'player') {
+      const p = selectedPlayers.find((x) => x.id === sparkAnchor.playerId);
+      if (!p) return null;
+      const points = sweepFormula({ compiled, player: p, ...shared });
+      return [{
+        label: `${p.name} (L${p.level})`,
+        color: SPARKLINE_COLORS[0],
+        points,
+      }];
+    }
+    // overlay — one line per selected player
+    return selectedPlayers.map((p, i) => ({
+      label: `${p.name} (L${p.level})`,
+      color: SPARKLINE_COLORS[i % SPARKLINE_COLORS.length],
+      points: sweepFormula({ compiled, player: p, ...shared }),
+    }));
+  }, [sparkAnchor, formulaText, selectedPlayers, weaponConfig, castableContextConfig, overrideMap]);
+
+  const openPlayerSparkline = (anchorEl, playerId) => setSparkAnchor({ anchorEl, kind: 'player', playerId });
+  const openOverlaySparkline = (anchorEl) => setSparkAnchor({ anchorEl, kind: 'overlay' });
+  const closeSparkline = () => setSparkAnchor(null);
+
   const dotTicks = useMemo(() => {
     const d = Number(duration), t = Number(tick);
     if (!d || !t || t <= 0) return null;
@@ -415,9 +485,24 @@ export default function DamageCalculatorPage() {
               <Box>
                 <Typography variant="subtitle2" gutterBottom>Castable context</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Authoring-time variables substituted to a literal number at XML save time. Future: auto-populate from a referenced castable.
+                  Authoring-time variables substituted to a literal number at XML save time.
+                  Pick a castable to auto-populate ACQUIREDLEVEL from its first Requirement's Min level, or set it manually.
                 </Typography>
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Autocomplete
+                    size="small"
+                    options={libraryIndex?.castables || []}
+                    value={null}
+                    onChange={(_, value) => {
+                      if (!value) return;
+                      const n = libraryIndex?.castableRequiredLevels?.[value];
+                      if (typeof n === 'number') {
+                        setCastableContext((c) => ({ ...c, acquiredLevel: String(n) }));
+                      }
+                    }}
+                    renderInput={(params) => <TextField {...params} label="Populate from castable" />}
+                    sx={{ flex: 1, maxWidth: 320 }}
+                  />
                   <TextField
                     size="small" label="ACQUIREDLEVEL" type="number" sx={{ width: 160 }}
                     value={castableContext.acquiredLevel}
@@ -430,9 +515,28 @@ export default function DamageCalculatorPage() {
               <Box>
                 <Typography variant="subtitle2" gutterBottom>Weapon</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Sets SOURCEWEAPONSMALLDAMAGE / SOURCEWEAPONLARGEDAMAGE. Min/max participates in Low/Avg/High. Future: auto-populate from a referenced weapon item.
+                  Sets SOURCEWEAPONSMALLDAMAGE / SOURCEWEAPONLARGEDAMAGE. Min/max participates in Low/Avg/High.
+                  Pick a weapon item to auto-populate all four, or set them manually.
                 </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Autocomplete
+                    size="small"
+                    options={Object.keys(libraryIndex?.itemWeaponDamage || {}).sort()}
+                    value={null}
+                    onChange={(_, value) => {
+                      if (!value) return;
+                      const d = libraryIndex?.itemWeaponDamage?.[value];
+                      if (!d) return;
+                      setWeapon({
+                        smallMin: String(d.smallMin),
+                        smallMax: String(d.smallMax),
+                        largeMin: String(d.largeMin),
+                        largeMax: String(d.largeMax),
+                      });
+                    }}
+                    renderInput={(params) => <TextField {...params} label="Populate from weapon item" />}
+                    sx={{ minWidth: 240, flex: 1 }}
+                  />
                   <TextField size="small" label="Small dmg min" type="number" sx={{ width: 130 }}
                     value={weapon.smallMin} onChange={(e) => setWeapon((w) => ({ ...w, smallMin: e.target.value }))} />
                   <TextField size="small" label="Small dmg max" type="number" sx={{ width: 130 }}
@@ -515,7 +619,18 @@ export default function DamageCalculatorPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Per hit</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        <span>Per hit</span>
+                        {selectedPlayers.length > 1 && (
+                          <Tooltip title="Show level sweep (L1→99) for all selected players">
+                            <IconButton size="small" onClick={(e) => openOverlaySparkline(e.currentTarget)}>
+                              <ShowChartIcon fontSize="inherit" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </TableCell>
                     <TableCell align="right">Low</TableCell>
                     <TableCell align="right">Avg</TableCell>
                     <TableCell align="right">High</TableCell>
@@ -523,7 +638,11 @@ export default function DamageCalculatorPage() {
                 </TableHead>
                 <TableBody>
                   {evalState.perPlayer.map((row) => (
-                    <PlayerResultRow key={row.player.id} player={row.player} low={row.low} avg={row.avg} high={row.high} />
+                    <PlayerResultRow
+                      key={row.player.id} player={row.player}
+                      low={row.low} avg={row.avg} high={row.high}
+                      onOpenSparkline={openPlayerSparkline}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -566,6 +685,27 @@ export default function DamageCalculatorPage() {
         onSave={handleSavePlayer}
         onDelete={handleDeletePlayer}
       />
+
+      <Popover
+        open={!!sparkAnchor}
+        anchorEl={sparkAnchor?.anchorEl}
+        onClose={closeSparkline}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        {sparklineLines && sparklineLines.length > 0 && sparklineLines.some((l) => l.points.length > 0) ? (
+          <FormulaSparkline
+            lines={sparklineLines.filter((l) => l.points.length > 0)}
+            width={320} height={100}
+            xLabel="SOURCELEVEL 1…99 (Avg)"
+          />
+        ) : (
+          <Box sx={{ p: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              No points — formula couldn't be evaluated at any level (likely missing variables).
+            </Typography>
+          </Box>
+        )}
+      </Popover>
     </Box>
   );
 }

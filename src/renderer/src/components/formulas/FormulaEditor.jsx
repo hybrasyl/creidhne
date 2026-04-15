@@ -237,6 +237,24 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
     return buildCoefficientKey(coeffEffect, coeffTargeting, coeffDelivery);
   }, [coeffEffect, coeffTargeting, coeffDelivery]);
 
+  // ── ACQUIREDLEVEL preview resolution ──────────────────────────────────────
+  // ACQUIREDLEVEL is an authoring-time variable: the server never sees it;
+  // at XML save time it gets replaced with the castable's required min level.
+  // In the editor we can preview the resolved value when either (a) a
+  // castable is referenced (→ libraryIndex.castableRequiredLevels), or
+  // (b) the user sets a manual preview override below.
+  //
+  // Override is NOT saved with the formula (ACQUIREDLEVEL stays symbolic in
+  // formulas.json so the same formula works across castables).
+  const [acquiredLevelOverride, setAcquiredLevelOverride] = useState(null);
+
+  const castableAcquiredLevel = useMemo(
+    () => (refType === 'castable' && refName ? libraryIndex?.castableRequiredLevels?.[refName] : null) ?? null,
+    [refType, refName, libraryIndex],
+  );
+
+  const effectiveAcquiredLevel = acquiredLevelOverride != null ? acquiredLevelOverride : castableAcquiredLevel;
+
   const castableRef = useMemo(() => ({
     budgetDimension: budgetDimension === 'line' ? 'line' : 'cd',
     lines: castableLines,
@@ -270,6 +288,14 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
     }
     return assembleFormula(selectedPattern.ncalc, resolved, selectedPattern.parameters);
   }, [selectedPattern, paramValues, settings, resolvedCoefficient]);
+
+  // Preview-only: substitute ACQUIREDLEVEL with the resolved value. The
+  // assembledFormula above stays symbolic — that's what gets saved.
+  const patternUsesAcquiredLevel = /\bACQUIREDLEVEL\b/.test(selectedPattern?.ncalc || '');
+  const resolvedAssembledFormula = useMemo(() => {
+    if (!assembledFormula || effectiveAcquiredLevel == null || !patternUsesAcquiredLevel) return null;
+    return assembledFormula.replace(/\bACQUIREDLEVEL\b/g, String(effectiveAcquiredLevel));
+  }, [assembledFormula, effectiveAcquiredLevel, patternUsesAcquiredLevel]);
 
   // ── Duplicate detection ───────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
@@ -740,6 +766,47 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                         </Box>
                       );
                     })()}
+                    {patternUsesAcquiredLevel && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox size="small"
+                              checked={acquiredLevelOverride != null}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setAcquiredLevelOverride(castableAcquiredLevel ?? 0);
+                                } else {
+                                  setAcquiredLevelOverride(null);
+                                }
+                              }} />
+                          }
+                          label={<Typography variant="body2">ACQUIREDLEVEL</Typography>}
+                          sx={{ minWidth: 130 }}
+                        />
+                        {acquiredLevelOverride != null ? (
+                          <TextField
+                            size="small" type="number" label="Preview override" sx={{ width: 120 }}
+                            value={acquiredLevelOverride}
+                            onChange={(e) => setAcquiredLevelOverride(e.target.value === '' ? 0 : Number(e.target.value))}
+                          />
+                        ) : (
+                          <TextField
+                            size="small"
+                            label={castableAcquiredLevel != null ? 'From castable' : 'No castable ref'}
+                            value={castableAcquiredLevel ?? '—'}
+                            disabled sx={{ width: 120 }}
+                            inputProps={{ style: { fontFamily: 'monospace' } }}
+                          />
+                        )}
+                        <Typography variant="caption" color="text.secondary">
+                          {acquiredLevelOverride != null
+                            ? `preview only — not saved; ACQUIREDLEVEL stays symbolic in formulas.json`
+                            : castableAcquiredLevel != null
+                              ? `derived from referenced castable (min level ${castableAcquiredLevel})`
+                              : `pick a castable ref or check override to preview`}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               ),
@@ -778,6 +845,22 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
             }}>
               {assembledFormula}
             </Box>
+            {resolvedAssembledFormula && (
+              <>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Resolved preview (ACQUIREDLEVEL = {effectiveAcquiredLevel})
+                  {acquiredLevelOverride == null && refName ? ` from referenced ${refType} "${refName}"` : ''}
+                  {acquiredLevelOverride != null ? ' — from preview override' : ''}
+                </Typography>
+                <Box sx={{
+                  bgcolor: 'action.hover', borderRadius: 1, p: 1.5,
+                  fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all', lineHeight: 1.6, opacity: 0.85,
+                }}>
+                  {resolvedAssembledFormula}
+                </Box>
+              </>
+            )}
           </Paper>
         )}
 
