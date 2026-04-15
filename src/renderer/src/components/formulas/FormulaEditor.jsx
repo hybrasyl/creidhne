@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box, Button, TextField, Typography, FormControl, InputLabel, Select, MenuItem,
   Snackbar, Alert, Divider, Checkbox, FormControlLabel, Autocomplete, Paper, Chip,
+  Accordion, AccordionSummary, AccordionDetails, Stack,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useRecoilValue } from 'recoil';
 import { libraryIndexState, activeLibraryState } from '../../recoil/atoms';
 import CommentField from '../shared/CommentField';
@@ -235,6 +237,24 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
     return buildCoefficientKey(coeffEffect, coeffTargeting, coeffDelivery);
   }, [coeffEffect, coeffTargeting, coeffDelivery]);
 
+  // ── ACQUIREDLEVEL preview resolution ──────────────────────────────────────
+  // ACQUIREDLEVEL is an authoring-time variable: the server never sees it;
+  // at XML save time it gets replaced with the castable's required min level.
+  // In the editor we can preview the resolved value when either (a) a
+  // castable is referenced (→ libraryIndex.castableRequiredLevels), or
+  // (b) the user sets a manual preview override below.
+  //
+  // Override is NOT saved with the formula (ACQUIREDLEVEL stays symbolic in
+  // formulas.json so the same formula works across castables).
+  const [acquiredLevelOverride, setAcquiredLevelOverride] = useState(null);
+
+  const castableAcquiredLevel = useMemo(
+    () => (refType === 'castable' && refName ? libraryIndex?.castableRequiredLevels?.[refName] : null) ?? null,
+    [refType, refName, libraryIndex],
+  );
+
+  const effectiveAcquiredLevel = acquiredLevelOverride != null ? acquiredLevelOverride : castableAcquiredLevel;
+
   const castableRef = useMemo(() => ({
     budgetDimension: budgetDimension === 'line' ? 'line' : 'cd',
     lines: castableLines,
@@ -268,6 +288,14 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
     }
     return assembleFormula(selectedPattern.ncalc, resolved, selectedPattern.parameters);
   }, [selectedPattern, paramValues, settings, resolvedCoefficient]);
+
+  // Preview-only: substitute ACQUIREDLEVEL with the resolved value. The
+  // assembledFormula above stays symbolic — that's what gets saved.
+  const patternUsesAcquiredLevel = /\bACQUIREDLEVEL\b/.test(selectedPattern?.ncalc || '');
+  const resolvedAssembledFormula = useMemo(() => {
+    if (!assembledFormula || effectiveAcquiredLevel == null || !patternUsesAcquiredLevel) return null;
+    return assembledFormula.replace(/\bACQUIREDLEVEL\b/g, String(effectiveAcquiredLevel));
+  }, [assembledFormula, effectiveAcquiredLevel, patternUsesAcquiredLevel]);
 
   // ── Duplicate detection ───────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
@@ -489,8 +517,16 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
           )}
         </Paper>
 
+        {/* All formula-builder inputs grouped into one accordion */}
+        <Accordion variant="outlined" defaultExpanded disableGutters>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="subtitle2">Formula builder — coefficient · base · weapon · stats · constants</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={2} divider={<Divider flexItem />}>
+
         {/* Coefficient Selection */}
-        <Paper variant="outlined" sx={{ p: 2 }}>
+        <Box>
           <Typography variant="subtitle2" gutterBottom>Coefficient</Typography>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -524,7 +560,7 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
               </Typography>
             </Box>
           </Box>
-        </Paper>
+        </Box>
 
         {/* Pattern Parameters */}
         {selectedPattern && (() => {
@@ -542,11 +578,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
             && p.type !== 'stat_block' && p.type !== 'setting',
           );
 
-          return (
-            <>
-              {/* Base Damage section */}
-              {(baseParam || randParam) && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+          // Return an ARRAY (not a Fragment) so each section becomes a real
+          // Stack child and inherits dividers + spacing.
+          return [
+              /* Base Damage section */
+              (baseParam || randParam) && (
+                <Box key="base">
                   <Typography variant="subtitle2" gutterBottom>Base Damage</Typography>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     {baseParam && (
@@ -591,12 +628,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       );
                     })()}
                   </Box>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Weapon Damage section */}
-              {weaponParam && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Weapon Damage section */
+              weaponParam && (
+                <Box key="weapon">
                   <Typography variant="subtitle2" gutterBottom>Weapon Damage</Typography>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <FormControlLabel
@@ -621,23 +658,23 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       </>
                     )}
                   </Box>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Stat Block section */}
-              {statParams.map((p) => (
-                <Paper key={p.key} variant="outlined" sx={{ p: 2 }}>
+              /* Stat Block section — spread so each gets its own Stack slot */
+              ...statParams.map((p) => (
+                <Box key={`stat-${p.key}`}>
                   <Typography variant="subtitle2" gutterBottom>{p.label}</Typography>
                   <StatBlockBuilder
                     rows={paramValues[p.key] || []}
                     onChange={(rows) => updateParam(p.key, rows)}
                   />
-                </Paper>
-              ))}
+                </Box>
+              )),
 
-              {/* Castable Cost (DA Classic) */}
-              {costParam && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Castable Cost (DA Classic) */
+              costParam && (
+                <Box key="cost">
                   <Typography variant="subtitle2" gutterBottom>{costParam.label}</Typography>
                   <NumberParam
                     value={paramValues[costParam.key]} label="Mana Cost"
@@ -646,12 +683,12 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                     Enter the castable's static MP cost. Percentage-based costs are not supported.
                   </Typography>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Settings + Coefficient with per-formula overrides */}
-              {(settingParams.length > 0 || coeffParam) && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Settings + Coefficient with per-formula overrides */
+              (settingParams.length > 0 || coeffParam) && (
+                <Box key="constants">
                   <Typography variant="subtitle2" gutterBottom>Formula Constants & Coefficient</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {settingParams.map((p) => {
@@ -729,13 +766,54 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                         </Box>
                       );
                     })()}
+                    {patternUsesAcquiredLevel && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox size="small"
+                              checked={acquiredLevelOverride != null}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setAcquiredLevelOverride(castableAcquiredLevel ?? 0);
+                                } else {
+                                  setAcquiredLevelOverride(null);
+                                }
+                              }} />
+                          }
+                          label={<Typography variant="body2">ACQUIREDLEVEL</Typography>}
+                          sx={{ minWidth: 130 }}
+                        />
+                        {acquiredLevelOverride != null ? (
+                          <TextField
+                            size="small" type="number" label="Preview override" sx={{ width: 120 }}
+                            value={acquiredLevelOverride}
+                            onChange={(e) => setAcquiredLevelOverride(e.target.value === '' ? 0 : Number(e.target.value))}
+                          />
+                        ) : (
+                          <TextField
+                            size="small"
+                            label={castableAcquiredLevel != null ? 'From castable' : 'No castable ref'}
+                            value={castableAcquiredLevel ?? '—'}
+                            disabled sx={{ width: 120 }}
+                            inputProps={{ style: { fontFamily: 'monospace' } }}
+                          />
+                        )}
+                        <Typography variant="caption" color="text.secondary">
+                          {acquiredLevelOverride != null
+                            ? `preview only — not saved; ACQUIREDLEVEL stays symbolic in formulas.json`
+                            : castableAcquiredLevel != null
+                              ? `derived from referenced castable (min level ${castableAcquiredLevel})`
+                              : `pick a castable ref or check override to preview`}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
-                </Paper>
-              )}
+                </Box>
+              ),
 
-              {/* Any remaining params */}
-              {otherParams.length > 0 && (
-                <Paper variant="outlined" sx={{ p: 2 }}>
+              /* Any remaining params */
+              otherParams.length > 0 && (
+                <Box key="other">
                   <Typography variant="subtitle2" gutterBottom>Other Parameters</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {otherParams.map((p) => (
@@ -748,11 +826,13 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
                       </Box>
                     ))}
                   </Box>
-                </Paper>
-              )}
-            </>
-          );
+                </Box>
+              ),
+          ].filter(Boolean);
         })()}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
 
         {/* Assembled Formula */}
         {selectedPattern && assembledFormula && (
@@ -765,6 +845,22 @@ function FormulaEditor({ formula, allFormulas, isExisting, onSave, onDirtyChange
             }}>
               {assembledFormula}
             </Box>
+            {resolvedAssembledFormula && (
+              <>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5, mb: 0.5 }}>
+                  Resolved preview (ACQUIREDLEVEL = {effectiveAcquiredLevel})
+                  {acquiredLevelOverride == null && refName ? ` from referenced ${refType} "${refName}"` : ''}
+                  {acquiredLevelOverride != null ? ' — from preview override' : ''}
+                </Typography>
+                <Box sx={{
+                  bgcolor: 'action.hover', borderRadius: 1, p: 1.5,
+                  fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all', lineHeight: 1.6, opacity: 0.85,
+                }}>
+                  {resolvedAssembledFormula}
+                </Box>
+              </>
+            )}
           </Paper>
         )}
 

@@ -85,22 +85,23 @@ const BUILTIN_PATTERNS = [
     id: 'new-hybrasyl',
     name: 'New Hybrasyl',
     description:
-      'Multiplicative formula. Base damage scales with level, optional random variance, ' +
+      'Multiplicative formula. Base damage scales with levels gained since the spell ' +
+      'was acquired (SOURCELEVEL − ACQUIREDLEVEL, floor 1), plus optional random variance ' +
       'and weapon damage, then multiplied by a stat ratio (stat block / divisor) and ' +
       'the coefficient. The divisor controls how much stats amplify the base damage.',
     structure:
-      '({Base} * MAX(SOURCELEVEL - 1, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff})\n' +
+      '({Base} * MAX(SOURCELEVEL - ACQUIREDLEVEL, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff})\n' +
       '  * (1 + {StatBlock} / {Divisor})\n' +
       '  * {Coefficient}',
     ncalc:
-      '({Base} * MAX(SOURCELEVEL - 1, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff}) ' +
+      '({Base} * MAX(SOURCELEVEL - ACQUIREDLEVEL, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff}) ' +
       '* (1 + {StatBlock} / {Divisor}) * {Coefficient}',
     parameters: [
       {
         key: 'Base',
         label: 'Base Damage',
         type: 'number',
-        description: 'Flat multiplier on character level for the base damage term.',
+        description: 'Flat multiplier on the level delta (SOURCELEVEL − ACQUIREDLEVEL, floor 1) for the base damage term.',
       },
       {
         key: 'Rand',
