@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Status xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="RogSigilAnnoy" Icon="86" Duration="1" Tick="1">
+  <Categories>
+    <Category>PeriodicDmg</Category>
+    <Category>Withered</Category>
+    <Category>Sith</Category>
+  </Categories>
+  <Effects>
+    <OnApply>
+      <Messages>
+        <Target>Pain courses through your body.</Target>
+      </Messages>
+    </OnApply>
+  </Effects>
+</Status>

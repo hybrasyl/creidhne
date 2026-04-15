@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<Recipe xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
+  <Name>test1</Name>
+  <Item Name="Finished Amethyst"/>
+  <Duration Length="5"/>
+  <Description>Fuck you</Description>
+  <Ingredients>
+    <Ingredient Name="Uncut Amethyst" Quantity="1"/>
+  </Ingredients>
+</Recipe>

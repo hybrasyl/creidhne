@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<Creature xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Gabbaghoul" Sprite="322" BehaviorSet="RareGabba">
+  <Hostility>
+    <Players/>
+  </Hostility>
+</Creature>

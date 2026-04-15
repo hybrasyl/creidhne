@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<SpawnGroup xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="OneDummy" BaseLevel="99" Disabled="false">
+	<Spawns>
+		<Spawn Name="Training Dummy" Flags="Active MovementDisabled AiDisabled DeathDisabled">
+			<Coordinates>
+				<Coordinate X="25" Y="1"/>
+			</Coordinates>
+			<Damage MinDmg="0" MaxDmg="0" Elements="None"/>
+			<Defense Ac="-1" Elements="None"/>
+      <Spec Interval="2" MaxPerInterval="20" MaxCount="1"/>
+      <Base BehaviorSet="DummyTrain" Level="99" />
+		</Spawn>
+	</Spawns>
+</SpawnGroup>

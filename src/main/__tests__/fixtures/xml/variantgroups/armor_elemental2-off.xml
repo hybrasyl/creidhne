@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<VariantGroup xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
+  <Name>Elemental2-Off</Name>
+  <Variant>
+    <Name>Wood</Name>
+    <Modifier>Wood</Modifier>
+    <Properties>
+      <Flags>Depositable Vendorable Exchangeable</Flags>
+      <Physical Weight="1" Value="5" Durability="1"/>
+      <StatModifiers BaseOffensiveElement="Wood">
+      </StatModifiers>
+    </Properties>
+  </Variant>
+  <Variant>
+    <Name>Metal</Name>
+    <Modifier>Metal</Modifier>
+    <Properties>
+      <Flags>Depositable Vendorable Exchangeable</Flags>
+      <Physical Weight="1" Value="5" Durability="1"/>
+      <StatModifiers BaseOffensiveElement="Metal">
+      </StatModifiers>
+    </Properties>
+  </Variant>
+  <Variant>
+    <Name>Undead</Name>
+    <Modifier>Undead</Modifier>
+    <Properties>
+      <Flags>Depositable Vendorable Exchangeable</Flags>
+      <Physical Weight="1" Value="5" Durability="1"/>
+      <StatModifiers BaseOffensiveElement="Undead">
+      </StatModifiers>
+    </Properties>
+  </Variant>
+</VariantGroup>

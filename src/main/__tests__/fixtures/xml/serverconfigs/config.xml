@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+
+  <ServerConfig xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
+  <Logging>
+    <Log Type="Scripting" Destination="logs/Scripting-.log" Level="Info"/>
+    <Log Type="Spawn" Destination="logs/Spawns-.log" Level="Warn"/>
+    <Log Type="WorldData" Destination="logs/XML-.log" Level="Warn"/>
+    <Log Type="General" Destination="logs/General-.log" Level="Warn"/>
+    <Log Type="UserActivity" Destination="logs/User-.log" Level="Info"/>
+    <Log Type="GmActivity" Destination="logs/GM-.log" Level="Info"/>
+    <Log Type="Packet" Destination="logs/Packet-.log" Level="Info"/>
+  </Logging>
+  <WorldDataDir>C:\Users\Ashley Russell\Documents\Hybrasyl\world</WorldDataDir>
+  <DataStore Host="127.0.0.1"/>
+  <Motd>WELCOME TO HYBRASYL - QUICK START EDITION. You should likely add your player name to the privileged section of config.xml.</Motd>
+  <Network>
+    <Lobby BindAddress="127.0.0.1" Port="2610" />
+    <Login BindAddress="127.0.0.1" Port="2611" />
+    <World BindAddress="127.0.0.1" Port="2612" />
+  </Network>
+  <Access>
+    <Privileged>Kedio, Dalta</Privileged>
+  </Access>
+  <Boards/>
+  <Time>
+    <Ages>
+      <Age Name="Danaan" StartDate="1640-01-03T01:00:00Z" EndDate="2020-09-08T04:00:00Z"/>
+      <!--<Age Name="Deoch" StartDate="2019-09-08T04:00:00Z" StartYear="1"/> -->
+    </Ages>
+    <ServerStart>2020-05-01T04:00:00Z</ServerStart>
+  </Time>
+  <Handlers>
+    <Death Active="true" Perishable="true" GroupNotify="true">
+      <Map X="14" Y="6">Chaotic Threshold</Map>
+      <Coma Timeout="30" Effect="24">Coma</Coma>
+      <Penalty Xp="0.02" Hp="0.01" />
+      <LegendMark Increment="true">Scar of Sgrios</LegendMark>
+    </Death>
+    <NewPlayer>
+      <StartMaps>
+        <StartMap X="2" Y="3">Piet Inn Room 1</StartMap>
+        <StartMap X="2" Y="4">Piet Inn Room 2</StartMap>
+        <StartMap X="3" Y="4">Piet Inn Room 3</StartMap>
+        <StartMap X="3" Y="3">Piet Inn Room 4</StartMap>
+        <StartMap X="3" Y="2">Piet Inn Room 5</StartMap>
+        <StartMap X="3" Y="3">Piet Inn Room 6</StartMap>
+        <StartMap X="4" Y="2">Piet Inn Room 7</StartMap>
+        <StartMap X="2" Y="4">Piet Inn Room 8</StartMap>
+        <StartMap X="3" Y="3">Piet Inn Room 9</StartMap>
+      </StartMaps>
+    </NewPlayer>
+</Handlers>
+</ServerConfig>
