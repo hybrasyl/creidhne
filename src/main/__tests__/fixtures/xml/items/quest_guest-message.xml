@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Item xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
+  <Name>Guest Message</Name>
+  <Properties>
+    <Appearance Sprite="313"/>
+    <Stackable Max="1"/>
+    <Physical Value="0" Weight="1" Durability="0"/>
+    <Equipment Slot="None"/>
+    <Flags>Depositable</Flags>
+    <Vendor ShopTab="Quest"/>
+    <Restrictions>
+      <Level Min="1" Max="99"/>
+    </Restrictions>
+  </Properties>
+</Item>

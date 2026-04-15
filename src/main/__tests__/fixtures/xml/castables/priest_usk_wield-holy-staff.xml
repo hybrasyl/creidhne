@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Castable xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Lines="1" Icon="14" Book="UtilitySkill" Elements="None" Class="Priest" Reflectable="false">
+  <Name>Wield Holy Staff</Name>
+  <Descriptions>
+    <Description Class="Priest">Allows you to hold a holy staff</Description>
+  </Descriptions>
+  <Categories>
+    <Category>Skill</Category>
+    <Category>Utility</Category>
+    <Category>Restrict Staff</Category>
+  </Categories>
+  <Intents>
+    <Intent UseType="Unusable" Flags="Self">
+    </Intent>
+  </Intents>
+  <Requirements>
+    <Requirement Class="Priest">
+      <Level Min="5" Max="99"/>
+      <Gold>685</Gold>
+      <Physical Str="3" Int="6" Wis="8" Con="3" Dex="3"/>
+      <Items>
+        <Item Quantity="2">Jade Earrings</Item>
+      </Items>
+    </Requirement>
+  </Requirements>
+</Castable>
