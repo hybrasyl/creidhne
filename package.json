@@ -1,6 +1,6 @@
 {
   "name": "Creidhne",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A bespoke XML editor for dreaming Hybrasyl worlds into reality",
   "main": "./out/main/index.js",
   "author": "Sabrael (http://www.github.com/Caeldeth)",
@@ -26,7 +26,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@eriscorp/dalib-ts": "^1.0.1",
-    "@eriscorp/hybindex-ts": "file:../hybindex-ts",
+    "@eriscorp/hybindex-ts": "^0.1.0",
     "@fontsource/cinzel": "^5.2.8",
     "@fontsource/cinzel-decorative": "^5.2.8",
     "@fontsource/crimson-pro": "^5.2.8",
