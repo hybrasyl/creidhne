@@ -19,6 +19,7 @@ import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/c
 import SpritePickerDialog from '../shared/SpritePickerDialog';
 import EditorHeader from '../shared/EditorHeader';
 import StringKeyField from '../shared/StringKeyField';
+import OpenScriptByNameButton from '../shared/OpenScriptByNameButton';
 
 function deriveNpcPrefix(job) {
   if (!job) return 'npc';
@@ -353,6 +354,9 @@ function NPCEditor({ npc, initialFileName, isArchived, isExisting, onSave, onArc
                     dupStatus === 'archived' ? `"${data.name}" exists in archive` :
                     undefined
                   }
+                  InputProps={{
+                    endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open NPC script" />,
+                  }}
                   sx={{
                     flex: 1,
                     ...(dupStatus === 'archived' && {

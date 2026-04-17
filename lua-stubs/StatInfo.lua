@@ -1,0 +1,142 @@
+-- Generated from Objects/StatInfo.cs
+-- Do not edit manually — regenerate with: node scripts/generate-lua-stubs.js
+
+---@class StatInfo
+---@field StatInfo class
+---@field HpPercentage number
+---@field Level number
+---@field Experience number
+---@field Faith number
+---@field Gold number
+---@field Ability number
+---@field AbilityExp number
+---@field DeltaHp number
+---@field DeltaMp number
+---@field BaseHp number
+---@field BonusHp number
+---@field Hp number
+---@field BaseMp number
+---@field BonusMp number
+---@field Mp number
+---@field BaseStr number
+---@field BonusStr number
+---@field BaseInt number
+---@field BonusInt number
+---@field BaseWis number
+---@field BonusWis number
+---@field BaseCon number
+---@field BonusCon number
+---@field BaseDex number
+---@field BonusDex number
+---@field BaseCrit number
+---@field BonusCrit number
+---@field Crit number
+---@field BaseMagicCrit number
+---@field BonusMagicCrit number
+---@field MagicCrit number
+---@field BaseDmg number
+---@field BonusDmg number
+---@field BaseHit number
+---@field BonusHit number
+---@field BaseAc number
+---@field BonusAc number
+---@field BaseMr number
+---@field BonusMr number
+---@field BaseRegen number
+---@field BonusRegen number
+---@field BaseInboundDamageModifier number
+---@field BonusInboundDamageModifier number
+---@field InboundDamageModifier number
+---@field BaseInboundHealModifier number
+---@field BonusInboundHealModifier number
+---@field InboundHealModifier number
+---@field BaseOutboundDamageModifier number
+---@field BonusOutboundDamageModifier number
+---@field OutboundDamageModifier number
+---@field BaseOutboundHealModifier number
+---@field BonusOutboundHealModifier number
+---@field OutboundHealModifier number
+---@field BaseReflectMagical number
+---@field BonusReflectMagical number
+---@field ReflectMagical number
+---@field BaseReflectPhysical number
+---@field BonusReflectPhysical number
+---@field ReflectPhysical number
+---@field BaseExtraGold number
+---@field BonusExtraGold number
+---@field ExtraGold number
+---@field BaseDodge number
+---@field BonusDodge number
+---@field Dodge number
+---@field BaseMagicDodge number
+---@field BonusMagicDodge number
+---@field MagicDodge number
+---@field BaseExtraXp number
+---@field BonusExtraXp number
+---@field ExtraXp number
+---@field BaseExtraItemFind number
+---@field BonusExtraItemFind number
+---@field ExtraItemFind number
+---@field BaseExtraFaith number
+---@field BonusExtraFaith number
+---@field ExtraFaith number
+---@field BaseLifeSteal number
+---@field BonusLifeSteal number
+---@field LifeSteal number
+---@field BaseManaSteal number
+---@field BonusManaSteal number
+---@field ManaSteal number
+---@field BaseInboundDamageToMp number
+---@field BonusInboundDamageToMp number
+---@field InboundDamageToMp number
+---@field Shield number
+---@field BaseOffensiveElement ElementType
+---@field BaseDefensiveElement ElementType
+---@field OffensiveElementOverride ElementType
+---@field DefensiveElementOverride ElementType
+---@field OffensiveElement ElementType
+---@field DefensiveElement ElementType
+---@field OffensiveElementStr string
+---@field DefensiveElementStr string
+---@field OffensiveElementOverrideStr string
+---@field DefensiveElementOverrideStr string
+---@field MaximumHp number
+---@field MaximumMp number
+---@field Str number
+---@field Int number
+---@field Wis number
+---@field Con number
+---@field Dex number
+---@field Dmg number
+---@field MrRating number
+---@field DmgRating number
+---@field HitRating number
+---@field Hit number
+---@field Ac sbyte
+---@field Mr number
+---@field Regen number
+---@field ElementalModifiers ElementalModifiers
+---@field NoBaseChanges boolean
+---@field NoBonusChanges boolean
+---@field NoExperienceChanges boolean
+---@field NoResistanceChanges boolean
+---@field NoAugmentChanges boolean
+---@field NoElementalModifiers boolean
+---@field Empty boolean
+local StatInfo = {}
+
+
+---@return string
+function StatInfo.ToString() end
+
+---Apply the changes of a passed StatInfo. The attributes within are applied to this StatInfo object.
+---@param si1 StatInfo The StatInfo object to apply to this one
+---@param experience? boolean Boolean indicating whether or not to handle experience (Level/Exp/Ab/AbExp)
+function StatInfo.Apply(si1, experience) end
+
+---Remove the changes of a passed StatInfo. The attributes within are applied to this StatInfo object.
+---@param si1 StatInfo The StatInfo object to apply to this one
+---@param experience? boolean Boolean indicating whether or not to handle experience (Level/Exp/Ab/AbExp)
+function StatInfo.Remove(si1, experience) end
+
+return StatInfo

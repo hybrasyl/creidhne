@@ -55,6 +55,21 @@ export function createSettingsManager(userDataPath) {
     return { ...DEFAULTS }
   }
 
+  // Windows EPERM workaround: rename fails intermittently when antivirus or
+  // file watchers (VS Code, Windows Search) hold a handle on the target.
+  // Retry with backoff; if still stuck, unlink target then rename.
+  async function renameWithRetry(src, dest, retries = 3, delay = 50) {
+    for (let i = 0; i < retries; i++) {
+      try { await fs.rename(src, dest); return } catch (err) {
+        if (err.code !== 'EPERM' && err.code !== 'EACCES') throw err
+        await new Promise((r) => setTimeout(r, delay * (i + 1)))
+      }
+    }
+    // Final attempt: remove target first, then rename
+    try { await fs.unlink(dest) } catch { /* target may not exist */ }
+    await fs.rename(src, dest)
+  }
+
   let saveQueue = Promise.resolve()
 
   function save(data) {
@@ -65,8 +80,8 @@ export function createSettingsManager(userDataPath) {
       await fs.writeFile(tmp, content, 'utf-8')
       // 2. Rotate: current primary → backup
       try { await fs.copyFile(primary, backup) } catch { /* primary may not exist yet */ }
-      // 3. Atomic rename tmp → primary
-      await fs.rename(tmp, primary)
+      // 3. Atomic rename tmp → primary (with retry for Windows EPERM)
+      await renameWithRetry(tmp, primary)
     })
     return saveQueue
   }

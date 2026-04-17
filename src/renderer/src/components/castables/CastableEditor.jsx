@@ -605,7 +605,7 @@ function CastableEditor({
         {/* ── Script ── */}
         <Section title="Script" open={openScript} onToggle={() => setOpenScript((v) => !v)}>
           <ScriptAutocomplete
-            freeSolo label="Script" fullWidth
+            freeSolo label="Script" fullWidth subfolder="castable"
             value={data.script || ''}
             onChange={(val) => updateData((d) => ({ ...d, script: val }))}
           />

@@ -22,7 +22,7 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
       {/* Line 1: positional / timing fields */}
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexWrap: 'wrap', mb: 1 }}>
         <ScriptAutocomplete
-          freeSolo label="Script" sx={{ flex: 1, minWidth: 200 }}
+          freeSolo label="Script" sx={{ flex: 1, minWidth: 200 }} subfolder="reactor"
           value={reactor.script || ''}
           onChange={(val) => set('script', val)}
         />

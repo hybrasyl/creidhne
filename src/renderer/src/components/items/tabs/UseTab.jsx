@@ -78,7 +78,7 @@ function UseTab({ data, onChange }) {
       {u !== null && (
         <>
           <ScriptAutocomplete
-            label="Script" fullWidth sx={{ mb: 2 }}
+            label="Script" fullWidth sx={{ mb: 2 }} subfolder="item"
             value={u.script || ''}
             onChange={(val) => onChange({ ...data, use: { ...u, script: val } })}
           />
@@ -262,7 +262,7 @@ function UseTab({ data, onChange }) {
             )}
             {sourceType === 'Script' && (
               <ScriptAutocomplete
-                label="Script" sx={{ flex: 1, minWidth: 160 }}
+                label="Script" sx={{ flex: 1, minWidth: 160 }} subfolder="item"
                 value={proc.script || ''}
                 onChange={(val) => setProc(index, 'script', val)}
               />
