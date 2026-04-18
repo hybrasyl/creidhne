@@ -138,18 +138,22 @@ function UseTab({ data, onChange }) {
                 type="number"
                 value={u.teleport.x}
                 onChange={setSubField('teleport', 'x')}
-                inputProps={{ min: 0, max: 255 }}
                 size="small"
                 sx={{ width: 100 }}
+                slotProps={{
+                  htmlInput: { min: 0, max: 255 }
+                }}
               />
               <TextField
                 label="Y"
                 type="number"
                 value={u.teleport.y}
                 onChange={setSubField('teleport', 'y')}
-                inputProps={{ min: 0, max: 255 }}
                 size="small"
                 sx={{ width: 100 }}
+                slotProps={{
+                  htmlInput: { min: 0, max: 255 }
+                }}
               />
             </Box>
           )}
@@ -234,7 +238,9 @@ function UseTab({ data, onChange }) {
                 size="small"
                 sx={{ width: 100 }}
                 onChange={(e) => setAddStatus(index, 'intensity', e.target.value)}
-                inputProps={{ step: 0.1 }}
+                slotProps={{
+                  htmlInput: { step: 0.1 }
+                }}
               />
               <TextField
                 label="Tick"
@@ -291,7 +297,6 @@ function UseTab({ data, onChange }) {
           <Divider sx={{ my: 1 }} />
         </>
       )}
-
       {/* Motions — always shown */}
       <Typography variant="subtitle2" gutterBottom>
         Motions
@@ -346,9 +351,7 @@ function UseTab({ data, onChange }) {
       <Button startIcon={<AddIcon />} size="small" onClick={addMotion} sx={{ mb: 1 }}>
         Add Motion
       </Button>
-
       <Divider sx={{ my: 1 }} />
-
       {/* Procs — always shown */}
       <Typography variant="subtitle2" gutterBottom>
         Procs
@@ -426,20 +429,22 @@ function UseTab({ data, onChange }) {
                 size="small"
                 sx={{ width: 100 }}
                 onChange={(e) => setProc(index, 'chance', e.target.value)}
-                inputProps={{ min: 0, max: 1, step: 0.01 }}
+                slotProps={{
+                  htmlInput: { min: 0, max: 1, step: 0.01 }
+                }}
               />
             )}
             <IconButton size="small" color="error" onClick={() => removeProc(index)}>
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
-        )
+        );
       })}
       <Button startIcon={<AddIcon />} size="small" onClick={addProc}>
         Add Proc
       </Button>
     </Box>
-  )
+  );
 }
 
 export default UseTab

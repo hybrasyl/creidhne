@@ -238,7 +238,9 @@ function BehaviorsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" sx={{
+              color: "text.secondary"
+            }}>
               Select a behavior set or create a new one.
             </Typography>
           </Box>
@@ -266,7 +268,7 @@ function BehaviorsPage() {
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default BehaviorsPage

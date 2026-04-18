@@ -170,7 +170,6 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           ))}
         </Select>
       </FormControl>
-
       {isCategory ? (
         <TextField
           label="Category"
@@ -193,7 +192,6 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           renderInput={(params) => <TextField {...params} label={type || 'Value'} />}
         />
       )}
-
       <FormControl size="small" sx={{ minWidth: 150 }}>
         <InputLabel>Message Type</InputLabel>
         <Select
@@ -208,21 +206,21 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           ))}
         </Select>
       </FormControl>
-
       <TextField
         label="Message"
         size="small"
         sx={{ flex: 1, minWidth: 140 }}
         value={message}
         onChange={(e) => onChangeField(index, 'message', e.target.value)}
-        inputProps={{ maxLength: 50 }}
+        slotProps={{
+          htmlInput: { maxLength: 50 }
+        }}
       />
-
       <IconButton size="small" color="error" onClick={() => onRemove(index)}>
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function LootContent({ loot, lootsetOptions, onChange }) {
@@ -256,7 +254,9 @@ function LootContent({ loot, lootsetOptions, onChange }) {
             sx={{ width: 90 }}
             value={entry.rolls}
             onChange={(e) => set(i, 'rolls', e.target.value.replace(/\D/g, ''))}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
           <TextField
             label="Chance"
@@ -264,7 +264,9 @@ function LootContent({ loot, lootsetOptions, onChange }) {
             sx={{ width: 90 }}
             value={entry.chance}
             onChange={(e) => set(i, 'chance', e.target.value.replace(/\D/g, ''))}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
           <IconButton size="small" color="error" onClick={() => remove(i)}>
             <DeleteIcon fontSize="small" />
@@ -275,7 +277,7 @@ function LootContent({ loot, lootsetOptions, onChange }) {
         Add Loot
       </Button>
     </>
-  )
+  );
 }
 
 function HostilityContent({ hostility, onChange }) {
@@ -359,7 +361,9 @@ function CookiesContent({ cookies, onChange }) {
             sx={{ flex: 1 }}
             value={cookie.value}
             onChange={(e) => set(i, 'value', e.target.value)}
-            inputProps={{ maxLength: 128 }}
+            slotProps={{
+              htmlInput: { maxLength: 128 }
+            }}
           />
           <IconButton size="small" color="error" onClick={() => remove(i)}>
             <DeleteIcon fontSize="small" />
@@ -370,7 +374,7 @@ function CookiesContent({ cookies, onChange }) {
         Add Cookie
       </Button>
     </>
-  )
+  );
 }
 
 // ── Spawn accordion ───────────────────────────────────────────────────────────
@@ -416,7 +420,6 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
           <DeleteIcon fontSize="small" />
         </IconButton>
       </Box>
-
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -454,9 +457,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
               disableCloseOnSelect
               size="small"
               sx={{ flex: 2, minWidth: 200 }}
-              renderTags={(value, getTagProps) =>
+              renderValue={(value, getItemProps) =>
                 value.map((option, i) => (
-                  <Chip key={option} label={option} size="small" {...getTagProps({ index: i })} />
+                  <Chip key={option} label={option} size="small" {...getItemProps({ index: i })} />
                 ))
               }
               renderInput={(params) => <TextField {...params} label="Flags" />}
@@ -485,7 +488,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
               sx={{ width: 130 }}
               value={spawn.despawnAfter}
               onChange={(e) => set('despawnAfter', posInt(e.target.value))}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
             <FormControlLabel
               control={
@@ -576,7 +581,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                     )
                     set('coordinates', updated)
                   }}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Y"
@@ -589,7 +596,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                     )
                     set('coordinates', updated)
                   }}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <IconButton
                   size="small"
@@ -624,7 +633,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 120 }}
                   value={spawn.combat.minDmg}
                   onChange={(e) => setNested('combat', 'minDmg', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Max Damage"
@@ -632,7 +643,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 120 }}
                   value={spawn.combat.maxDmg}
                   onChange={(e) => setNested('combat', 'maxDmg', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <Autocomplete
                   options={ELEMENT_TYPES}
@@ -651,7 +664,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 120 }}
                   value={spawn.combat.ac}
                   onChange={(e) => setNested('combat', 'ac', negInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Magic Resist"
@@ -659,7 +674,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 120 }}
                   value={spawn.combat.mr}
                   onChange={(e) => setNested('combat', 'mr', negInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <Autocomplete
                   options={ELEMENT_TYPES}
@@ -695,7 +712,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                 sx={{ width: 90 }}
                 value={spawn.base.level}
                 onChange={(e) => setNested('base', 'level', posInt(e.target.value))}
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <TextField
                 label="Weak Chance"
@@ -703,7 +722,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                 sx={{ width: 120 }}
                 value={spawn.base.weakChance}
                 onChange={(e) => setNested('base', 'weakChance', posDec(e.target.value))}
-                inputProps={{ inputMode: 'decimal' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'decimal' }
+                }}
               />
               <TextField
                 label="Strong Chance"
@@ -711,7 +732,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                 sx={{ width: 120 }}
                 value={spawn.base.strongChance}
                 onChange={(e) => setNested('base', 'strongChance', posDec(e.target.value))}
-                inputProps={{ inputMode: 'decimal' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'decimal' }
+                }}
               />
             </Box>
           </Section>
@@ -739,7 +762,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 110 }}
                   value={spawn.spec.minCount}
                   onChange={(e) => setNested('spec', 'minCount', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Max Count"
@@ -747,7 +772,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 110 }}
                   value={spawn.spec.maxCount}
                   onChange={(e) => setNested('spec', 'maxCount', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Max Per Interval"
@@ -755,7 +782,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 140 }}
                   value={spawn.spec.maxPerInterval}
                   onChange={(e) => setNested('spec', 'maxPerInterval', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Interval"
@@ -763,7 +792,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 100 }}
                   value={spawn.spec.interval}
                   onChange={(e) => setNested('spec', 'interval', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Limit"
@@ -771,7 +802,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 90 }}
                   value={spawn.spec.limit}
                   onChange={(e) => setNested('spec', 'limit', posInt(e.target.value))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <TextField
                   label="Percentage"
@@ -779,7 +812,9 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
                   sx={{ width: 110 }}
                   value={spawn.spec.percentage}
                   onChange={(e) => setNested('spec', 'percentage', posDec(e.target.value))}
-                  inputProps={{ inputMode: 'decimal' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'decimal' }
+                  }}
                 />
                 <TextField
                   label="When"
@@ -815,7 +850,7 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -971,7 +1006,9 @@ function SpawngroupEditor({
               setFileNameEdited(true)
             }}
             sx={{ flex: 1 }}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <Tooltip title="Regenerate from prefix + name">
             <IconButton size="small" onClick={handleRegenerate}>
@@ -980,9 +1017,7 @@ function SpawngroupEditor({
           </Tooltip>
         </Box>
       </Box>
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* ── Basic fields ── */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -995,7 +1030,9 @@ function SpawngroupEditor({
                 sx={{ width: 130 }}
                 value={prefix}
                 onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
               <TextField
                 label="Name"
@@ -1021,7 +1058,9 @@ function SpawngroupEditor({
                 value={data.name}
                 onChange={set('name')}
                 onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <TextField
                 label="Base Level"
@@ -1029,7 +1068,9 @@ function SpawngroupEditor({
                 sx={{ width: 110 }}
                 value={data.baseLevel}
                 onChange={set('baseLevel')}
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <TextField
                 label="Despawn After"
@@ -1037,7 +1078,9 @@ function SpawngroupEditor({
                 sx={{ width: 130 }}
                 value={data.despawnAfter}
                 onChange={set('despawnAfter')}
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <FormControlLabel
                 control={
@@ -1092,7 +1135,6 @@ function SpawngroupEditor({
           ))}
         </Section>
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -1110,7 +1152,7 @@ function SpawngroupEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default SpawngroupEditor

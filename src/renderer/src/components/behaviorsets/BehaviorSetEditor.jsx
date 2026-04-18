@@ -116,7 +116,6 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           ))}
         </Select>
       </FormControl>
-
       {isCategory ? (
         <TextField
           label="Category"
@@ -140,7 +139,6 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           renderInput={(params) => <TextField {...params} label={type || 'Value'} />}
         />
       )}
-
       <FormControl size="small" sx={{ minWidth: 150 }}>
         <InputLabel>Message Type</InputLabel>
         <Select
@@ -155,21 +153,21 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           ))}
         </Select>
       </FormControl>
-
       <TextField
         label="Message"
         size="small"
         sx={{ flex: 1, minWidth: 140 }}
         value={message}
         onChange={(e) => onChangeField(index, 'message', e.target.value)}
-        inputProps={{ maxLength: 50 }}
+        slotProps={{
+          htmlInput: { maxLength: 50 }
+        }}
       />
-
       <IconButton size="small" color="error" onClick={() => onRemove(index)}>
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 // ── Casting set accordion ─────────────────────────────────────────────────────
@@ -210,7 +208,6 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
           <DeleteIcon fontSize="small" />
         </IconButton>
       </Box>
-
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -237,8 +234,10 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
               sx={{ width: 100 }}
               value={cs.interval}
               onChange={(e) => setField('interval', e.target.value.replace(/\D/g, ''))}
-              inputProps={{ inputMode: 'numeric' }}
               placeholder="15"
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
 
             <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -270,8 +269,10 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
                   e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
                 )
               }
-              inputProps={{ inputMode: 'numeric' }}
               placeholder="0"
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
 
             <FormControlLabel
@@ -332,7 +333,9 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
                     e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
                   )
                 }
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <TextField
                 label="Interval"
@@ -342,7 +345,9 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
                 onChange={(e) =>
                   changeCastableField(i, 'interval', e.target.value.replace(/\D/g, ''))
                 }
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <IconButton size="small" color="error" onClick={() => removeCastable(i)}>
                 <DeleteIcon fontSize="small" />
@@ -361,7 +366,7 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -583,9 +588,7 @@ function BehaviorSetEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* ── Basic fields (headerless) ── */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -623,7 +626,9 @@ function BehaviorSetEditor({
                 sx={{ width: 120 }}
                 value={prefix}
                 onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
               <Autocomplete
                 freeSolo
@@ -647,8 +652,10 @@ function BehaviorSetEditor({
                 sx={{ flex: 1 }}
                 value={data.statAlloc}
                 onChange={set('statAlloc')}
-                inputProps={{ spellCheck: false }}
                 placeholder="e.g. Str Int Wis Con Dex"
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <Tooltip title="Stats are applied in order: Str Int Wis Con Dex (space delimited)">
                 <HelpOutlineIcon
@@ -882,7 +889,6 @@ function BehaviorSetEditor({
           ))}
         </Section>
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -900,7 +906,7 @@ function BehaviorSetEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default BehaviorSetEditor

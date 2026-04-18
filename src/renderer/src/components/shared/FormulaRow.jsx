@@ -102,14 +102,18 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
           size="small"
           sx={{ width: 180, ...warnSx }}
           value={displayName}
-          inputProps={{ readOnly: true, tabIndex: -1 }}
+          slotProps={{
+            htmlInput: { readOnly: true, tabIndex: -1 }
+          }}
         />
         <TextField
           label="Formula"
           size="small"
           sx={{ flex: 1, minWidth: 0 }}
           value={formula || ''}
-          inputProps={{ readOnly: true, tabIndex: -1, style: { fontFamily: 'monospace' } }}
+          slotProps={{
+            htmlInput: { readOnly: true, tabIndex: -1, style: { fontFamily: 'monospace' } }
+          }}
         />
         {(formulaName || formula) && (
           <Tooltip title="Clear formula">
@@ -119,7 +123,6 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
           </Tooltip>
         )}
       </Box>
-
       {/* Issue actions */}
       {hasIssue && !addingToIndex && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -136,12 +139,13 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
           <Button size="small" color="warning" onClick={() => setPickerOpen(true)}>
             Replace from index
           </Button>
-          <Typography variant="caption" color="warning.main">
+          <Typography variant="caption" sx={{
+            color: "warning.main"
+          }}>
             {notInIndex ? 'Not in library' : 'No library entry'}
           </Typography>
         </Box>
       )}
-
       {/* Add-to-index inline form */}
       {addingToIndex && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -152,13 +156,15 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
             autoFocus
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            inputProps={{ maxLength: 128 }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAddToIndex()
               if (e.key === 'Escape') {
                 setAddingToIndex(false)
                 setNewName('')
               }
+            }}
+            slotProps={{
+              htmlInput: { maxLength: 128 }
             }}
           />
           <Button
@@ -180,7 +186,6 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
           </Button>
         </Box>
       )}
-
       <FormulaPickerDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
@@ -188,7 +193,7 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
         category={category}
       />
     </Box>
-  )
+  );
 }
 
 export default FormulaRow

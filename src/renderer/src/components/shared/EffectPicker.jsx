@@ -53,8 +53,10 @@ export default function EffectPicker({
         type="number"
         value={effectId ?? ''}
         onChange={(e) => onEffectIdChange(String(e.target.value).replace(/\D/g, ''))}
-        inputProps={{ min: 0 }}
         sx={{ width: idWidth }}
+        slotProps={{
+          htmlInput: { min: 0 }
+        }}
       />
       {showSpeed && (
         <TextField
@@ -63,8 +65,10 @@ export default function EffectPicker({
           type="number"
           value={speed ?? ''}
           onChange={(e) => onSpeedChange(String(e.target.value).replace(/\D/g, ''))}
-          inputProps={{ min: 0 }}
           sx={{ width: speedWidth }}
+          slotProps={{
+            htmlInput: { min: 0 }
+          }}
         />
       )}
       <Tooltip
@@ -93,5 +97,5 @@ export default function EffectPicker({
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

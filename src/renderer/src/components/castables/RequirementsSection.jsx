@@ -108,7 +108,6 @@ function RequirementAccordion({
         </IconButton>
         {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
       </Box>
-
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -152,7 +151,9 @@ function RequirementAccordion({
               sx={{ width: 90 }}
               value={req.levelMin}
               onChange={setNumeric('levelMin')}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
             <TextField
               label="Level Max"
@@ -160,7 +161,9 @@ function RequirementAccordion({
               sx={{ width: 90 }}
               value={req.levelMax}
               onChange={setNumeric('levelMax')}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
             <TextField
               label="Gold"
@@ -168,15 +171,19 @@ function RequirementAccordion({
               sx={{ width: 110 }}
               value={req.gold}
               onChange={setNumeric('gold')}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
             {req.levelMin ? (
               <Tooltip title="Suggested gold = 750 + (Level Min × 135)">
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ alignSelf: 'center', whiteSpace: 'nowrap' }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    alignSelf: 'center',
+                    whiteSpace: 'nowrap'
+                  }}>
                   Suggested: {750 + Number(req.levelMin) * 135}
                 </Typography>
               </Tooltip>
@@ -187,7 +194,9 @@ function RequirementAccordion({
               sx={{ width: 80 }}
               value={req.abMin}
               onChange={setNumeric('abMin')}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
             <TextField
               label="AB Max"
@@ -195,7 +204,9 @@ function RequirementAccordion({
               sx={{ width: 80 }}
               value={req.abMax}
               onChange={setNumeric('abMax')}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
           </Box>
 
@@ -209,8 +220,10 @@ function RequirementAccordion({
                 sx={{ width: 80 }}
                 value={req[key] || ''}
                 onChange={setNumeric(key)}
-                inputProps={{ inputMode: 'numeric' }}
                 placeholder="3"
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
             ))}
             {req.levelMin
@@ -243,7 +256,13 @@ function RequirementAccordion({
 
           {/* Prerequisites sub-section */}
           <Paper variant="outlined" sx={{ p: 1.5 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mb: 1
+              }}>
               Prerequisites
             </Typography>
             <FormControlLabel
@@ -319,7 +338,9 @@ function RequirementAccordion({
                   onChange={(e) =>
                     updateCastable(i, { ...c, level: e.target.value.replace(/\D/g, '') })
                   }
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <IconButton size="small" color="error" onClick={() => removeCastable(i)}>
                   <DeleteIcon fontSize="small" />
@@ -333,7 +354,13 @@ function RequirementAccordion({
 
           {/* Required Items sub-section */}
           <Paper variant="outlined" sx={{ p: 1.5 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mb: 1
+              }}>
               Required Items
             </Typography>
             {(req.items || []).map((item, i) => (
@@ -358,7 +385,9 @@ function RequirementAccordion({
                   onChange={(e) =>
                     updateItem(i, { ...item, quantity: e.target.value.replace(/\D/g, '') })
                   }
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <IconButton size="small" color="error" onClick={() => removeItem(i)}>
                   <DeleteIcon fontSize="small" />
@@ -372,7 +401,7 @@ function RequirementAccordion({
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 function RequirementsSection({ requirements, libraryIndex, onChange }) {

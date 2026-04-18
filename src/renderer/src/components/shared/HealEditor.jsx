@@ -37,7 +37,9 @@ function HealEditor({ value, onChange }) {
             sx={{ width: 120 }}
             value={value.value}
             onChange={setNumeric('value')}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         )}
         {value.kind === 'Variable' && (
@@ -47,7 +49,9 @@ function HealEditor({ value, onChange }) {
             sx={{ width: 100 }}
             value={value.min}
             onChange={setNumeric('min')}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         )}
         {value.kind === 'Variable' && (
@@ -57,7 +61,9 @@ function HealEditor({ value, onChange }) {
             sx={{ width: 100 }}
             value={value.max}
             onChange={setNumeric('max')}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         )}
       </Box>
@@ -71,7 +77,7 @@ function HealEditor({ value, onChange }) {
         />
       )}
     </Box>
-  )
+  );
 }
 
 export default HealEditor

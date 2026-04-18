@@ -262,7 +262,9 @@ function ServerConfigPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" sx={{
+              color: "text.secondary"
+            }}>
               Select a config or create a new one.
             </Typography>
           </Box>
@@ -290,7 +292,7 @@ function ServerConfigPage() {
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default ServerConfigPage

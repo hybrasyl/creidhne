@@ -26,7 +26,9 @@ const AboutDialog = ({ open, onClose }) => {
         About Creidhne
       </DialogTitle>
       <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
+        <Typography variant="body2" gutterBottom sx={{
+          color: "text.secondary"
+        }}>
           Version {version}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -136,7 +138,7 @@ const AboutDialog = ({ open, onClose }) => {
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
 
 export default AboutDialog

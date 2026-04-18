@@ -255,7 +255,9 @@ function LootPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" sx={{
+              color: "text.secondary"
+            }}>
               Select a loot set or create a new one.
             </Typography>
           </Box>
@@ -283,7 +285,7 @@ function LootPage() {
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default LootPage

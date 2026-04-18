@@ -80,12 +80,14 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
             sx={{ flex: 1 }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              )
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                )
+              }
             }}
           />
           <TextField
@@ -98,9 +100,10 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
               setCatFilter(e.target.value)
               setSelected(null)
             }}
-            SelectProps={{ native: false, displayEmpty: true }}
-            InputLabelProps={{ shrink: true }}
-          >
+            slotProps={{
+              select: { native: false, displayEmpty: true },
+              inputLabel: { shrink: true }
+            }}>
             <option value="">All</option>
             {['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general'].map((c) => (
               <option key={c} value={c}>
@@ -114,7 +117,12 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
             <CircularProgress size={32} />
           </Box>
         ) : filtered.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              p: 2
+            }}>
             No formulas found.
           </Typography>
         ) : (
@@ -163,7 +171,7 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
 
 export default FormulaPickerDialog

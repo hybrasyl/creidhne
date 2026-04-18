@@ -37,10 +37,14 @@ export default function HelpersPage() {
       <Typography variant="h4" gutterBottom sx={{ color: 'text.button', fontWeight: 'bold' }}>
         Lua Helpers
       </Typography>
-
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>Set up Lua IntelliSense</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Copies the Hybrasyl Lua type stubs and a <code>.luarc.json</code> config into your
           active library's <code>world/scripts/</code> directory. Once installed, the{' '}
           <strong>sumneko Lua language server</strong> (used by VS Code's Lua extension) will
@@ -49,7 +53,12 @@ export default function HelpersPage() {
           builders, and more.
         </Typography>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           <strong>What gets written:</strong>
         </Typography>
         <Box component="pre" sx={{ fontFamily: 'monospace', fontSize: 12, bgcolor: 'action.hover', p: 1.5, borderRadius: 1, mb: 2 }}>
@@ -61,11 +70,18 @@ export default function HelpersPage() {
     ├── HybrasylDialog.lua
     └── … (20 files)`}
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Safe to re-run — overwrites stubs with the latest bundled version. Your scripts are never touched.
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={2} sx={{
+          alignItems: "center"
+        }}>
           <Button
             variant="contained"
             startIcon={installing ? <CircularProgress size={14} color="inherit" /> : <BuildIcon />}
@@ -75,7 +91,9 @@ export default function HelpersPage() {
             {installing ? 'Installing…' : 'Install Lua types + .luarc.json'}
           </Button>
           {!activeLibrary && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Select an active library in Settings first.
             </Typography>
           )}
@@ -95,7 +113,6 @@ export default function HelpersPage() {
           </Box>
         )}
       </Paper>
-
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>VS Code setup tips</Typography>
         <Stack spacing={1.5}>
@@ -117,12 +134,14 @@ export default function HelpersPage() {
             sequences, and all Hybrasyl-exposed types should appear.
           </Typography>
           <Divider />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             The stubs are auto-generated from the Hybrasyl C# server source via <code>scripts/generate-lua-stubs.js</code>.
             Re-run that script if the server API changes, then click "Install Lua types" again to push the updates.
           </Typography>
         </Stack>
       </Paper>
     </Box>
-  )
+  );
 }

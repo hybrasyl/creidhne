@@ -169,7 +169,6 @@ export default function ReferencePanel() {
           </IconButton>
         </Tooltip>
       </Box>
-
       <Box
         sx={{
           p: 1.5,
@@ -221,7 +220,6 @@ export default function ReferencePanel() {
           <ToggleButton value="xml">XML</ToggleButton>
         </ToggleButtonGroup>
       </Box>
-
       <Box sx={{ flex: 1, overflow: 'auto', p: 1.5, minHeight: 0 }}>
         {!activeLibrary && (
           <Alert severity="info" variant="outlined">
@@ -229,7 +227,9 @@ export default function ReferencePanel() {
           </Alert>
         )}
         {activeLibrary && !name && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Pick a type and entity to view.
           </Typography>
         )}
@@ -249,5 +249,5 @@ export default function ReferencePanel() {
         )}
       </Box>
     </Paper>
-  )
+  );
 }

@@ -143,7 +143,12 @@ function BudgetModifierTab({ settings, onChange }) {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Lines */}
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 1
+                }}>
                 Lines (Spells only)
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -166,7 +171,6 @@ function BudgetModifierTab({ settings, onChange }) {
                   label="Step"
                   type="number"
                   sx={{ width: 100 }}
-                  inputProps={{ step: 0.01 }}
                   value={bm.lines.step ?? ''}
                   onChange={(e) =>
                     setDimension(
@@ -175,6 +179,9 @@ function BudgetModifierTab({ settings, onChange }) {
                       e.target.value === '' ? null : Number(e.target.value)
                     )
                   }
+                  slotProps={{
+                    htmlInput: { step: 0.01 }
+                  }}
                 />
                 <TextField
                   size="small"
@@ -195,7 +202,12 @@ function BudgetModifierTab({ settings, onChange }) {
             </Box>
             {/* Cooldown */}
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 1
+                }}>
                 Cooldown
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -218,7 +230,6 @@ function BudgetModifierTab({ settings, onChange }) {
                   label="Step"
                   type="number"
                   sx={{ width: 100 }}
-                  inputProps={{ step: 0.01 }}
                   value={bm.cooldown.step ?? ''}
                   onChange={(e) =>
                     setDimension(
@@ -227,6 +238,9 @@ function BudgetModifierTab({ settings, onChange }) {
                       e.target.value === '' ? null : Number(e.target.value)
                     )
                   }
+                  slotProps={{
+                    htmlInput: { step: 0.01 }
+                  }}
                 />
                 <TextField
                   size="small"
@@ -251,7 +265,12 @@ function BudgetModifierTab({ settings, onChange }) {
         {bm.mode === 'binary' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 1
+                }}>
                 Lines (Spells only)
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -274,7 +293,6 @@ function BudgetModifierTab({ settings, onChange }) {
                   label="Bonus"
                   type="number"
                   sx={{ width: 100 }}
-                  inputProps={{ step: 0.01 }}
                   value={bm.lines.bonus ?? ''}
                   onChange={(e) =>
                     setDimension(
@@ -283,13 +301,15 @@ function BudgetModifierTab({ settings, onChange }) {
                       e.target.value === '' ? null : Number(e.target.value)
                     )
                   }
+                  slotProps={{
+                    htmlInput: { step: 0.01 }
+                  }}
                 />
                 <TextField
                   size="small"
                   label="Penalty"
                   type="number"
                   sx={{ width: 100 }}
-                  inputProps={{ step: 0.01 }}
                   value={bm.lines.penalty ?? ''}
                   onChange={(e) =>
                     setDimension(
@@ -298,11 +318,19 @@ function BudgetModifierTab({ settings, onChange }) {
                       e.target.value === '' ? null : Number(e.target.value)
                     )
                   }
+                  slotProps={{
+                    htmlInput: { step: 0.01 }
+                  }}
                 />
               </Box>
             </Box>
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 1
+                }}>
                 Cooldown
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -325,7 +353,6 @@ function BudgetModifierTab({ settings, onChange }) {
                   label="Bonus"
                   type="number"
                   sx={{ width: 100 }}
-                  inputProps={{ step: 0.01 }}
                   value={bm.cooldown.bonus ?? ''}
                   onChange={(e) =>
                     setDimension(
@@ -334,13 +361,15 @@ function BudgetModifierTab({ settings, onChange }) {
                       e.target.value === '' ? null : Number(e.target.value)
                     )
                   }
+                  slotProps={{
+                    htmlInput: { step: 0.01 }
+                  }}
                 />
                 <TextField
                   size="small"
                   label="Penalty"
                   type="number"
                   sx={{ width: 100 }}
-                  inputProps={{ step: 0.01 }}
                   value={bm.cooldown.penalty ?? ''}
                   onChange={(e) =>
                     setDimension(
@@ -349,6 +378,9 @@ function BudgetModifierTab({ settings, onChange }) {
                       e.target.value === '' ? null : Number(e.target.value)
                     )
                   }
+                  slotProps={{
+                    htmlInput: { step: 0.01 }
+                  }}
                 />
               </Box>
             </Box>
@@ -356,26 +388,34 @@ function BudgetModifierTab({ settings, onChange }) {
         )}
 
         {bm.mode === 'none' && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             No budget modifier applied. Coefficients are used as-is.
           </Typography>
         )}
 
         {bm.mode === 'steppedTiers' && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Stepped tiers configuration coming soon.
           </Typography>
         )}
       </Box>
-
       <Divider />
-
       {/* Formula Constants */}
       <Box>
         <Typography variant="subtitle2" gutterBottom>
           Formula Constants
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 1
+          }}>
           Scalar values referenced by formula patterns. These are stored alongside custom variables.
         </Typography>
         <Table size="small" sx={{ mb: 1 }}>
@@ -408,7 +448,9 @@ function BudgetModifierTab({ settings, onChange }) {
                   />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     {fc.description}
                   </Typography>
                 </TableCell>
@@ -417,15 +459,19 @@ function BudgetModifierTab({ settings, onChange }) {
           </TableBody>
         </Table>
       </Box>
-
       <Divider />
-
       {/* Custom Variables */}
       <Box>
         <Typography variant="subtitle2" gutterBottom>
           Custom Variables
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 1
+          }}>
           Additional free-form constants available to patterns and formulas.
         </Typography>
         {Object.keys(vars).filter((k) => !FORMULA_CONSTANT_KEYS.includes(k)).length > 0 && (
@@ -478,7 +524,9 @@ function BudgetModifierTab({ settings, onChange }) {
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAddVar()
             }}
-            inputProps={{ style: { fontFamily: 'monospace' } }}
+            slotProps={{
+              htmlInput: { style: { fontFamily: 'monospace' } }
+            }}
           />
           <Button
             size="small"
@@ -491,7 +539,7 @@ function BudgetModifierTab({ settings, onChange }) {
         </Box>
       </Box>
     </Box>
-  )
+  );
 }
 
 // ── Coefficients Tab ─────────────────────────────────────────────────────────
@@ -536,16 +584,20 @@ function CoefficientsTab({ settings, onChange }) {
     >
       {/* Bulk apply */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Apply Skill = Spell ×
         </Typography>
         <TextField
           size="small"
           type="number"
           sx={{ width: 80 }}
-          inputProps={{ step: 0.01 }}
           value={bulkMultiplier}
           onChange={(e) => setBulkMultiplier(Number(e.target.value))}
+          slotProps={{
+            htmlInput: { step: 0.01 }
+          }}
         />
         <Tooltip title="Set all Skill values to Spell × multiplier (only where Spell has a value)">
           <Button
@@ -558,9 +610,7 @@ function CoefficientsTab({ settings, onChange }) {
           </Button>
         </Tooltip>
       </Box>
-
       <Divider />
-
       {/* Coefficient groups */}
       {COEFFICIENT_GROUPS.map((group) => (
         <Accordion
@@ -598,7 +648,9 @@ function CoefficientsTab({ settings, onChange }) {
                       </TableCell>
                       <TableCell>
                         {c.skillOnly ? (
-                          <Typography variant="body2" color="text.disabled">
+                          <Typography variant="body2" sx={{
+                            color: "text.disabled"
+                          }}>
                             —
                           </Typography>
                         ) : (
@@ -606,10 +658,12 @@ function CoefficientsTab({ settings, onChange }) {
                             size="small"
                             variant="standard"
                             type="number"
-                            inputProps={{ step: 0.01 }}
                             value={val.spell ?? ''}
                             placeholder=""
                             onChange={(e) => setCoeff(c.key, 'spell', e.target.value)}
+                            slotProps={{
+                              htmlInput: { step: 0.01 }
+                            }}
                           />
                         )}
                       </TableCell>
@@ -618,14 +672,16 @@ function CoefficientsTab({ settings, onChange }) {
                           size="small"
                           variant="standard"
                           type="number"
-                          inputProps={{ step: 0.01 }}
                           value={val.skill ?? ''}
                           placeholder=""
                           onChange={(e) => setCoeff(c.key, 'skill', e.target.value)}
+                          slotProps={{
+                            htmlInput: { step: 0.01 }
+                          }}
                         />
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })}
               </TableBody>
             </Table>
@@ -633,7 +689,7 @@ function CoefficientsTab({ settings, onChange }) {
         </Accordion>
       ))}
     </Box>
-  )
+  );
 }
 
 // ── Parameter type labels ─────────────────────────────────────────────────────
@@ -670,12 +726,13 @@ function PatternsTab({ settings, onChange }) {
         <Typography variant="subtitle2" gutterBottom>
           Formula Patterns
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Patterns define the structural shape of a formula. Click the "Default" chip to set which
           pattern is pre-selected when creating new formulas.
         </Typography>
       </Box>
-
       {BUILTIN_PATTERNS.map((pattern) => {
         const isDefault = defaultId === pattern.id
         return (
@@ -704,7 +761,12 @@ function PatternsTab({ settings, onChange }) {
               </Box>
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 1.5
+                }}>
                 {pattern.description}
               </Typography>
 
@@ -727,9 +789,11 @@ function PatternsTab({ settings, onChange }) {
               {/* Parameters */}
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: 'block', mb: 0.5 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  display: 'block',
+                  mb: 0.5
+                }}>
                 Parameters
               </Typography>
               <Table size="small">
@@ -760,21 +824,23 @@ function PatternsTab({ settings, onChange }) {
                           </Box>
                         </TableCell>
                         <TableCell sx={{ py: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                          }}>
                             {p.description}
                           </Typography>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
             </AccordionDetails>
           </Accordion>
-        )
+        );
       })}
     </Box>
-  )
+  );
 }
 
 // ── Main Dialog ──────────────────────────────────────────────────────────────
@@ -801,7 +867,9 @@ function FormulaSettingsDialog({ open, onClose, settings: savedSettings, onSave 
       onClose={onClose}
       maxWidth="lg"
       fullWidth
-      PaperProps={{ sx: { height: '85vh', display: 'flex', flexDirection: 'column' } }}
+      slotProps={{
+        paper: { sx: { height: '85vh', display: 'flex', flexDirection: 'column' } }
+      }}
     >
       <DialogTitle sx={{ pb: 0 }}>Formula Settings</DialogTitle>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
@@ -825,7 +893,7 @@ function FormulaSettingsDialog({ open, onClose, settings: savedSettings, onSave 
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
 
 export default FormulaSettingsDialog

@@ -325,9 +325,7 @@ function CastableEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* ── Basic fields (headerless) ── */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -358,7 +356,9 @@ function CastableEditor({
                 value={data.name}
                 onChange={set('name')}
                 onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <TextField
                 label="Prefix"
@@ -366,7 +366,9 @@ function CastableEditor({
                 sx={{ width: 150 }}
                 value={prefix}
                 onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
             </Box>
 
@@ -378,7 +380,9 @@ function CastableEditor({
                 sx={{ width: 100 }}
                 value={data.lines}
                 onChange={set('lines')}
-                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' }
+                }}
               />
               <TextField
                 label="Cooldown"
@@ -386,7 +390,9 @@ function CastableEditor({
                 sx={{ width: 100 }}
                 value={data.cooldown}
                 onChange={set('cooldown')}
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <IconPicker
                 type={typeFromBook(data.book)}
@@ -438,9 +444,9 @@ function CastableEditor({
                 disableCloseOnSelect
                 size="small"
                 sx={{ flex: 1, minWidth: 220 }}
-                renderTags={(value, getTagProps) =>
+                renderValue={(value, getItemProps) =>
                   value.map((option, index) => (
-                    <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+                    <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
                   ))
                 }
                 renderInput={(params) => <TextField {...params} label="Class" />}
@@ -581,10 +587,11 @@ function CastableEditor({
                     size="small"
                     sx={{ flex: 1, minWidth: 180 }}
                     value={label}
-                    inputProps={{ readOnly: true }}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                )
+                    slotProps={{
+                      htmlInput: { readOnly: true },
+                      inputLabel: { shrink: true }
+                    }} />
+                );
               })()}
             </Box>
 
@@ -712,7 +719,9 @@ function CastableEditor({
                     sx={{ width: 100 }}
                     value={cost.quantity}
                     onChange={(e) => setCastCost(i, 'quantity', e.target.value)}
-                    inputProps={{ inputMode: 'numeric' }}
+                    slotProps={{
+                      htmlInput: { inputMode: 'numeric' }
+                    }}
                   />
                   <Autocomplete
                     freeSolo
@@ -782,12 +791,14 @@ function CastableEditor({
                         const v = e.target.value.replace(/\D/g, '').slice(0, 2)
                         setMl(key, v === '' ? '' : String(Math.min(99, Number(v))))
                       }}
-                      inputProps={{ inputMode: 'numeric' }}
+                      slotProps={{
+                        htmlInput: { inputMode: 'numeric' }
+                      }}
                     />
                   ))}
                 </Box>
               </Box>
-            )
+            );
           })()}
         </Section>
 
@@ -898,7 +909,9 @@ function CastableEditor({
                   sx={{ width: 100 }}
                   value={ms.uses || ''}
                   onChange={(e) => setMs('uses', e.target.value.replace(/\D/g, ''))}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric' }
+                  }}
                 />
                 <Autocomplete
                   multiple
@@ -908,9 +921,9 @@ function CastableEditor({
                   disableCloseOnSelect
                   size="small"
                   sx={{ minWidth: 200, flex: 1 }}
-                  renderTags={(value, getTagProps) =>
+                  renderValue={(value, getItemProps) =>
                     value.map((option, index) => (
-                      <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+                      <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
                     ))
                   }
                   renderInput={(params) => <TextField {...params} label="Modifiers" />}
@@ -927,11 +940,10 @@ function CastableEditor({
                   sx={{ m: 0 }}
                 />
               </Box>
-            )
+            );
           })()}
         </Section>
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -949,7 +961,7 @@ function CastableEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default CastableEditor

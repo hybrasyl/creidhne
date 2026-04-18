@@ -51,7 +51,9 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
           sx={{ width: 80 }}
           value={reactor.relativeX}
           onChange={setSignedNumeric('relativeX')}
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <TextField
           label="Rel Y"
@@ -59,7 +61,9 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
           sx={{ width: 80 }}
           value={reactor.relativeY}
           onChange={setSignedNumeric('relativeY')}
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <TextField
           label="Sprite"
@@ -67,7 +71,9 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
           sx={{ width: 90 }}
           value={reactor.sprite}
           onChange={setNumeric('sprite')}
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <TextField
           label="Expiration"
@@ -75,7 +81,9 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
           sx={{ width: 100 }}
           value={reactor.expiration}
           onChange={setNumeric('expiration')}
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <TextField
           label="Uses"
@@ -83,13 +91,14 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
           sx={{ width: 80 }}
           value={reactor.uses}
           onChange={setNumeric('uses')}
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <IconButton size="small" color="error" onClick={onRemove} sx={{ mt: 0.5 }}>
           <DeleteIcon fontSize="small" />
         </IconButton>
       </Box>
-
       {/* Line 2: display / visibility fields */}
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', pl: 1 }}>
         <FormControlLabel
@@ -135,7 +144,7 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
         />
       </Box>
     </Box>
-  )
+  );
 }
 
 function ReactorsSection({ reactors, libraryIndex, onChange }) {

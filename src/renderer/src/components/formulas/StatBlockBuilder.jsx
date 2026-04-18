@@ -61,11 +61,15 @@ function StatBlockBuilder({ rows = [], onChange }) {
   return (
     <Box>
       {rows.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1
+          }}>
           No stats selected. Add stats to build the weighted expression.
         </Typography>
       )}
-
       {rows.map((row, index) => {
         const prefix = row.prefix || 'SOURCE'
         const allForPrefix = getStatsForPrefix(prefix)
@@ -78,9 +82,11 @@ function StatBlockBuilder({ rows = [], onChange }) {
             {index > 0 && (
               <Typography
                 variant="body2"
-                color="text.secondary"
-                sx={{ width: 16, textAlign: 'center' }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  width: 16,
+                  textAlign: 'center'
+                }}>
                 +
               </Typography>
             )}
@@ -113,7 +119,9 @@ function StatBlockBuilder({ rows = [], onChange }) {
               renderInput={(params) => <TextField {...params} label="Stat" />}
               disableClearable
             />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               ×
             </Typography>
             <TextField
@@ -129,25 +137,26 @@ function StatBlockBuilder({ rows = [], onChange }) {
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
-        )
+        );
       })}
-
       <Button size="small" startIcon={<AddIcon />} onClick={addRow} sx={{ mt: 0.5 }}>
         Add Stat
       </Button>
-
       {/* Preview */}
       {rows.length > 0 && (
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ display: 'block', mt: 1, fontFamily: 'monospace' }}
-        >
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mt: 1,
+            fontFamily: 'monospace'
+          }}>
           {rows.map((r) => `${r.stat} * ${r.weight}`).join(' + ')}
         </Typography>
       )}
     </Box>
-  )
+  );
 }
 
 /** Convert rows array to NCalc expression string */

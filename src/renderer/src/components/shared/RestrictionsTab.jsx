@@ -128,7 +128,9 @@ function RestrictionsTab({ data, onChange }) {
           size="small"
           sx={{ width: 110 }}
           onChange={setSubField('level', 'min')}
-          inputProps={{ min: 1, max: 99 }}
+          slotProps={{
+            htmlInput: { min: 1, max: 99 }
+          }}
         />
         <TextField
           label="Level Max"
@@ -138,7 +140,9 @@ function RestrictionsTab({ data, onChange }) {
           size="small"
           sx={{ width: 110 }}
           onChange={setSubField('level', 'max')}
-          inputProps={{ min: 1, max: 99 }}
+          slotProps={{
+            htmlInput: { min: 1, max: 99 }
+          }}
         />
         <TextField
           label="AB Min"
@@ -147,7 +151,9 @@ function RestrictionsTab({ data, onChange }) {
           size="small"
           sx={{ width: 100 }}
           onChange={setAbField('min')}
-          inputProps={{ min: 0, max: 99 }}
+          slotProps={{
+            htmlInput: { min: 0, max: 99 }
+          }}
         />
         <TextField
           label="AB Max"
@@ -156,7 +162,9 @@ function RestrictionsTab({ data, onChange }) {
           size="small"
           sx={{ width: 100 }}
           onChange={setAbField('max')}
-          inputProps={{ min: 0, max: 99 }}
+          slotProps={{
+            htmlInput: { min: 0, max: 99 }
+          }}
         />
         <FormControl size="small" sx={{ minWidth: 130 }}>
           <InputLabel>Gender</InputLabel>
@@ -169,7 +177,6 @@ function RestrictionsTab({ data, onChange }) {
           </Select>
         </FormControl>
       </Box>
-
       {/* Class picker — blank = no restriction; "All" = select/deselect all */}
       <Autocomplete
         multiple
@@ -177,18 +184,16 @@ function RestrictionsTab({ data, onChange }) {
         value={selectedClasses}
         onChange={handleClassChange}
         disableCloseOnSelect
-        renderTags={(value, getTagProps) =>
+        renderValue={(value, getItemProps) =>
           value.map((option, index) => (
-            <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+            <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
           ))
         }
         renderInput={(params) => (
           <TextField {...params} size="small" label="Classes (blank = no restriction)" />
         )}
       />
-
       <Divider />
-
       <Typography variant="subtitle2">Required Castables</Typography>
       {r.castables.map((castable, index) => (
         <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
@@ -206,7 +211,10 @@ function RestrictionsTab({ data, onChange }) {
               <TextField
                 {...params}
                 label={`Castable ${index + 1}`}
-                inputProps={{ ...params.inputProps, maxLength: 255 }}
+                slotProps={{
+                  ...params.slotProps,
+                  htmlInput: { ...params.slotProps.htmlInput, maxLength: 255 }
+                }}
               />
             )}
           />
@@ -218,9 +226,7 @@ function RestrictionsTab({ data, onChange }) {
       <Button startIcon={<AddIcon />} size="small" onClick={addCastable} sx={{ mb: 1 }}>
         Add Castable
       </Button>
-
       <Divider />
-
       <Typography variant="subtitle2">Slot Restrictions</Typography>
       {r.slotRestrictions.map((sr, index) => {
         const matchedKey = npcStringKeys.find((s) => s.key === sr.message)
@@ -274,19 +280,20 @@ function RestrictionsTab({ data, onChange }) {
                 label="Message Preview"
                 value={matchedKey.message}
                 size="small"
-                inputProps={{ readOnly: true }}
-                InputLabelProps={{ shrink: true }}
                 sx={{ pl: 0 }}
-              />
+                slotProps={{
+                  htmlInput: { readOnly: true },
+                  inputLabel: { shrink: true }
+                }} />
             )}
           </Box>
-        )
+        );
       })}
       <Button startIcon={<AddIcon />} size="small" onClick={addSlotRestriction}>
         Add Slot Restriction
       </Button>
     </Box>
-  )
+  );
 }
 
 export default RestrictionsTab

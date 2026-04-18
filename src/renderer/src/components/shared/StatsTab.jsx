@@ -150,7 +150,12 @@ function StatsTab({ data, onChange, elementOptions }) {
         </Typography>
 
         {rows.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1
+            }}>
             No stat modifiers defined.
           </Typography>
         )}
@@ -178,7 +183,6 @@ function StatsTab({ data, onChange, elementOptions }) {
           Add Stat Modifier
         </Button>
       </Paper>
-
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
           Elemental Modifiers
@@ -225,7 +229,7 @@ function StatsTab({ data, onChange, elementOptions }) {
         </Button>
       </Paper>
     </Box>
-  )
+  );
 }
 
 export default StatsTab

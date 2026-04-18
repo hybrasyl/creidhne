@@ -102,23 +102,35 @@ function FormulaListPanel({
           placeholder="Filter..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }
           }}
         />
       </Box>
       <Divider />
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {formulas.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              p: 2
+            }}>
             No formulas. Import a Lua file or create one manually.
           </Typography>
         ) : filtered.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              p: 2
+            }}>
             No matches.
           </Typography>
         ) : (
@@ -140,7 +152,6 @@ function FormulaListPanel({
                 <ListItemButton selected={selectedId === f.id} onClick={() => onSelect(f.id)}>
                   <ListItemText
                     primary={f.name}
-                    primaryTypographyProps={{ noWrap: true, variant: 'body2' }}
                     secondary={
                       <Chip
                         label={f.category || 'damage'}
@@ -149,6 +160,9 @@ function FormulaListPanel({
                         sx={{ height: 16, fontSize: '0.65rem', mt: 0.25 }}
                       />
                     }
+                    slotProps={{
+                      primary: { noWrap: true, variant: 'body2' }
+                    }}
                   />
                 </ListItemButton>
               </ListItem>
@@ -157,7 +171,7 @@ function FormulaListPanel({
         )}
       </Box>
     </Box>
-  )
+  );
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -343,13 +357,14 @@ function FormulasPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" sx={{
+              color: "text.secondary"
+            }}>
               Select a formula or create a new one.
             </Typography>
           </Box>
         )}
       </Box>
-
       <FormulaSettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -378,7 +393,7 @@ function FormulasPage() {
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default FormulasPage

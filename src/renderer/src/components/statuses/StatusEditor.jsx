@@ -225,7 +225,7 @@ function UserFeedbackContent({ anim, onChange }) {
         onChange={(val) => set('soundId')({ target: { value: String(val).replace(/\D/g, '') } })}
       />
     </Box>
-  )
+  );
 }
 
 function MessagesContent({ msgs, onChange }) {
@@ -457,14 +457,17 @@ function StatusStatModContent({ sm, onChange }) {
 function StatusStatModReadOnly({ sm }) {
   if (!sm || (!sm.rows?.length && !sm.elementalModifiers?.length)) {
     return (
-      <Typography variant="body2" color="text.secondary">
-        No stat modifiers required.
-      </Typography>
-    )
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>No stat modifiers required.
+              </Typography>
+    );
   }
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         Computed: -(OnApply + OnTick × Duration/Tick). Read-only.
       </Typography>
       {sm.rows?.length > 0 && (
@@ -481,17 +484,21 @@ function StatusStatModReadOnly({ sm }) {
                   value={label}
                   size="small"
                   sx={{ minWidth: 260 }}
-                  inputProps={{ readOnly: true }}
+                  slotProps={{
+                    htmlInput: { readOnly: true }
+                  }}
                 />
                 <TextField
                   label="Value"
                   value={row.value}
                   size="small"
                   sx={{ width: 180 }}
-                  inputProps={{ readOnly: true }}
+                  slotProps={{
+                    htmlInput: { readOnly: true }
+                  }}
                 />
               </Box>
-            )
+            );
           })}
         </Paper>
       )}
@@ -510,28 +517,34 @@ function StatusStatModReadOnly({ sm }) {
                 value={em.type}
                 size="small"
                 sx={{ width: 130 }}
-                inputProps={{ readOnly: true }}
+                slotProps={{
+                  htmlInput: { readOnly: true }
+                }}
               />
               <TextField
                 label="Element"
                 value={em.element}
                 size="small"
                 sx={{ flex: 1 }}
-                inputProps={{ readOnly: true }}
+                slotProps={{
+                  htmlInput: { readOnly: true }
+                }}
               />
               <TextField
                 label="Modifier"
                 value={em.modifier}
                 size="small"
                 sx={{ width: 110 }}
-                inputProps={{ readOnly: true }}
+                slotProps={{
+                  htmlInput: { readOnly: true }
+                }}
               />
             </Box>
           ))}
         </Paper>
       )}
     </Box>
-  )
+  );
 }
 
 // ── Conditions ─────────────────────────────────────────────────────────────────
@@ -608,10 +621,11 @@ function ConditionsContent({ conds, onChange }) {
 function ConditionsReadOnly({ conds }) {
   if (!conds || (!conds.set?.length && !conds.unset?.length)) {
     return (
-      <Typography variant="body2" color="text.secondary">
-        No conditions to unset.
-      </Typography>
-    )
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>No conditions to unset.
+              </Typography>
+    );
   }
   const rows = [
     ...(conds.set || []).map((v) => ({ op: 'Set', value: v })),
@@ -619,7 +633,13 @@ function ConditionsReadOnly({ conds }) {
   ]
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: 'block',
+          mb: 1
+        }}>
         Auto-unsets all conditions set by OnApply + OnTick
       </Typography>
       {rows.map((row, i) => (
@@ -629,19 +649,23 @@ function ConditionsReadOnly({ conds }) {
             value={row.op}
             size="small"
             sx={{ width: 100 }}
-            inputProps={{ readOnly: true }}
+            slotProps={{
+              htmlInput: { readOnly: true }
+            }}
           />
           <TextField
             label="Condition"
             value={row.value}
             size="small"
             sx={{ flex: 1 }}
-            inputProps={{ readOnly: true }}
+            slotProps={{
+              htmlInput: { readOnly: true }
+            }}
           />
         </Box>
       ))}
     </Box>
-  )
+  );
 }
 
 // ── Effect accordion ───────────────────────────────────────────────────────────
@@ -738,7 +762,9 @@ function EffectAccordion({
             {data.animations ? (
               <UserFeedbackContent anim={data.animations} onChange={(v) => upd('animations', v)} />
             ) : (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Enable to add animations and sound.
               </Typography>
             )}
@@ -754,7 +780,9 @@ function EffectAccordion({
             {data.messages ? (
               <MessagesContent msgs={data.messages} onChange={(v) => upd('messages', v)} />
             ) : (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Enable to add messages.
               </Typography>
             )}
@@ -770,7 +798,9 @@ function EffectAccordion({
             {data.heal ? (
               <HealEditor value={data.heal} onChange={(v) => upd('heal', v)} />
             ) : (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Enable to add a heal formula.
               </Typography>
             )}
@@ -786,7 +816,9 @@ function EffectAccordion({
             {data.damage ? (
               <DamageEditor value={data.damage} onChange={(v) => upd('damage', v)} showElement />
             ) : (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Enable to add a damage formula.
               </Typography>
             )}
@@ -808,7 +840,9 @@ function EffectAccordion({
                   onChange={(v) => upd('statModifiers', v)}
                 />
               ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Enable to add stat modifiers.
                 </Typography>
               )}
@@ -828,7 +862,9 @@ function EffectAccordion({
               ) : data.conditions ? (
                 <ConditionsContent conds={data.conditions} onChange={(v) => upd('conditions', v)} />
               ) : (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Enable to add condition events.
                 </Typography>
               )}
@@ -842,14 +878,16 @@ function EffectAccordion({
             open={openScript}
             onToggle={() => setOpenScript((v) => !v)}
           >
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Script handlers are not yet implemented in the editor.
             </Typography>
           </SubSection>
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 // ── Main editor ────────────────────────────────────────────────────────────────
@@ -1091,9 +1129,7 @@ function StatusEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Top fields */}
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -1105,7 +1141,9 @@ function StatusEditor({
                 sx={{ width: 130 }}
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value)}
-                inputProps={{ maxLength: 64, spellCheck: false }}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
               <TextField
                 label="Name"
@@ -1131,7 +1169,9 @@ function StatusEditor({
                 value={data.name}
                 onChange={set('name')}
                 onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <IconPicker
                 type="spell"
@@ -1150,7 +1190,9 @@ function StatusEditor({
                 onChange={(e) =>
                   updateData((d) => ({ ...d, duration: e.target.value.replace(/\D/g, '') }))
                 }
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <TextField
                 label="Tick"
@@ -1160,7 +1202,9 @@ function StatusEditor({
                 onChange={(e) =>
                   updateData((d) => ({ ...d, tick: e.target.value.replace(/\D/g, '') }))
                 }
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <TextField
                 label="Remove Chance"
@@ -1170,7 +1214,9 @@ function StatusEditor({
                 onChange={(e) =>
                   updateData((d) => ({ ...d, removeChance: e.target.value.replace(/\D/g, '') }))
                 }
-                inputProps={{ inputMode: 'numeric' }}
+                slotProps={{
+                  htmlInput: { inputMode: 'numeric' }
+                }}
               />
               <FormControlLabel
                 control={
@@ -1187,13 +1233,14 @@ function StatusEditor({
             <TextField
               label="Applied By"
               size="small"
-              inputProps={{ readOnly: true }}
-              InputLabelProps={{ shrink: true }}
               value={
                 (libraryIndex.statusCasters?.[data.name?.toLowerCase()] || []).join(', ') ||
                 'No castables apply this status'
               }
-            />
+              slotProps={{
+                htmlInput: { readOnly: true },
+                inputLabel: { shrink: true }
+              }} />
           </Box>
         </Paper>
 
@@ -1326,7 +1373,6 @@ function StatusEditor({
             : `"${data.name}" exists in archive`}
         </Alert>
       </Snackbar>
-
       <Dialog open={!!mismatchDialog} maxWidth="sm" fullWidth>
         <DialogTitle>String Key Mismatch</DialogTitle>
         <DialogContent>
@@ -1336,13 +1382,25 @@ function StatusEditor({
           </DialogContentText>
           {(mismatchDialog || []).map((mm, i) => (
             <Box key={i} sx={{ mb: 1.5 }}>
-              <Typography variant="body2" fontWeight={500}>
+              <Typography variant="body2" sx={{
+                fontWeight: 500
+              }}>
                 {mm.field} — <code>{mm.key}</code>
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: "block"
+                }}>
                 Stored: {mm.storedText}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: "block"
+                }}>
                 Current: {mm.currentText}
               </Typography>
             </Box>
@@ -1356,7 +1414,7 @@ function StatusEditor({
         </DialogActions>
       </Dialog>
     </Box>
-  )
+  );
 }
 
 export default StatusEditor

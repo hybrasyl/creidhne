@@ -83,12 +83,15 @@ function ConstantAutocomplete({
           <TextField
             {...params}
             label={label}
-            inputProps={{ ...params.inputProps, ...inputProps }}
+            slotProps={{
+              ...params.slotProps,
+              htmlInput: { ...params.slotProps.htmlInput, ...inputProps }
+            }}
           />
         )}
         {...rest}
       />
-    )
+    );
   }
 
   return (
@@ -121,11 +124,14 @@ function ConstantAutocomplete({
       )}
       isOptionEqualToValue={(opt, val) => opt === val}
       renderInput={(params) => (
-        <TextField {...params} label={label} inputProps={{ ...params.inputProps, ...inputProps }} />
+        <TextField {...params} label={label} slotProps={{
+          ...params.slotProps,
+          htmlInput: { ...params.slotProps.htmlInput, ...inputProps }
+        }} />
       )}
       {...rest}
     />
-  )
+  );
 }
 
 export default ConstantAutocomplete

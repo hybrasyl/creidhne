@@ -35,8 +35,10 @@ export default function NpcPortraitPicker({ value, onChange, label = 'Portrait',
         size="small"
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        inputProps={{ maxLength: 255 }}
         sx={{ width: 180 }}
+        slotProps={{
+          htmlInput: { maxLength: 255 }
+        }}
       />
       <Tooltip
         title={
@@ -65,5 +67,5 @@ export default function NpcPortraitPicker({ value, onChange, label = 'Portrait',
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

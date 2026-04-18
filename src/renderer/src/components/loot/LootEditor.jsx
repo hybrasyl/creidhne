@@ -238,9 +238,7 @@ function LootEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Basic info */}
@@ -253,7 +251,9 @@ function LootEditor({
                 size="small"
                 sx={{ width: 140 }}
                 onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
               <TextField
                 label="Name"
@@ -279,7 +279,9 @@ function LootEditor({
                 }
                 onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
                 onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <FormControlLabel
                 label="In Inventory"
@@ -464,7 +466,6 @@ function LootEditor({
 
         <Box sx={{ height: 32 }} />
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -482,7 +483,7 @@ function LootEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default LootEditor

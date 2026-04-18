@@ -91,7 +91,9 @@ function MotionRow({ label, motion, onChange }) {
         sx={{ width: 90 }}
         value={motion.id || ''}
         onChange={setNum('id')}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <TextField
         label="Speed"
@@ -99,10 +101,12 @@ function MotionRow({ label, motion, onChange }) {
         sx={{ width: 90 }}
         value={motion.speed || ''}
         onChange={setNum('speed')}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
     </Box>
-  )
+  );
 }
 
 function AnimationGroup({ group, onChange }) {
@@ -112,7 +116,13 @@ function AnimationGroup({ group, onChange }) {
 
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: 'block',
+          mb: 0.75
+        }}>
         Player
       </Typography>
       {PLAYER_CLASSES.map(({ key, label }) => (
@@ -124,7 +134,13 @@ function AnimationGroup({ group, onChange }) {
         />
       ))}
       <Box sx={{ mt: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 0.75
+          }}>
           Spell Effect
         </Typography>
         <EffectPicker
@@ -141,7 +157,13 @@ function AnimationGroup({ group, onChange }) {
         />
       </Box>
       <Box sx={{ mt: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 0.75
+          }}>
           Target
         </Typography>
         <EffectPicker
@@ -154,7 +176,7 @@ function AnimationGroup({ group, onChange }) {
         />
       </Box>
     </Box>
-  )
+  );
 }
 
 function AnimationGroupSection({ label, group, motions, onToggle, onChange }) {
@@ -224,9 +246,7 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
           onChange={(val) => onSoundChange({ id: String(val).replace(/\D/g, '') })}
         />
       </Box>
-
       <Divider />
-
       <AnimationGroupSection
         label="On Cast"
         group={onCast}
@@ -234,9 +254,7 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
         onToggle={toggleOnCast}
         onChange={(val) => onAnimationsChange({ onCast: val, onEnd })}
       />
-
       <Divider />
-
       <AnimationGroupSection
         label="On End"
         group={onEnd}
@@ -245,7 +263,7 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
         onChange={(val) => onAnimationsChange({ onCast, onEnd: val })}
       />
     </Box>
-  )
+  );
 }
 
 export default AnimationsSection

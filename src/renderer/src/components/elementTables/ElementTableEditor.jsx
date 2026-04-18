@@ -275,9 +275,7 @@ function ElementTableEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1.5, flexShrink: 0 }} />
-
       {/* ── Metadata on Paper ── */}
       <Paper variant="outlined" sx={{ p: 2, mb: 1.5, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -287,7 +285,9 @@ function ElementTableEditor({
             value={prefix}
             sx={{ width: 140 }}
             onChange={handlePrefixChange}
-            inputProps={{ maxLength: 64, spellCheck: false }}
+            slotProps={{
+              htmlInput: { maxLength: 64, spellCheck: false }
+            }}
           />
           <TextField
             label="Name"
@@ -311,7 +311,9 @@ function ElementTableEditor({
             }
             onChange={(e) => handleNameChange(e.target.value)}
             onBlur={handleNameBlur}
-            inputProps={{ maxLength: 128 }}
+            slotProps={{
+              htmlInput: { maxLength: 128 }
+            }}
           />
           <CommentField
             value={comment}
@@ -323,7 +325,6 @@ function ElementTableEditor({
           />
         </Box>
       </Paper>
-
       {/* ── Elements accordion ── */}
       <Paper
         variant="outlined"
@@ -352,7 +353,9 @@ function ElementTableEditor({
             <Box sx={{ p: 2, flexShrink: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
                 <InfoOutlinedIcon fontSize="small" color="action" />
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   Enter values as whole-number percentages — 80 = 80% (×0.8), 100 = no change
                   (×1.0), 150 = 150% (×1.5). Row = source element (attacker); column = target
                   element (defender). The highlighted cell shows the reverse interaction.
@@ -462,7 +465,6 @@ function ElementTableEditor({
           </>
         )}
       </Paper>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -478,7 +480,7 @@ function ElementTableEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default ElementTableEditor

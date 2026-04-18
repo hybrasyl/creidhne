@@ -135,7 +135,9 @@ function RandParam({ value, onChange }) {
           ))}
         </Select>
       </FormControl>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         ×
       </Typography>
       <TextField
@@ -148,12 +150,17 @@ function RandParam({ value, onChange }) {
           onChange({ ...v, multiplier: e.target.value === '' ? 1 : Number(e.target.value) })
         }
       />
-      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          fontFamily: 'monospace'
+        }}>
         = {v.variable}
         {v.multiplier && v.multiplier !== 1 ? ` * ${v.multiplier}` : ''}
       </Typography>
     </Box>
-  )
+  );
 }
 
 function SettingParam({ paramDef, settings }) {
@@ -167,11 +174,13 @@ function SettingParam({ paramDef, settings }) {
         disabled
         sx={{ width: 120 }}
       />
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         (from Formula Settings)
       </Typography>
     </Box>
-  )
+  );
 }
 
 function CoefficientParam({ value, coeffKey, spellOrSkill }) {
@@ -183,13 +192,17 @@ function CoefficientParam({ value, coeffKey, spellOrSkill }) {
         value={value ?? '—'}
         disabled
         sx={{ width: 120 }}
-        inputProps={{ style: { fontFamily: 'monospace' } }}
+        slotProps={{
+          htmlInput: { style: { fontFamily: 'monospace' } }
+        }}
       />
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         {coeffKey ? `${coeffKey} (${spellOrSkill})` : 'Select targeting + delivery below'}
       </Typography>
     </Box>
-  )
+  );
 }
 
 // ── Used-by panel ───────────────────────────────────────────────────────────
@@ -201,11 +214,22 @@ function UsedByPanel({ formulaName, libraryIndex }) {
   const total = castables.length + statuses.length
   return (
     <Paper variant="outlined" sx={{ px: 2, py: 1 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: 'block',
+          mb: 0.5
+        }}>
         Used by {total > 0 ? `(${total})` : ''}
       </Typography>
       {total === 0 ? (
-        <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.disabled",
+            fontStyle: 'italic'
+          }}>
           Not referenced by any castable or status.
         </Typography>
       ) : (
@@ -219,7 +243,7 @@ function UsedByPanel({ formulaName, libraryIndex }) {
         </Box>
       )}
     </Paper>
-  )
+  );
 }
 
 // ── Main Editor ──────────────────────────────────────────────────────────────
@@ -379,7 +403,7 @@ function FormulaEditor({
   const resolvedAssembledFormula = useMemo(() => {
     if (!assembledFormula || effectiveAcquiredLevel == null || !patternUsesAcquiredLevel)
       return null
-    return assembledFormula.replace(/\bACQUIREDLEVEL\b/g, String(effectiveAcquiredLevel))
+    return assembledFormula.replace(/\bACQUIREDLEVEL\b/g, String(effectiveAcquiredLevel));
   }, [assembledFormula, effectiveAcquiredLevel, patternUsesAcquiredLevel])
 
   // ── Duplicate detection ───────────────────────────────────────────────────
@@ -504,7 +528,6 @@ function FormulaEditor({
         </Button>
       </Box>
       <Divider />
-
       <Box
         sx={{ flex: 1, overflow: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}
       >
@@ -526,7 +549,9 @@ function FormulaEditor({
             value={data.name || ''}
             onChange={set('name')}
             onBlur={handleNameBlur}
-            inputProps={{ maxLength: 128 }}
+            slotProps={{
+              htmlInput: { maxLength: 128 }
+            }}
           />
           <FormControl size="small" sx={{ minWidth: 130 }}>
             <InputLabel>Category</InputLabel>
@@ -640,7 +665,13 @@ function FormulaEditor({
 
           {/* Status hint */}
           {refType === 'status' && (
-            <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "warning.main",
+                display: 'block',
+                mt: 1
+              }}>
               Status formulas represent damage/healing for a single tick. The castable that applies
               the status controls total duration and tick interval.
             </Typography>
@@ -655,7 +686,9 @@ function FormulaEditor({
                 sx={{ width: 80 }}
                 value={castableLines ?? '—'}
                 disabled
-                inputProps={{ style: { fontFamily: 'monospace' } }}
+                slotProps={{
+                  htmlInput: { style: { fontFamily: 'monospace' } }
+                }}
               />
               <TextField
                 size="small"
@@ -663,7 +696,9 @@ function FormulaEditor({
                 sx={{ width: 120 }}
                 value={castableCooldown ?? '—'}
                 disabled
-                inputProps={{ style: { fontFamily: 'monospace' } }}
+                slotProps={{
+                  htmlInput: { style: { fontFamily: 'monospace' } }
+                }}
               />
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>Budget Source</InputLabel>
@@ -853,9 +888,10 @@ function FormulaEditor({
                                     <>
                                       <Typography
                                         variant="body2"
-                                        color="text.secondary"
-                                        sx={{ alignSelf: 'center' }}
-                                      >
+                                        sx={{
+                                          color: "text.secondary",
+                                          alignSelf: 'center'
+                                        }}>
                                         ×
                                       </Typography>
                                       <TextField
@@ -875,9 +911,11 @@ function FormulaEditor({
                                       />
                                       <Typography
                                         variant="caption"
-                                        color="text.secondary"
-                                        sx={{ alignSelf: 'center', fontFamily: 'monospace' }}
-                                      >
+                                        sx={{
+                                          color: "text.secondary",
+                                          alignSelf: 'center',
+                                          fontFamily: 'monospace'
+                                        }}>
                                         = {rv.variable}
                                         {rv.multiplier && rv.multiplier !== 1
                                           ? ` * ${rv.multiplier}`
@@ -886,7 +924,7 @@ function FormulaEditor({
                                     </>
                                   )}
                                 </>
-                              )
+                              );
                             })()}
                         </Box>
                       </Box>
@@ -920,7 +958,9 @@ function FormulaEditor({
                           />
                           {(paramValues._weaponEnabled ?? false) && (
                             <>
-                              <Typography variant="body2" color="text.secondary">
+                              <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                              }}>
                                 ×
                               </Typography>
                               <NumberParam
@@ -960,9 +1000,11 @@ function FormulaEditor({
                         />
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block', mt: 0.5 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            display: 'block',
+                            mt: 0.5
+                          }}>
                           Enter the castable's static MP cost. Percentage-based costs are not
                           supported.
                         </Typography>
@@ -1024,16 +1066,20 @@ function FormulaEditor({
                                     value={globalVal ?? '—'}
                                     disabled
                                     sx={{ width: 120 }}
-                                    inputProps={{ style: { fontFamily: 'monospace' } }}
+                                    slotProps={{
+                                      htmlInput: { style: { fontFamily: 'monospace' } }
+                                    }}
                                   />
                                 )}
                                 {isOverridden && (
-                                  <Typography variant="caption" color="warning.main">
+                                  <Typography variant="caption" sx={{
+                                    color: "warning.main"
+                                  }}>
                                     overrides global ({globalVal ?? '—'})
                                   </Typography>
                                 )}
                               </Box>
-                            )
+                            );
                           })}
                           {coeffParam &&
                             (() => {
@@ -1065,7 +1111,6 @@ function FormulaEditor({
                                       type="number"
                                       label="Override"
                                       sx={{ width: 120 }}
-                                      inputProps={{ step: 0.01 }}
                                       value={paramValues[overrideKey] ?? ''}
                                       onChange={(e) =>
                                         updateParam(
@@ -1073,6 +1118,9 @@ function FormulaEditor({
                                           e.target.value === '' ? null : Number(e.target.value)
                                         )
                                       }
+                                      slotProps={{
+                                        htmlInput: { step: 0.01 }
+                                      }}
                                     />
                                   ) : (
                                     <TextField
@@ -1081,11 +1129,15 @@ function FormulaEditor({
                                       value={resolvedCoefficient ?? '—'}
                                       disabled
                                       sx={{ width: 120 }}
-                                      inputProps={{ style: { fontFamily: 'monospace' } }}
+                                      slotProps={{
+                                        htmlInput: { style: { fontFamily: 'monospace' } }
+                                      }}
                                     />
                                   )}
                                   {isOverridden && (
-                                    <Typography variant="caption" color="warning.main">
+                                    <Typography variant="caption" sx={{
+                                      color: "warning.main"
+                                    }}>
                                       overrides calculated ({resolvedCoefficient ?? '—'})
                                     </Typography>
                                   )}
@@ -1096,7 +1148,7 @@ function FormulaEditor({
                                     sx={{ fontFamily: 'monospace' }}
                                   />
                                 </Box>
-                              )
+                              );
                             })()}
                           {patternUsesAcquiredLevel && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1141,10 +1193,14 @@ function FormulaEditor({
                                   value={castableAcquiredLevel ?? '—'}
                                   disabled
                                   sx={{ width: 120 }}
-                                  inputProps={{ style: { fontFamily: 'monospace' } }}
+                                  slotProps={{
+                                    htmlInput: { style: { fontFamily: 'monospace' } }
+                                  }}
                                 />
                               )}
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                              }}>
                                 {acquiredLevelOverride != null
                                   ? `preview only — not saved; ACQUIREDLEVEL stays symbolic in formulas.json`
                                   : castableAcquiredLevel != null
@@ -1166,7 +1222,12 @@ function FormulaEditor({
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                           {otherParams.map((p) => (
                             <Box key={p.key}>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: "text.secondary",
+                                  mb: 0.5
+                                }}>
                                 {p.label}
                               </Typography>
                               <NumberParam
@@ -1180,7 +1241,7 @@ function FormulaEditor({
                         </Box>
                       </Box>
                     )
-                  ].filter(Boolean)
+                  ].filter(Boolean);
                 })()}
             </Stack>
           </AccordionDetails>
@@ -1210,9 +1271,12 @@ function FormulaEditor({
               <>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mt: 1.5, mb: 0.5 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    mt: 1.5,
+                    mb: 0.5
+                  }}>
                   Resolved preview (ACQUIREDLEVEL = {effectiveAcquiredLevel})
                   {acquiredLevelOverride == null && refName
                     ? ` from referenced ${refType} "${refName}"`
@@ -1267,14 +1331,15 @@ function FormulaEditor({
               minRows={3}
               value={data.formula || ''}
               onChange={set('formula')}
-              inputProps={{ style: { fontFamily: 'monospace', fontSize: '0.85rem' } }}
               helperText="NCalc expression string — this value is written to castable/status XML"
               sx={{ mt: 1 }}
+              slotProps={{
+                htmlInput: { style: { fontFamily: 'monospace', fontSize: '0.85rem' } }
+              }}
             />
           )}
         </Box>
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -1286,7 +1351,7 @@ function FormulaEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default FormulaEditor

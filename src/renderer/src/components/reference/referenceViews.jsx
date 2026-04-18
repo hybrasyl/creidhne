@@ -34,12 +34,14 @@ function Row({ label, children }) {
 function ChipList({ items }) {
   if (!items || items.length === 0) return null
   return (
-    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+    <Stack direction="row" spacing={0.5} useFlexGap sx={{
+      flexWrap: "wrap"
+    }}>
       {items.map((v) => (
         <Chip key={v} label={v} size="small" variant="outlined" />
       ))}
     </Stack>
-  )
+  );
 }
 
 function SectionHeading({ children }) {
@@ -70,12 +72,13 @@ export function CastableReferenceView({ data }) {
           <Typography variant="h6" noWrap>
             {data.name}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {data.book || 'Unknown book'}
           </Typography>
         </Box>
       </Box>
-
       <Row label="Classes">
         <ChipList items={classes} />
       </Row>
@@ -88,13 +91,14 @@ export function CastableReferenceView({ data }) {
       <Row label="Categories">
         <ChipList items={categories} />
       </Row>
-
       {descriptions.length > 0 && (
         <>
           <SectionHeading>Descriptions</SectionHeading>
           {descriptions.map((d, i) => (
             <Box key={i} sx={{ mb: 1 }}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 {d.class || 'All'}
               </Typography>
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -104,7 +108,6 @@ export function CastableReferenceView({ data }) {
           ))}
         </>
       )}
-
       {data.script ? (
         <>
           <SectionHeading>Script</SectionHeading>
@@ -114,7 +117,7 @@ export function CastableReferenceView({ data }) {
         </>
       ) : null}
     </Box>
-  )
+  );
 }
 
 // ─── Status ──────────────────────────────────────────────────────────────────
@@ -172,17 +175,21 @@ export function ItemReferenceView({ data }) {
         {data.name}
       </Typography>
       {data.unidentifiedName && data.unidentifiedName !== data.name && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 1
+          }}>
           Unidentified: {data.unidentifiedName}
         </Typography>
       )}
-
       <SectionHeading>Appearance</SectionHeading>
       <Row label="Sprite">{appearance.sprite}</Row>
       <Row label="Display">{appearance.displaySprite}</Row>
       <Row label="Color">{appearance.color}</Row>
       <Row label="Body">{appearance.bodyStyle}</Row>
-
       {(equipment.slot || equipment.weaponType) && (
         <>
           <SectionHeading>Equipment</SectionHeading>
@@ -190,14 +197,12 @@ export function ItemReferenceView({ data }) {
           <Row label="Weapon">{equipment.weaponType}</Row>
         </>
       )}
-
       {vendor.shopTab && (
         <>
           <SectionHeading>Vendor</SectionHeading>
           <Row label="Shop tab">{vendor.shopTab}</Row>
         </>
       )}
-
       <SectionHeading>Tags</SectionHeading>
       <Row label="Categories">
         <ChipList items={categories} />
@@ -206,7 +211,7 @@ export function ItemReferenceView({ data }) {
         <ChipList items={flags} />
       </Row>
     </Box>
-  )
+  );
 }
 
 // ─── Creature ────────────────────────────────────────────────────────────────
@@ -220,12 +225,10 @@ export function CreatureReferenceView({ data }) {
       <Typography variant="h6" gutterBottom noWrap>
         {data.name}
       </Typography>
-
       <Row label="Sprite">{data.sprite}</Row>
       <Row label="Min dmg">{data.minDmg}</Row>
       <Row label="Max dmg">{data.maxDmg}</Row>
       <Row label="Behaviors">{data.behaviorSet}</Row>
-
       {data.description ? (
         <>
           <SectionHeading>Description</SectionHeading>
@@ -234,7 +237,6 @@ export function CreatureReferenceView({ data }) {
           </Typography>
         </>
       ) : null}
-
       {loot.length > 0 && (
         <>
           <SectionHeading>Loot</SectionHeading>
@@ -243,7 +245,9 @@ export function CreatureReferenceView({ data }) {
               <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap>
                 {entry.name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 {entry.rolls} × {entry.chance}
               </Typography>
             </Box>
@@ -251,7 +255,7 @@ export function CreatureReferenceView({ data }) {
         </>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── Raw XML ─────────────────────────────────────────────────────────────────

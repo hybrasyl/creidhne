@@ -50,8 +50,10 @@ export default function ItemSpritePicker({
         required={required}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        inputProps={{ min: 0, max }}
         sx={{ width: 120 }}
+        slotProps={{
+          htmlInput: { min: 0, max }
+        }}
       />
       <Tooltip
         title={
@@ -80,5 +82,5 @@ export default function ItemSpritePicker({
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

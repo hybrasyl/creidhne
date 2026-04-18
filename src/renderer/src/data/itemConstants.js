@@ -274,7 +274,7 @@ export function deriveItemPrefix(equipSlot, vendorTab) {
   const vnd = vendorTab || ''
   if (vnd === '1Test') return '1test'
   if (slot && SLOT_PREFIX_MAP[slot]) return SLOT_PREFIX_MAP[slot]
-  if (!slot && vnd) return vnd.toLowerCase().replace(/ /g, '-')
+  if (!slot && vnd) return vnd.toLowerCase().replace(/ /g, '-');
   return 'item'
 }
 

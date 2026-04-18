@@ -47,8 +47,10 @@ export default function CreatureSpritePicker({ value, onChange }) {
         type="number"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        inputProps={{ min: 1, max: 9999 }}
         sx={{ width: 100 }}
+        slotProps={{
+          htmlInput: { min: 1, max: 9999 }
+        }}
       />
       <Tooltip title="Browse sprites">
         <IconButton size="small" onClick={() => setOpen(true)}>
@@ -62,5 +64,5 @@ export default function CreatureSpritePicker({ value, onChange }) {
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

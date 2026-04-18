@@ -10,8 +10,9 @@ export default function CommentField({ value, onChange, ...props }) {
       minRows={2}
       value={value || ''}
       onChange={onChange}
-      inputProps={{ maxLength: 500 }}
       {...props}
-    />
-  )
+      slotProps={{
+        htmlInput: { maxLength: 500 }
+      }} />
+  );
 }

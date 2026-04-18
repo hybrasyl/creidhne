@@ -69,7 +69,12 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
             px: 1
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              textAlign: 'center'
+            }}>
             Pick a valid equipment slot
           </Typography>
         </Box>
@@ -80,8 +85,10 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         type="number"
         value={value ?? ''}
         onChange={(e) => onChange(String(e.target.value).replace(/\D/g, ''))}
-        inputProps={{ min: 0, max: 65535 }}
         sx={{ width: 140 }}
+        slotProps={{
+          htmlInput: { min: 0, max: 65535 }
+        }}
       />
       <Tooltip
         title={
@@ -113,5 +120,5 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

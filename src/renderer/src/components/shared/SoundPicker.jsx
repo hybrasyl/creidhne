@@ -53,8 +53,10 @@ export default function SoundPicker({
         required={required}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        inputProps={{ min: 0 }}
         sx={{ width }}
+        slotProps={{
+          htmlInput: { min: 0 }
+        }}
       />
       <Tooltip title={playTooltip}>
         <span>
@@ -88,5 +90,5 @@ export default function SoundPicker({
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

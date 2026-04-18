@@ -39,8 +39,10 @@ export default function IconPicker({ type, value, onChange, label = 'Icon', help
         type="number"
         value={value ?? ''}
         onChange={(e) => onChange(String(e.target.value).replace(/\D/g, ''))}
-        inputProps={{ min: 0 }}
         sx={{ width: 110 }}
+        slotProps={{
+          htmlInput: { min: 0 }
+        }}
       />
       <Tooltip
         title={
@@ -70,5 +72,5 @@ export default function IconPicker({ type, value, onChange, label = 'Icon', help
         onChange={handleSelect}
       />
     </Box>
-  )
+  );
 }

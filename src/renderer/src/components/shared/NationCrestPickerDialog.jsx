@@ -138,7 +138,9 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
       open={open}
       onClose={onClose}
       maxWidth={false}
-      PaperProps={{ sx: { overflowX: 'hidden' } }}
+      slotProps={{
+        paper: { sx: { overflowX: 'hidden' } }
+      }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', py: 1.6 }}>
         Nation Flags
@@ -177,12 +179,14 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 1 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }
           }}
         />
         {!index && (
@@ -204,5 +208,5 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

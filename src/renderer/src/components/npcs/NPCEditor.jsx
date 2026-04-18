@@ -38,7 +38,7 @@ import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
 
 function deriveNpcPrefix(job) {
   if (!job) return 'npc'
-  return job.toLowerCase().replace(/\s+/g, '_')
+  return job.toLowerCase().replace(/\s+/g, '_');
 }
 
 function computeNpcFilename(prefix, name) {
@@ -401,9 +401,7 @@ function NPCEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Basic info */}
@@ -425,7 +423,9 @@ function NPCEditor({
                 size="small"
                 value={data.sprite}
                 onChange={(e) => updateData((d) => ({ ...d, sprite: e.target.value }))}
-                inputProps={{ min: 1, max: 9999 }}
+                slotProps={{
+                  htmlInput: { min: 1, max: 9999 }
+                }}
               />
               <Box
                 sx={{
@@ -483,7 +483,9 @@ function NPCEditor({
                 size="small"
                 value={data.portrait || ''}
                 onChange={set('portrait')}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <NpcPortraitCanvas filename={data.portrait} size={SPRITE_PREVIEW} />
               <Button
@@ -505,7 +507,9 @@ function NPCEditor({
                   value={computedPrefix}
                   size="small"
                   sx={{ width: 140 }}
-                  inputProps={{ readOnly: true, spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { readOnly: true, spellCheck: false }
+                  }}
                 />
                 <TextField
                   label="Name"
@@ -514,7 +518,6 @@ function NPCEditor({
                   onBlur={handleNameBlur}
                   size="small"
                   required
-                  inputProps={{ maxLength: 255 }}
                   error={dupStatus === 'active'}
                   helperText={
                     dupStatus === 'active'
@@ -523,9 +526,6 @@ function NPCEditor({
                         ? `"${data.name}" exists in archive`
                         : undefined
                   }
-                  InputProps={{
-                    endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open NPC script" />,
-                  }}
                   sx={{
                     flex: 1,
                     ...(dupStatus === 'archived' && {
@@ -534,14 +534,22 @@ function NPCEditor({
                       '& .MuiFormHelperText-root': { color: 'warning.main' }
                     })
                   }}
-                />
+                  slotProps={{
+                    input: {
+                      endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open NPC script" />,
+                    },
+
+                    htmlInput: { maxLength: 255 }
+                  }} />
                 <TextField
                   label="Display Name"
                   value={data.displayName}
                   onChange={set('displayName')}
                   size="small"
                   sx={{ flex: 1 }}
-                  inputProps={{ maxLength: 255 }}
+                  slotProps={{
+                    htmlInput: { maxLength: 255 }
+                  }}
                 />
               </Box>
 
@@ -562,7 +570,9 @@ function NPCEditor({
                   onChange={(e) => setMetaField('location')(e.target.value)}
                   size="small"
                   sx={{ flex: 1 }}
-                  inputProps={{ maxLength: 128 }}
+                  slotProps={{
+                    htmlInput: { maxLength: 128 }
+                  }}
                 />
               </Box>
 
@@ -722,7 +732,9 @@ function NPCEditor({
                 onChangeExcept={(val) => setRoleField('bank', 'exceptCookie', val)}
                 onChangeOnly={(val) => setRoleField('bank', 'onlyCookie', val)}
               />
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Cost Adjustments
               </Typography>
               {data.roles.bank.adjustments.map((adj, i) => (
@@ -739,7 +751,9 @@ function NPCEditor({
                     onChange={(e) => setAdjustment('bank', i, 'value', e.target.value)}
                     size="small"
                     sx={{ width: 140 }}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <IconButton
                     size="small"
@@ -796,7 +810,9 @@ function NPCEditor({
                   inputProps={{ maxLength: 128 }}
                 />
               </Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Cost Adjustments
               </Typography>
               {data.roles.post.adjustments.map((adj, i) => (
@@ -813,7 +829,9 @@ function NPCEditor({
                     onChange={(e) => setAdjustment('post', i, 'value', e.target.value)}
                     size="small"
                     sx={{ width: 140 }}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <IconButton
                     size="small"
@@ -877,7 +895,9 @@ function NPCEditor({
                   inputProps={{ maxLength: 128 }}
                 />
               </Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Cost Adjustments
               </Typography>
               {data.roles.repair.adjustments.map((adj, i) => (
@@ -894,7 +914,9 @@ function NPCEditor({
                     onChange={(e) => setAdjustment('repair', i, 'value', e.target.value)}
                     size="small"
                     sx={{ width: 140 }}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <IconButton
                     size="small"
@@ -954,7 +976,9 @@ function NPCEditor({
                     onChange={(e) => setVendItem(i, 'quantity', e.target.value)}
                     size="small"
                     sx={{ width: 80 }}
-                    inputProps={{ min: 1 }}
+                    slotProps={{
+                      htmlInput: { min: 1 }
+                    }}
                   />
                   <TextField
                     label="Restock"
@@ -963,7 +987,9 @@ function NPCEditor({
                     onChange={(e) => setVendItem(i, 'restock', e.target.value)}
                     size="small"
                     sx={{ width: 90 }}
-                    inputProps={{ min: 0 }}
+                    slotProps={{
+                      htmlInput: { min: 0 }
+                    }}
                   />
                   <IconButton size="small" color="error" onClick={() => removeVendItem(i)}>
                     <DeleteIcon fontSize="small" />
@@ -973,7 +999,9 @@ function NPCEditor({
               <Button size="small" startIcon={<AddIcon />} onClick={addVendItem}>
                 Add Item
               </Button>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Cost Adjustments
               </Typography>
               {data.roles.vend.adjustments.map((adj, i) => (
@@ -990,7 +1018,9 @@ function NPCEditor({
                     onChange={(e) => setAdjustment('vend', i, 'value', e.target.value)}
                     size="small"
                     sx={{ width: 140 }}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <IconButton
                     size="small"
@@ -1094,7 +1124,9 @@ function NPCEditor({
               <Button size="small" startIcon={<AddIcon />} onClick={addTrainCastable}>
                 Add Castable
               </Button>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Cost Adjustments
               </Typography>
               {data.roles.train.adjustments.map((adj, i) => (
@@ -1111,7 +1143,9 @@ function NPCEditor({
                     onChange={(e) => setAdjustment('train', i, 'value', e.target.value)}
                     size="small"
                     sx={{ width: 140 }}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <IconButton
                     size="small"
@@ -1131,7 +1165,6 @@ function NPCEditor({
 
         <Box sx={{ height: 32 }} />
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -1149,7 +1182,7 @@ function NPCEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default NPCEditor

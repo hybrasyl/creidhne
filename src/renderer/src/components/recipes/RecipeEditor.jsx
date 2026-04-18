@@ -161,9 +161,7 @@ function RecipeEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* Form */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
@@ -175,7 +173,9 @@ function RecipeEditor({
                 size="small"
                 sx={{ width: 140 }}
                 onChange={handlePrefixChange}
-                inputProps={{ maxLength: 64, spellCheck: false }}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
               <TextField
                 label="Name"
@@ -201,7 +201,9 @@ function RecipeEditor({
                 }
                 onChange={set('name')}
                 onBlur={handleNameBlur}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
             </Box>
             <TextField
@@ -211,7 +213,9 @@ function RecipeEditor({
               size="small"
               multiline
               minRows={2}
-              inputProps={{ maxLength: 500 }}
+              slotProps={{
+                htmlInput: { maxLength: 500 }
+              }}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Autocomplete
@@ -232,7 +236,9 @@ function RecipeEditor({
                 onChange={set('duration')}
                 size="small"
                 sx={{ width: 140 }}
-                inputProps={{ maxLength: 64 }}
+                slotProps={{
+                  htmlInput: { maxLength: 64 }
+                }}
               />
             </Box>
             <CommentField value={data.comment} onChange={set('comment')} />
@@ -264,7 +270,9 @@ function RecipeEditor({
                 onChange={(e) => setIngredient(index, 'quantity', e.target.value)}
                 size="small"
                 sx={{ width: 90 }}
-                inputProps={{ min: 1 }}
+                slotProps={{
+                  htmlInput: { min: 1 }
+                }}
               />
               <IconButton size="small" color="error" onClick={() => removeIngredient(index)}>
                 <DeleteIcon fontSize="small" />
@@ -278,7 +286,6 @@ function RecipeEditor({
 
         <Box sx={{ height: 32 }} />
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -296,7 +303,7 @@ function RecipeEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default RecipeEditor

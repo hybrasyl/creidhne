@@ -117,12 +117,14 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 1 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }
           }}
         />
         {!ids && (
@@ -142,5 +144,5 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

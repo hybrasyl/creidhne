@@ -69,7 +69,9 @@ function StringRow({ keyVal, message, onChangeKey, onChangeMessage, onDelete }) 
         onChange={(e) => onChangeKey(e.target.value)}
         size="small"
         sx={{ width: 200 }}
-        inputProps={{ spellCheck: false }}
+        slotProps={{
+          htmlInput: { spellCheck: false }
+        }}
       />
       <TextField
         label="Message"
@@ -84,7 +86,7 @@ function StringRow({ keyVal, message, onChangeKey, onChangeMessage, onDelete }) 
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 // ── Call + Response row ───────────────────────────────────────────────────────
@@ -373,7 +375,6 @@ function LocalizationEditor({
           </Button>
         </Box>
       </Box>
-
       {/* ── Filename row ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pb: 1, flexShrink: 0 }}>
         <TextField
@@ -386,7 +387,9 @@ function LocalizationEditor({
             setFileNameEdited(true)
           }}
           sx={{ flex: 1 }}
-          inputProps={{ spellCheck: false }}
+          slotProps={{
+            htmlInput: { spellCheck: false }
+          }}
         />
         <Tooltip title="Regenerate from prefix + locale">
           <IconButton size="small" onClick={handleRegenerate}>
@@ -394,7 +397,6 @@ function LocalizationEditor({
           </IconButton>
         </Tooltip>
       </Box>
-
       {/* ── Metadata on Paper ── */}
       <Paper variant="outlined" sx={{ p: 2, mb: 1, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -404,7 +406,9 @@ function LocalizationEditor({
             value={prefix}
             sx={{ width: 140 }}
             onChange={handlePrefixChange}
-            inputProps={{ maxLength: 64, spellCheck: false }}
+            slotProps={{
+              htmlInput: { maxLength: 64, spellCheck: false }
+            }}
           />
           <TextField
             label="Locale Name"
@@ -412,8 +416,10 @@ function LocalizationEditor({
             size="small"
             sx={{ flex: 1 }}
             onChange={(e) => update((d) => ({ ...d, locale: e.target.value }))}
-            inputProps={{ spellCheck: false }}
             helperText="Format: en-us"
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
         </Box>
         <CommentField
@@ -429,7 +435,6 @@ function LocalizationEditor({
           </Tooltip>
         </Box>
       </Paper>
-
       {/* ── Tabs on Paper ── */}
       <Paper
         variant="outlined"
@@ -457,7 +462,6 @@ function LocalizationEditor({
           </Box>
         </Box>
       </Paper>
-
       {/* ── Variables Drawer ── */}
       <Drawer anchor="right" open={varsOpen} onClose={() => setVarsOpen(false)}>
         <Box sx={{ width: 300, p: 2 }}>
@@ -469,7 +473,13 @@ function LocalizationEditor({
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              mb: 1,
+              display: 'block'
+            }}>
             TODO: fill in variable descriptions
           </Typography>
           <Divider sx={{ mb: 1 }} />
@@ -479,16 +489,17 @@ function LocalizationEditor({
                 <ListItemText
                   primary={v.name}
                   secondary={v.desc}
-                  primaryTypographyProps={{ variant: 'body2', fontFamily: 'monospace' }}
-                  secondaryTypographyProps={{ variant: 'caption' }}
-                />
+                  slotProps={{
+                    primary: { variant: 'body2', fontFamily: 'monospace' },
+                    secondary: { variant: 'caption' }
+                  }} />
               </ListItem>
             ))}
           </List>
         </Box>
       </Drawer>
     </Box>
-  )
+  );
 }
 
 export default LocalizationEditor

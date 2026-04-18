@@ -250,9 +250,7 @@ function NationEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Basic info */}
@@ -288,7 +286,9 @@ function NationEditor({
                   sx={{ width: 120 }}
                   value={prefix}
                   onChange={handlePrefixChange}
-                  inputProps={{ maxLength: 64, spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { maxLength: 64, spellCheck: false }
+                  }}
                 />
                 <TextField
                   label="Name"
@@ -314,7 +314,9 @@ function NationEditor({
                   value={data.name}
                   onChange={set('name')}
                   onBlur={handleNameBlur}
-                  inputProps={{ maxLength: 255 }}
+                  slotProps={{
+                    htmlInput: { maxLength: 255 }
+                  }}
                 />
                 <TextField
                   label="Flag"
@@ -326,8 +328,10 @@ function NationEditor({
                     const v = e.target.value.replace(/\D/g, '')
                     if (v === '' || parseInt(v, 10) <= 99) updateData((d) => ({ ...d, flag: v }))
                   }}
-                  inputProps={{ inputMode: 'numeric', maxLength: 2 }}
                   placeholder="1–99"
+                  slotProps={{
+                    htmlInput: { inputMode: 'numeric', maxLength: 2 }
+                  }}
                 />
                 <Tooltip title="Only one nation across the library should be marked as default">
                   <FormControlLabel
@@ -351,7 +355,9 @@ function NationEditor({
                 size="small"
                 multiline
                 minRows={2}
-                inputProps={{ maxLength: 1000 }}
+                slotProps={{
+                  htmlInput: { maxLength: 1000 }
+                }}
               />
             </Box>
           </Box>
@@ -378,7 +384,9 @@ function NationEditor({
                 onChange={(e) => setSpawnPoint(i, 'x', e.target.value)}
                 size="small"
                 sx={{ width: 80 }}
-                inputProps={{ maxLength: 10 }}
+                slotProps={{
+                  htmlInput: { maxLength: 10 }
+                }}
               />
               <TextField
                 label="Y"
@@ -386,7 +394,9 @@ function NationEditor({
                 onChange={(e) => setSpawnPoint(i, 'y', e.target.value)}
                 size="small"
                 sx={{ width: 80 }}
-                inputProps={{ maxLength: 10 }}
+                slotProps={{
+                  htmlInput: { maxLength: 10 }
+                }}
               />
               <IconButton size="small" color="error" onClick={() => removeSpawnPoint(i)}>
                 <DeleteIcon fontSize="small" />
@@ -430,7 +440,6 @@ function NationEditor({
 
         <Box sx={{ height: 32 }} />
       </Box>
-
       <NationCrestPickerDialog
         open={flagPickerOpen}
         value={data.flag}
@@ -440,7 +449,6 @@ function NationEditor({
           setFlagPickerOpen(false)
         }}
       />
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -458,7 +466,7 @@ function NationEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default NationEditor

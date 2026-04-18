@@ -44,7 +44,9 @@ function AddStatusRow({ entry, statusNames, onChange, onRemove }) {
         sx={{ width: 90 }}
         value={entry.duration}
         onChange={setNumeric('duration')}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <TextField
         label="Intensity"
@@ -59,13 +61,15 @@ function AddStatusRow({ entry, statusNames, onChange, onRemove }) {
         sx={{ width: 80 }}
         value={entry.tick}
         onChange={setNumeric('tick')}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <IconButton size="small" color="error" onClick={onRemove} sx={{ flexShrink: 0 }}>
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function RemoveStatusRow({ entry, statusNames, categoryNames, onChange, onRemove }) {
@@ -120,13 +124,15 @@ function RemoveStatusRow({ entry, statusNames, categoryNames, onChange, onRemove
         sx={{ width: 90 }}
         value={entry.quantity}
         onChange={(e) => set('quantity', e.target.value.replace(/\D/g, ''))}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <IconButton size="small" color="error" onClick={onRemove} sx={{ flexShrink: 0 }}>
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function StatusesSection({ statuses, libraryIndex, onChange }) {

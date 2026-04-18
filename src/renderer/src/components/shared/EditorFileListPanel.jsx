@@ -22,7 +22,7 @@ import ArchiveIcon from '@mui/icons-material/Archive'
 const ITEM_HEIGHT = 52
 
 function stripXml(filename) {
-  return filename.replace(/\.xml$/i, '')
+  return filename.replace(/\.xml$/i, '');
 }
 
 function displayNameFor(file, namesByFilename) {
@@ -78,16 +78,18 @@ function VirtualRow({ index, style, items, selectedFile, onSelect, namesByFilena
         <ListItemText
           primary={displayName}
           secondary={showSubtitle ? filenameBare : null}
-          primaryTypographyProps={{
-            noWrap: true,
-            variant: 'body2',
-            color: archived ? 'text.secondary' : undefined
-          }}
-          secondaryTypographyProps={{ noWrap: true, variant: 'caption' }}
-        />
+          slotProps={{
+            primary: {
+              noWrap: true,
+              variant: 'body2',
+              color: archived ? 'text.secondary' : undefined
+            },
+
+            secondary: { noWrap: true, variant: 'caption' }
+          }} />
       </ListItemButton>
     </ListItem>
-  )
+  );
 }
 
 /**
@@ -171,17 +173,18 @@ export default function EditorFileListPanel({
           placeholder="Filter..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }
           }}
         />
       </Box>
       <Divider />
-
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {showLoader && (
           <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -190,13 +193,23 @@ export default function EditorFileListPanel({
         )}
 
         {showEmptyLibrary && (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              p: 2
+            }}>
             No {noun} found. Check that a library is set in Settings.
           </Typography>
         )}
 
         {showNoMatches && (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              p: 2
+            }}>
             No matches.
           </Typography>
         )}
@@ -222,9 +235,12 @@ export default function EditorFileListPanel({
               {filteredActive.length === 0 && showArchived && (
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', px: 2, py: 1 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    px: 2,
+                    py: 1
+                  }}>
                   No active matches.
                 </Typography>
               )}
@@ -242,9 +258,12 @@ export default function EditorFileListPanel({
               >
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ px: 1.5, py: 0.5, display: 'block' }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    px: 1.5,
+                    py: 0.5,
+                    display: 'block'
+                  }}>
                   Archived
                 </Typography>
                 <List dense disablePadding>
@@ -261,16 +280,18 @@ export default function EditorFileListPanel({
                           <ListItemText
                             primary={displayName}
                             secondary={showSubtitle ? filenameBare : null}
-                            primaryTypographyProps={{
-                              noWrap: true,
-                              variant: 'body2',
-                              color: 'text.secondary'
-                            }}
-                            secondaryTypographyProps={{ noWrap: true, variant: 'caption' }}
-                          />
+                            slotProps={{
+                              primary: {
+                                noWrap: true,
+                                variant: 'body2',
+                                color: 'text.secondary'
+                              },
+
+                              secondary: { noWrap: true, variant: 'caption' }
+                            }} />
                         </ListItemButton>
                       </ListItem>
-                    )
+                    );
                   })}
                 </List>
               </Box>
@@ -279,5 +300,5 @@ export default function EditorFileListPanel({
         )}
       </Box>
     </Box>
-  )
+  );
 }

@@ -80,10 +80,14 @@ function getFolderName(fullPath) {
 function StatCard({ label, count, page, tooltip, onNavigate }) {
   const content = (
     <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-      <Typography variant="h5" fontWeight="bold" color={page ? 'primary.light' : 'text.primary'}>
+      <Typography variant="h5" color={page ? 'primary.light' : 'text.primary'} sx={{
+        fontWeight: "bold"
+      }}>
         {count.toLocaleString()}
       </Typography>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         {label}
       </Typography>
     </CardContent>
@@ -134,24 +138,39 @@ function DashboardPage() {
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{
+        fontWeight: "bold"
+      }}>
         Dashboard
       </Typography>
-
       <Divider sx={{ mb: 3 }} />
-
       {/* Active Library */}
       {activeLibrary ? (
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 3 }}>
           <FolderOpenIcon color="action" sx={{ mt: 0.25 }} />
           <Box>
-            <Typography variant="overline" color="text.secondary" lineHeight={1}>
+            <Typography
+              variant="overline"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1
+              }}>
               Active Library
             </Typography>
-            <Typography variant="subtitle1" fontWeight="medium" sx={{ mt: 0.25 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: "medium",
+                mt: 0.25
+              }}>
               {folderName}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                wordBreak: 'break-all'
+              }}>
               {activeLibrary}
             </Typography>
           </Box>
@@ -162,10 +181,14 @@ function DashboardPage() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FolderOpenIcon color="action" fontSize="large" />
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body1" fontWeight="medium">
+                <Typography variant="body1" sx={{
+                  fontWeight: "medium"
+                }}>
                   No library selected
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Click to open Settings and add a library
                 </Typography>
               </Box>
@@ -174,7 +197,6 @@ function DashboardPage() {
           </CardActionArea>
         </Card>
       )}
-
       {/* No index alert */}
       {activeLibrary && !hasIndex && (
         <Alert
@@ -190,12 +212,13 @@ function DashboardPage() {
           No index found — build one to enable autocomplete and see counts here.
         </Alert>
       )}
-
       {/* Index stats */}
       {hasIndex && (
         <>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <Typography variant="overline" color="text.secondary">
+            <Typography variant="overline" sx={{
+              color: "text.secondary"
+            }}>
               Index
             </Typography>
             <Chip
@@ -236,14 +259,15 @@ function DashboardPage() {
           </Grid>
         </>
       )}
-
       {/* Recently visited */}
       {recentPages.length > 0 && (
         <>
           <Divider sx={{ mb: 2 }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <HistoryIcon fontSize="small" color="action" />
-            <Typography variant="overline" color="text.secondary">
+            <Typography variant="overline" sx={{
+              color: "text.secondary"
+            }}>
               Recently Visited
             </Typography>
           </Box>
@@ -261,7 +285,7 @@ function DashboardPage() {
         </>
       )}
     </Box>
-  )
+  );
 }
 
 export default DashboardPage

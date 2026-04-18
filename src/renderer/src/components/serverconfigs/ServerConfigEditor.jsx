@@ -220,7 +220,9 @@ function NetworkInfoRow({ label, value, onChange }) {
         value={value?.bindAddress ?? ''}
         onChange={set('bindAddress')}
         sx={{ flex: 1 }}
-        inputProps={{ spellCheck: false }}
+        slotProps={{
+          htmlInput: { spellCheck: false }
+        }}
       />
       <TextField
         size="small"
@@ -228,7 +230,9 @@ function NetworkInfoRow({ label, value, onChange }) {
         value={value?.externalAddress ?? ''}
         onChange={set('externalAddress')}
         sx={{ flex: 1 }}
-        inputProps={{ spellCheck: false }}
+        slotProps={{
+          htmlInput: { spellCheck: false }
+        }}
       />
       <TextField
         size="small"
@@ -238,7 +242,7 @@ function NetworkInfoRow({ label, value, onChange }) {
         sx={{ width: 90 }}
       />
     </Box>
-  )
+  );
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -261,7 +265,9 @@ function GeneralTab({ data, updateData }) {
             value={data.locale}
             onChange={setField('locale')}
             sx={{ width: 120 }}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
@@ -269,7 +275,9 @@ function GeneralTab({ data, updateData }) {
             value={data.environment}
             onChange={setField('environment')}
             sx={{ width: 120 }}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
@@ -277,7 +285,9 @@ function GeneralTab({ data, updateData }) {
             value={data.elementTable}
             onChange={setField('elementTable')}
             sx={{ width: 140 }}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
         </Box>
         <TextField
@@ -287,7 +297,9 @@ function GeneralTab({ data, updateData }) {
           onChange={setField('motd')}
           multiline
           minRows={3}
-          inputProps={{ maxLength: 65534 }}
+          slotProps={{
+            htmlInput: { maxLength: 65534 }
+          }}
         />
         <TextField
           size="small"
@@ -295,11 +307,13 @@ function GeneralTab({ data, updateData }) {
           value={data.worldDataDir}
           onChange={setField('worldDataDir')}
           helperText="Server-side path to the world data folder (not in schema, but read by the server)"
-          inputProps={{ spellCheck: false }}
+          slotProps={{
+            htmlInput: { spellCheck: false }
+          }}
         />
       </Box>
     </Paper>
-  )
+  );
 }
 
 function NetworkTab({ data, updateData }) {
@@ -352,7 +366,9 @@ function NetworkTab({ data, updateData }) {
             value={ds.host}
             onChange={setDs('host')}
             sx={{ flex: 1, minWidth: 140 }}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
@@ -377,7 +393,9 @@ function NetworkTab({ data, updateData }) {
             onChange={setDs('type')}
             placeholder="redis"
             sx={{ width: 120 }}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
         </Box>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -399,7 +417,9 @@ function NetworkTab({ data, updateData }) {
                 value={ds.username}
                 onChange={setDs('username')}
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <TextField
                 size="small"
@@ -413,13 +433,11 @@ function NetworkTab({ data, updateData }) {
           )}
         </Box>
       </Section>
-
       <Section title="Game Servers" open={openNetwork} onToggle={() => setOpenNetwork((v) => !v)}>
         <NetworkInfoRow label="Lobby" value={data.network?.lobby} onChange={setNet('lobby')} />
         <NetworkInfoRow label="Login" value={data.network?.login} onChange={setNet('login')} />
         <NetworkInfoRow label="World" value={data.network?.world} onChange={setNet('world')} />
       </Section>
-
       <Section
         title="gRPC (SSL)"
         open={openGrpc}
@@ -436,7 +454,9 @@ function NetworkTab({ data, updateData }) {
                 value={data.network.grpc.bindAddress}
                 onChange={setGrpc('bindAddress')}
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <TextField
                 size="small"
@@ -444,7 +464,9 @@ function NetworkTab({ data, updateData }) {
                 value={data.network.grpc.externalAddress}
                 onChange={setGrpc('externalAddress')}
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <TextField
                 size="small"
@@ -459,27 +481,33 @@ function NetworkTab({ data, updateData }) {
               label="Chain Certificate File"
               value={data.network.grpc.chainCertFile}
               onChange={setGrpc('chainCertFile')}
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
             <TextField
               size="small"
               label="Server Certificate File"
               value={data.network.grpc.serverCertFile}
               onChange={setGrpc('serverCertFile')}
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
             <TextField
               size="small"
               label="Server Key File"
               value={data.network.grpc.serverKeyFile}
               onChange={setGrpc('serverKeyFile')}
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
           </Box>
         )}
       </Section>
     </Box>
-  )
+  );
 }
 
 function AccessBoardsTab({ data, updateData }) {
@@ -567,7 +595,9 @@ function AccessBoardsTab({ data, updateData }) {
             value={data.access?.privileged ?? ''}
             onChange={setAccess('privileged')}
             helperText="Space-separated names; use * to grant all"
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
@@ -575,11 +605,12 @@ function AccessBoardsTab({ data, updateData }) {
             value={data.access?.reserved ?? ''}
             onChange={setAccess('reserved')}
             helperText="Space-separated names; these names cannot be registered by players"
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
         </Box>
       </Paper>
-
       <Section
         title="Global Boards"
         open={openBoards}
@@ -596,7 +627,9 @@ function AccessBoardsTab({ data, updateData }) {
                 value={board.name}
                 onChange={(e) => setBoard(i, 'name', e.target.value)}
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <TextField
                 size="small"
@@ -604,7 +637,9 @@ function AccessBoardsTab({ data, updateData }) {
                 value={board.displayName}
                 onChange={(e) => setBoard(i, 'displayName', e.target.value)}
                 sx={{ flex: 1 }}
-                inputProps={{ maxLength: 255 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <IconButton
                 size="small"
@@ -615,7 +650,13 @@ function AccessBoardsTab({ data, updateData }) {
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                mb: 0.5,
+                display: 'block'
+              }}>
               Access List
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -623,26 +664,36 @@ function AccessBoardsTab({ data, updateData }) {
                 size="small"
                 label="Read"
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
                 value={(board.accessList.read || []).join(' ')}
                 onChange={(e) =>
                   setBoardAl(i, 'read', e.target.value ? e.target.value.split(/\s+/) : [])
                 }
                 helperText="Space-separated names or *"
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <TextField
                 size="small"
                 label="Write"
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
                 value={(board.accessList.write || []).join(' ')}
                 onChange={(e) =>
                   setBoardAl(i, 'write', e.target.value ? e.target.value.split(/\s+/) : [])
                 }
                 helperText="Space-separated names or *"
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                mb: 0.5,
+                display: 'block'
+              }}>
               Moderators
             </Typography>
             {(board.accessList.moderate || []).map((m, mi) => (
@@ -652,7 +703,9 @@ function AccessBoardsTab({ data, updateData }) {
                   value={m}
                   onChange={(e) => setModerate(i, mi, e.target.value)}
                   sx={{ flex: 1 }}
-                  inputProps={{ spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { spellCheck: false }
+                  }}
                 />
                 <IconButton size="small" color="error" onClick={() => removeModerate(i, mi)}>
                   <DeleteIcon fontSize="small" />
@@ -669,7 +722,7 @@ function AccessBoardsTab({ data, updateData }) {
         </Button>
       </Section>
     </Box>
-  )
+  );
 }
 
 function TimeTab({ data, updateData }) {
@@ -711,7 +764,9 @@ function TimeTab({ data, updateData }) {
               value={age.name}
               onChange={(e) => setAge(i, 'name', e.target.value)}
               sx={{ width: 120 }}
-              inputProps={{ maxLength: 32 }}
+              slotProps={{
+                htmlInput: { maxLength: 32 }
+              }}
             />
             <TextField
               size="small"
@@ -720,7 +775,9 @@ function TimeTab({ data, updateData }) {
               onChange={(e) => setAge(i, 'startDate', e.target.value)}
               sx={{ flex: 1 }}
               placeholder="2020-01-01T00:00:00Z"
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
             <TextField
               size="small"
@@ -729,7 +786,9 @@ function TimeTab({ data, updateData }) {
               onChange={(e) => setAge(i, 'endDate', e.target.value)}
               sx={{ flex: 1 }}
               placeholder="optional"
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
             <TextField
               size="small"
@@ -748,7 +807,6 @@ function TimeTab({ data, updateData }) {
           Add Age
         </Button>
       </Section>
-
       <Section title="Server Start" open={openStart} onToggle={() => setOpenStart((v) => !v)}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <TextField
@@ -758,7 +816,9 @@ function TimeTab({ data, updateData }) {
             value={data.time?.serverStart?.value ?? ''}
             onChange={setSs('value')}
             placeholder="2020-01-01T00:00:00Z"
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
@@ -766,7 +826,9 @@ function TimeTab({ data, updateData }) {
             sx={{ width: 140 }}
             value={data.time?.serverStart?.defaultAge ?? ''}
             onChange={setSs('defaultAge')}
-            inputProps={{ maxLength: 32 }}
+            slotProps={{
+              htmlInput: { maxLength: 32 }
+            }}
           />
           <TextField
             size="small"
@@ -778,7 +840,7 @@ function TimeTab({ data, updateData }) {
         </Box>
       </Section>
     </Box>
-  )
+  );
 }
 
 function HandlersTab({ data, updateData }) {
@@ -913,7 +975,9 @@ function HandlersTab({ data, updateData }) {
               />
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Death Map
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -941,7 +1005,9 @@ function HandlersTab({ data, updateData }) {
               </Box>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Coma
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -970,7 +1036,9 @@ function HandlersTab({ data, updateData }) {
               </Box>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Penalty
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -993,7 +1061,9 @@ function HandlersTab({ data, updateData }) {
               </Box>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Legend Mark
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5, alignItems: 'center' }}>
@@ -1010,7 +1080,9 @@ function HandlersTab({ data, updateData }) {
                   value={death.legendMark.prefix}
                   onChange={setDeathSub('legendMark', 'prefix')}
                   sx={{ width: 120 }}
-                  inputProps={{ maxLength: 255 }}
+                  slotProps={{
+                    htmlInput: { maxLength: 255 }
+                  }}
                 />
                 <FormControlLabel
                   control={
@@ -1041,7 +1113,6 @@ function HandlersTab({ data, updateData }) {
           </Box>
         )}
       </Section>
-
       {/* New Player */}
       <Section
         title="New Player Start Maps"
@@ -1080,7 +1151,6 @@ function HandlersTab({ data, updateData }) {
           Add Start Map
         </Button>
       </Section>
-
       {/* Chat */}
       <Section
         title="Chat"
@@ -1107,13 +1177,15 @@ function HandlersTab({ data, updateData }) {
               value={chat.commandPrefix}
               onChange={(e) => setChat('commandPrefix')(e.target.value)}
               sx={{ width: 140 }}
-              inputProps={{ maxLength: 8 }}
+              slotProps={{
+                htmlInput: { maxLength: 8 }
+              }}
             />
           </Box>
         )}
       </Section>
     </Box>
-  )
+  );
 }
 
 function LoggingTab({ data, updateData }) {
@@ -1199,7 +1271,9 @@ function LoggingTab({ data, updateData }) {
               value={l.destination}
               onChange={(e) => setLog(i, 'destination', e.target.value)}
               sx={{ flex: 1 }}
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
             <LevelSelect
               label="Level"
@@ -1218,7 +1292,7 @@ function LoggingTab({ data, updateData }) {
         </Button>
       </Section>
     </Box>
-  )
+  );
 }
 
 function AdvancedTab({ data, updateData }) {
@@ -1368,28 +1442,36 @@ function AdvancedTab({ data, updateData }) {
             label="Sentry URL"
             value={ep.sentry ?? ''}
             onChange={setEp('sentry')}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
             label="Encryption Endpoint"
             value={ep.encryptionEndpoint ?? ''}
             onChange={setEp('encryptionEndpoint')}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
             label="Validation Endpoint"
             value={ep.validationEndpoint ?? ''}
             onChange={setEp('validationEndpoint')}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <TextField
             size="small"
             label="Telemetry Endpoint"
             value={ep.telemetryEndpoint ?? ''}
             onChange={setEp('telemetryEndpoint')}
-            inputProps={{ spellCheck: false }}
+            slotProps={{
+              htmlInput: { spellCheck: false }
+            }}
           />
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <FormControlLabel
@@ -1410,7 +1492,9 @@ function AdvancedTab({ data, updateData }) {
                   value={ep.metricsEndpoint.url ?? ''}
                   onChange={setMetrics('url')}
                   sx={{ flex: 1 }}
-                  inputProps={{ spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { spellCheck: false }
+                  }}
                 />
                 <TextField
                   size="small"
@@ -1418,14 +1502,15 @@ function AdvancedTab({ data, updateData }) {
                   value={ep.metricsEndpoint.apiKey ?? ''}
                   onChange={setMetrics('apiKey')}
                   sx={{ flex: 1 }}
-                  inputProps={{ spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { spellCheck: false }
+                  }}
                 />
               </>
             )}
           </Box>
         </Box>
       </Section>
-
       {/* Constants */}
       <Section title="Server Constants" open={openConst} onToggle={() => setOpenConst((v) => !v)}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
@@ -1436,12 +1521,13 @@ function AdvancedTab({ data, updateData }) {
               label={label}
               value={consts[key] ?? ''}
               onChange={setConst(key)}
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
           ))}
         </Box>
       </Section>
-
       {/* Formulas */}
       <Section
         title="Server Formulas"
@@ -1457,12 +1543,13 @@ function AdvancedTab({ data, updateData }) {
               label={label}
               value={formulas[key] ?? ''}
               onChange={setFormula(key)}
-              inputProps={{ spellCheck: false, style: { fontFamily: 'monospace' } }}
+              slotProps={{
+                htmlInput: { spellCheck: false, style: { fontFamily: 'monospace' } }
+              }}
             />
           ))}
         </Box>
       </Section>
-
       {/* Client Settings */}
       <Section title="Client Settings" open={openClient} onToggle={() => setOpenClient((v) => !v)}>
         {(data.clientSettings || []).map((s, i) => (
@@ -1480,7 +1567,9 @@ function AdvancedTab({ data, updateData }) {
               value={s.key}
               onChange={(e) => setCs(i, 'key', e.target.value)}
               sx={{ width: 140 }}
-              inputProps={{ spellCheck: false }}
+              slotProps={{
+                htmlInput: { spellCheck: false }
+              }}
             />
             <TextField
               size="small"
@@ -1510,7 +1599,6 @@ function AdvancedTab({ data, updateData }) {
           </Button>
         )}
       </Section>
-
       {/* Message Plugins */}
       <Section
         title="Message Plugins"
@@ -1533,7 +1621,9 @@ function AdvancedTab({ data, updateData }) {
                 value={p.name}
                 onChange={(e) => setPlugin(i, 'name', e.target.value)}
                 sx={{ flex: 1 }}
-                inputProps={{ spellCheck: false }}
+                slotProps={{
+                  htmlInput: { spellCheck: false }
+                }}
               />
               <FormControlLabel
                 control={
@@ -1549,7 +1639,9 @@ function AdvancedTab({ data, updateData }) {
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Configuration
             </Typography>
             {p.configuration.map((c, ci) => (
@@ -1560,7 +1652,9 @@ function AdvancedTab({ data, updateData }) {
                   value={c.key}
                   onChange={(e) => setPluginConfig(i, ci, 'key', e.target.value)}
                   sx={{ flex: 1 }}
-                  inputProps={{ spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { spellCheck: false }
+                  }}
                 />
                 <TextField
                   size="small"
@@ -1568,7 +1662,9 @@ function AdvancedTab({ data, updateData }) {
                   value={c.value}
                   onChange={(e) => setPluginConfig(i, ci, 'value', e.target.value)}
                   sx={{ flex: 1 }}
-                  inputProps={{ spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { spellCheck: false }
+                  }}
                 />
                 <IconButton size="small" color="error" onClick={() => removePluginConfig(i, ci)}>
                   <DeleteIcon fontSize="small" />
@@ -1578,7 +1674,13 @@ function AdvancedTab({ data, updateData }) {
             <Button size="small" startIcon={<AddIcon />} onClick={() => addPluginConfig(i)}>
               Add Config
             </Button>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mt: 1
+              }}>
               Targets
             </Typography>
             {p.targets.map((t, ti) => (
@@ -1588,7 +1690,9 @@ function AdvancedTab({ data, updateData }) {
                   value={t}
                   onChange={(e) => setPluginTarget(i, ti, e.target.value)}
                   sx={{ flex: 1 }}
-                  inputProps={{ spellCheck: false }}
+                  slotProps={{
+                    htmlInput: { spellCheck: false }
+                  }}
                 />
                 <IconButton size="small" color="error" onClick={() => removePluginTarget(i, ti)}>
                   <DeleteIcon fontSize="small" />
@@ -1610,7 +1714,7 @@ function AdvancedTab({ data, updateData }) {
         </Button>
       </Section>
     </Box>
-  )
+  );
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -1675,9 +1779,7 @@ function ServerConfigEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ flexShrink: 0 }} />
-
       <Tabs
         value={activeTab}
         onChange={(_, v) => setActiveTab(v)}
@@ -1693,7 +1795,6 @@ function ServerConfigEditor({
         <Tab label="Logging" />
         <Tab label="Advanced" />
       </Tabs>
-
       <Box sx={{ flex: 1, overflow: 'auto', pt: 2 }}>
         {activeTab === 0 && <GeneralTab data={data} updateData={updateData} />}
         {activeTab === 1 && <NetworkTab data={data} updateData={updateData} />}
@@ -1705,7 +1806,7 @@ function ServerConfigEditor({
         <Box sx={{ height: 32 }} />
       </Box>
     </Box>
-  )
+  );
 }
 
 export default ServerConfigEditor

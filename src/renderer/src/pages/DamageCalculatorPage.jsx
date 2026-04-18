@@ -218,7 +218,9 @@ function TestPlayerDialog({ open, initialPlayer, onClose, onSave, onDelete }) {
               onChange={(e) => setField('mp', Number(e.target.value) || 0)}
             />
           </Stack>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Core stats
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
@@ -261,7 +263,7 @@ function TestPlayerDialog({ open, initialPlayer, onClose, onSave, onDelete }) {
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }
 
 // ── Sweep helper + colors ───────────────────────────────────────────────────
@@ -305,10 +307,14 @@ function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
   return (
     <TableRow>
       <TableCell>
-        <Stack direction="row" spacing={0.5} alignItems="center">
+        <Stack direction="row" spacing={0.5} sx={{
+          alignItems: "center"
+        }}>
           <span>
             {player.name}{' '}
-            <Typography component="span" variant="caption" color="text.secondary">
+            <Typography component="span" variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               (L{player.level})
             </Typography>
           </span>
@@ -325,7 +331,7 @@ function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
       <TableCell align="right">{cell(avg)}</TableCell>
       <TableCell align="right">{cell(high)}</TableCell>
     </TableRow>
-  )
+  );
 }
 
 // ── Main page ───────────────────────────────────────────────────────────────
@@ -557,7 +563,9 @@ export default function DamageCalculatorPage() {
           <Typography variant="subtitle2" sx={{ flex: 1 }}>
             Test Players{' '}
             {selectedIds.size > 0 && (
-              <Typography component="span" variant="caption" color="text.secondary">
+              <Typography component="span" variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 ({selectedIds.size} selected)
               </Typography>
             )}
@@ -596,14 +604,20 @@ export default function DamageCalculatorPage() {
                   <ListItemText
                     primary={p.name}
                     secondary={`Lv ${p.level}`}
-                    primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                    secondaryTypographyProps={{ variant: 'caption' }}
-                  />
+                    slotProps={{
+                      primary: { variant: 'body2', noWrap: true },
+                      secondary: { variant: 'caption' }
+                    }} />
                 </ListItemButton>
               </ListItem>
             ))}
             {testPlayers.length === 0 && (
-              <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  p: 2
+                }}>
                 {activeLibrary
                   ? 'No test players yet — click + to add one.'
                   : 'Select a library first.'}
@@ -612,15 +626,18 @@ export default function DamageCalculatorPage() {
           </List>
         </Box>
       </Box>
-
       {/* Right: calculator */}
       <Box
         sx={{ flex: 1, p: 2, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}
       >
-        <Typography variant="h5" fontWeight="bold">
+        <Typography variant="h5" sx={{
+          fontWeight: "bold"
+        }}>
           Damage Calculator
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Local preview only — not authoritative. Final values come from the server's NCalc
           evaluator.
         </Typography>
@@ -677,14 +694,18 @@ export default function DamageCalculatorPage() {
                 </Typography>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mb: 1 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    mb: 1
+                  }}>
                   Authoring-time variables substituted to a literal number at XML save time. Pick a
                   castable to auto-populate ACQUIREDLEVEL from its first Requirement's Min level, or
                   set it manually.
                 </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <Autocomplete
                     size="small"
                     options={libraryIndex?.castables || []}
@@ -721,13 +742,22 @@ export default function DamageCalculatorPage() {
                 </Typography>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mb: 1 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    mb: 1
+                  }}>
                   Sets SOURCEWEAPONSMALLDAMAGE / SOURCEWEAPONLARGEDAMAGE. Min/max participates in
                   Low/Avg/High. Pick a weapon item to auto-populate all four, or set them manually.
                 </Typography>
-                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  sx={{
+                    alignItems: "center",
+                    flexWrap: "wrap"
+                  }}>
                   <Autocomplete
                     size="small"
                     options={Object.keys(libraryIndex?.itemWeaponDamage || {}).sort()}
@@ -790,9 +820,11 @@ export default function DamageCalculatorPage() {
                 </Typography>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mb: 1 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    mb: 1
+                  }}>
                   Three slots for ad-hoc values. Overrides win over all other sources (player,
                   weapon, RAND, context).
                 </Typography>
@@ -858,7 +890,12 @@ export default function DamageCalculatorPage() {
                     onChange={(e) => setTick(e.target.value)}
                     sx={{ width: 130 }}
                   />
-                  <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      alignSelf: 'center'
+                    }}>
                     {dotTicks ? `→ ${dotTicks} ticks` : 'leave blank for non-DOT formulas'}
                   </Typography>
                 </Stack>
@@ -903,7 +940,9 @@ export default function DamageCalculatorPage() {
                   <TableHead>
                     <TableRow>
                       <TableCell>
-                        <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Stack direction="row" spacing={0.5} sx={{
+                          alignItems: "center"
+                        }}>
                           <span>Per hit</span>
                           {selectedPlayers.length > 1 && (
                             <Tooltip title="Show level sweep (L1→99) for all selected players">
@@ -969,7 +1008,6 @@ export default function DamageCalculatorPage() {
             </>
           )}
       </Box>
-
       <TestPlayerDialog
         open={dialogState.open}
         initialPlayer={dialogState.initial}
@@ -977,7 +1015,6 @@ export default function DamageCalculatorPage() {
         onSave={handleSavePlayer}
         onDelete={handleDeletePlayer}
       />
-
       <Popover
         open={!!sparkAnchor}
         anchorEl={sparkAnchor?.anchorEl}
@@ -995,12 +1032,14 @@ export default function DamageCalculatorPage() {
           />
         ) : (
           <Box sx={{ p: 2 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               No points — formula couldn't be evaluated at any level (likely missing variables).
             </Typography>
           </Box>
         )}
       </Popover>
     </Box>
-  )
+  );
 }

@@ -161,7 +161,9 @@ function LootContent({ loot, onChange }) {
             sx={{ width: 80 }}
             value={entry.rolls}
             onChange={(e) => set(i, 'rolls', e.target.value)}
-            inputProps={{ maxLength: 16 }}
+            slotProps={{
+              htmlInput: { maxLength: 16 }
+            }}
           />
           <TextField
             label="Chance"
@@ -169,7 +171,9 @@ function LootContent({ loot, onChange }) {
             sx={{ width: 100 }}
             value={entry.chance}
             onChange={(e) => set(i, 'chance', e.target.value)}
-            inputProps={{ maxLength: 16 }}
+            slotProps={{
+              htmlInput: { maxLength: 16 }
+            }}
           />
           <IconButton size="small" color="error" onClick={() => remove(i)}>
             <DeleteIcon fontSize="small" />
@@ -180,7 +184,7 @@ function LootContent({ loot, onChange }) {
         Add Loot Set
       </Button>
     </>
-  )
+  );
 }
 
 // ── Hostility section content ─────────────────────────────────────────────────
@@ -286,7 +290,9 @@ function CookiesContent({ cookies, onChange }) {
             sx={{ flex: 1 }}
             value={cookie.value}
             onChange={(e) => set(i, 'value', e.target.value)}
-            inputProps={{ maxLength: 128 }}
+            slotProps={{
+              htmlInput: { maxLength: 128 }
+            }}
           />
           <IconButton size="small" color="error" onClick={() => remove(i)}>
             <DeleteIcon fontSize="small" />
@@ -297,7 +303,7 @@ function CookiesContent({ cookies, onChange }) {
         Add Cookie
       </Button>
     </>
-  )
+  );
 }
 
 // ── Subtype accordion ─────────────────────────────────────────────────────────
@@ -346,7 +352,6 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
         </IconButton>
         {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
       </Box>
-
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2 }}>
@@ -413,11 +418,13 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     sx={{ flex: 1 }}
                     value={data.name}
                     onChange={(e) => set('name', e.target.value)}
-                    inputProps={{ maxLength: 255 }}
-                    InputProps={{
-                      endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open subtype script" />,
-                    }}
-                  />
+                    slotProps={{
+                      input: {
+                        endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open subtype script" />,
+                      },
+
+                      htmlInput: { maxLength: 255 }
+                    }} />
                   <BehaviorSetPicker
                     value={data.behaviorSet}
                     onChange={(val) => set('behaviorSet', val)}
@@ -433,7 +440,9 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     sx={{ width: 100 }}
                     value={data.sprite}
                     onChange={(e) => set('sprite', e.target.value)}
-                    inputProps={{ min: 1, max: 9999 }}
+                    slotProps={{
+                      htmlInput: { min: 1, max: 9999 }
+                    }}
                   />
                   <TextField
                     label="Min Damage"
@@ -441,7 +450,9 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     sx={{ width: 120 }}
                     value={data.minDmg}
                     onChange={(e) => set('minDmg', e.target.value)}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <TextField
                     label="Max Damage"
@@ -449,7 +460,9 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     sx={{ width: 120 }}
                     value={data.maxDmg}
                     onChange={(e) => set('maxDmg', e.target.value)}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <SoundPicker
                     label="Assail Sound"
@@ -466,7 +479,9 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                   minRows={2}
                   value={data.description}
                   onChange={(e) => set('description', e.target.value)}
-                  inputProps={{ maxLength: 1024 }}
+                  slotProps={{
+                    htmlInput: { maxLength: 1024 }
+                  }}
                 />
               </Box>
             </Box>
@@ -501,7 +516,7 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -643,9 +658,7 @@ function CreatureEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* Root creature fields (headerless) */}
@@ -738,11 +751,13 @@ function CreatureEditor({
                     value={data.name}
                     onChange={set('name')}
                     onBlur={handleNameBlur}
-                    inputProps={{ maxLength: 255 }}
-                    InputProps={{
-                      endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open creature script" />,
-                    }}
-                  />
+                    slotProps={{
+                      input: {
+                        endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open creature script" />,
+                      },
+
+                      htmlInput: { maxLength: 255 }
+                    }} />
                   <BehaviorSetPicker
                     value={data.behaviorSet}
                     onChange={(val) => updateData((d) => ({ ...d, behaviorSet: val }))}
@@ -758,7 +773,9 @@ function CreatureEditor({
                     sx={{ width: 100 }}
                     value={data.sprite}
                     onChange={(e) => updateData((d) => ({ ...d, sprite: e.target.value }))}
-                    inputProps={{ min: 1, max: 9999 }}
+                    slotProps={{
+                      htmlInput: { min: 1, max: 9999 }
+                    }}
                   />
                   <TextField
                     label="Min Damage"
@@ -766,7 +783,9 @@ function CreatureEditor({
                     sx={{ width: 120 }}
                     value={data.minDmg}
                     onChange={set('minDmg')}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <TextField
                     label="Max Damage"
@@ -774,7 +793,9 @@ function CreatureEditor({
                     sx={{ width: 120 }}
                     value={data.maxDmg}
                     onChange={set('maxDmg')}
-                    inputProps={{ maxLength: 32 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 32 }
+                    }}
                   />
                   <SoundPicker
                     label="Assail Sound"
@@ -791,7 +812,9 @@ function CreatureEditor({
                   minRows={2}
                   value={data.description}
                   onChange={set('description')}
-                  inputProps={{ maxLength: 1024 }}
+                  slotProps={{
+                    htmlInput: { maxLength: 1024 }
+                  }}
                 />
               </Box>
             </Box>
@@ -859,7 +882,6 @@ function CreatureEditor({
           </Button>
         </Box>
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -877,7 +899,7 @@ function CreatureEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default CreatureEditor

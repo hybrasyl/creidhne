@@ -163,7 +163,6 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
         </IconButton>
         {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
       </Box>
-
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2 }}>
@@ -176,8 +175,10 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                 value={variant.name}
                 size="small"
                 sx={{ flex: 1, minWidth: 120 }}
-                inputProps={{ maxLength: 255 }}
                 onChange={(e) => update('name', e.target.value)}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <TextField
                 label="Modifier"
@@ -185,16 +186,20 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                 value={variant.modifier}
                 size="small"
                 sx={{ flex: 1, minWidth: 120 }}
-                inputProps={{ maxLength: 255 }}
                 onChange={(e) => update('modifier', e.target.value)}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <TextField
                 label="Script"
                 value={p.script}
                 size="small"
                 sx={{ flex: 1, minWidth: 120 }}
-                inputProps={{ maxLength: 255 }}
                 onChange={(e) => updateProp('script', e.target.value)}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <TextField
                 label="Stackable Max"
@@ -202,8 +207,10 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                 value={p.stackable.max}
                 size="small"
                 sx={{ width: 130 }}
-                inputProps={{ min: 1, max: 255 }}
                 onChange={(e) => updateProp('stackable', { max: e.target.value })}
+                slotProps={{
+                  htmlInput: { min: 1, max: 255 }
+                }}
               />
             </Box>
 
@@ -212,9 +219,9 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
               options={ITEM_TAGS}
               value={p.tags}
               onChange={(_, val) => updateProp('tags', val)}
-              renderTags={(value, getTagProps) =>
+              renderValue={(value, getItemProps) =>
                 value.map((option, idx) => (
-                  <Chip key={option} label={option} size="small" {...getTagProps({ index: idx })} />
+                  <Chip key={option} label={option} size="small" {...getItemProps({ index: idx })} />
                 ))
               }
               renderInput={(params) => <TextField {...params} size="small" label="Tags" />}
@@ -336,7 +343,9 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                   onChange={(e) =>
                     updateProp('physical', { ...p.physical, weight: e.target.value })
                   }
-                  inputProps={{ min: 0, step: 0.01 }}
+                  slotProps={{
+                    htmlInput: { min: 0, step: 0.01 }
+                  }}
                 />
                 <TextField
                   label="Value"
@@ -345,7 +354,9 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                   size="small"
                   sx={{ width: 130 }}
                   onChange={(e) => updateProp('physical', { ...p.physical, value: e.target.value })}
-                  inputProps={{ min: 0, step: 0.01 }}
+                  slotProps={{
+                    htmlInput: { min: 0, step: 0.01 }
+                  }}
                 />
                 <TextField
                   label="Durability"
@@ -356,7 +367,9 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
                   onChange={(e) =>
                     updateProp('physical', { ...p.physical, durability: e.target.value })
                   }
-                  inputProps={{ min: 0, step: 0.01 }}
+                  slotProps={{
+                    htmlInput: { min: 0, step: 0.01 }
+                  }}
                 />
               </Box>
               <StatsTab
@@ -380,7 +393,7 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -506,9 +519,7 @@ function VariantEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* ── Group fields (headerless section) ── */}
@@ -520,8 +531,10 @@ function VariantEditor({
                 value={prefix}
                 size="small"
                 sx={{ width: 140 }}
-                inputProps={{ maxLength: 64, spellCheck: false }}
                 onChange={handlePrefixChange}
+                slotProps={{
+                  htmlInput: { maxLength: 64, spellCheck: false }
+                }}
               />
               <TextField
                 label="Group Name"
@@ -545,9 +558,11 @@ function VariantEditor({
                       ? `"${data.name}" exists in archive`
                       : undefined
                 }
-                inputProps={{ maxLength: 255 }}
                 onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
                 onBlur={handleNameBlur}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
             </Box>
             <TextField
@@ -556,8 +571,10 @@ function VariantEditor({
               size="small"
               multiline
               minRows={2}
-              inputProps={{ maxLength: 65534 }}
               onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))}
+              slotProps={{
+                htmlInput: { maxLength: 65534 }
+              }}
             />
           </Box>
         </Paper>
@@ -579,7 +596,6 @@ function VariantEditor({
 
         <Box sx={{ height: 32 }} />
       </Box>
-
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
@@ -597,7 +613,7 @@ function VariantEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default VariantEditor

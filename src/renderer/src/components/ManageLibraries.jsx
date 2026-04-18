@@ -29,11 +29,13 @@ function IndexStatus({ status, building, onBuild }) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <CircularProgress size={14} />
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Building...
         </Typography>
       </Box>
-    )
+    );
   }
 
   if (!status) return null
@@ -138,7 +140,6 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           </IconButton>
         </Tooltip>
       </Box>
-
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <Button variant="contained" startIcon={<AddIcon />} onClick={onAddLibrary}>
           Add Library
@@ -169,13 +170,14 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           </span>
         </Tooltip>
       </Box>
-
       <List sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 0 }}>
         {libraries.length === 0 && (
           <ListItem>
             <ListItemText
               primary={
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   No libraries added yet.
                 </Typography>
               }
@@ -211,14 +213,18 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           </ListItem>
         ))}
       </List>
-
       <Dialog open={confirmOpen} onClose={() => handleConfirmClose(false)}>
         <DialogTitle>Remove Library</DialogTitle>
         <DialogContent>
           <Typography>
             Remove <strong>{selectedLibrary}</strong>?
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 1
+            }}>
             Its index file will also be deleted.
           </Typography>
         </DialogContent>
@@ -230,7 +236,7 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         </DialogActions>
       </Dialog>
     </Box>
-  )
+  );
 }
 
 export default ManageLibraries

@@ -87,7 +87,6 @@ function EditorHeader({
           label="Filename"
           value={fileName}
           onChange={(e) => onFileNameChange(e.target.value)}
-          inputProps={{ spellCheck: false }}
           sx={{
             flex: 1,
             ...(fileNameWarn && {
@@ -97,8 +96,10 @@ function EditorHeader({
             })
           }}
           helperText={helperText}
-          FormHelperTextProps={{ sx: { mx: 0 } }}
-        />
+          slotProps={{
+            htmlInput: { spellCheck: false },
+            formHelperText: { sx: { mx: 0 } }
+          }} />
         <Tooltip title={recycleTooltip}>
           <span>
             <IconButton size="small" onClick={onRegenerate} disabled={recycleDisabled}>
@@ -108,7 +109,7 @@ function EditorHeader({
         </Tooltip>
       </Box>
     </Box>
-  )
+  );
 }
 
 export default EditorHeader

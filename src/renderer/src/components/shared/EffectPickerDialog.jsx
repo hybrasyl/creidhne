@@ -98,7 +98,9 @@ export default function EffectPickerDialog({ open, value, speed, onClose, onChan
       open={open}
       onClose={onClose}
       maxWidth={false}
-      PaperProps={{ sx: { overflowX: 'hidden' } }}
+      slotProps={{
+        paper: { sx: { overflowX: 'hidden' } }
+      }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', py: 1.6 }}>
         Effects
@@ -121,12 +123,14 @@ export default function EffectPickerDialog({ open, value, speed, onClose, onChan
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 1 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }
           }}
         />
         {!index && clientPath && (
@@ -148,5 +152,5 @@ export default function EffectPickerDialog({ open, value, speed, onClose, onChan
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

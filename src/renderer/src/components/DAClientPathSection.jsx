@@ -42,7 +42,9 @@ function StatusIndicator({ status, files }) {
         {label}
       </Typography>
       {files.length === 0 ? (
-        <Typography variant="caption" color="inherit">
+        <Typography variant="caption" sx={{
+          color: "inherit"
+        }}>
           Set the path to see file status.
         </Typography>
       ) : (

@@ -5,7 +5,7 @@ import { useRecoilValue } from 'recoil'
 import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
 
 function stripPath(s) {
-  return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '')
+  return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '');
 }
 
 /**
@@ -79,19 +79,23 @@ function ScriptAutocomplete({
           label={label}
           color={isUnknown ? 'warning' : 'primary'}
           focused={isUnknown || undefined}
-          InputProps={{
-            ...params.InputProps,
-            endAdornment: (
-              <>
-                {params.InputProps.endAdornment}
-                {endAdornment}
-              </>
-            ),
+          slotProps={{
+            ...params.slotProps,
+
+            input: {
+              ...params.slotProps.input,
+              endAdornment: (
+                <>
+                  {params.slotProps.input.endAdornment}
+                  {endAdornment}
+                </>
+              ),
+            }
           }}
         />
       )}
     />
-  )
+  );
 }
 
 export default ScriptAutocomplete

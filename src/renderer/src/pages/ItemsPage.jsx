@@ -214,7 +214,6 @@ function ItemsPage() {
         namesByFilename={namesByFilename}
         loading={loading}
       />
-
       <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -243,13 +242,14 @@ function ItemsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" sx={{
+              color: "text.secondary"
+            }}>
               Select an item or create a new one.
             </Typography>
           </Box>
         )}
       </Box>
-
       <Snackbar
         open={!!snackbar}
         autoHideDuration={6000}
@@ -272,7 +272,7 @@ function ItemsPage() {
         onCancel={handleDialogCancel}
       />
     </Box>
-  )
+  );
 }
 
 export default ItemsPage

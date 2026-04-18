@@ -89,7 +89,9 @@ function CrossRow({ shape, onChange, onRemove }) {
         sx={{ width: 100 }}
         value={shape.radius}
         onChange={(e) => onChange({ ...shape, radius: e.target.value })}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <VisualEffectSelect
         value={shape.visualEffect}
@@ -99,7 +101,7 @@ function CrossRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function ConeRow({ shape, onChange, onRemove }) {
@@ -112,7 +114,9 @@ function ConeRow({ shape, onChange, onRemove }) {
         sx={{ width: 100 }}
         value={shape.radius}
         onChange={(e) => onChange({ ...shape, radius: e.target.value })}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <DirectionSelect
         value={shape.direction}
@@ -126,7 +130,7 @@ function ConeRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function SquareRow({ shape, onChange, onRemove }) {
@@ -139,7 +143,9 @@ function SquareRow({ shape, onChange, onRemove }) {
         sx={{ width: 100 }}
         value={shape.side}
         onChange={(e) => onChange({ ...shape, side: e.target.value })}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <VisualEffectSelect
         value={shape.visualEffect}
@@ -149,7 +155,7 @@ function SquareRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function LineRow({ shape, onChange, onRemove }) {
@@ -162,7 +168,9 @@ function LineRow({ shape, onChange, onRemove }) {
         sx={{ width: 100 }}
         value={shape.length}
         onChange={(e) => onChange({ ...shape, length: e.target.value })}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <DirectionSelect
         value={shape.direction}
@@ -176,7 +184,7 @@ function LineRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 function TileRow({ shape, onChange, onRemove }) {
@@ -193,7 +201,9 @@ function TileRow({ shape, onChange, onRemove }) {
         sx={{ width: 80 }}
         value={shape.relativeX}
         onChange={(e) => onChange({ ...shape, relativeX: e.target.value })}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <TextField
         label="Rel Y"
@@ -201,7 +211,9 @@ function TileRow({ shape, onChange, onRemove }) {
         sx={{ width: 80 }}
         value={shape.relativeY}
         onChange={(e) => onChange({ ...shape, relativeY: e.target.value })}
-        inputProps={{ inputMode: 'numeric' }}
+        slotProps={{
+          htmlInput: { inputMode: 'numeric' }
+        }}
       />
       <VisualEffectSelect
         value={shape.visualEffect}
@@ -211,7 +223,7 @@ function TileRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  )
+  );
 }
 
 // ── Single intent ─────────────────────────────────────────────────────────────
@@ -270,7 +282,6 @@ function IntentItem({ intent, index, onChange, onRemove }) {
           <ExpandMoreIcon fontSize="small" sx={{ ml: 0.5 }} />
         )}
       </Box>
-
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -296,7 +307,9 @@ function IntentItem({ intent, index, onChange, onRemove }) {
               sx={{ width: 120 }}
               value={intent.maxTargets}
               onChange={(e) => set('maxTargets', e.target.value)}
-              inputProps={{ inputMode: 'numeric' }}
+              slotProps={{
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
           </Box>
 
@@ -308,9 +321,9 @@ function IntentItem({ intent, index, onChange, onRemove }) {
             onChange={(_, val) => set('flags', val)}
             disableCloseOnSelect
             size="small"
-            renderTags={(value, getTagProps) =>
+            renderValue={(value, getItemProps) =>
               value.map((option, i) => (
-                <Chip key={option} label={option} size="small" {...getTagProps({ index: i })} />
+                <Chip key={option} label={option} size="small" {...getItemProps({ index: i })} />
               ))
             }
             renderInput={(params) => <TextField {...params} label="Flags" />}
@@ -320,7 +333,9 @@ function IntentItem({ intent, index, onChange, onRemove }) {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
               <InfoOutlinedIcon fontSize="small" sx={{ color: 'text.secondary', fontSize: 15 }} />
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 For self-target effects, use NoTarget with no shapes.
               </Typography>
             </Box>
@@ -444,7 +459,12 @@ function IntentItem({ intent, index, onChange, onRemove }) {
                 !intent.squares?.length &&
                 !intent.lines?.length &&
                 !intent.tiles?.length && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      mt: 0.5
+                    }}>
                     No shapes added.
                   </Typography>
                 )}
@@ -453,7 +473,7 @@ function IntentItem({ intent, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  )
+  );
 }
 
 // ── Exported section ─────────────────────────────────────────────────────────

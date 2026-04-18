@@ -73,12 +73,18 @@ function ExportsPage() {
         Exports
       </Typography>
       <Divider sx={{ mb: 3 }} />
-
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+        <Typography variant="subtitle1" gutterBottom sx={{
+          fontWeight: "bold"
+        }}>
           Castables Excel CSV
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Exports all castables to a CSV matching the Excel workbook column structure. Open directly
           in Excel.
         </Typography>
@@ -93,12 +99,18 @@ function ExportsPage() {
           Export Castables Excel CSV
         </Button>
       </Paper>
-
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+        <Typography variant="subtitle1" gutterBottom sx={{
+          fontWeight: "bold"
+        }}>
           Castables CSV
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Exports all castables (excluding test and GM abilities) to a CSV for the Hybrasyl website
           ability browser. Includes name, icon, description, class, subclass, trainer location, stat
           requirements, materials, cast cost, and cooldown.
@@ -114,14 +126,13 @@ function ExportsPage() {
           Export Castables CSV
         </Button>
       </Paper>
-
       {status && (
         <Alert severity={status.type} onClose={() => setStatus(null)}>
           {status.message}
         </Alert>
       )}
     </Box>
-  )
+  );
 }
 
 export default ExportsPage

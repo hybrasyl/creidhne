@@ -88,12 +88,14 @@ function SimpleTypesTab() {
             placeholder="Filter types..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              )
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                )
+              }
             }}
           />
         </Box>
@@ -113,14 +115,20 @@ function SimpleTypesTab() {
                   <ListItemText
                     primary={type.name}
                     secondary={type.sourceFile}
-                    primaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                    secondaryTypographyProps={{ noWrap: true, variant: 'caption' }}
-                  />
+                    slotProps={{
+                      primary: { noWrap: true, variant: 'body2' },
+                      secondary: { noWrap: true, variant: 'caption' }
+                    }} />
                 </ListItemButton>
               </ListItem>
             ))}
             {filtered.length === 0 && !loading && (
-              <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  p: 2
+                }}>
                 No matches.
               </Typography>
             )}
@@ -137,7 +145,12 @@ function SimpleTypesTab() {
                 <Chip size="small" label="flags list" color="info" variant="outlined" />
               )}
               <Chip size="small" label={selected.sourceFile} variant="outlined" />
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  ml: 'auto'
+                }}>
                 {selected.values.length} value{selected.values.length !== 1 ? 's' : ''}
                 {selected.isList ? ' — combinable' : ''}
               </Typography>
@@ -164,12 +177,14 @@ function SimpleTypesTab() {
           </>
         ) : (
           <Box sx={{ p: 2 }}>
-            <Typography color="text.secondary">Select a type to view its values.</Typography>
+            <Typography sx={{
+              color: "text.secondary"
+            }}>Select a type to view its values.</Typography>
           </Box>
         )}
       </Box>
     </Box>
-  )
+  );
 }
 
 // ─── Vendor Tabs Tab ───────────────────────────────────────────────────────────
@@ -222,7 +237,12 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, on
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            flex: 1
+          }}>
           Vendor tab names used on item definitions (<code>Vendor/@ShopTab</code>).
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
@@ -260,7 +280,9 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, on
         </Button>
       </Box>
       {rows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No vendor tabs defined. Click "Scan Items" to discover from XML.
         </Typography>
       ) : (
@@ -321,7 +343,7 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, on
         </Box>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── NPC Jobs Tab ──────────────────────────────────────────────────────────────
@@ -374,7 +396,12 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexU
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            flex: 1
+          }}>
           NPC job names derived from filename prefixes (e.g. <code>blacksmith</code> in{' '}
           <code>blacksmith_anvil.xml</code>).
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
@@ -413,7 +440,9 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexU
         </Button>
       </Box>
       {rows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No NPC jobs defined. Click "Scan NPCs" to discover from filenames.
         </Typography>
       ) : (
@@ -474,7 +503,7 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexU
         </Box>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── Creature Families Tab ─────────────────────────────────────────────────────
@@ -533,7 +562,12 @@ function CreatureFamiliesTab({
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            flex: 1
+          }}>
           Creature family names derived from filename prefixes (e.g. <code>goblin</code> in{' '}
           <code>goblin_shaman.xml</code>).
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
@@ -572,7 +606,9 @@ function CreatureFamiliesTab({
         </Button>
       </Box>
       {rows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No creature families defined. Click "Scan Creatures" to discover from filenames.
         </Typography>
       ) : (
@@ -633,7 +669,7 @@ function CreatureFamiliesTab({
         </Box>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── Category Tab (reused for Item / Castable / Status) ────────────────────────
@@ -701,7 +737,12 @@ function CategoryTab({
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            flex: 1
+          }}>
           {label} defined in this library.
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
@@ -740,7 +781,9 @@ function CategoryTab({
         </Button>
       </Box>
       {rows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No categories defined. Click "Scan XML" to discover from files.
         </Typography>
       ) : (
@@ -789,7 +832,7 @@ function CategoryTab({
         </Box>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── Cookies Tab ───────────────────────────────────────────────────────────────
@@ -855,7 +898,12 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            flex: 1
+          }}>
           Cookies set by Lua scripts. Scan to auto-discover, or add manually.
         </Typography>
         <Button
@@ -893,7 +941,9 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
         </Button>
       </Box>
       {cookies.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No cookies defined. Click "Scan Scripts" to discover cookies from Lua scripts.
         </Typography>
       ) : (
@@ -912,7 +962,13 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
                   <TableCell>
                     <Typography variant="body2">{cookie.name}</Typography>
                     {cookie.sourceFile && (
-                      <Typography variant="caption" color="text.secondary" noWrap display="block">
+                      <Typography
+                        variant="caption"
+                        noWrap
+                        sx={{
+                          color: "text.secondary",
+                          display: "block"
+                        }}>
                         {cookie.sourceFile}
                       </Typography>
                     )}
@@ -943,7 +999,7 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
         </Box>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── Motions Tab ───────────────────────────────────────────────────────────────
@@ -1006,7 +1062,12 @@ function MotionsTab({ userConstants, onChange }) {
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            flex: 1
+          }}>
           Player motion IDs and speeds used by the animation preset buttons in the castable editor.
         </Typography>
         <Button size="small" variant="outlined" startIcon={<RefreshIcon />} onClick={handleReset}>
@@ -1058,10 +1119,12 @@ function MotionsTab({ userConstants, onChange }) {
                       onChange={(e) =>
                         handleUpdate(index, 'id', Number(e.target.value.replace(/\D/g, '')))
                       }
-                      inputProps={{ inputMode: 'numeric' }}
                       sx={{
                         '& .MuiInput-root::before': { borderBottom: 'none' },
                         '& input': { fontSize: '0.875rem' }
+                      }}
+                      slotProps={{
+                        htmlInput: { inputMode: 'numeric' }
                       }}
                     />
                   </TableCell>
@@ -1074,10 +1137,12 @@ function MotionsTab({ userConstants, onChange }) {
                       onChange={(e) =>
                         handleUpdate(index, 'speed', Number(e.target.value.replace(/\D/g, '')))
                       }
-                      inputProps={{ inputMode: 'numeric' }}
                       sx={{
                         '& .MuiInput-root::before': { borderBottom: 'none' },
                         '& input': { fontSize: '0.875rem' }
+                      }}
+                      slotProps={{
+                        htmlInput: { inputMode: 'numeric' }
                       }}
                     />
                   </TableCell>
@@ -1107,8 +1172,10 @@ function MotionsTab({ userConstants, onChange }) {
           value={newId}
           onChange={(e) => setNewId(e.target.value.replace(/\D/g, ''))}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          inputProps={{ inputMode: 'numeric' }}
           sx={{ width: 90 }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <TextField
           size="small"
@@ -1116,8 +1183,10 @@ function MotionsTab({ userConstants, onChange }) {
           value={newSpeed}
           onChange={(e) => setNewSpeed(e.target.value.replace(/\D/g, ''))}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          inputProps={{ inputMode: 'numeric' }}
           sx={{ width: 90 }}
+          slotProps={{
+            htmlInput: { inputMode: 'numeric' }
+          }}
         />
         <Button
           size="small"
@@ -1130,7 +1199,7 @@ function MotionsTab({ userConstants, onChange }) {
         </Button>
       </Box>
     </Box>
-  )
+  );
 }
 
 // ─── Spell Books Tab ───────────────────────────────────────────────────────────
@@ -1278,20 +1347,25 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
                 <ListItemText
                   primary={book.name || '(unnamed)'}
                   secondary={`${(book.castables || []).length} castables`}
-                  primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                  secondaryTypographyProps={{ variant: 'caption' }}
-                />
+                  slotProps={{
+                    primary: { variant: 'body2', noWrap: true },
+                    secondary: { variant: 'caption' }
+                  }} />
               </ListItemButton>
             </ListItem>
           ))}
           {(spellBooks || []).length === 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                p: 2
+              }}>
               No spell books yet.
             </Typography>
           )}
         </List>
       </Box>
-
       {/* Right: editor */}
       <Box
         sx={{
@@ -1304,7 +1378,9 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
         }}
       >
         {!selectedBook ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Select a spell book or create a new one.
           </Typography>
         ) : (
@@ -1327,7 +1403,9 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
             <Box sx={{ flex: 1, display: 'flex', gap: 1, minHeight: 0 }}>
               {/* Available */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   Available ({available.length})
                 </Typography>
                 <TextField
@@ -1336,12 +1414,14 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
                   sx={{ mb: 0.5 }}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" />
-                      </InputAdornment>
-                    )
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" />
+                        </InputAdornment>
+                      )
+                    }
                   }}
                 />
                 <Box
@@ -1365,7 +1445,9 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
                       >
                         <ListItemText
                           primary={n}
-                          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                          slotProps={{
+                            primary: { variant: 'body2', noWrap: true }
+                          }}
                         />
                       </ListItemButton>
                     ))}
@@ -1418,7 +1500,9 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
 
               {/* In book */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   In spell book ({draft.castables.length})
                 </Typography>
                 <Box
@@ -1443,7 +1527,9 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
                       >
                         <ListItemText
                           primary={n}
-                          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                          slotProps={{
+                            primary: { variant: 'body2', noWrap: true }
+                          }}
                         />
                       </ListItemButton>
                     ))}
@@ -1463,7 +1549,9 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
               >
                 {saving ? 'Applying…' : 'Save & apply category to castables'}
               </Button>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Writes "{draft.name.trim() || '…'}" as a category onto {draft.castables.length}{' '}
                 castable XML file{draft.castables.length === 1 ? '' : 's'}.
               </Typography>
@@ -1471,7 +1559,6 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
           </>
         )}
       </Box>
-
       {snackbar && (
         <Alert
           severity={snackbar.severity}
@@ -1482,7 +1569,7 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
         </Alert>
       )}
     </Box>
-  )
+  );
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
@@ -1604,7 +1691,12 @@ function ConstantsPage() {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ flex: 1 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: "bold",
+            flex: 1
+          }}>
           Constants
         </Typography>
         {dirty && (
@@ -1708,7 +1800,7 @@ function ConstantsPage() {
         )}
       </Box>
     </Box>
-  )
+  );
 }
 
 export default ConstantsPage

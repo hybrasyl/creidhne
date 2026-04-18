@@ -290,9 +290,7 @@ function ItemEditor({
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
-
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
-
       {/* Warnings */}
       <Collapse in={warnings.length > 0 && !warningsDismissed} sx={{ flexShrink: 0 }}>
         <Alert severity="warning" onClose={() => setWarningsDismissed(true)} sx={{ mb: 1 }}>
@@ -301,7 +299,6 @@ function ItemEditor({
           ))}
         </Alert>
       </Collapse>
-
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* ── Basic info ── */}
@@ -314,15 +311,15 @@ function ItemEditor({
                 label="Prefix"
                 value={derivePrefix(data)}
                 sx={{ width: 120 }}
-                inputProps={{ readOnly: true }}
-                InputLabelProps={{ shrink: true }}
-              />
+                slotProps={{
+                  htmlInput: { readOnly: true },
+                  inputLabel: { shrink: true }
+                }} />
               <TextField
                 label="Name"
                 required
                 value={data.name}
                 size="small"
-                inputProps={{ maxLength: 255 }}
                 onChange={(e) => updateData((d) => ({ ...d, name: e.target.value }))}
                 onBlur={handleNameBlur}
                 error={dupStatus === 'active'}
@@ -342,14 +339,19 @@ function ItemEditor({
                     '& .MuiFormHelperText-root': { color: 'warning.main' }
                   })
                 }}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
               <TextField
                 label="Unidentified Name"
                 value={data.unidentifiedName}
                 size="small"
                 sx={{ flex: 1, minWidth: 160 }}
-                inputProps={{ maxLength: 255 }}
                 onChange={(e) => updateData((d) => ({ ...d, unidentifiedName: e.target.value }))}
+                slotProps={{
+                  htmlInput: { maxLength: 255 }
+                }}
               />
             </Box>
             {/* Row 2: Include in Metafile, Sold By, Found In */}
@@ -371,24 +373,26 @@ function ItemEditor({
                 label="Sold By"
                 size="small"
                 sx={{ flex: 1, minWidth: 160 }}
-                inputProps={{ readOnly: true }}
-                InputLabelProps={{ shrink: true }}
                 value={
                   (libraryIndex.itemVendors?.[data.name?.toLowerCase()] || []).join(', ') ||
                   'Not sold by any NPC'
                 }
-              />
+                slotProps={{
+                  htmlInput: { readOnly: true },
+                  inputLabel: { shrink: true }
+                }} />
               <TextField
                 label="Found In"
                 size="small"
                 sx={{ flex: 1, minWidth: 160 }}
-                inputProps={{ readOnly: true }}
-                InputLabelProps={{ shrink: true }}
                 value={
                   (libraryIndex.itemLootSets?.[data.name?.toLowerCase()] || []).join(', ') ||
                   'Not in any loot set'
                 }
-              />
+                slotProps={{
+                  htmlInput: { readOnly: true },
+                  inputLabel: { shrink: true }
+                }} />
             </Box>
             {/* Row 3: Comment */}
             <TextField
@@ -397,17 +401,19 @@ function ItemEditor({
               size="small"
               multiline
               minRows={2}
-              inputProps={{ maxLength: 65534 }}
               onChange={(e) => updateData((d) => ({ ...d, comment: e.target.value }))}
+              slotProps={{
+                htmlInput: { maxLength: 65534 }
+              }}
             />
             <Autocomplete
               multiple
               options={ITEM_TAGS}
               value={p.tags}
               onChange={(_, val) => updateProperties({ tags: val })}
-              renderTags={(value, getTagProps) =>
+              renderValue={(value, getItemProps) =>
                 value.map((option, index) => (
-                  <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+                  <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
                 ))
               }
               renderInput={(params) => <TextField {...params} size="small" label="Tags" />}
@@ -564,7 +570,9 @@ function ItemEditor({
                 size="small"
                 sx={{ width: 130 }}
                 onChange={setPropField('physical', 'value')}
-                inputProps={{ min: 0, step: 0.01 }}
+                slotProps={{
+                  htmlInput: { min: 0, step: 0.01 }
+                }}
               />
               <TextField
                 label="Weight"
@@ -573,7 +581,9 @@ function ItemEditor({
                 size="small"
                 sx={{ width: 130 }}
                 onChange={setPropField('physical', 'weight')}
-                inputProps={{ min: 0, step: 0.01 }}
+                slotProps={{
+                  htmlInput: { min: 0, step: 0.01 }
+                }}
               />
               <TextField
                 label="Durability"
@@ -582,7 +592,9 @@ function ItemEditor({
                 size="small"
                 sx={{ width: 130 }}
                 onChange={setPropField('physical', 'durability')}
-                inputProps={{ min: 0, step: 0.01 }}
+                slotProps={{
+                  htmlInput: { min: 0, step: 0.01 }
+                }}
               />
               <TextField
                 label="Stack Max"
@@ -591,11 +603,15 @@ function ItemEditor({
                 size="small"
                 sx={{ width: 130 }}
                 onChange={(e) => updateProperties({ stackable: { max: e.target.value } })}
-                inputProps={{ min: 1, max: 255 }}
+                slotProps={{
+                  htmlInput: { min: 1, max: 255 }
+                }}
               />
             </Box>
             {p.physical.value ? (
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Suggested sell price: {Math.round(Number(p.physical.value) / 5)} gold
               </Typography>
             ) : null}
@@ -682,7 +698,9 @@ function ItemEditor({
                         size="small"
                         sx={{ width: 130 }}
                         onChange={setPropField('damage', 'smallMin')}
-                        inputProps={{ step: 0.01 }}
+                        slotProps={{
+                          htmlInput: { step: 0.01 }
+                        }}
                       />
                       <TextField
                         label="Small Max"
@@ -691,7 +709,9 @@ function ItemEditor({
                         size="small"
                         sx={{ width: 130 }}
                         onChange={setPropField('damage', 'smallMax')}
-                        inputProps={{ step: 0.01 }}
+                        slotProps={{
+                          htmlInput: { step: 0.01 }
+                        }}
                       />
                       <TextField
                         label="Large Min"
@@ -700,7 +720,9 @@ function ItemEditor({
                         size="small"
                         sx={{ width: 130 }}
                         onChange={setPropField('damage', 'largeMin')}
-                        inputProps={{ step: 0.01 }}
+                        slotProps={{
+                          htmlInput: { step: 0.01 }
+                        }}
                       />
                       <TextField
                         label="Large Max"
@@ -709,10 +731,14 @@ function ItemEditor({
                         size="small"
                         sx={{ width: 130 }}
                         onChange={setPropField('damage', 'largeMax')}
-                        inputProps={{ step: 0.01 }}
+                        slotProps={{
+                          htmlInput: { step: 0.01 }
+                        }}
                       />
                     </Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Average damage — Small:{' '}
                       {((Number(p.damage.smallMin) + Number(p.damage.smallMax)) / 2).toFixed(1)} /
                       Large:{' '}
@@ -763,7 +789,9 @@ function ItemEditor({
                           size="small"
                           sx={{ flex: 1, minWidth: 120 }}
                           onChange={(e) => setCastModifier(cmIdx, 'group', e.target.value)}
-                          inputProps={{ maxLength: 255 }}
+                          slotProps={{
+                            htmlInput: { maxLength: 255 }
+                          }}
                         />
                         <Autocomplete
                           freeSolo
@@ -799,9 +827,10 @@ function ItemEditor({
                         <Box key={field} sx={{ pl: 1, mb: 1 }}>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            sx={{ textTransform: 'capitalize' }}
-                          >
+                            sx={{
+                              color: "text.secondary",
+                              textTransform: 'capitalize'
+                            }}>
                             {field}
                           </Typography>
                           {cm[field].map((op, opIdx) => (
@@ -866,7 +895,7 @@ function ItemEditor({
                         </Box>
                       ))}
                     </Box>
-                  )
+                  );
                 })}
                 <Button startIcon={<AddIcon />} size="small" onClick={addCastModifier}>
                   Add Match
@@ -905,7 +934,9 @@ function ItemEditor({
         {/* ── Vendor ── */}
         <Section title="Vendor" open={openVendor} onToggle={() => setOpenVendor((v) => !v)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               Shop Tab also determines the bank tab name for this item.
             </Typography>
             <ConstantAutocomplete
@@ -924,10 +955,12 @@ function ItemEditor({
               size="small"
               multiline
               minRows={2}
-              inputProps={{ maxLength: 255 }}
               onChange={(e) =>
                 updateProperties({ vendor: { ...(p.vendor ?? {}), description: e.target.value } })
               }
+              slotProps={{
+                htmlInput: { maxLength: 255 }
+              }}
             />
 
             {/* Variant Groups */}
@@ -976,7 +1009,7 @@ function ItemEditor({
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }
 
 export default ItemEditor

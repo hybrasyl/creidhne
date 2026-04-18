@@ -148,7 +148,9 @@ export default function DisplaySpritePickerDialog({ open, category, value, onClo
       open={open}
       onClose={onClose}
       maxWidth={false}
-      PaperProps={{ sx: { overflowX: 'hidden' } }}
+      slotProps={{
+        paper: { sx: { overflowX: 'hidden' } }
+      }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', py: 1.6 }}>
         Display Sprites
@@ -206,12 +208,14 @@ export default function DisplaySpritePickerDialog({ open, category, value, onClo
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 1 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            )
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }
           }}
         />
         {!ids && (
@@ -233,5 +237,5 @@ export default function DisplaySpritePickerDialog({ open, category, value, onClo
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

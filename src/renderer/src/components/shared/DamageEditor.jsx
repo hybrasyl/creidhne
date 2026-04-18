@@ -82,7 +82,9 @@ function DamageEditor({ value, onChange, showElement = false }) {
             sx={{ width: 120 }}
             value={value.value}
             onChange={setNumeric('value')}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         )}
         {value.kind === 'Variable' && (
@@ -92,7 +94,9 @@ function DamageEditor({ value, onChange, showElement = false }) {
             sx={{ width: 100 }}
             value={value.min}
             onChange={setNumeric('min')}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         )}
         {value.kind === 'Variable' && (
@@ -102,7 +106,9 @@ function DamageEditor({ value, onChange, showElement = false }) {
             sx={{ width: 100 }}
             value={value.max}
             onChange={setNumeric('max')}
-            inputProps={{ inputMode: 'numeric' }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         )}
         <Autocomplete
@@ -113,15 +119,14 @@ function DamageEditor({ value, onChange, showElement = false }) {
           disableCloseOnSelect
           size="small"
           sx={{ flex: 1, minWidth: 200 }}
-          renderTags={(vals, getTagProps) =>
+          renderValue={(vals, getItemProps) =>
             vals.map((option, index) => (
-              <Chip key={option} label={option} size="small" {...getTagProps({ index })} />
+              <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
             ))
           }
           renderInput={(params) => <TextField {...params} label="Flags" />}
         />
       </Box>
-
       {/* Formula row — own line */}
       {value.kind === 'Formula' && (
         <FormulaRow
@@ -133,7 +138,7 @@ function DamageEditor({ value, onChange, showElement = false }) {
         />
       )}
     </Box>
-  )
+  );
 }
 
 export default DamageEditor
