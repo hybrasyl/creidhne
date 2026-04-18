@@ -41,6 +41,7 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
           freeSolo
           label="Script"
           sx={{ flex: 1, minWidth: 200 }}
+          subfolder="reactor"
           value={reactor.script || ''}
           onChange={(val) => set('script', val)}
         />

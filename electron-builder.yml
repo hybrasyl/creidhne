@@ -10,6 +10,7 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!xsd/**'
   - '!scripts/**'
+  - '!lua-stubs/**'
   - '!vitest.config.{js,ts,mjs,cjs}'
   - '!eslint.config.{js,ts,mjs,cjs}'
 asarUnpack:

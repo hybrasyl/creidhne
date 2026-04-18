@@ -797,6 +797,7 @@ function CastableEditor({
             freeSolo
             label="Script"
             fullWidth
+            subfolder="castable"
             value={data.script || ''}
             onChange={(val) => updateData((d) => ({ ...d, script: val }))}
           />

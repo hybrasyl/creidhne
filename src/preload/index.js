@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('xml:saveCastable', filePath, castableData),
   castableAddCategoryBulk: (libraryPath, castableNames, categoryName) =>
     ipcRenderer.invoke('castable:addCategoryBulk', libraryPath, castableNames, categoryName),
+  openScript: (libraryPath, relativePath) => ipcRenderer.invoke('script:open', libraryPath, relativePath),
+  setupLuaEnvironment: (libraryPath) => ipcRenderer.invoke('lua:setupEnvironment', libraryPath),
   loadBehaviorSet: (filePath) => ipcRenderer.invoke('xml:loadBehaviorSet', filePath),
   saveBehaviorSet: (filePath, bvsData) =>
     ipcRenderer.invoke('xml:saveBehaviorSet', filePath, bvsData),

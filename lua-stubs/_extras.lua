@@ -1,0 +1,21 @@
+---@meta
+---@diagnostic disable: missing-fields, duplicate-set-field
+-- Additional fields/methods on existing classes that are available at runtime
+-- via MoonSharp's C# interop proxy but aren't declared on the [MoonSharpUserData]
+-- scripting wrapper classes. sumneko merges these with the generated stubs.
+
+-- HybrasylUser: stats accessible directly (proxied from the underlying Creature.Stats)
+---@class HybrasylUser
+---@field Mp number Current MP — readable and writable directly (proxies to Stats.Mp)
+---@field Hp number Current HP — readable and writable directly (proxies to Stats.Hp)
+---@field MaximumHp number Max HP
+---@field MaximumMp number Max MP
+---@field Str number Strength
+---@field Int number Intelligence
+---@field Wis number Wisdom
+---@field Con number Constitution
+---@field Dex number Dexterity
+
+-- HybrasylItemObject: `item` global in item scripts
+---@class HybrasylItemObject
+---@field Name string Item display name

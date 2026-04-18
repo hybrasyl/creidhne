@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs'
+import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
+import { generateFormulasLua } from './formulaTranspiler.js'
 
 const DEFAULT_BUDGET_MODIFIER = {
   mode: 'none',
@@ -74,6 +76,16 @@ export async function loadFormulas(libraryPath) {
 export async function saveFormulas(libraryPath, data) {
   await ensureCreidhneDir(libraryPath)
   await fs.writeFile(getFormulasPath(libraryPath), JSON.stringify(data, null, 2), 'utf-8')
+
+  // Regenerate world/scripts/formulas.lua so Lua authors can require("formulas")
+  try {
+    const scriptsDir = join(libraryPath, '..', 'scripts')
+    await fs.mkdir(scriptsDir, { recursive: true })
+    const luaSrc = generateFormulasLua(data.formulas)
+    await fs.writeFile(join(scriptsDir, 'formulas.lua'), luaSrc, 'utf-8')
+  } catch (err) {
+    console.error('formulaTranspiler: failed to write formulas.lua —', err.message)
+  }
 }
 
 /**

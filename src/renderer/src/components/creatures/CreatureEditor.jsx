@@ -27,6 +27,7 @@ import CommentField from '../shared/CommentField'
 import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData'
 import SpritePickerDialog from '../shared/SpritePickerDialog'
 import GridViewIcon from '@mui/icons-material/GridView'
+import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
 
 function computeCreatureFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '')
@@ -413,6 +414,9 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     value={data.name}
                     onChange={(e) => set('name', e.target.value)}
                     inputProps={{ maxLength: 255 }}
+                    InputProps={{
+                      endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open subtype script" />,
+                    }}
                   />
                   <BehaviorSetPicker
                     value={data.behaviorSet}
@@ -735,6 +739,9 @@ function CreatureEditor({
                     onChange={set('name')}
                     onBlur={handleNameBlur}
                     inputProps={{ maxLength: 255 }}
+                    InputProps={{
+                      endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open creature script" />,
+                    }}
                   />
                   <BehaviorSetPicker
                     value={data.behaviorSet}

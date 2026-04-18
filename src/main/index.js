@@ -313,6 +313,78 @@ app.whenReady().then(() => {
   // Used by the Spell Books tab in Constants: after persisting the spellbook
   // definition to constants.json, propagate the spellbook's name as a category
   // onto each listed castable's XML. Returns a per-castable result summary.
+  // ── Lua environment setup ──────────────────────────────────────────────────
+  // Copies the bundled Hybrasyl Lua type stubs into the active library's
+  // world/scripts/.hybrasyl-types/ and writes a .luarc.json next to it so
+  // the sumneko Lua language server (used by VS Code) picks up IntelliSense.
+  ipcMain.handle('lua:setupEnvironment', async (_, libraryPath) => {
+    if (!libraryPath) return { ok: false, error: 'No active library' }
+    try {
+      const scriptsDir = join(libraryPath, '..', 'scripts')
+      const typesDir = join(scriptsDir, '.hybrasyl-types')
+      const luarcDest = join(scriptsDir, '.luarc.json')
+
+      // Source: bundled stubs from the app resources
+      const stubsSrc = join(app.getAppPath(), 'lua-stubs')
+      const luarcSrc = join(app.getAppPath(), 'resources', 'lua-annotations', '.luarc.json')
+
+      await fs.mkdir(typesDir, { recursive: true })
+
+      // Copy every .lua stub
+      const stubs = (await fs.readdir(stubsSrc)).filter((f) => f.endsWith('.lua'))
+      for (const stub of stubs) {
+        await fs.copyFile(join(stubsSrc, stub), join(typesDir, stub))
+      }
+
+      // Write .luarc.json (overwrite if exists — regenerated from bundled template)
+      await fs.copyFile(luarcSrc, luarcDest)
+
+      return { ok: true, stubsCopied: stubs.length, typesDir, luarcDest }
+    } catch (err) {
+      return { ok: false, error: err?.message || String(err) }
+    }
+  })
+
+  // Open a world script file in the OS default application (typically VS Code
+  // or whatever the user has registered for .lua). Accepts a relative path
+  // under world/scripts/ (e.g. "castables/SkillWindblade" or "npc/Piet/Narve")
+  // — no extension. Returns { ok, path } on success, { ok: false, error } on
+  // failure (file missing, no library, etc.).
+  ipcMain.handle('script:open', async (_, libraryPath, relativePath) => {
+    if (!libraryPath || !relativePath) {
+      return { ok: false, error: 'Missing libraryPath or relativePath' }
+    }
+    const scriptPath = join(libraryPath, '..', 'scripts', `${relativePath}.lua`)
+    try {
+      await fs.access(scriptPath)
+    } catch {
+      return { ok: false, error: `Script not found: ${scriptPath}` }
+    }
+    // Open the scripts FOLDER as a VS Code workspace + the file. This ensures
+    // sumneko finds .luarc.json at the workspace root (which lives at
+    // world/scripts/.luarc.json). If a window for this folder already exists,
+    // VS Code reuses it; otherwise a new window opens.
+    const scriptsDir = join(libraryPath, '..', 'scripts')
+    try {
+      const { spawn } = require('child_process')
+      // Use shell: true so Windows resolves code.cmd (batch wrapper).
+      // --new-window forces a separate window rooted at the scripts dir
+      // so sumneko finds .luarc.json at the workspace root.
+      const child = spawn('code', ['--new-window', scriptsDir, '--goto', scriptPath], {
+        shell: true,
+        detached: true,
+        stdio: 'ignore'
+      })
+      child.unref()
+      return { ok: true, path: scriptPath }
+    } catch {
+      // Fallback: OS default handler for .lua
+      const failReason = await shell.openPath(scriptPath)
+      if (failReason) return { ok: false, error: failReason }
+      return { ok: true, path: scriptPath }
+    }
+  })
+
   ipcMain.handle(
     'castable:addCategoryBulk',
     async (_, libraryPath, castableNames, categoryName) => {
