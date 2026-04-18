@@ -9,6 +9,7 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "lint:check": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
     "start": "electron-vite preview -- --trace-warnings",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
