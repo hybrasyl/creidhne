@@ -18,7 +18,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
-import { FixedSizeGrid } from 'react-window'
+import { Grid } from 'react-window'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'
 import { getAvailableDisplaySprites, CATEGORY_DEFAULTS } from '../../data/khanData'
@@ -33,8 +33,7 @@ const CELL_SIZE = 132
 const IMAGE_SIZE = 96
 const GRID_H = 520
 
-function Cell({ columnIndex, rowIndex, style, data }) {
-  const { ids, selectedId, onSelect, category, gender, pose, frameIdx } = data
+function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, category, gender, pose, frameIdx }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
@@ -130,10 +129,11 @@ export default function DisplaySpritePickerDialog({ open, category, value, onClo
     if (!open || selectedId == null || !gridRef.current || filteredIds.length === 0) return
     const idx = filteredIds.indexOf(selectedId)
     if (idx < 0) return
-    gridRef.current.scrollToItem({
+    gridRef.current.scrollToCell({
       columnIndex: idx % COLS,
       rowIndex: Math.floor(idx / COLS),
-      align: 'smart'
+      columnAlign: 'smart',
+      rowAlign: 'smart'
     })
   }, [open, selectedId, filteredIds])
 
@@ -220,18 +220,16 @@ export default function DisplaySpritePickerDialog({ open, category, value, onClo
           </Box>
         )}
         {ids && (
-          <FixedSizeGrid
-            ref={gridRef}
+          <Grid
+            gridRef={gridRef}
             columnCount={COLS}
             rowCount={rowCount}
             columnWidth={CELL_SIZE}
             rowHeight={CELL_SIZE}
-            width={COLS * CELL_SIZE + 17}
-            height={GRID_H}
-            itemData={cellData}
-          >
-            {Cell}
-          </FixedSizeGrid>
+            style={{ width: COLS * CELL_SIZE + 17, height: GRID_H }}
+            cellComponent={Cell}
+            cellProps={cellData}
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -10,7 +10,7 @@ import {
   InputAdornment,
   CircularProgress
 } from '@mui/material'
-import { FixedSizeList } from 'react-window'
+import { List } from 'react-window'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
@@ -23,8 +23,7 @@ const ROW_HEIGHT = 40
 const LIST_HEIGHT = 480
 const LIST_WIDTH = 320
 
-function Row({ index, style, data }) {
-  const { ids, selectedId, onSelect, clientPath, playingId } = data
+function Row({ index, style, ids, selectedId, onSelect, clientPath, playingId }) {
   const id = ids[index]
   const selected = id === selectedId
   const isPlaying = playingId === id
@@ -84,7 +83,7 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
     if (!open || selectedId == null || !listRef.current || filteredIds.length === 0) return
     const idx = filteredIds.indexOf(selectedId)
     if (idx < 0) return
-    listRef.current.scrollToItem(idx, 'smart')
+    listRef.current.scrollToRow({ index: idx, align: 'smart' })
   }, [open, selectedId, filteredIds])
 
   // Stop any playback when the dialog closes.
@@ -132,16 +131,14 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
           </Box>
         )}
         {ids && (
-          <FixedSizeList
-            ref={listRef}
-            width={LIST_WIDTH}
-            height={LIST_HEIGHT}
-            itemCount={filteredIds.length}
-            itemSize={ROW_HEIGHT}
-            itemData={itemData}
-          >
-            {Row}
-          </FixedSizeList>
+          <List
+            listRef={listRef}
+            style={{ width: LIST_WIDTH, height: LIST_HEIGHT }}
+            rowCount={filteredIds.length}
+            rowHeight={ROW_HEIGHT}
+            rowComponent={Row}
+            rowProps={itemData}
+          />
         )}
       </DialogContent>
     </Dialog>

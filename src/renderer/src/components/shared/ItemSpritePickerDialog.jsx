@@ -12,7 +12,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
-import { FixedSizeGrid } from 'react-window'
+import { Grid } from 'react-window'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'
 import { getItemSpriteIndex } from '../../data/itemSpriteData'
@@ -25,8 +25,7 @@ const GRID_H = 480
 
 // ── Single grid cell ──────────────────────────────────────────────────────────
 
-function SpriteCell({ columnIndex, rowIndex, style, data }) {
-  const { ids, selectedId, onSelect } = data
+function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
@@ -104,10 +103,11 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
     if (!open || !selectedId || !gridRef.current || filteredIds.length === 0) return
     const idx = filteredIds.indexOf(selectedId)
     if (idx < 0) return
-    gridRef.current.scrollToItem({
+    gridRef.current.scrollToCell({
       columnIndex: idx % COLS,
       rowIndex: Math.floor(idx / COLS),
-      align: 'smart'
+      columnAlign: 'smart',
+      rowAlign: 'smart'
     })
   }, [open, selectedId, filteredIds])
 
@@ -164,18 +164,16 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
           </Box>
         )}
         {!loadError && index && (
-          <FixedSizeGrid
-            ref={gridRef}
+          <Grid
+            gridRef={gridRef}
             columnCount={COLS}
             rowCount={rowCount}
             columnWidth={CELL_SIZE}
             rowHeight={CELL_SIZE}
-            width={COLS * CELL_SIZE + 17}
-            height={GRID_H}
-            itemData={cellData}
-          >
-            {SpriteCell}
-          </FixedSizeGrid>
+            style={{ width: COLS * CELL_SIZE + 17, height: GRID_H }}
+            cellComponent={SpriteCell}
+            cellProps={cellData}
+          />
         )}
       </DialogContent>
     </Dialog>

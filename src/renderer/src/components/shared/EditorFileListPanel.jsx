@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react'
-import { FixedSizeList } from 'react-window'
+import { List as VirtualList } from 'react-window'
 import {
   Box,
   List,
@@ -63,8 +63,7 @@ function useAutoSize() {
 
 // Row renderer for react-window. Receives index + precomputed style (absolute
 // positioning from the virtual list) + itemData populated by the parent.
-function VirtualRow({ index, style, data }) {
-  const { items, selectedFile, onSelect, namesByFilename, archived } = data
+function VirtualRow({ index, style, items, selectedFile, onSelect, namesByFilename, archived }) {
   const file = items[index]
   const displayName = displayNameFor(file, namesByFilename)
   const filenameBare = stripXml(file.name)
@@ -206,21 +205,19 @@ export default function EditorFileListPanel({
           <>
             <Box ref={listRef} sx={{ flex: 1, minHeight: 0 }}>
               {listSize.height > 0 && filteredActive.length > 0 && (
-                <FixedSizeList
-                  height={listSize.height}
-                  width={listSize.width || width}
-                  itemCount={filteredActive.length}
-                  itemSize={ITEM_HEIGHT}
-                  itemData={{
+                <VirtualList
+                  style={{ height: listSize.height, width: listSize.width || width }}
+                  rowCount={filteredActive.length}
+                  rowHeight={ITEM_HEIGHT}
+                  rowComponent={VirtualRow}
+                  rowProps={{
                     items: filteredActive,
                     selectedFile,
                     onSelect,
                     namesByFilename,
                     archived: false
                   }}
-                >
-                  {VirtualRow}
-                </FixedSizeList>
+                />
               )}
               {filteredActive.length === 0 && showArchived && (
                 <Typography

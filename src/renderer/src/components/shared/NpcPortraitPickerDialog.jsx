@@ -12,7 +12,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
-import { FixedSizeGrid } from 'react-window'
+import { Grid } from 'react-window'
 import { useNpcPortraitIndex } from '../../data/npcPortraitData'
 import NpcPortraitCanvas from './NpcPortraitCanvas'
 
@@ -21,8 +21,7 @@ const CELL_SIZE = 140
 const IMAGE_SIZE = 96
 const GRID_H = 520
 
-function Cell({ columnIndex, rowIndex, style, data }) {
-  const { names, selectedName, onSelect } = data
+function Cell({ columnIndex, rowIndex, style, names, selectedName, onSelect }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= names.length) return <div style={style} />
   const name = names[index]
@@ -83,10 +82,11 @@ export default function NpcPortraitPickerDialog({ open, value, onClose, onChange
     if (!open || !value || !gridRef.current || filteredNames.length === 0) return
     const idx = filteredNames.indexOf(value)
     if (idx < 0) return
-    gridRef.current.scrollToItem({
+    gridRef.current.scrollToCell({
       columnIndex: idx % COLS,
       rowIndex: Math.floor(idx / COLS),
-      align: 'smart'
+      columnAlign: 'smart',
+      rowAlign: 'smart'
     })
   }, [open, value, filteredNames])
 
@@ -138,18 +138,16 @@ export default function NpcPortraitPickerDialog({ open, value, onClose, onChange
           </Box>
         )}
         {names && (
-          <FixedSizeGrid
-            ref={gridRef}
+          <Grid
+            gridRef={gridRef}
             columnCount={COLS}
             rowCount={rowCount}
             columnWidth={CELL_SIZE}
             rowHeight={CELL_SIZE}
-            width={COLS * CELL_SIZE + 17}
-            height={GRID_H}
-            itemData={cellData}
-          >
-            {Cell}
-          </FixedSizeGrid>
+            style={{ width: COLS * CELL_SIZE + 17, height: GRID_H }}
+            cellComponent={Cell}
+            cellProps={cellData}
+          />
         )}
       </DialogContent>
     </Dialog>

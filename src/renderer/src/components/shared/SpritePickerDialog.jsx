@@ -11,7 +11,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
-import { FixedSizeGrid } from 'react-window'
+import { Grid } from 'react-window'
 import spriteMeta, { spriteUrl, keyFromSprite, frameDisplay } from '../../data/creatureSpriteData'
 
 const COLS = 6
@@ -21,8 +21,7 @@ const GRID_H = 480
 
 // ── Single grid cell ──────────────────────────────────────────────────────────
 
-function SpriteCell({ columnIndex, rowIndex, style, data }) {
-  const { entries, selectedKey, onSelect } = data
+function SpriteCell({ columnIndex, rowIndex, style, entries, selectedKey, onSelect }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= entries.length) return <div style={style} />
 
@@ -127,10 +126,11 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
     if (!open || !selectedKey || !gridRef.current) return
     const idx = filtered.findIndex(([k]) => k === selectedKey)
     if (idx < 0) return
-    gridRef.current.scrollToItem({
+    gridRef.current.scrollToCell({
       columnIndex: idx % COLS,
       rowIndex: Math.floor(idx / COLS),
-      align: 'smart'
+      columnAlign: 'smart',
+      rowAlign: 'smart'
     })
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -169,18 +169,16 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
             )
           }}
         />
-        <FixedSizeGrid
-          ref={gridRef}
+        <Grid
+          gridRef={gridRef}
           columnCount={COLS}
           rowCount={rowCount}
           columnWidth={CELL_SIZE}
           rowHeight={CELL_SIZE}
-          width={COLS * CELL_SIZE + 17}
-          height={GRID_H}
-          itemData={cellData}
-        >
-          {SpriteCell}
-        </FixedSizeGrid>
+          style={{ width: COLS * CELL_SIZE + 17, height: GRID_H }}
+          cellComponent={SpriteCell}
+          cellProps={cellData}
+        />
       </DialogContent>
     </Dialog>
   )
