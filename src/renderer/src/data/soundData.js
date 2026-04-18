@@ -12,8 +12,8 @@ import { useRecoilValue } from 'recoil'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
 import { clientPathState } from '../recoil/atoms'
 
-const indexCache    = new Map() // clientPath → number[] (sorted ids)
-const blobUrlCache  = new Map() // `${clientPath}|${id}` → blob URL
+const indexCache = new Map() // clientPath → number[] (sorted ids)
+const blobUrlCache = new Map() // `${clientPath}|${id}` → blob URL
 
 // Reuse a single HTMLAudioElement across plays; mirrors Taliesin's pattern
 // and sidesteps subtle issues with per-play Audio instances in Electron.
@@ -47,7 +47,7 @@ export async function getSoundIndex(clientPath) {
   }
   ids.sort((a, b) => a - b)
   indexCache.set(clientPath, ids)
-  // eslint-disable-next-line no-console
+
   console.log(`[soundData] loaded ${ids.length} sound entries from legend.dat`)
   return ids
 }
@@ -96,7 +96,6 @@ export async function playSound(clientPath, id) {
     }
   }
   audio.onerror = () => {
-    // eslint-disable-next-line no-console
     console.warn(`[soundData] playback error for id ${id}:`, audio.error)
     if (currentPlayingId === Number(id)) {
       currentPlayingId = null
@@ -109,7 +108,6 @@ export async function playSound(clientPath, id) {
     await audio.play()
     return true
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.warn(`[soundData] audio.play() rejected for id ${id}:`, err)
     if (currentPlayingId === Number(id)) {
       currentPlayingId = null
@@ -120,9 +118,17 @@ export async function playSound(clientPath, id) {
 }
 
 export function stopSound() {
-  if (!audioEl) { currentPlayingId = null; notify(); return }
+  if (!audioEl) {
+    currentPlayingId = null
+    notify()
+    return
+  }
   audioEl.pause()
-  try { audioEl.currentTime = 0 } catch { /* ignore if not seekable yet */ }
+  try {
+    audioEl.currentTime = 0
+  } catch {
+    /* ignore if not seekable yet */
+  }
   currentPlayingId = null
   notify()
 }
@@ -135,7 +141,9 @@ export function useCurrentlyPlayingSound() {
   const [id, setId] = useState(currentPlayingId)
   useEffect(() => {
     playbackListeners.add(setId)
-    return () => { playbackListeners.delete(setId) }
+    return () => {
+      playbackListeners.delete(setId)
+    }
   }, [])
   return id
 }
@@ -149,12 +157,21 @@ export function useSoundIndex() {
   const [ids, setIds] = useState(() => indexCache.get(clientPath) || null)
 
   useEffect(() => {
-    if (!clientPath) { setIds(null); return undefined }
+    if (!clientPath) {
+      setIds(null)
+      return undefined
+    }
     let cancelled = false
     getSoundIndex(clientPath)
-      .then((result) => { if (!cancelled) setIds(result) })
-      .catch(() => { if (!cancelled) setIds(null) })
-    return () => { cancelled = true }
+      .then((result) => {
+        if (!cancelled) setIds(result)
+      })
+      .catch(() => {
+        if (!cancelled) setIds(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [clientPath])
 
   return ids
@@ -163,7 +180,11 @@ export function useSoundIndex() {
 export function clearSoundCache() {
   stopSound()
   for (const url of blobUrlCache.values()) {
-    try { URL.revokeObjectURL(url) } catch { /* ignore */ }
+    try {
+      URL.revokeObjectURL(url)
+    } catch {
+      /* ignore */
+    }
   }
   blobUrlCache.clear()
   indexCache.clear()

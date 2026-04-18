@@ -148,10 +148,8 @@ describe('Output structure', () => {
     description: 'Land of lakes',
     flag: '3',
     isDefault: false,
-    spawnPoints: [
-      { mapName: 'Suomi Village', x: '12', y: '34' },
-    ],
-    territory: null,
+    spawnPoints: [{ mapName: 'Suomi Village', x: '12', y: '34' }],
+    territory: null
   }
 
   it('serializes valid XML that re-parses without error', async () => {

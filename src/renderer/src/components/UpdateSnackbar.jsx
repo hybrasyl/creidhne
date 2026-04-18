@@ -1,35 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Snackbar, Alert, Button, Link } from '@mui/material';
+import React, { useEffect, useState } from 'react'
+import { Snackbar, Alert, Button, Link } from '@mui/material'
 
-const DISMISS_KEY = 'creidhne:updateDismissedVersion';
-const CHECK_DELAY_MS = 3000;
+const DISMISS_KEY = 'creidhne:updateDismissedVersion'
+const CHECK_DELAY_MS = 3000
 
 const UpdateSnackbar = () => {
-  const [info, setInfo] = useState(null);
+  const [info, setInfo] = useState(null)
 
   useEffect(() => {
     const timer = setTimeout(async () => {
       try {
-        const result = await window.electronAPI.checkForUpdates();
-        if (!result?.ok || !result.updateAvailable) return;
-        const dismissed = localStorage.getItem(DISMISS_KEY);
-        if (dismissed === result.latestVersion) return;
-        setInfo(result);
+        const result = await window.electronAPI.checkForUpdates()
+        if (!result?.ok || !result.updateAvailable) return
+        const dismissed = localStorage.getItem(DISMISS_KEY)
+        if (dismissed === result.latestVersion) return
+        setInfo(result)
       } catch {
         /* silent — startup check should not disturb user */
       }
-    }, CHECK_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, []);
+    }, CHECK_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleDismiss = () => {
     if (info?.latestVersion) {
-      localStorage.setItem(DISMISS_KEY, info.latestVersion);
+      localStorage.setItem(DISMISS_KEY, info.latestVersion)
     }
-    setInfo(null);
-  };
+    setInfo(null)
+  }
 
-  if (!info) return null;
+  if (!info) return null
 
   return (
     <Snackbar
@@ -57,7 +57,7 @@ const UpdateSnackbar = () => {
         Creidhne {info.latestVersion} is available (you have {info.currentVersion}).
       </Alert>
     </Snackbar>
-  );
-};
+  )
+}
 
-export default UpdateSnackbar;
+export default UpdateSnackbar

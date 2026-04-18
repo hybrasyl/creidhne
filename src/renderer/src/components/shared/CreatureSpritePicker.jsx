@@ -1,31 +1,38 @@
-import React, { useState } from 'react';
-import { Box, TextField, IconButton, Tooltip } from '@mui/material';
-import GridViewIcon from '@mui/icons-material/GridView';
-import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
-import SpritePickerDialog from './SpritePickerDialog';
+import React, { useState } from 'react'
+import { Box, TextField, IconButton, Tooltip } from '@mui/material'
+import GridViewIcon from '@mui/icons-material/GridView'
+import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData'
+import SpritePickerDialog from './SpritePickerDialog'
 
-const PREVIEW_SIZE = 48;
+const PREVIEW_SIZE = 48
 
 export default function CreatureSpritePicker({ value, onChange }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
-  const key  = keyFromSprite(value);
-  const meta = key ? spriteMeta[key] : null;
+  const key = keyFromSprite(value)
+  const meta = key ? spriteMeta[key] : null
 
-  const frame = meta ? frameDisplay(meta, meta.still, PREVIEW_SIZE) : null;
+  const frame = meta ? frameDisplay(meta, meta.still, PREVIEW_SIZE) : null
 
   const handleSelect = (selectedKey) => {
-    onChange(String(parseInt(selectedKey.replace('monster', ''), 10)));
-    setOpen(false);
-  };
+    onChange(String(parseInt(selectedKey.replace('monster', ''), 10)))
+    setOpen(false)
+  }
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <Box
         sx={{
-          width: PREVIEW_SIZE, height: PREVIEW_SIZE, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover',
+          width: PREVIEW_SIZE,
+          height: PREVIEW_SIZE,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
+          bgcolor: 'action.hover'
         }}
       >
         {frame && (
@@ -35,8 +42,11 @@ export default function CreatureSpritePicker({ value, onChange }) {
         )}
       </Box>
       <TextField
-        label="Sprite" size="small" type="number"
-        value={value} onChange={(e) => onChange(e.target.value)}
+        label="Sprite"
+        size="small"
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         inputProps={{ min: 1, max: 9999 }}
         sx={{ width: 100 }}
       />
@@ -45,7 +55,12 @@ export default function CreatureSpritePicker({ value, onChange }) {
           <GridViewIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <SpritePickerDialog open={open} value={value} onClose={() => setOpen(false)} onChange={handleSelect} />
+      <SpritePickerDialog
+        open={open}
+        value={value}
+        onClose={() => setOpen(false)}
+        onChange={handleSelect}
+      />
     </Box>
-  );
+  )
 }

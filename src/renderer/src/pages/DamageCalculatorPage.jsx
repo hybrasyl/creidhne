@@ -1,26 +1,51 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react'
 import {
-  Box, Typography, Divider, TextField, IconButton, Tooltip, List, ListItem,
-  ListItemButton, ListItemText, Autocomplete, Alert, Paper, Table, TableBody,
-  TableCell, TableHead, TableRow, Stack, Checkbox, Dialog, DialogTitle,
-  DialogContent, DialogActions, Button, Accordion, AccordionSummary,
-  AccordionDetails, Popover,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
-import FormulaSparkline from '../components/formulas/FormulaSparkline';
-import { useRecoilValue } from 'recoil';
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
+  Box,
+  Typography,
+  Divider,
+  TextField,
+  IconButton,
+  Tooltip,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Autocomplete,
+  Alert,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Stack,
+  Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Popover
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ShowChartIcon from '@mui/icons-material/ShowChart'
+import FormulaSparkline from '../components/formulas/FormulaSparkline'
+import { useRecoilValue } from 'recoil'
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import { compile, UnknownVariableError, UnknownFunctionError } from '../utils/formulaEval'
 import {
-  compile, UnknownVariableError, UnknownFunctionError,
-} from '../utils/formulaEval';
-import {
-  RAND_VARIABLES, WEAPON_VARIABLES, STATIC_VARIABLES, AUTHORING_VARIABLES,
-  getStatsForPrefix,
-} from '../data/formulaVariables';
+  RAND_VARIABLES,
+  WEAPON_VARIABLES,
+  STATIC_VARIABLES,
+  AUTHORING_VARIABLES,
+  getStatsForPrefix
+} from '../data/formulaVariables'
 
 // ── Known variable universe ─────────────────────────────────────────────────
 const KNOWN_VARIABLES = new Set([
@@ -30,125 +55,179 @@ const KNOWN_VARIABLES = new Set([
   ...RAND_VARIABLES.map((r) => r.key),
   ...WEAPON_VARIABLES.map((w) => w.key),
   ...STATIC_VARIABLES.map((s) => s.key),
-  ...AUTHORING_VARIABLES.map((a) => a.key),
-]);
+  ...AUTHORING_VARIABLES.map((a) => a.key)
+])
 
-const DEFAULT_STATS = { str: 10, int: 10, wis: 10, con: 10, dex: 10 };
+const DEFAULT_STATS = { str: 10, int: 10, wis: 10, con: 10, dex: 10 }
 const DEFAULT_PLAYER = () => ({
   id: crypto.randomUUID(),
   name: 'New Player',
   level: 50,
   stats: { ...DEFAULT_STATS },
-  hp: 1000, mp: 500,
-});
+  hp: 1000,
+  mp: 500
+})
 
 // ── Variable context builders ───────────────────────────────────────────────
 
 function buildBaseVars(player) {
-  const v = {};
-  for (const name of KNOWN_VARIABLES) v[name] = 0;
-  if (!player) return v;
+  const v = {}
+  for (const name of KNOWN_VARIABLES) v[name] = 0
+  if (!player) return v
   Object.assign(v, {
-    SOURCESTR: player.stats.str, SOURCEINT: player.stats.int, SOURCEWIS: player.stats.wis,
-    SOURCECON: player.stats.con, SOURCEDEX: player.stats.dex,
+    SOURCESTR: player.stats.str,
+    SOURCEINT: player.stats.int,
+    SOURCEWIS: player.stats.wis,
+    SOURCECON: player.stats.con,
+    SOURCEDEX: player.stats.dex,
     SOURCELEVEL: player.level,
-    SOURCEHP: player.hp, SOURCEMP: player.mp,
-    SOURCEMAXIMUMHP: player.hp, SOURCEMAXIMUMMP: player.mp,
-    SOURCEBASEHP: player.hp, SOURCEBASEMP: player.mp,
-    SOURCEBASESTR: player.stats.str, SOURCEBASEINT: player.stats.int,
-    SOURCEBASEWIS: player.stats.wis, SOURCEBASECON: player.stats.con,
+    SOURCEHP: player.hp,
+    SOURCEMP: player.mp,
+    SOURCEMAXIMUMHP: player.hp,
+    SOURCEMAXIMUMMP: player.mp,
+    SOURCEBASEHP: player.hp,
+    SOURCEBASEMP: player.mp,
+    SOURCEBASESTR: player.stats.str,
+    SOURCEBASEINT: player.stats.int,
+    SOURCEBASEWIS: player.stats.wis,
+    SOURCEBASECON: player.stats.con,
     SOURCEBASEDEX: player.stats.dex,
-    TARGETLEVEL: player.level,
-  });
-  return v;
+    TARGETLEVEL: player.level
+  })
+  return v
 }
 
 function explicitKeys(player, weapon, castableCtx) {
-  const keys = new Set();
+  const keys = new Set()
   if (player) {
-    ['SOURCESTR', 'SOURCEINT', 'SOURCEWIS', 'SOURCECON', 'SOURCEDEX',
-     'SOURCELEVEL', 'SOURCEHP', 'SOURCEMP',
-     'SOURCEMAXIMUMHP', 'SOURCEMAXIMUMMP', 'SOURCEBASEHP', 'SOURCEBASEMP',
-     'SOURCEBASESTR', 'SOURCEBASEINT', 'SOURCEBASEWIS', 'SOURCEBASECON', 'SOURCEBASEDEX',
-     'TARGETLEVEL'].forEach((k) => keys.add(k));
+    ;[
+      'SOURCESTR',
+      'SOURCEINT',
+      'SOURCEWIS',
+      'SOURCECON',
+      'SOURCEDEX',
+      'SOURCELEVEL',
+      'SOURCEHP',
+      'SOURCEMP',
+      'SOURCEMAXIMUMHP',
+      'SOURCEMAXIMUMMP',
+      'SOURCEBASEHP',
+      'SOURCEBASEMP',
+      'SOURCEBASESTR',
+      'SOURCEBASEINT',
+      'SOURCEBASEWIS',
+      'SOURCEBASECON',
+      'SOURCEBASEDEX',
+      'TARGETLEVEL'
+    ].forEach((k) => keys.add(k))
   }
-  if (weapon?.smallSet) keys.add('SOURCEWEAPONSMALLDAMAGE');
-  if (weapon?.largeSet) keys.add('SOURCEWEAPONLARGEDAMAGE');
-  if (castableCtx?.acquiredLevelSet) keys.add('ACQUIREDLEVEL');
-  RAND_VARIABLES.forEach((r) => keys.add(r.key));
-  return keys;
+  if (weapon?.smallSet) keys.add('SOURCEWEAPONSMALLDAMAGE')
+  if (weapon?.largeSet) keys.add('SOURCEWEAPONLARGEDAMAGE')
+  if (castableCtx?.acquiredLevelSet) keys.add('ACQUIREDLEVEL')
+  RAND_VARIABLES.forEach((r) => keys.add(r.key))
+  return keys
 }
 
 function withRandAndWeapon(baseVars, weapon, mode) {
-  const out = { ...baseVars };
+  const out = { ...baseVars }
   for (const { key, max } of RAND_VARIABLES) {
-    if (mode === 'low') out[key] = 0;
-    else if (mode === 'high') out[key] = max;
-    else out[key] = max / 2;
+    if (mode === 'low') out[key] = 0
+    else if (mode === 'high') out[key] = max
+    else out[key] = max / 2
   }
   if (weapon?.smallSet) {
-    if (mode === 'low')  out.SOURCEWEAPONSMALLDAMAGE = weapon.smallMin;
-    else if (mode === 'high') out.SOURCEWEAPONSMALLDAMAGE = weapon.smallMax;
-    else out.SOURCEWEAPONSMALLDAMAGE = (weapon.smallMin + weapon.smallMax) / 2;
+    if (mode === 'low') out.SOURCEWEAPONSMALLDAMAGE = weapon.smallMin
+    else if (mode === 'high') out.SOURCEWEAPONSMALLDAMAGE = weapon.smallMax
+    else out.SOURCEWEAPONSMALLDAMAGE = (weapon.smallMin + weapon.smallMax) / 2
   }
   if (weapon?.largeSet) {
-    if (mode === 'low')  out.SOURCEWEAPONLARGEDAMAGE = weapon.largeMin;
-    else if (mode === 'high') out.SOURCEWEAPONLARGEDAMAGE = weapon.largeMax;
-    else out.SOURCEWEAPONLARGEDAMAGE = (weapon.largeMin + weapon.largeMax) / 2;
+    if (mode === 'low') out.SOURCEWEAPONLARGEDAMAGE = weapon.largeMin
+    else if (mode === 'high') out.SOURCEWEAPONLARGEDAMAGE = weapon.largeMax
+    else out.SOURCEWEAPONLARGEDAMAGE = (weapon.largeMin + weapon.largeMax) / 2
   }
-  return out;
+  return out
 }
 
 function evalSafe(compiled, vars) {
   try {
-    return { value: compiled(vars), error: null };
+    return { value: compiled(vars), error: null }
   } catch (e) {
-    if (e instanceof UnknownVariableError) return { value: null, error: `Unknown variable: ${e.variable}` };
-    if (e instanceof UnknownFunctionError) return { value: null, error: `Unknown function: ${e.function}` };
-    return { value: null, error: e?.message || String(e) };
+    if (e instanceof UnknownVariableError)
+      return { value: null, error: `Unknown variable: ${e.variable}` }
+    if (e instanceof UnknownFunctionError)
+      return { value: null, error: `Unknown function: ${e.function}` }
+    return { value: null, error: e?.message || String(e) }
   }
 }
 
 function formatNum(n) {
-  if (n == null || Number.isNaN(n)) return '—';
-  if (Number.isInteger(n)) return n.toLocaleString();
-  return n.toFixed(2);
+  if (n == null || Number.isNaN(n)) return '—'
+  if (Number.isInteger(n)) return n.toLocaleString()
+  return n.toFixed(2)
 }
 
 // ── Test player dialog (new / edit) ─────────────────────────────────────────
 
 function TestPlayerDialog({ open, initialPlayer, onClose, onSave, onDelete }) {
-  const [draft, setDraft] = useState(null);
-  useEffect(() => { setDraft(initialPlayer ? { ...initialPlayer, stats: { ...initialPlayer.stats } } : null); }, [initialPlayer, open]);
-  if (!draft) return null;
-  const isNew = !initialPlayer?.persisted;
+  const [draft, setDraft] = useState(null)
+  useEffect(() => {
+    setDraft(initialPlayer ? { ...initialPlayer, stats: { ...initialPlayer.stats } } : null)
+  }, [initialPlayer, open])
+  if (!draft) return null
+  const isNew = !initialPlayer?.persisted
 
-  const setField = (field, value) => setDraft((d) => ({ ...d, [field]: value }));
-  const setStat = (stat, value) => setDraft((d) => ({ ...d, stats: { ...d.stats, [stat]: Number(value) || 0 } }));
+  const setField = (field, value) => setDraft((d) => ({ ...d, [field]: value }))
+  const setStat = (stat, value) =>
+    setDraft((d) => ({ ...d, stats: { ...d.stats, [stat]: Number(value) || 0 } }))
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{isNew ? 'New Test Player' : `Edit: ${initialPlayer.name}`}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
-          <TextField size="small" label="Name" value={draft.name} fullWidth
-            onChange={(e) => setField('name', e.target.value)} />
+          <TextField
+            size="small"
+            label="Name"
+            value={draft.name}
+            fullWidth
+            onChange={(e) => setField('name', e.target.value)}
+          />
           <Stack direction="row" spacing={1}>
-            <TextField size="small" label="Level" type="number" sx={{ width: 120 }}
+            <TextField
+              size="small"
+              label="Level"
+              type="number"
+              sx={{ width: 120 }}
               value={draft.level}
-              onChange={(e) => setField('level', Number(e.target.value) || 0)} />
-            <TextField size="small" label="HP" type="number" sx={{ width: 120 }}
+              onChange={(e) => setField('level', Number(e.target.value) || 0)}
+            />
+            <TextField
+              size="small"
+              label="HP"
+              type="number"
+              sx={{ width: 120 }}
               value={draft.hp}
-              onChange={(e) => setField('hp', Number(e.target.value) || 0)} />
-            <TextField size="small" label="MP" type="number" sx={{ width: 120 }}
+              onChange={(e) => setField('hp', Number(e.target.value) || 0)}
+            />
+            <TextField
+              size="small"
+              label="MP"
+              type="number"
+              sx={{ width: 120 }}
               value={draft.mp}
-              onChange={(e) => setField('mp', Number(e.target.value) || 0)} />
+              onChange={(e) => setField('mp', Number(e.target.value) || 0)}
+            />
           </Stack>
-          <Typography variant="caption" color="text.secondary">Core stats</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Core stats
+          </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
             {['str', 'int', 'wis', 'con', 'dex'].map((stat) => (
               <TextField
-                key={stat} size="small" label={stat.toUpperCase()} type="number"
+                key={stat}
+                size="small"
+                label={stat.toUpperCase()}
+                type="number"
                 value={draft.stats[stat]}
                 onChange={(e) => setStat(stat, e.target.value)}
               />
@@ -158,21 +237,36 @@ function TestPlayerDialog({ open, initialPlayer, onClose, onSave, onDelete }) {
       </DialogContent>
       <DialogActions>
         {!isNew && (
-          <Button color="error" onClick={() => { onDelete(draft.id); onClose(); }} startIcon={<DeleteIcon />}>
+          <Button
+            color="error"
+            onClick={() => {
+              onDelete(draft.id)
+              onClose()
+            }}
+            startIcon={<DeleteIcon />}
+          >
             Delete
           </Button>
         )}
         <Box sx={{ flex: 1 }} />
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={() => { onSave(draft); onClose(); }}>Save</Button>
+        <Button
+          variant="contained"
+          onClick={() => {
+            onSave(draft)
+            onClose()
+          }}
+        >
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 // ── Sweep helper + colors ───────────────────────────────────────────────────
 // Color palette for multi-line sparklines. Cycled by player index.
-const SPARKLINE_COLORS = ['#1976d2', '#d32f2f', '#388e3c', '#ed6c02', '#9c27b0', '#0288d1'];
+const SPARKLINE_COLORS = ['#1976d2', '#d32f2f', '#388e3c', '#ed6c02', '#9c27b0', '#0288d1']
 
 /**
  * Build per-level [level, value] points for a formula + player + context.
@@ -180,29 +274,44 @@ const SPARKLINE_COLORS = ['#1976d2', '#d32f2f', '#388e3c', '#ed6c02', '#9c27b0',
  * Uses the Avg pass for RAND / weapon (midpoints). Skips levels that fail
  * to evaluate (e.g. division by zero at some level).
  */
-function sweepFormula({ compiled, player, weaponConfig, castableContextConfig, overrideMap, maxLevel = 99 }) {
-  const base = buildBaseVars(player);
-  if (castableContextConfig?.acquiredLevelSet) base.ACQUIREDLEVEL = castableContextConfig.acquiredLevel;
-  const avgVars = { ...withRandAndWeapon(base, weaponConfig, 'avg'), ...overrideMap };
-  const points = [];
+function sweepFormula({
+  compiled,
+  player,
+  weaponConfig,
+  castableContextConfig,
+  overrideMap,
+  maxLevel = 99
+}) {
+  const base = buildBaseVars(player)
+  if (castableContextConfig?.acquiredLevelSet)
+    base.ACQUIREDLEVEL = castableContextConfig.acquiredLevel
+  const avgVars = { ...withRandAndWeapon(base, weaponConfig, 'avg'), ...overrideMap }
+  const points = []
   for (let lvl = 1; lvl <= maxLevel; lvl++) {
     try {
-      const v = compiled({ ...avgVars, SOURCELEVEL: lvl });
-      if (Number.isFinite(v)) points.push([lvl, v]);
-    } catch { /* skip this level */ }
+      const v = compiled({ ...avgVars, SOURCELEVEL: lvl })
+      if (Number.isFinite(v)) points.push([lvl, v])
+    } catch {
+      /* skip this level */
+    }
   }
-  return points;
+  return points
 }
 
 // ── Result block for one player ─────────────────────────────────────────────
 
 function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
-  const cell = (r) => (r?.error ? `err: ${r.error}` : formatNum(r?.value));
+  const cell = (r) => (r?.error ? `err: ${r.error}` : formatNum(r?.value))
   return (
     <TableRow>
       <TableCell>
         <Stack direction="row" spacing={0.5} alignItems="center">
-          <span>{player.name} <Typography component="span" variant="caption" color="text.secondary">(L{player.level})</Typography></span>
+          <span>
+            {player.name}{' '}
+            <Typography component="span" variant="caption" color="text.secondary">
+              (L{player.level})
+            </Typography>
+          </span>
           {onOpenSparkline && (
             <Tooltip title="Show level sweep (L1→99) for this player">
               <IconButton size="small" onClick={(e) => onOpenSparkline(e.currentTarget, player.id)}>
@@ -216,190 +325,242 @@ function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
       <TableCell align="right">{cell(avg)}</TableCell>
       <TableCell align="right">{cell(high)}</TableCell>
     </TableRow>
-  );
+  )
 }
 
 // ── Main page ───────────────────────────────────────────────────────────────
 
 export default function DamageCalculatorPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState);
-  const libraryIndex = useRecoilValue(libraryIndexState);
+  const activeLibrary = useRecoilValue(activeLibraryState)
+  const libraryIndex = useRecoilValue(libraryIndexState)
 
-  const [testPlayers, setTestPlayers] = useState([]);
-  const [formulas, setFormulas] = useState([]);
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [dialogState, setDialogState] = useState({ open: false, initial: null });
+  const [testPlayers, setTestPlayers] = useState([])
+  const [formulas, setFormulas] = useState([])
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [dialogState, setDialogState] = useState({ open: false, initial: null })
 
-  const [selectedFormula, setSelectedFormula] = useState(null);
-  const [customFormula, setCustomFormula] = useState('');
-  const [duration, setDuration] = useState('');
-  const [tick, setTick] = useState('');
-  const [weapon, setWeapon] = useState({ smallMin: '', smallMax: '', largeMin: '', largeMax: '' });
-  const [castableContext, setCastableContext] = useState({ acquiredLevel: '' });
+  const [selectedFormula, setSelectedFormula] = useState(null)
+  const [customFormula, setCustomFormula] = useState('')
+  const [duration, setDuration] = useState('')
+  const [tick, setTick] = useState('')
+  const [weapon, setWeapon] = useState({ smallMin: '', smallMax: '', largeMin: '', largeMax: '' })
+  const [castableContext, setCastableContext] = useState({ acquiredLevel: '' })
   const [overrides, setOverrides] = useState([
-    { name: '', value: '' }, { name: '', value: '' }, { name: '', value: '' },
-  ]);
+    { name: '', value: '' },
+    { name: '', value: '' },
+    { name: '', value: '' }
+  ])
   // Sparkline popover state: null | { anchorEl, kind: 'player' | 'overlay', playerId? }
-  const [sparkAnchor, setSparkAnchor] = useState(null);
+  const [sparkAnchor, setSparkAnchor] = useState(null)
 
   useEffect(() => {
-    if (!activeLibrary) { setTestPlayers([]); setFormulas([]); return; }
-    (async () => {
-      const c = await window.electronAPI.loadUserConstants(activeLibrary);
-      setTestPlayers(Array.isArray(c?.testPlayers) ? c.testPlayers : []);
-      const f = await window.electronAPI.loadFormulas(activeLibrary);
-      setFormulas(Array.isArray(f?.formulas) ? f.formulas : []);
-    })();
-  }, [activeLibrary]);
+    if (!activeLibrary) {
+      setTestPlayers([])
+      setFormulas([])
+      return
+    }
+    ;(async () => {
+      const c = await window.electronAPI.loadUserConstants(activeLibrary)
+      setTestPlayers(Array.isArray(c?.testPlayers) ? c.testPlayers : [])
+      const f = await window.electronAPI.loadFormulas(activeLibrary)
+      setFormulas(Array.isArray(f?.formulas) ? f.formulas : [])
+    })()
+  }, [activeLibrary])
 
   const persistTestPlayers = async (next) => {
-    setTestPlayers(next);
-    if (!activeLibrary) return;
-    const current = (await window.electronAPI.loadUserConstants(activeLibrary)) || {};
-    await window.electronAPI.saveUserConstants(activeLibrary, { ...current, testPlayers: next });
-  };
+    setTestPlayers(next)
+    if (!activeLibrary) return
+    const current = (await window.electronAPI.loadUserConstants(activeLibrary)) || {}
+    await window.electronAPI.saveUserConstants(activeLibrary, { ...current, testPlayers: next })
+  }
 
-  const handleOpenNew = () => setDialogState({ open: true, initial: DEFAULT_PLAYER() });
-  const handleOpenEdit = (player) => setDialogState({ open: true, initial: { ...player, persisted: true } });
-  const handleCloseDialog = () => setDialogState({ open: false, initial: null });
+  const handleOpenNew = () => setDialogState({ open: true, initial: DEFAULT_PLAYER() })
+  const handleOpenEdit = (player) =>
+    setDialogState({ open: true, initial: { ...player, persisted: true } })
+  const handleCloseDialog = () => setDialogState({ open: false, initial: null })
 
   const handleSavePlayer = (draft) => {
-    const exists = testPlayers.some((p) => p.id === draft.id);
+    const exists = testPlayers.some((p) => p.id === draft.id)
     const next = exists
       ? testPlayers.map((p) => (p.id === draft.id ? draft : p))
-      : [...testPlayers, draft];
-    persistTestPlayers(next);
-  };
+      : [...testPlayers, draft]
+    persistTestPlayers(next)
+  }
 
   const handleDeletePlayer = (id) => {
-    persistTestPlayers(testPlayers.filter((p) => p.id !== id));
-    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
-  };
+    persistTestPlayers(testPlayers.filter((p) => p.id !== id))
+    setSelectedIds((prev) => {
+      const n = new Set(prev)
+      n.delete(id)
+      return n
+    })
+  }
 
   const toggleSelected = (id) => {
     setSelectedIds((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  };
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
 
   const selectedPlayers = useMemo(
     () => testPlayers.filter((p) => selectedIds.has(p.id)),
-    [testPlayers, selectedIds],
-  );
+    [testPlayers, selectedIds]
+  )
 
-  const formulaText = customFormula.trim() || selectedFormula?.formula || '';
+  const formulaText = customFormula.trim() || selectedFormula?.formula || ''
 
   const overrideMap = useMemo(() => {
-    const map = {};
+    const map = {}
     for (const row of overrides) {
-      const name = (row.name || '').trim();
-      if (!name) continue;
-      const v = Number(row.value);
-      if (row.value === '' || Number.isNaN(v)) continue;
-      map[name] = v;
+      const name = (row.name || '').trim()
+      if (!name) continue
+      const v = Number(row.value)
+      if (row.value === '' || Number.isNaN(v)) continue
+      map[name] = v
     }
-    return map;
-  }, [overrides]);
+    return map
+  }, [overrides])
 
   const castableContextConfig = useMemo(() => {
-    const n = Number(castableContext.acquiredLevel);
-    const acquiredLevelSet = castableContext.acquiredLevel !== '' && !Number.isNaN(n);
-    return { acquiredLevelSet, acquiredLevel: acquiredLevelSet ? n : 0 };
-  }, [castableContext]);
+    const n = Number(castableContext.acquiredLevel)
+    const acquiredLevelSet = castableContext.acquiredLevel !== '' && !Number.isNaN(n)
+    return { acquiredLevelSet, acquiredLevel: acquiredLevelSet ? n : 0 }
+  }, [castableContext])
 
   const weaponConfig = useMemo(() => {
-    const smMin = Number(weapon.smallMin), smMax = Number(weapon.smallMax);
-    const lgMin = Number(weapon.largeMin), lgMax = Number(weapon.largeMax);
-    const smallSet = weapon.smallMin !== '' && weapon.smallMax !== '' && !Number.isNaN(smMin) && !Number.isNaN(smMax);
-    const largeSet = weapon.largeMin !== '' && weapon.largeMax !== '' && !Number.isNaN(lgMin) && !Number.isNaN(lgMax);
+    const smMin = Number(weapon.smallMin),
+      smMax = Number(weapon.smallMax)
+    const lgMin = Number(weapon.largeMin),
+      lgMax = Number(weapon.largeMax)
+    const smallSet =
+      weapon.smallMin !== '' &&
+      weapon.smallMax !== '' &&
+      !Number.isNaN(smMin) &&
+      !Number.isNaN(smMax)
+    const largeSet =
+      weapon.largeMin !== '' &&
+      weapon.largeMax !== '' &&
+      !Number.isNaN(lgMin) &&
+      !Number.isNaN(lgMax)
     return {
-      smallSet, largeSet,
-      smallMin: smallSet ? smMin : 0, smallMax: smallSet ? smMax : 0,
-      largeMin: largeSet ? lgMin : 0, largeMax: largeSet ? lgMax : 0,
-    };
-  }, [weapon]);
+      smallSet,
+      largeSet,
+      smallMin: smallSet ? smMin : 0,
+      smallMax: smallSet ? smMax : 0,
+      largeMin: largeSet ? lgMin : 0,
+      largeMax: largeSet ? lgMax : 0
+    }
+  }, [weapon])
 
   // Evaluator: produces per-player rows.
   const evalState = useMemo(() => {
-    if (!selectedPlayers.length || !formulaText.trim()) return null;
-    let compiled;
-    try { compiled = compile(formulaText); }
-    catch (e) { return { parseError: e?.message || String(e) }; }
+    if (!selectedPlayers.length || !formulaText.trim()) return null
+    let compiled
+    try {
+      compiled = compile(formulaText)
+    } catch (e) {
+      return { parseError: e?.message || String(e) }
+    }
 
-    const referenced = [...compiled.variables];
-    const unknown = referenced.filter((v) => !KNOWN_VARIABLES.has(v));
-    if (unknown.length) return { parseError: null, unknown, assumedZero: [], perPlayer: [] };
+    const referenced = [...compiled.variables]
+    const unknown = referenced.filter((v) => !KNOWN_VARIABLES.has(v))
+    if (unknown.length) return { parseError: null, unknown, assumedZero: [], perPlayer: [] }
 
     // assumedZero is computed per-player context (weapon/override/context are shared)
-    const sharedExplicit = explicitKeys(null, weaponConfig, castableContextConfig);
-    for (const name of Object.keys(overrideMap)) sharedExplicit.add(name);
+    const sharedExplicit = explicitKeys(null, weaponConfig, castableContextConfig)
+    for (const name of Object.keys(overrideMap)) sharedExplicit.add(name)
 
     const perPlayer = selectedPlayers.map((player) => {
-      const explicit = new Set(sharedExplicit);
-      explicitKeys(player, null, null).forEach((k) => explicit.add(k));
-      const base = buildBaseVars(player);
-      if (castableContextConfig.acquiredLevelSet) base.ACQUIREDLEVEL = castableContextConfig.acquiredLevel;
-      const applyOverrides = (v) => ({ ...v, ...overrideMap });
-      const low  = evalSafe(compiled, applyOverrides(withRandAndWeapon(base, weaponConfig, 'low')));
-      const avg  = evalSafe(compiled, applyOverrides(withRandAndWeapon(base, weaponConfig, 'avg')));
-      const high = evalSafe(compiled, applyOverrides(withRandAndWeapon(base, weaponConfig, 'high')));
-      const assumedZero = referenced.filter((v) => KNOWN_VARIABLES.has(v) && !explicit.has(v));
-      return { player, low, avg, high, assumedZero };
-    });
+      const explicit = new Set(sharedExplicit)
+      explicitKeys(player, null, null).forEach((k) => explicit.add(k))
+      const base = buildBaseVars(player)
+      if (castableContextConfig.acquiredLevelSet)
+        base.ACQUIREDLEVEL = castableContextConfig.acquiredLevel
+      const applyOverrides = (v) => ({ ...v, ...overrideMap })
+      const low = evalSafe(compiled, applyOverrides(withRandAndWeapon(base, weaponConfig, 'low')))
+      const avg = evalSafe(compiled, applyOverrides(withRandAndWeapon(base, weaponConfig, 'avg')))
+      const high = evalSafe(compiled, applyOverrides(withRandAndWeapon(base, weaponConfig, 'high')))
+      const assumedZero = referenced.filter((v) => KNOWN_VARIABLES.has(v) && !explicit.has(v))
+      return { player, low, avg, high, assumedZero }
+    })
 
     // Warnings aggregate: if every player has the same assumedZero set, show it once.
     const globalAssumed = perPlayer.length
       ? [...new Set(perPlayer.flatMap((p) => p.assumedZero))].sort()
-      : [];
+      : []
 
-    return { parseError: null, unknown: [], assumedZero: globalAssumed, perPlayer };
-  }, [selectedPlayers, formulaText, weaponConfig, castableContextConfig, overrideMap]);
+    return { parseError: null, unknown: [], assumedZero: globalAssumed, perPlayer }
+  }, [selectedPlayers, formulaText, weaponConfig, castableContextConfig, overrideMap])
 
   // Sparkline data builder — recompiles formula and sweeps SOURCELEVEL 1..99.
   // Cheap enough to compute on popover open.
   const sparklineLines = useMemo(() => {
-    if (!sparkAnchor || !formulaText.trim() || !selectedPlayers.length) return null;
-    let compiled;
-    try { compiled = compile(formulaText); } catch { return null; }
-    const shared = { weaponConfig, castableContextConfig, overrideMap };
+    if (!sparkAnchor || !formulaText.trim() || !selectedPlayers.length) return null
+    let compiled
+    try {
+      compiled = compile(formulaText)
+    } catch {
+      return null
+    }
+    const shared = { weaponConfig, castableContextConfig, overrideMap }
 
     if (sparkAnchor.kind === 'player') {
-      const p = selectedPlayers.find((x) => x.id === sparkAnchor.playerId);
-      if (!p) return null;
-      const points = sweepFormula({ compiled, player: p, ...shared });
-      return [{
-        label: `${p.name} (L${p.level})`,
-        color: SPARKLINE_COLORS[0],
-        points,
-      }];
+      const p = selectedPlayers.find((x) => x.id === sparkAnchor.playerId)
+      if (!p) return null
+      const points = sweepFormula({ compiled, player: p, ...shared })
+      return [
+        {
+          label: `${p.name} (L${p.level})`,
+          color: SPARKLINE_COLORS[0],
+          points
+        }
+      ]
     }
     // overlay — one line per selected player
     return selectedPlayers.map((p, i) => ({
       label: `${p.name} (L${p.level})`,
       color: SPARKLINE_COLORS[i % SPARKLINE_COLORS.length],
-      points: sweepFormula({ compiled, player: p, ...shared }),
-    }));
-  }, [sparkAnchor, formulaText, selectedPlayers, weaponConfig, castableContextConfig, overrideMap]);
+      points: sweepFormula({ compiled, player: p, ...shared })
+    }))
+  }, [sparkAnchor, formulaText, selectedPlayers, weaponConfig, castableContextConfig, overrideMap])
 
-  const openPlayerSparkline = (anchorEl, playerId) => setSparkAnchor({ anchorEl, kind: 'player', playerId });
-  const openOverlaySparkline = (anchorEl) => setSparkAnchor({ anchorEl, kind: 'overlay' });
-  const closeSparkline = () => setSparkAnchor(null);
+  const openPlayerSparkline = (anchorEl, playerId) =>
+    setSparkAnchor({ anchorEl, kind: 'player', playerId })
+  const openOverlaySparkline = (anchorEl) => setSparkAnchor({ anchorEl, kind: 'overlay' })
+  const closeSparkline = () => setSparkAnchor(null)
 
   const dotTicks = useMemo(() => {
-    const d = Number(duration), t = Number(tick);
-    if (!d || !t || t <= 0) return null;
-    return Math.ceil(d / t);
-  }, [duration, tick]);
+    const d = Number(duration),
+      t = Number(tick)
+    if (!d || !t || t <= 0) return null
+    return Math.ceil(d / t)
+  }, [duration, tick])
 
   return (
     <Box sx={{ height: '100%', display: 'flex', overflow: 'hidden' }}>
       {/* Left: test players */}
-      <Box sx={{ width: 300, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          width: 300,
+          flexShrink: 0,
+          borderRight: 1,
+          borderColor: 'divider',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+      >
         <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
           <Typography variant="subtitle2" sx={{ flex: 1 }}>
-            Test Players {selectedIds.size > 0 && <Typography component="span" variant="caption" color="text.secondary">({selectedIds.size} selected)</Typography>}
+            Test Players{' '}
+            {selectedIds.size > 0 && (
+              <Typography component="span" variant="caption" color="text.secondary">
+                ({selectedIds.size} selected)
+              </Typography>
+            )}
           </Typography>
           <Tooltip title="New test player">
             <IconButton size="small" onClick={handleOpenNew} disabled={!activeLibrary}>
@@ -425,7 +586,13 @@ export default function DamageCalculatorPage() {
                 }
               >
                 <ListItemButton onClick={() => toggleSelected(p.id)} dense>
-                  <Checkbox edge="start" checked={selectedIds.has(p.id)} tabIndex={-1} disableRipple size="small" />
+                  <Checkbox
+                    edge="start"
+                    checked={selectedIds.has(p.id)}
+                    tabIndex={-1}
+                    disableRipple
+                    size="small"
+                  />
                   <ListItemText
                     primary={p.name}
                     secondary={`Lv ${p.level}`}
@@ -437,7 +604,9 @@ export default function DamageCalculatorPage() {
             ))}
             {testPlayers.length === 0 && (
               <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-                {activeLibrary ? 'No test players yet — click + to add one.' : 'Select a library first.'}
+                {activeLibrary
+                  ? 'No test players yet — click + to add one.'
+                  : 'Select a library first.'}
               </Typography>
             )}
           </List>
@@ -445,10 +614,15 @@ export default function DamageCalculatorPage() {
       </Box>
 
       {/* Right: calculator */}
-      <Box sx={{ flex: 1, p: 2, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography variant="h5" fontWeight="bold">Damage Calculator</Typography>
+      <Box
+        sx={{ flex: 1, p: 2, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}
+      >
+        <Typography variant="h5" fontWeight="bold">
+          Damage Calculator
+        </Typography>
         <Typography variant="caption" color="text.secondary">
-          Local preview only — not authoritative. Final values come from the server's NCalc evaluator.
+          Local preview only — not authoritative. Final values come from the server's NCalc
+          evaluator.
         </Typography>
 
         <Paper variant="outlined" sx={{ p: 2 }}>
@@ -458,17 +632,30 @@ export default function DamageCalculatorPage() {
               options={formulas}
               getOptionLabel={(f) => f?.name || ''}
               value={selectedFormula}
-              onChange={(_, v) => { setSelectedFormula(v); setCustomFormula(''); }}
+              onChange={(_, v) => {
+                setSelectedFormula(v)
+                setCustomFormula('')
+              }}
               renderInput={(params) => <TextField {...params} label="Formula (from library)" />}
             />
             <TextField
-              size="small" label="…or paste a formula" fullWidth multiline maxRows={4}
+              size="small"
+              label="…or paste a formula"
+              fullWidth
+              multiline
+              maxRows={4}
               value={customFormula}
-              onChange={(e) => { setCustomFormula(e.target.value); setSelectedFormula(null); }}
-              placeholder='e.g. SOURCESTR * 3 + floor(SOURCELEVEL / 10) + RAND_10'
+              onChange={(e) => {
+                setCustomFormula(e.target.value)
+                setSelectedFormula(null)
+              }}
+              placeholder="e.g. SOURCESTR * 3 + floor(SOURCELEVEL / 10) + RAND_10"
             />
             {formulaText && (
-              <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+              <Typography
+                variant="caption"
+                sx={{ fontFamily: 'monospace', color: 'text.secondary' }}
+              >
                 Evaluating: {formulaText}
               </Typography>
             )}
@@ -477,16 +664,25 @@ export default function DamageCalculatorPage() {
 
         <Accordion variant="outlined" defaultExpanded disableGutters>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle2">Optional inputs — castable context · weapon · overrides · DOT</Typography>
+            <Typography variant="subtitle2">
+              Optional inputs — castable context · weapon · overrides · DOT
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Stack spacing={2} divider={<Divider flexItem />}>
               {/* Castable context */}
               <Box>
-                <Typography variant="subtitle2" gutterBottom>Castable context</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Authoring-time variables substituted to a literal number at XML save time.
-                  Pick a castable to auto-populate ACQUIREDLEVEL from its first Requirement's Min level, or set it manually.
+                <Typography variant="subtitle2" gutterBottom>
+                  Castable context
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mb: 1 }}
+                >
+                  Authoring-time variables substituted to a literal number at XML save time. Pick a
+                  castable to auto-populate ACQUIREDLEVEL from its first Requirement's Min level, or
+                  set it manually.
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Autocomplete
@@ -494,29 +690,42 @@ export default function DamageCalculatorPage() {
                     options={libraryIndex?.castables || []}
                     value={null}
                     onChange={(_, value) => {
-                      if (!value) return;
-                      const n = libraryIndex?.castableRequiredLevels?.[value];
+                      if (!value) return
+                      const n = libraryIndex?.castableRequiredLevels?.[value]
                       if (typeof n === 'number') {
-                        setCastableContext((c) => ({ ...c, acquiredLevel: String(n) }));
+                        setCastableContext((c) => ({ ...c, acquiredLevel: String(n) }))
                       }
                     }}
-                    renderInput={(params) => <TextField {...params} label="Populate from castable" />}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Populate from castable" />
+                    )}
                     sx={{ flex: 1, maxWidth: 320 }}
                   />
                   <TextField
-                    size="small" label="ACQUIREDLEVEL" type="number" sx={{ width: 160 }}
+                    size="small"
+                    label="ACQUIREDLEVEL"
+                    type="number"
+                    sx={{ width: 160 }}
                     value={castableContext.acquiredLevel}
-                    onChange={(e) => setCastableContext((c) => ({ ...c, acquiredLevel: e.target.value }))}
+                    onChange={(e) =>
+                      setCastableContext((c) => ({ ...c, acquiredLevel: e.target.value }))
+                    }
                   />
                 </Stack>
               </Box>
 
               {/* Weapon */}
               <Box>
-                <Typography variant="subtitle2" gutterBottom>Weapon</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Sets SOURCEWEAPONSMALLDAMAGE / SOURCEWEAPONLARGEDAMAGE. Min/max participates in Low/Avg/High.
-                  Pick a weapon item to auto-populate all four, or set them manually.
+                <Typography variant="subtitle2" gutterBottom>
+                  Weapon
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mb: 1 }}
+                >
+                  Sets SOURCEWEAPONSMALLDAMAGE / SOURCEWEAPONLARGEDAMAGE. Min/max participates in
+                  Low/Avg/High. Pick a weapon item to auto-populate all four, or set them manually.
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                   <Autocomplete
@@ -524,52 +733,103 @@ export default function DamageCalculatorPage() {
                     options={Object.keys(libraryIndex?.itemWeaponDamage || {}).sort()}
                     value={null}
                     onChange={(_, value) => {
-                      if (!value) return;
-                      const d = libraryIndex?.itemWeaponDamage?.[value];
-                      if (!d) return;
+                      if (!value) return
+                      const d = libraryIndex?.itemWeaponDamage?.[value]
+                      if (!d) return
                       setWeapon({
                         smallMin: String(d.smallMin),
                         smallMax: String(d.smallMax),
                         largeMin: String(d.largeMin),
-                        largeMax: String(d.largeMax),
-                      });
+                        largeMax: String(d.largeMax)
+                      })
                     }}
-                    renderInput={(params) => <TextField {...params} label="Populate from weapon item" />}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Populate from weapon item" />
+                    )}
                     sx={{ minWidth: 240, flex: 1 }}
                   />
-                  <TextField size="small" label="Small dmg min" type="number" sx={{ width: 130 }}
-                    value={weapon.smallMin} onChange={(e) => setWeapon((w) => ({ ...w, smallMin: e.target.value }))} />
-                  <TextField size="small" label="Small dmg max" type="number" sx={{ width: 130 }}
-                    value={weapon.smallMax} onChange={(e) => setWeapon((w) => ({ ...w, smallMax: e.target.value }))} />
-                  <TextField size="small" label="Large dmg min" type="number" sx={{ width: 130 }}
-                    value={weapon.largeMin} onChange={(e) => setWeapon((w) => ({ ...w, largeMin: e.target.value }))} />
-                  <TextField size="small" label="Large dmg max" type="number" sx={{ width: 130 }}
-                    value={weapon.largeMax} onChange={(e) => setWeapon((w) => ({ ...w, largeMax: e.target.value }))} />
+                  <TextField
+                    size="small"
+                    label="Small dmg min"
+                    type="number"
+                    sx={{ width: 130 }}
+                    value={weapon.smallMin}
+                    onChange={(e) => setWeapon((w) => ({ ...w, smallMin: e.target.value }))}
+                  />
+                  <TextField
+                    size="small"
+                    label="Small dmg max"
+                    type="number"
+                    sx={{ width: 130 }}
+                    value={weapon.smallMax}
+                    onChange={(e) => setWeapon((w) => ({ ...w, smallMax: e.target.value }))}
+                  />
+                  <TextField
+                    size="small"
+                    label="Large dmg min"
+                    type="number"
+                    sx={{ width: 130 }}
+                    value={weapon.largeMin}
+                    onChange={(e) => setWeapon((w) => ({ ...w, largeMin: e.target.value }))}
+                  />
+                  <TextField
+                    size="small"
+                    label="Large dmg max"
+                    type="number"
+                    sx={{ width: 130 }}
+                    value={weapon.largeMax}
+                    onChange={(e) => setWeapon((w) => ({ ...w, largeMax: e.target.value }))}
+                  />
                 </Stack>
               </Box>
 
               {/* Variable overrides */}
               <Box>
-                <Typography variant="subtitle2" gutterBottom>Variable overrides</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                  Three slots for ad-hoc values. Overrides win over all other sources (player, weapon, RAND, context).
+                <Typography variant="subtitle2" gutterBottom>
+                  Variable overrides
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mb: 1 }}
+                >
+                  Three slots for ad-hoc values. Overrides win over all other sources (player,
+                  weapon, RAND, context).
                 </Typography>
                 <Stack spacing={1}>
                   {overrides.map((row, i) => (
                     <Stack key={i} direction="row" spacing={1}>
                       <Autocomplete
-                        size="small" freeSolo
+                        size="small"
+                        freeSolo
                         options={[...KNOWN_VARIABLES].sort()}
                         value={row.name}
-                        onChange={(_, v) => setOverrides((prev) => prev.map((r, idx) => (idx === i ? { ...r, name: v || '' } : r)))}
-                        onInputChange={(_, v) => setOverrides((prev) => prev.map((r, idx) => (idx === i ? { ...r, name: v || '' } : r)))}
-                        renderInput={(params) => <TextField {...params} label={`Override #${i + 1} — variable`} />}
+                        onChange={(_, v) =>
+                          setOverrides((prev) =>
+                            prev.map((r, idx) => (idx === i ? { ...r, name: v || '' } : r))
+                          )
+                        }
+                        onInputChange={(_, v) =>
+                          setOverrides((prev) =>
+                            prev.map((r, idx) => (idx === i ? { ...r, name: v || '' } : r))
+                          )
+                        }
+                        renderInput={(params) => (
+                          <TextField {...params} label={`Override #${i + 1} — variable`} />
+                        )}
                         sx={{ flex: 1 }}
                       />
                       <TextField
-                        size="small" type="number" label="Value" sx={{ width: 130 }}
+                        size="small"
+                        type="number"
+                        label="Value"
+                        sx={{ width: 130 }}
                         value={row.value}
-                        onChange={(e) => setOverrides((prev) => prev.map((r, idx) => (idx === i ? { ...r, value: e.target.value } : r)))}
+                        onChange={(e) =>
+                          setOverrides((prev) =>
+                            prev.map((r, idx) => (idx === i ? { ...r, value: e.target.value } : r))
+                          )
+                        }
                       />
                     </Stack>
                   ))}
@@ -578,12 +838,26 @@ export default function DamageCalculatorPage() {
 
               {/* DOT */}
               <Box>
-                <Typography variant="subtitle2" gutterBottom>DOT</Typography>
+                <Typography variant="subtitle2" gutterBottom>
+                  DOT
+                </Typography>
                 <Stack direction="row" spacing={1}>
-                  <TextField size="small" label="Duration" type="number"
-                    value={duration} onChange={(e) => setDuration(e.target.value)} sx={{ width: 130 }} />
-                  <TextField size="small" label="Tick" type="number"
-                    value={tick} onChange={(e) => setTick(e.target.value)} sx={{ width: 130 }} />
+                  <TextField
+                    size="small"
+                    label="Duration"
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    sx={{ width: 130 }}
+                  />
+                  <TextField
+                    size="small"
+                    label="Tick"
+                    type="number"
+                    value={tick}
+                    onChange={(e) => setTick(e.target.value)}
+                    sx={{ width: 130 }}
+                  />
                   <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
                     {dotTicks ? `→ ${dotTicks} ticks` : 'leave blank for non-DOT formulas'}
                   </Typography>
@@ -594,88 +868,106 @@ export default function DamageCalculatorPage() {
         </Accordion>
 
         {selectedPlayers.length === 0 && (
-          <Alert severity="info">Check one or more test players on the left to evaluate the formula against them.</Alert>
+          <Alert severity="info">
+            Check one or more test players on the left to evaluate the formula against them.
+          </Alert>
         )}
 
-        {evalState?.parseError && <Alert severity="error">Parse error: {evalState.parseError}</Alert>}
+        {evalState?.parseError && (
+          <Alert severity="error">Parse error: {evalState.parseError}</Alert>
+        )}
 
         {evalState?.unknown?.length > 0 && (
           <Alert severity="error">
-            Unknown variable{evalState.unknown.length > 1 ? 's' : ''}: {evalState.unknown.join(', ')}
-            {' '}— not in the Hybrasyl variable spec. Check the formula for typos.
+            Unknown variable{evalState.unknown.length > 1 ? 's' : ''}:{' '}
+            {evalState.unknown.join(', ')} — not in the Hybrasyl variable spec. Check the formula
+            for typos.
           </Alert>
         )}
 
         {evalState?.assumedZero?.length > 0 && (
           <Alert severity="warning">
-            Assuming <strong>0</strong> for {evalState.assumedZero.length} unset variable{evalState.assumedZero.length > 1 ? 's' : ''}:{' '}
-            {evalState.assumedZero.join(', ')}. Use an override slot above to set any of these explicitly.
+            Assuming <strong>0</strong> for {evalState.assumedZero.length} unset variable
+            {evalState.assumedZero.length > 1 ? 's' : ''}: {evalState.assumedZero.join(', ')}. Use
+            an override slot above to set any of these explicitly.
           </Alert>
         )}
 
-        {evalState && !evalState.parseError && !evalState.unknown?.length && selectedPlayers.length > 0 && (
-          <>
-            <Paper variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} alignItems="center">
-                        <span>Per hit</span>
-                        {selectedPlayers.length > 1 && (
-                          <Tooltip title="Show level sweep (L1→99) for all selected players">
-                            <IconButton size="small" onClick={(e) => openOverlaySparkline(e.currentTarget)}>
-                              <ShowChartIcon fontSize="inherit" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
-                    </TableCell>
-                    <TableCell align="right">Low</TableCell>
-                    <TableCell align="right">Avg</TableCell>
-                    <TableCell align="right">High</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {evalState.perPlayer.map((row) => (
-                    <PlayerResultRow
-                      key={row.player.id} player={row.player}
-                      low={row.low} avg={row.avg} high={row.high}
-                      onOpenSparkline={openPlayerSparkline}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-
-            {dotTicks && (
+        {evalState &&
+          !evalState.parseError &&
+          !evalState.unknown?.length &&
+          selectedPlayers.length > 0 && (
+            <>
               <Paper variant="outlined">
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>DOT total ({dotTicks} ticks)</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <span>Per hit</span>
+                          {selectedPlayers.length > 1 && (
+                            <Tooltip title="Show level sweep (L1→99) for all selected players">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => openOverlaySparkline(e.currentTarget)}
+                              >
+                                <ShowChartIcon fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      </TableCell>
                       <TableCell align="right">Low</TableCell>
                       <TableCell align="right">Avg</TableCell>
                       <TableCell align="right">High</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {evalState.perPlayer.map((row) => {
-                      const mult = (r) => (r?.value == null ? null : { ...r, value: r.value * dotTicks });
-                      return (
-                        <PlayerResultRow
-                          key={row.player.id}
-                          player={row.player}
-                          low={mult(row.low)} avg={mult(row.avg)} high={mult(row.high)}
-                        />
-                      );
-                    })}
+                    {evalState.perPlayer.map((row) => (
+                      <PlayerResultRow
+                        key={row.player.id}
+                        player={row.player}
+                        low={row.low}
+                        avg={row.avg}
+                        high={row.high}
+                        onOpenSparkline={openPlayerSparkline}
+                      />
+                    ))}
                   </TableBody>
                 </Table>
               </Paper>
-            )}
-          </>
-        )}
+
+              {dotTicks && (
+                <Paper variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>DOT total ({dotTicks} ticks)</TableCell>
+                        <TableCell align="right">Low</TableCell>
+                        <TableCell align="right">Avg</TableCell>
+                        <TableCell align="right">High</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {evalState.perPlayer.map((row) => {
+                        const mult = (r) =>
+                          r?.value == null ? null : { ...r, value: r.value * dotTicks }
+                        return (
+                          <PlayerResultRow
+                            key={row.player.id}
+                            player={row.player}
+                            low={mult(row.low)}
+                            avg={mult(row.avg)}
+                            high={mult(row.high)}
+                          />
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              )}
+            </>
+          )}
       </Box>
 
       <TestPlayerDialog
@@ -692,10 +984,13 @@ export default function DamageCalculatorPage() {
         onClose={closeSparkline}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        {sparklineLines && sparklineLines.length > 0 && sparklineLines.some((l) => l.points.length > 0) ? (
+        {sparklineLines &&
+        sparklineLines.length > 0 &&
+        sparklineLines.some((l) => l.points.length > 0) ? (
           <FormulaSparkline
             lines={sparklineLines.filter((l) => l.points.length > 0)}
-            width={320} height={100}
+            width={320}
+            height={100}
             xLabel="SOURCELEVEL 1…99 (Avg)"
           />
         ) : (
@@ -707,5 +1002,5 @@ export default function DamageCalculatorPage() {
         )}
       </Popover>
     </Box>
-  );
+  )
 }

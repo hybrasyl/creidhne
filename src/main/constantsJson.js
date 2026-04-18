@@ -2,14 +2,14 @@ import { promises as fs } from 'fs'
 import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
 
 const EMPTY = {
-  vendorTabs:         [],
-  itemCategories:     [],
+  vendorTabs: [],
+  itemCategories: [],
   castableCategories: [],
-  statusCategories:   [],
-  cookies:            [],
-  npcJobs:            [],
-  creatureFamilies:   [],
-  motions:            [],
+  statusCategories: [],
+  cookies: [],
+  npcJobs: [],
+  creatureFamilies: [],
+  motions: []
 }
 
 export function getConstantsPath(libraryPath) {

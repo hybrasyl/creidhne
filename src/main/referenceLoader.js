@@ -18,25 +18,25 @@ import { parseSpawngroupXml } from './spawngroupXml'
 // `idField` is the property on the parsed object used to match a picked name.
 // Localizations use `locale` rather than a traditional name.
 const TYPE_CONFIG = {
-  castables:            { parse: parseCastableXml,     idField: 'name',   label: 'Castable' },
-  statuses:             { parse: parseStatusXml,       idField: 'name',   label: 'Status' },
-  items:                { parse: parseItemXml,         idField: 'name',   label: 'Item' },
-  creatures:            { parse: parseCreatureXml,     idField: 'name',   label: 'Creature' },
-  npcs:                 { parse: parseNpcXml,          idField: 'name',   label: 'NPC' },
-  nations:              { parse: parseNationXml,       idField: 'name',   label: 'Nation' },
-  lootsets:             { parse: parseLootXml,         idField: 'name',   label: 'Loot set' },
-  recipes:              { parse: parseRecipeXml,       idField: 'name',   label: 'Recipe' },
-  variantgroups:        { parse: parseVariantXml,      idField: 'name',   label: 'Variant group' },
-  localizations:        { parse: parseLocalizationXml, idField: 'locale', label: 'Localization' },
-  elementtables:        { parse: parseElementTableXml, idField: 'name',   label: 'Element table' },
-  creaturebehaviorsets: { parse: parseBehaviorSetXml,  idField: 'name',   label: 'Behavior set' },
-  spawngroups:          { parse: parseSpawngroupXml,   idField: 'name',   label: 'Spawn group' },
+  castables: { parse: parseCastableXml, idField: 'name', label: 'Castable' },
+  statuses: { parse: parseStatusXml, idField: 'name', label: 'Status' },
+  items: { parse: parseItemXml, idField: 'name', label: 'Item' },
+  creatures: { parse: parseCreatureXml, idField: 'name', label: 'Creature' },
+  npcs: { parse: parseNpcXml, idField: 'name', label: 'NPC' },
+  nations: { parse: parseNationXml, idField: 'name', label: 'Nation' },
+  lootsets: { parse: parseLootXml, idField: 'name', label: 'Loot set' },
+  recipes: { parse: parseRecipeXml, idField: 'name', label: 'Recipe' },
+  variantgroups: { parse: parseVariantXml, idField: 'name', label: 'Variant group' },
+  localizations: { parse: parseLocalizationXml, idField: 'locale', label: 'Localization' },
+  elementtables: { parse: parseElementTableXml, idField: 'name', label: 'Element table' },
+  creaturebehaviorsets: { parse: parseBehaviorSetXml, idField: 'name', label: 'Behavior set' },
+  spawngroups: { parse: parseSpawngroupXml, idField: 'name', label: 'Spawn group' }
 }
 
 export const SUPPORTED_REFERENCE_TYPES = Object.keys(TYPE_CONFIG)
 
 export const REFERENCE_TYPE_LABELS = Object.fromEntries(
-  Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.label]),
+  Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.label])
 )
 
 function valueMatches(parsed, idField, target) {
@@ -59,7 +59,9 @@ export async function loadReference(libraryPath, type, name) {
     if (valueMatches(parsed, cfg.idField, name)) {
       return { ok: true, parsed, raw, path: guess }
     }
-  } catch { /* fall through to full scan */ }
+  } catch {
+    /* fall through to full scan */
+  }
 
   let entries
   try {
@@ -77,7 +79,9 @@ export async function loadReference(libraryPath, type, name) {
       if (valueMatches(parsed, cfg.idField, name)) {
         return { ok: true, parsed, raw, path: filePath }
       }
-    } catch { /* skip unreadable / unparseable files */ }
+    } catch {
+      /* skip unreadable / unparseable files */
+    }
   }
 
   return { ok: false, error: `No ${cfg.label} named "${name}" found.` }

@@ -176,7 +176,7 @@ describe('Output structure', () => {
     merchant: [{ key: 'buy', message: 'Buy something.' }],
     npcSpeak: [{ key: 'npcline', message: 'Well met.' }],
     monsterSpeak: [{ key: 'roar', message: 'Roar!' }],
-    npcResponses: [{ call: 'greet', response: 'Greetings!' }],
+    npcResponses: [{ call: 'greet', response: 'Greetings!' }]
   }
 
   it('root element is Localization', async () => {

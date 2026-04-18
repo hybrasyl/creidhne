@@ -34,8 +34,11 @@ describe('resolveItemSprite', () => {
 
 describe('isFrameBlank', () => {
   const validFrame = {
-    left: 0, top: 0, right: 4, bottom: 4,
-    data: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
+    left: 0,
+    top: 0,
+    right: 4,
+    bottom: 4,
+    data: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
   }
 
   it('returns false when any pixel byte is non-zero', () => {
@@ -43,10 +46,15 @@ describe('isFrameBlank', () => {
   })
 
   it('returns true when all pixel bytes are zero (fully transparent)', () => {
-    expect(isFrameBlank({
-      left: 0, top: 0, right: 4, bottom: 4,
-      data: new Uint8Array(16), // all zeros
-    })).toBe(true)
+    expect(
+      isFrameBlank({
+        left: 0,
+        top: 0,
+        right: 4,
+        bottom: 4,
+        data: new Uint8Array(16) // all zeros
+      })
+    ).toBe(true)
   })
 
   it('returns true when frame is null or missing', () => {
@@ -56,16 +64,26 @@ describe('isFrameBlank', () => {
 
   it('returns true when data is missing or empty', () => {
     expect(isFrameBlank({ left: 0, top: 0, right: 4, bottom: 4 })).toBe(true)
-    expect(isFrameBlank({ left: 0, top: 0, right: 4, bottom: 4, data: new Uint8Array(0) })).toBe(true)
+    expect(isFrameBlank({ left: 0, top: 0, right: 4, bottom: 4, data: new Uint8Array(0) })).toBe(
+      true
+    )
   })
 
   it('returns true for degenerate bounding box (right <= left)', () => {
-    expect(isFrameBlank({ left: 5, top: 0, right: 5, bottom: 4, data: new Uint8Array([1]) })).toBe(true)
-    expect(isFrameBlank({ left: 5, top: 0, right: 3, bottom: 4, data: new Uint8Array([1]) })).toBe(true)
+    expect(isFrameBlank({ left: 5, top: 0, right: 5, bottom: 4, data: new Uint8Array([1]) })).toBe(
+      true
+    )
+    expect(isFrameBlank({ left: 5, top: 0, right: 3, bottom: 4, data: new Uint8Array([1]) })).toBe(
+      true
+    )
   })
 
   it('returns true for degenerate bounding box (bottom <= top)', () => {
-    expect(isFrameBlank({ left: 0, top: 5, right: 4, bottom: 5, data: new Uint8Array([1]) })).toBe(true)
-    expect(isFrameBlank({ left: 0, top: 5, right: 4, bottom: 3, data: new Uint8Array([1]) })).toBe(true)
+    expect(isFrameBlank({ left: 0, top: 5, right: 4, bottom: 5, data: new Uint8Array([1]) })).toBe(
+      true
+    )
+    expect(isFrameBlank({ left: 0, top: 5, right: 4, bottom: 3, data: new Uint8Array([1]) })).toBe(
+      true
+    )
   })
 })

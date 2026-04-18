@@ -1,28 +1,42 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Box, Typography, Button, List, ListItem, ListItemText, ListItemSecondaryAction,
-  Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, IconButton,
-  Chip, CircularProgress,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import HelpIcon from '@mui/icons-material/Help';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { useRecoilState } from 'recoil';
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
+  Box,
+  Typography,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
+  IconButton,
+  Chip,
+  CircularProgress
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import HelpIcon from '@mui/icons-material/Help'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import { useRecoilState } from 'recoil'
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 
 function IndexStatus({ status, building, onBuild }) {
   if (building) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <CircularProgress size={14} />
-        <Typography variant="caption" color="text.secondary">Building...</Typography>
+        <Typography variant="caption" color="text.secondary">
+          Building...
+        </Typography>
       </Box>
-    );
+    )
   }
 
-  if (!status) return null;
+  if (!status) return null
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -49,62 +63,65 @@ function IndexStatus({ status, building, onBuild }) {
         </>
       )}
     </Box>
-  );
+  )
 }
 
 const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
-  const [selectedLibrary, setSelectedLibrary] = useState('');
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState);
-  const [, setLibraryIndex] = useRecoilState(libraryIndexState);
-  const [indexStatuses, setIndexStatuses] = useState({});
-  const [building, setBuilding] = useState({});
+  const [selectedLibrary, setSelectedLibrary] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
+  const [, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const [indexStatuses, setIndexStatuses] = useState({})
+  const [building, setBuilding] = useState({})
 
   const loadStatuses = useCallback(async () => {
-    const statuses = {};
+    const statuses = {}
     for (const lib of libraries) {
-      statuses[lib] = await window.electronAPI.getIndexStatus(lib);
+      statuses[lib] = await window.electronAPI.getIndexStatus(lib)
     }
-    setIndexStatuses(statuses);
-  }, [libraries]);
+    setIndexStatuses(statuses)
+  }, [libraries])
 
   useEffect(() => {
-    loadStatuses();
-  }, [loadStatuses]);
+    loadStatuses()
+  }, [loadStatuses])
 
   const handleBuildIndex = async (library) => {
-    setBuilding((prev) => ({ ...prev, [library]: true }));
+    setBuilding((prev) => ({ ...prev, [library]: true }))
     try {
-      const result = await window.electronAPI.buildIndex(library);
-      setIndexStatuses((prev) => ({ ...prev, [library]: { exists: true, builtAt: result.builtAt } }));
+      const result = await window.electronAPI.buildIndex(library)
+      setIndexStatuses((prev) => ({
+        ...prev,
+        [library]: { exists: true, builtAt: result.builtAt }
+      }))
       if (library === activeLibrary) {
-        const index = await window.electronAPI.loadIndex(library);
-        setLibraryIndex(index || {});
+        const index = await window.electronAPI.loadIndex(library)
+        setLibraryIndex(index || {})
       }
     } finally {
-      setBuilding((prev) => ({ ...prev, [library]: false }));
+      setBuilding((prev) => ({ ...prev, [library]: false }))
     }
-  };
+  }
 
   const handleSetActive = (library) => {
-    setActiveLibrary(library);
-  };
+    setActiveLibrary(library)
+  }
 
   const handleRemoveClick = () => {
-    setConfirmOpen(true);
-  };
+    setConfirmOpen(true)
+  }
 
   const handleConfirmClose = async (confirmed) => {
-    setConfirmOpen(false);
-    if (!confirmed) return;
-    await window.electronAPI.deleteIndex(selectedLibrary);
+    setConfirmOpen(false)
+    if (!confirmed) return
+    await window.electronAPI.deleteIndex(selectedLibrary)
     if (selectedLibrary === activeLibrary) {
-      setActiveLibrary(null);
-      setLibraryIndex({});
+      setActiveLibrary(null)
+      setLibraryIndex({})
     }
-    onRemoveLibrary(selectedLibrary);
-    setSelectedLibrary('');
-  };
+    onRemoveLibrary(selectedLibrary)
+    setSelectedLibrary('')
+  }
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -157,7 +174,11 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         {libraries.length === 0 && (
           <ListItem>
             <ListItemText
-              primary={<Typography variant="body2" color="text.secondary">No libraries added yet.</Typography>}
+              primary={
+                <Typography variant="body2" color="text.secondary">
+                  No libraries added yet.
+                </Typography>
+              }
             />
           </ListItem>
         )}
@@ -170,7 +191,10 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
             sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-              <Typography variant="body2" sx={{ flex: 1, color: 'text.button', wordBreak: 'break-all' }}>
+              <Typography
+                variant="body2"
+                sx={{ flex: 1, color: 'text.button', wordBreak: 'break-all' }}
+              >
                 {library}
               </Typography>
               {library === activeLibrary && (
@@ -200,11 +224,13 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => handleConfirmClose(false)}>Cancel</Button>
-          <Button onClick={() => handleConfirmClose(true)} color="error">Remove</Button>
+          <Button onClick={() => handleConfirmClose(true)} color="error">
+            Remove
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
-  );
-};
+  )
+}
 
-export default ManageLibraries;
+export default ManageLibraries

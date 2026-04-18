@@ -1,5 +1,5 @@
-import * as React from 'react';
-import { Box, Typography } from '@mui/material';
+import * as React from 'react'
+import { Box, Typography } from '@mui/material'
 
 function HelpersPage() {
   return (
@@ -8,7 +8,7 @@ function HelpersPage() {
         Welcome to the Helpers
       </Typography>
     </Box>
-  );
+  )
 }
 
-export default HelpersPage;
+export default HelpersPage

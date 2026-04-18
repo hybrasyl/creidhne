@@ -24,9 +24,9 @@ const FRAMES_PER_EPF = 266
 // using a specific palette. Tweak if this turns out to be wrong for any
 // subset. PALETTE_ARCHIVE may differ from EPF_ARCHIVE (e.g., gui*.pal lives
 // in setoa.dat, used across the client's GUI surface).
-const PALETTE_ARCHIVE      = 'setoa.dat'
+const PALETTE_ARCHIVE = 'setoa.dat'
 const ICON_PALETTE_PATTERN = 'gui'
-export const ICON_PALETTE_NUMBER = 6   // gui06.pal — confirmed correct for spell + skill icons
+export const ICON_PALETTE_NUMBER = 6 // gui06.pal — confirmed correct for spell + skill icons
 
 // Castable.book → icon type. CastableEditor passes `book` straight through.
 export function typeFromBook(book) {
@@ -34,7 +34,9 @@ export function typeFromBook(book) {
   return String(book).includes('Spell') ? 'spell' : 'skill'
 }
 
-function epfPattern(type) { return type === 'spell' ? 'spell' : 'skill' }
+function epfPattern(type) {
+  return type === 'spell' ? 'spell' : 'skill'
+}
 
 export function resolveIcon(id) {
   const n = Number(id)
@@ -46,9 +48,9 @@ export function resolveIcon(id) {
 
 // Caches keyed so switching type / clientPath is cheap.
 const paletteCache = new Map() // clientPath → Palette (shared across skill + spell)
-const epfMapCache  = new Map() // `${clientPath}|${type}` → Map<epfNum, EpfFile>
-const bitmapCache  = new Map() // `${clientPath}|${type}|${id}` → ImageBitmap
-const indexCache   = new Map() // `${clientPath}|${type}` → { total, visibleIds }
+const epfMapCache = new Map() // `${clientPath}|${type}` → Map<epfNum, EpfFile>
+const bitmapCache = new Map() // `${clientPath}|${type}|${id}` → ImageBitmap
+const indexCache = new Map() // `${clientPath}|${type}` → { total, visibleIds }
 
 function isFrameBlank(frame) {
   if (!frame || !frame.data || frame.data.length === 0) return true
@@ -67,10 +69,12 @@ async function getIconPalettes(clientPath) {
   const archive = await loadArchive(clientPath, PALETTE_ARCHIVE)
   const palettes = Palette.fromArchive(ICON_PALETTE_PATTERN, archive)
   paletteCache.set(clientPath, palettes)
-  // eslint-disable-next-line no-console
+
   console.log(
     `[iconData] loaded ${palettes.size} ${ICON_PALETTE_PATTERN}*.pal palettes from ${PALETTE_ARCHIVE}:`,
-    `[${Array.from(palettes.keys()).sort((a, b) => a - b).join(',')}]`
+    `[${Array.from(palettes.keys())
+      .sort((a, b) => a - b)
+      .join(',')}]`
   )
   return palettes
 }
@@ -107,7 +111,7 @@ async function getEpfMap(clientPath, type) {
     foundNums.push(n)
   }
   foundNums.sort((a, b) => a - b)
-  // eslint-disable-next-line no-console
+
   console.log(`[iconData] loaded ${map.size} ${type} EPFs: [${foundNums.join(',')}]`)
   epfMapCache.set(key, map)
   return map
@@ -170,7 +174,11 @@ export async function getIconBitmap(clientPath, type, id, paletteNumber) {
 
 export function clearIconCache() {
   for (const bmp of bitmapCache.values()) {
-    try { bmp.close?.() } catch { /* ignore */ }
+    try {
+      bmp.close?.()
+    } catch {
+      /* ignore */
+    }
   }
   bitmapCache.clear()
   epfMapCache.clear()
@@ -184,12 +192,21 @@ export function useIconIndex(type) {
   const clientPath = useRecoilValue(clientPathState)
   const [result, setResult] = useState(() => indexCache.get(`${clientPath}|${type}`) || null)
   useEffect(() => {
-    if (!clientPath || !type) { setResult(null); return undefined }
+    if (!clientPath || !type) {
+      setResult(null)
+      return undefined
+    }
     let cancelled = false
     getIconIndex(clientPath, type)
-      .then((r) => { if (!cancelled) setResult(r) })
-      .catch(() => { if (!cancelled) setResult(null) })
-    return () => { cancelled = true }
+      .then((r) => {
+        if (!cancelled) setResult(r)
+      })
+      .catch(() => {
+        if (!cancelled) setResult(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [clientPath, type])
   return result
 }

@@ -309,7 +309,11 @@ describe('Field coverage — all fields', () => {
     const item = await parseItemXml(FULL_XML)
     const sr = item.properties.restrictions.slotRestrictions
     expect(sr).toHaveLength(1)
-    expect(sr[0]).toEqual({ type: 'ItemRequired', slot: 'Weapon', message: 'Requires a weapon equipped' })
+    expect(sr[0]).toEqual({
+      type: 'ItemRequired',
+      slot: 'Weapon',
+      message: 'Requires a weapon equipped'
+    })
   })
 
   it('parses motions', async () => {
@@ -481,22 +485,40 @@ describe('Output structure', () => {
     _diagnostics: { unknownStatKeys: [] },
     properties: {
       tags: ['weapon'],
-      appearance: { sprite: '50', equipSprite: '51', displaySprite: '', bodyStyle: '', color: 'Blue', hideBoots: false },
+      appearance: {
+        sprite: '50',
+        equipSprite: '51',
+        displaySprite: '',
+        bodyStyle: '',
+        color: 'Blue',
+        hideBoots: false
+      },
       stackable: { max: '1' },
       physical: { value: '200', weight: '5', durability: '500' },
       categories: [{ name: 'Blade', unique: false }],
       equipment: { slot: 'Weapon', weaponType: 'OneHand' },
-      statModifiers: { rows: [{ key: 'BonusStr', value: '1' }], elementalModifiers: [], unknownStatKeys: [] },
+      statModifiers: {
+        rows: [{ key: 'BonusStr', value: '1' }],
+        elementalModifiers: [],
+        unknownStatKeys: []
+      },
       flags: ['Bound'],
       variants: { groups: ['Short Variants'], names: [] },
       vendor: { shopTab: 'Blades', description: 'A short sword.' },
       damage: { smallMin: '3', smallMax: '6', largeMin: '5', largeMax: '9' },
       use: null,
-      restrictions: { level: { min: '1', max: '99' }, ab: null, class: 'All', gender: 'Neutral', castables: [], slotRestrictions: [] },
+      restrictions: {
+        level: { min: '1', max: '99' },
+        ab: null,
+        class: 'All',
+        gender: 'Neutral',
+        castables: [],
+        slotRestrictions: []
+      },
       motions: [{ id: '5', speed: '15' }],
       castModifiers: [],
-      procs: [{ type: 'OnUse', castable: '', script: 'short_sword', chance: '50' }],
-    },
+      procs: [{ type: 'OnUse', castable: '', script: 'short_sword', chance: '50' }]
+    }
   }
 
   it('root element is Item', async () => {

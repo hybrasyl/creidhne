@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { join } from 'path'
 
 const mockFs = {
-  mkdir: vi.fn(),
+  mkdir: vi.fn()
 }
 
 vi.mock('fs', () => ({ promises: mockFs }))
@@ -23,17 +23,17 @@ describe('getCreidhnePath', () => {
 
 describe('getCreidhneFilePath', () => {
   it('joins a filename under the .creidhne directory', () => {
-    expect(getCreidhneFilePath('/worlds/test/xml', 'index.json'))
-      .toBe(join('/worlds/test/xml', '..', '.creidhne', 'index.json'))
+    expect(getCreidhneFilePath('/worlds/test/xml', 'index.json')).toBe(
+      join('/worlds/test/xml', '..', '.creidhne', 'index.json')
+    )
   })
 })
 
 describe('ensureCreidhneDir', () => {
   it('calls mkdir recursively at the .creidhne path', async () => {
     await ensureCreidhneDir('/worlds/test/xml')
-    expect(mockFs.mkdir).toHaveBeenCalledWith(
-      getCreidhnePath('/worlds/test/xml'),
-      { recursive: true },
-    )
+    expect(mockFs.mkdir).toHaveBeenCalledWith(getCreidhnePath('/worlds/test/xml'), {
+      recursive: true
+    })
   })
 })

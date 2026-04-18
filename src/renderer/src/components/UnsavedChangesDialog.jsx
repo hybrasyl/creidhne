@@ -1,7 +1,12 @@
-import React from 'react';
+import React from 'react'
 import {
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
-} from '@mui/material';
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button
+} from '@mui/material'
 
 function UnsavedChangesDialog({ open, label, onSave, onDiscard, onCancel }) {
   return (
@@ -9,17 +14,21 @@ function UnsavedChangesDialog({ open, label, onSave, onDiscard, onCancel }) {
       <DialogTitle>Unsaved Changes</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          {label ? `"${label}" has unsaved changes.` : 'You have unsaved changes.'}{' '}
-          Save before continuing?
+          {label ? `"${label}" has unsaved changes.` : 'You have unsaved changes.'} Save before
+          continuing?
         </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>Cancel</Button>
-        <Button onClick={onDiscard} color="error">Discard</Button>
-        <Button onClick={onSave} variant="contained">Save</Button>
+        <Button onClick={onDiscard} color="error">
+          Discard
+        </Button>
+        <Button onClick={onSave} variant="contained">
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
-export default UnsavedChangesDialog;
+export default UnsavedChangesDialog

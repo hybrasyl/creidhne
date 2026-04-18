@@ -8,11 +8,7 @@
 
 import { utilityProcess, BrowserWindow } from 'electron'
 import { join } from 'path'
-import {
-  loadIndex,
-  getIndexStatus,
-  deleteIndex,
-} from '@eriscorp/hybindex-ts'
+import { loadIndex, getIndexStatus, deleteIndex } from '@eriscorp/hybindex-ts'
 
 const WORKER_PATH = join(__dirname, 'indexWorker.js')
 const PROGRESS_CHANNEL = 'index:build-progress'

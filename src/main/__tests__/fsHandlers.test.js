@@ -2,17 +2,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { join } from 'path'
 
 const mockFs = {
-  readdir:  vi.fn(),
+  readdir: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
-  access:   vi.fn(),
-  mkdir:    vi.fn(),
-  rename:   vi.fn(),
+  access: vi.fn(),
+  mkdir: vi.fn(),
+  rename: vi.fn()
 }
 
 vi.mock('fs', () => ({ promises: mockFs }))
 
-const { listDir, readFile, writeFile, moveFile, archiveFile, readBinaryFile, checkClientPath, KNOWN_DAT_FILES } = await import('../fsHandlers.js')
+const {
+  listDir,
+  readFile,
+  writeFile,
+  moveFile,
+  archiveFile,
+  readBinaryFile,
+  checkClientPath,
+  KNOWN_DAT_FILES
+} = await import('../fsHandlers.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -26,14 +35,12 @@ beforeEach(() => {
 describe('listDir', () => {
   it('returns only .xml files with name and full path', async () => {
     mockFs.readdir.mockResolvedValue([
-      { isFile: () => true,  name: 'item.xml' },
-      { isFile: () => true,  name: 'notes.txt' },
-      { isFile: () => false, name: 'subdir' },
+      { isFile: () => true, name: 'item.xml' },
+      { isFile: () => true, name: 'notes.txt' },
+      { isFile: () => false, name: 'subdir' }
     ])
     const result = await listDir('/world/items')
-    expect(result).toEqual([
-      { name: 'item.xml', path: join('/world/items', 'item.xml') },
-    ])
+    expect(result).toEqual([{ name: 'item.xml', path: join('/world/items', 'item.xml') }])
   })
 
   it('returns empty array when directory does not exist', async () => {
@@ -135,7 +142,8 @@ describe('checkClientPath', () => {
   it('returns yellow when some files exist and some are missing', async () => {
     // First file present, the rest missing
     mockFs.access.mockImplementation((path) =>
-      path.endsWith(KNOWN_DAT_FILES[0].rel.replace(/\\/g, '/')) || path.endsWith(KNOWN_DAT_FILES[0].rel)
+      path.endsWith(KNOWN_DAT_FILES[0].rel.replace(/\\/g, '/')) ||
+      path.endsWith(KNOWN_DAT_FILES[0].rel)
         ? Promise.resolve()
         : Promise.reject(new Error('ENOENT'))
     )
@@ -171,7 +179,7 @@ describe('archiveFile', () => {
 
   it('appends _1 suffix when filename already exists in archive', async () => {
     mockFs.access
-      .mockResolvedValueOnce(undefined)      // sword.xml exists
+      .mockResolvedValueOnce(undefined) // sword.xml exists
       .mockRejectedValueOnce(new Error('ENOENT')) // sword_1.xml is free
     const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
     expect(mockFs.rename).toHaveBeenCalledWith(
@@ -183,9 +191,9 @@ describe('archiveFile', () => {
 
   it('increments counter until a free name is found', async () => {
     mockFs.access
-      .mockResolvedValueOnce(undefined)           // sword.xml exists
-      .mockResolvedValueOnce(undefined)           // sword_1.xml exists
-      .mockResolvedValueOnce(undefined)           // sword_2.xml exists
+      .mockResolvedValueOnce(undefined) // sword.xml exists
+      .mockResolvedValueOnce(undefined) // sword_1.xml exists
+      .mockResolvedValueOnce(undefined) // sword_2.xml exists
       .mockRejectedValueOnce(new Error('ENOENT')) // sword_3.xml is free
     const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
     expect(result).toEqual({ success: true, archivedAs: 'sword_3.xml' })
@@ -198,9 +206,7 @@ describe('archiveFile', () => {
   })
 
   it('preserves .xml extension in suffixed name', async () => {
-    mockFs.access
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('ENOENT'))
+    mockFs.access.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('ENOENT'))
     const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
     expect(result.archivedAs).toMatch(/\.xml$/)
   })

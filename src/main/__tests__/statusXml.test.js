@@ -177,14 +177,22 @@ describe('Field coverage — all fields', () => {
 
   it('parses onApply messages target and source', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onApply.messages.find(m => m.type === 'target')).toEqual({ type: 'target', text: 'You feel poisoned!', key: '' })
-    expect(s.onApply.messages.find(m => m.type === 'source')).toEqual({ type: 'source', text: 'You have poisoned your target.', key: '' })
+    expect(s.onApply.messages.find((m) => m.type === 'target')).toEqual({
+      type: 'target',
+      text: 'You feel poisoned!',
+      key: ''
+    })
+    expect(s.onApply.messages.find((m) => m.type === 'source')).toEqual({
+      type: 'source',
+      text: 'You have poisoned your target.',
+      key: ''
+    })
   })
 
   it('parses onApply messages absent channels are not present in the array', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onApply.messages.find(m => m.type === 'say')).toBeUndefined()
-    expect(s.onApply.messages.find(m => m.type === 'shout')).toBeUndefined()
+    expect(s.onApply.messages.find((m) => m.type === 'say')).toBeUndefined()
+    expect(s.onApply.messages.find((m) => m.type === 'shout')).toBeUndefined()
   })
 
   it('parses onApply heal in simple mode', async () => {
@@ -231,20 +239,37 @@ describe('Field coverage — all fields', () => {
 
   it('parses onRemove handler function and scriptSource', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onRemove.handler).toEqual({ function: 'onPoisonRemoved', scriptSource: 'poison_handlers.lua' })
+    expect(s.onRemove.handler).toEqual({
+      function: 'onPoisonRemoved',
+      scriptSource: 'poison_handlers.lua'
+    })
   })
 
   // --- onExpire ---
 
   it('parses onExpire messages say and group', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onExpire.messages.find(m => m.type === 'say')).toEqual({ type: 'say', text: 'The poison has worn off.', key: '' })
-    expect(s.onExpire.messages.find(m => m.type === 'group')).toEqual({ type: 'group', text: 'Your group member recovered from poison.', key: '' })
+    expect(s.onExpire.messages.find((m) => m.type === 'say')).toEqual({
+      type: 'say',
+      text: 'The poison has worn off.',
+      key: ''
+    })
+    expect(s.onExpire.messages.find((m) => m.type === 'group')).toEqual({
+      type: 'group',
+      text: 'Your group member recovered from poison.',
+      key: ''
+    })
   })
 
   it('parses onExpire heal in formula mode', async () => {
     const s = await parseStatusXml(FULL_XML)
-    expect(s.onExpire.heal).toEqual({ kind: 'Formula', value: '', min: '', max: '', formula: 'maxHp * 0.1' })
+    expect(s.onExpire.heal).toEqual({
+      kind: 'Formula',
+      value: '',
+      min: '',
+      max: '',
+      formula: 'maxHp * 0.1'
+    })
   })
 
   it('parses heal and damage when both Simple and Formula children are present', async () => {
@@ -330,7 +355,15 @@ describe('Field coverage — minimal', () => {
 
   it('defaults all four effect blocks with all fields null', async () => {
     const s = await parseStatusXml(MINIMAL_XML)
-    const nullBlock = { animations: null, messages: null, heal: null, damage: null, statModifiers: null, conditions: null, handler: null }
+    const nullBlock = {
+      animations: null,
+      messages: null,
+      heal: null,
+      damage: null,
+      statModifiers: null,
+      conditions: null,
+      handler: null
+    }
     expect(s.onApply).toEqual(nullBlock)
     expect(s.onTick).toEqual(nullBlock)
     expect(s.onRemove).toEqual(nullBlock)
@@ -359,25 +392,56 @@ describe('Output structure', () => {
     categories: ['Debuff'],
     castRestrictions: [{ type: 'use-castable', value: 'HealSpell' }],
     onApply: {
-      animations: { targetId: '50', targetSpeed: '30', spellEffectId: '', spellEffectSpeed: '', soundId: '7' },
+      animations: {
+        targetId: '50',
+        targetSpeed: '30',
+        spellEffectId: '',
+        spellEffectSpeed: '',
+        soundId: '7'
+      },
       messages: [{ type: 'target', text: 'You are burning!', key: '' }],
       heal: null,
       damage: null,
       statModifiers: null,
       conditions: null,
-      handler: null,
+      handler: null
     },
     onTick: {
       animations: null,
       messages: null,
       heal: null,
-      damage: { element: 'Fire', type: 'Magical', flags: [], kind: 'Static', value: '5', min: '', max: '', formula: '' },
+      damage: {
+        element: 'Fire',
+        type: 'Magical',
+        flags: [],
+        kind: 'Static',
+        value: '5',
+        min: '',
+        max: '',
+        formula: ''
+      },
       statModifiers: { rows: [{ key: 'BonusStr', value: '1' }], elementalModifiers: [] },
       conditions: null,
-      handler: null,
+      handler: null
     },
-    onRemove: { animations: null, messages: null, heal: null, damage: null, statModifiers: null, conditions: { set: ['Burning'], unset: [] }, handler: null },
-    onExpire: { animations: null, messages: null, heal: null, damage: null, statModifiers: null, conditions: null, handler: { function: 'onBurnExpire', scriptSource: '' } },
+    onRemove: {
+      animations: null,
+      messages: null,
+      heal: null,
+      damage: null,
+      statModifiers: null,
+      conditions: { set: ['Burning'], unset: [] },
+      handler: null
+    },
+    onExpire: {
+      animations: null,
+      messages: null,
+      heal: null,
+      damage: null,
+      statModifiers: null,
+      conditions: null,
+      handler: { function: 'onBurnExpire', scriptSource: '' }
+    }
   }
 
   it('root element is Status', async () => {
@@ -437,7 +501,10 @@ describe('Output structure', () => {
   })
 
   it('OnTick/Damage Element attribute is omitted when None', async () => {
-    const noElem = { ...status, onTick: { ...status.onTick, damage: { ...status.onTick.damage, element: 'None' } } }
+    const noElem = {
+      ...status,
+      onTick: { ...status.onTick, damage: { ...status.onTick.damage, element: 'None' } }
+    }
     const parsed = await parseRaw(serializeStatusXml(noElem))
     const dmg = parsed.Status.Effects?.[0]?.OnTick?.[0]?.Damage?.[0]
     expect(dmg.$?.Element).toBeUndefined()

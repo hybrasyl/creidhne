@@ -4,7 +4,10 @@ const TIMEOUT_MS = 10_000
 function parseVersion(raw) {
   if (!raw) return null
   const cleaned = String(raw).trim().replace(/^v/i, '')
-  const parts = cleaned.split('-')[0].split('.').map((p) => parseInt(p, 10))
+  const parts = cleaned
+    .split('-')[0]
+    .split('.')
+    .map((p) => parseInt(p, 10))
   if (parts.length < 1 || parts.some((n) => Number.isNaN(n))) return null
   while (parts.length < 3) parts.push(0)
   return parts
@@ -30,19 +33,31 @@ export async function checkForUpdates(currentVersion) {
     const res = await fetch(RELEASES_URL, {
       headers: {
         'User-Agent': 'creidhne-update-check',
-        Accept: 'application/vnd.github+json',
+        Accept: 'application/vnd.github+json'
       },
-      signal: controller.signal,
+      signal: controller.signal
     })
     if (res.status === 404) {
-      return { ok: true, updateAvailable: false, currentVersion, latestVersion: null, reason: 'no-releases' }
+      return {
+        ok: true,
+        updateAvailable: false,
+        currentVersion,
+        latestVersion: null,
+        reason: 'no-releases'
+      }
     }
     if (!res.ok) {
       return { ok: false, error: `GitHub responded with ${res.status}` }
     }
     const data = await res.json()
     if (data.draft || data.prerelease) {
-      return { ok: true, updateAvailable: false, currentVersion, latestVersion: null, reason: 'prerelease-only' }
+      return {
+        ok: true,
+        updateAvailable: false,
+        currentVersion,
+        latestVersion: null,
+        reason: 'prerelease-only'
+      }
     }
     const latestVersion = data.tag_name
     return {
@@ -52,10 +67,10 @@ export async function checkForUpdates(currentVersion) {
       latestVersion,
       releaseUrl: data.html_url,
       releaseName: data.name,
-      releaseNotes: data.body,
+      releaseNotes: data.body
     }
   } catch (err) {
-    return { ok: false, error: err.name === 'AbortError' ? 'timeout' : (err.message || String(err)) }
+    return { ok: false, error: err.name === 'AbortError' ? 'timeout' : err.message || String(err) }
   } finally {
     clearTimeout(timer)
   }

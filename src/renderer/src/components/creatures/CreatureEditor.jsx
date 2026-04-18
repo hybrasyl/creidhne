@@ -1,53 +1,88 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
-  Box, Button, Typography, Divider, TextField, IconButton,
-  Paper, Autocomplete, Collapse, FormControlLabel, Checkbox, Snackbar, Alert,
-} from '@mui/material';
-import ConstantAutocomplete from '../shared/ConstantAutocomplete';
-import EditorHeader from '../shared/EditorHeader';
-import SoundPicker from '../shared/SoundPicker';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { useRecoilValue } from 'recoil';
-import { libraryIndexState } from '../../recoil/atoms';
-import CommentField from '../shared/CommentField';
-import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData';
-import SpritePickerDialog from '../shared/SpritePickerDialog';
-import GridViewIcon from '@mui/icons-material/GridView';
+  Box,
+  Button,
+  Typography,
+  Divider,
+  TextField,
+  IconButton,
+  Paper,
+  Autocomplete,
+  Collapse,
+  FormControlLabel,
+  Checkbox,
+  Snackbar,
+  Alert
+} from '@mui/material'
+import ConstantAutocomplete from '../shared/ConstantAutocomplete'
+import EditorHeader from '../shared/EditorHeader'
+import SoundPicker from '../shared/SoundPicker'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import { useRecoilValue } from 'recoil'
+import { libraryIndexState } from '../../recoil/atoms'
+import CommentField from '../shared/CommentField'
+import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData'
+import SpritePickerDialog from '../shared/SpritePickerDialog'
+import GridViewIcon from '@mui/icons-material/GridView'
 
 function computeCreatureFilename(prefix, name) {
-  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '');
-  if (!safe) return '';
-  const p = (prefix || '').trim().toLowerCase().replace(/\s+/g, '_');
-  return p ? `${p}_${safe}.xml` : `${safe}.xml`;
+  const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '')
+  if (!safe) return ''
+  const p = (prefix || '').trim().toLowerCase().replace(/\s+/g, '_')
+  return p ? `${p}_${safe}.xml` : `${safe}.xml`
 }
 
-
 const DEFAULT_HOSTILITY = {
-  players: false, playerExceptCookie: '', playerOnlyCookie: '',
-  monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '',
-};
+  players: false,
+  playerExceptCookie: '',
+  playerOnlyCookie: '',
+  monsters: false,
+  monsterExceptCookie: '',
+  monsterOnlyCookie: ''
+}
 
 const makeDefaultSubtype = () => ({
-  name: '', sprite: '', behaviorSet: '', minDmg: '', maxDmg: '', assailSound: '',
-  description: '', loot: [], hostility: { ...DEFAULT_HOSTILITY }, cookies: [],
-});
+  name: '',
+  sprite: '',
+  behaviorSet: '',
+  minDmg: '',
+  maxDmg: '',
+  assailSound: '',
+  description: '',
+  loot: [],
+  hostility: { ...DEFAULT_HOSTILITY },
+  cookies: []
+})
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
 function Section({ title, open, onToggle, onDelete, children }) {
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
       <Box
-        sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, cursor: 'pointer', userSelect: 'none' }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          px: 2,
+          py: 1,
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
         onClick={onToggle}
       >
-        <Typography variant="subtitle2" sx={{ flex: 1 }}>{title}</Typography>
+        <Typography variant="subtitle2" sx={{ flex: 1 }}>
+          {title}
+        </Typography>
         {onDelete !== undefined && (
           <IconButton
-            size="small" color="error"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            size="small"
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
             sx={{ mr: 0.5 }}
           >
             <DeleteIcon fontSize="small" />
@@ -60,44 +95,55 @@ function Section({ title, open, onToggle, onDelete, children }) {
         <Box sx={{ p: 2 }}>{children}</Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── BehaviorSet autocomplete ──────────────────────────────────────────────────
 function BehaviorSetPicker({ value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState);
-  const options = libraryIndex.creaturebehaviorsets || [];
+  const libraryIndex = useRecoilValue(libraryIndexState)
+  const options = libraryIndex.creaturebehaviorsets || []
   return (
     <Autocomplete
-      freeSolo options={options} value={value}
-      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      freeSolo
+      options={options}
+      value={value}
+      onInputChange={(_, val, reason) => {
+        if (reason === 'input') onChange(val)
+      }}
       onChange={(_, val) => onChange(val ?? '')}
-      size="small" sx={sx}
+      size="small"
+      sx={sx}
       renderInput={(params) => <TextField {...params} label="Behavior Set" />}
     />
-  );
+  )
 }
 
 // ── LootSet autocomplete ──────────────────────────────────────────────────────
 function LootSetPicker({ value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState);
-  const options = libraryIndex.lootsets || [];
+  const libraryIndex = useRecoilValue(libraryIndexState)
+  const options = libraryIndex.lootsets || []
   return (
     <Autocomplete
-      freeSolo options={options} value={value}
-      onInputChange={(_, val, reason) => { if (reason === 'input') onChange(val); }}
+      freeSolo
+      options={options}
+      value={value}
+      onInputChange={(_, val, reason) => {
+        if (reason === 'input') onChange(val)
+      }}
       onChange={(_, val) => onChange(val ?? '')}
-      size="small" sx={sx}
+      size="small"
+      sx={sx}
       renderInput={(params) => <TextField {...params} label="Loot Set" />}
     />
-  );
+  )
 }
 
 // ── Loot section content ──────────────────────────────────────────────────────
 function LootContent({ loot, onChange }) {
-  const add = () => onChange([...loot, { name: '', rolls: '', chance: '' }]);
-  const set = (i, field, val) => onChange(loot.map((l, idx) => idx === i ? { ...l, [field]: val } : l));
-  const remove = (i) => onChange(loot.filter((_, idx) => idx !== i));
+  const add = () => onChange([...loot, { name: '', rolls: '', chance: '' }])
+  const set = (i, field, val) =>
+    onChange(loot.map((l, idx) => (idx === i ? { ...l, [field]: val } : l)))
+  const remove = (i) => onChange(loot.filter((_, idx) => idx !== i))
 
   return (
     <>
@@ -109,13 +155,17 @@ function LootContent({ loot, onChange }) {
             sx={{ flex: 2, minWidth: 160 }}
           />
           <TextField
-            label="Rolls" size="small" sx={{ width: 80 }}
+            label="Rolls"
+            size="small"
+            sx={{ width: 80 }}
             value={entry.rolls}
             onChange={(e) => set(i, 'rolls', e.target.value)}
             inputProps={{ maxLength: 16 }}
           />
           <TextField
-            label="Chance" size="small" sx={{ width: 100 }}
+            label="Chance"
+            size="small"
+            sx={{ width: 100 }}
             value={entry.chance}
             onChange={(e) => set(i, 'chance', e.target.value)}
             inputProps={{ maxLength: 16 }}
@@ -125,14 +175,16 @@ function LootContent({ loot, onChange }) {
           </IconButton>
         </Box>
       ))}
-      <Button size="small" startIcon={<AddIcon />} onClick={add}>Add Loot Set</Button>
+      <Button size="small" startIcon={<AddIcon />} onClick={add}>
+        Add Loot Set
+      </Button>
     </>
-  );
+  )
 }
 
 // ── Hostility section content ─────────────────────────────────────────────────
 function HostilityContent({ hostility, onChange }) {
-  const set = (field, val) => onChange({ ...hostility, [field]: val });
+  const set = (field, val) => onChange({ ...hostility, [field]: val })
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -152,13 +204,17 @@ function HostilityContent({ hostility, onChange }) {
         {hostility.players && (
           <>
             <ConstantAutocomplete
-              indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1, minWidth: 140 }}
+              indexKey="cookieNames"
+              label="Except Cookie"
+              sx={{ flex: 1, minWidth: 140 }}
               value={hostility.playerExceptCookie}
               onChange={(val) => set('playerExceptCookie', val)}
               inputProps={{ maxLength: 128 }}
             />
             <ConstantAutocomplete
-              indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1, minWidth: 140 }}
+              indexKey="cookieNames"
+              label="Only Cookie"
+              sx={{ flex: 1, minWidth: 140 }}
               value={hostility.playerOnlyCookie}
               onChange={(val) => set('playerOnlyCookie', val)}
               inputProps={{ maxLength: 128 }}
@@ -182,13 +238,17 @@ function HostilityContent({ hostility, onChange }) {
         {hostility.monsters && (
           <>
             <ConstantAutocomplete
-              indexKey="cookieNames" label="Except Cookie" sx={{ flex: 1, minWidth: 140 }}
+              indexKey="cookieNames"
+              label="Except Cookie"
+              sx={{ flex: 1, minWidth: 140 }}
               value={hostility.monsterExceptCookie}
               onChange={(val) => set('monsterExceptCookie', val)}
               inputProps={{ maxLength: 128 }}
             />
             <ConstantAutocomplete
-              indexKey="cookieNames" label="Only Cookie" sx={{ flex: 1, minWidth: 140 }}
+              indexKey="cookieNames"
+              label="Only Cookie"
+              sx={{ flex: 1, minWidth: 140 }}
               value={hostility.monsterOnlyCookie}
               onChange={(val) => set('monsterOnlyCookie', val)}
               inputProps={{ maxLength: 128 }}
@@ -197,27 +257,32 @@ function HostilityContent({ hostility, onChange }) {
         )}
       </Box>
     </Box>
-  );
+  )
 }
 
 // ── Cookies section content ───────────────────────────────────────────────────
 function CookiesContent({ cookies, onChange }) {
-  const add = () => onChange([...cookies, { name: '', value: '' }]);
-  const set = (i, field, val) => onChange(cookies.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
-  const remove = (i) => onChange(cookies.filter((_, idx) => idx !== i));
+  const add = () => onChange([...cookies, { name: '', value: '' }])
+  const set = (i, field, val) =>
+    onChange(cookies.map((c, idx) => (idx === i ? { ...c, [field]: val } : c)))
+  const remove = (i) => onChange(cookies.filter((_, idx) => idx !== i))
 
   return (
     <>
       {cookies.map((cookie, i) => (
         <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
           <ConstantAutocomplete
-            indexKey="cookieNames" label="Cookie Name" sx={{ flex: 1 }}
+            indexKey="cookieNames"
+            label="Cookie Name"
+            sx={{ flex: 1 }}
             value={cookie.name}
             onChange={(val) => set(i, 'name', val)}
             inputProps={{ maxLength: 128 }}
           />
           <TextField
-            label="Cookie Value" size="small" sx={{ flex: 1 }}
+            label="Cookie Value"
+            size="small"
+            sx={{ flex: 1 }}
             value={cookie.value}
             onChange={(e) => set(i, 'value', e.target.value)}
             inputProps={{ maxLength: 128 }}
@@ -227,38 +292,53 @@ function CookiesContent({ cookies, onChange }) {
           </IconButton>
         </Box>
       ))}
-      <Button size="small" startIcon={<AddIcon />} onClick={add}>Add Cookie</Button>
+      <Button size="small" startIcon={<AddIcon />} onClick={add}>
+        Add Cookie
+      </Button>
     </>
-  );
+  )
 }
 
 // ── Subtype accordion ─────────────────────────────────────────────────────────
 function SubtypeAccordion({ data, index, onChange, onRemove }) {
-  const [open, setOpen] = useState(true);
-  const [openLoot, setOpenLoot] = useState(false);
-  const [openHostility, setOpenHostility] = useState(false);
-  const [openCookies, setOpenCookies] = useState(false);
-  const [spritePickerOpen, setSpritePickerOpen] = useState(false);
+  const [open, setOpen] = useState(true)
+  const [openLoot, setOpenLoot] = useState(false)
+  const [openHostility, setOpenHostility] = useState(false)
+  const [openCookies, setOpenCookies] = useState(false)
+  const [spritePickerOpen, setSpritePickerOpen] = useState(false)
 
-  const set = (field, val) => onChange({ ...data, [field]: val });
+  const set = (field, val) => onChange({ ...data, [field]: val })
 
-  const SPRITE_PREVIEW = 96;
-  const spritePreviewKey = keyFromSprite(data.sprite);
-  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null;
-  const spritePreviewFrame = spritePreviewMeta ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW) : null;
+  const SPRITE_PREVIEW = 96
+  const spritePreviewKey = keyFromSprite(data.sprite)
+  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null
+  const spritePreviewFrame = spritePreviewMeta
+    ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW)
+    : null
 
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
       <Box
-        sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, cursor: 'pointer', userSelect: 'none' }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          px: 2,
+          py: 1,
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
         onClick={() => setOpen((v) => !v)}
       >
         <Typography variant="subtitle2" sx={{ flex: 1 }}>
           {data.name || `Subtype ${index + 1}`}
         </Typography>
         <IconButton
-          size="small" color="error"
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          size="small"
+          color="error"
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
           sx={{ mr: 0.5 }}
         >
           <DeleteIcon fontSize="small" />
@@ -273,15 +353,51 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
               {/* Left: sprite preview + browse */}
-              <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: SPRITE_PREVIEW, height: SPRITE_PREVIEW, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                <Box
+                  sx={{
+                    width: SPRITE_PREVIEW,
+                    height: SPRITE_PREVIEW,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    bgcolor: 'action.hover'
+                  }}
+                >
                   {spritePreviewFrame && (
-                    <Box sx={{ width: spritePreviewFrame.clipW, height: spritePreviewFrame.clipH, overflow: 'hidden', flexShrink: 0 }}>
-                      <img src={spriteUrl(spritePreviewKey)} alt={spritePreviewKey} draggable={false} style={spritePreviewFrame.imgStyle} />
+                    <Box
+                      sx={{
+                        width: spritePreviewFrame.clipW,
+                        height: spritePreviewFrame.clipH,
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}
+                    >
+                      <img
+                        src={spriteUrl(spritePreviewKey)}
+                        alt={spritePreviewKey}
+                        draggable={false}
+                        style={spritePreviewFrame.imgStyle}
+                      />
                     </Box>
                   )}
                 </Box>
-                <Button size="small" startIcon={<GridViewIcon />} onClick={() => setSpritePickerOpen(true)}>
+                <Button
+                  size="small"
+                  startIcon={<GridViewIcon />}
+                  onClick={() => setSpritePickerOpen(true)}
+                >
                   Browse
                 </Button>
               </Box>
@@ -290,7 +406,10 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                 {/* Row 1: Name | Behavior Set */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
-                    label="Name" required size="small" sx={{ flex: 1 }}
+                    label="Name"
+                    required
+                    size="small"
+                    sx={{ flex: 1 }}
                     value={data.name}
                     onChange={(e) => set('name', e.target.value)}
                     inputProps={{ maxLength: 255 }}
@@ -304,19 +423,26 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                 {/* Row 2: Sprite # | Min Damage | Max Damage | Assail Sound */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
-                    label="Sprite" type="number" size="small" sx={{ width: 100 }}
+                    label="Sprite"
+                    type="number"
+                    size="small"
+                    sx={{ width: 100 }}
                     value={data.sprite}
                     onChange={(e) => set('sprite', e.target.value)}
                     inputProps={{ min: 1, max: 9999 }}
                   />
                   <TextField
-                    label="Min Damage" size="small" sx={{ width: 120 }}
+                    label="Min Damage"
+                    size="small"
+                    sx={{ width: 120 }}
                     value={data.minDmg}
                     onChange={(e) => set('minDmg', e.target.value)}
                     inputProps={{ maxLength: 32 }}
                   />
                   <TextField
-                    label="Max Damage" size="small" sx={{ width: 120 }}
+                    label="Max Damage"
+                    size="small"
+                    sx={{ width: 120 }}
                     value={data.maxDmg}
                     onChange={(e) => set('maxDmg', e.target.value)}
                     inputProps={{ maxLength: 32 }}
@@ -330,7 +456,10 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                 </Box>
                 {/* Row 3: Description */}
                 <TextField
-                  label="Description" size="small" multiline minRows={2}
+                  label="Description"
+                  size="small"
+                  multiline
+                  minRows={2}
                   value={data.description}
                   onChange={(e) => set('description', e.target.value)}
                   inputProps={{ maxLength: 1024 }}
@@ -343,8 +472,8 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
             value={data.sprite}
             onClose={() => setSpritePickerOpen(false)}
             onChange={(key) => {
-              set('sprite', String(parseInt(key.replace('monster', ''), 10)));
-              setSpritePickerOpen(false);
+              set('sprite', String(parseInt(key.replace('monster', ''), 10)))
+              setSpritePickerOpen(false)
             }}
           />
 
@@ -352,8 +481,15 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
           <Section title="Loot" open={openLoot} onToggle={() => setOpenLoot((v) => !v)}>
             <LootContent loot={data.loot} onChange={(val) => set('loot', val)} />
           </Section>
-          <Section title="Hostility" open={openHostility} onToggle={() => setOpenHostility((v) => !v)}>
-            <HostilityContent hostility={data.hostility} onChange={(val) => set('hostility', val)} />
+          <Section
+            title="Hostility"
+            open={openHostility}
+            onToggle={() => setOpenHostility((v) => !v)}
+          >
+            <HostilityContent
+              hostility={data.hostility}
+              onChange={(val) => set('hostility', val)}
+            />
           </Section>
           <Section title="Cookies" open={openCookies} onToggle={() => setOpenCookies((v) => !v)}>
             <CookiesContent cookies={data.cookies} onChange={(val) => set('cookies', val)} />
@@ -361,95 +497,126 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
-function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onSave, onArchive, onUnarchive, onDirtyChange, saveRef }) {
-  const libraryIndex = useRecoilValue(libraryIndexState);
-  const [data, setData] = useState(creature);
-  const [fileName, setFileName] = useState(initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name));
-  const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName);
+function CreatureEditor({
+  creature,
+  initialFileName,
+  isArchived,
+  isExisting,
+  onSave,
+  onArchive,
+  onUnarchive,
+  onDirtyChange,
+  saveRef
+}) {
+  const libraryIndex = useRecoilValue(libraryIndexState)
+  const [data, setData] = useState(creature)
+  const [fileName, setFileName] = useState(
+    initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name)
+  )
+  const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
 
-  const [openLoot, setOpenLoot] = useState(false);
-  const [openHostility, setOpenHostility] = useState(false);
-  const [openCookies, setOpenCookies] = useState(false);
-  const [spritePickerOpen, setSpritePickerOpen] = useState(false);
+  const [openLoot, setOpenLoot] = useState(false)
+  const [openHostility, setOpenHostility] = useState(false)
+  const [openCookies, setOpenCookies] = useState(false)
+  const [spritePickerOpen, setSpritePickerOpen] = useState(false)
 
-  const isDirtyRef = useRef(false);
+  const isDirtyRef = useRef(false)
 
   // ── Duplicate detection ────────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim();
-    if (!name) return null;
-    const originalName = isExisting ? (creature.name || '') : '';
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null;
+    const name = (data.name || '').trim()
+    if (!name) return null
+    const originalName = isExisting ? creature.name || '' : ''
+    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
 
-    const activeNames = libraryIndex?.creatures || [];
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active';
+    const activeNames = libraryIndex?.creatures || []
+    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
 
-    const archivedNames = libraryIndex?.archivedCreatures || [];
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived';
+    const archivedNames = libraryIndex?.archivedCreatures || []
+    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
 
-    return null;
-  }, [data.name, libraryIndex, isExisting, creature.name]);
+    return null
+  }, [data.name, libraryIndex, isExisting, creature.name])
 
-  const [dupSnack, setDupSnack] = useState(null);
-  const handleNameBlur = () => { if (dupStatus) setDupSnack(dupStatus); };
+  const [dupSnack, setDupSnack] = useState(null)
+  const handleNameBlur = () => {
+    if (dupStatus) setDupSnack(dupStatus)
+  }
 
   useEffect(() => {
-    setData(creature);
-    setFileName(initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name));
-    setFileNameEdited(!!initialFileName);
-    setOpenLoot(false);
-    setOpenHostility(false);
-    setOpenCookies(false);
-    setSpritePickerOpen(false);
-    isDirtyRef.current = false;
-    onDirtyChange?.(false);
-    setDupSnack(null);
-  }, [creature, initialFileName]); // eslint-disable-line react-hooks/exhaustive-deps
+    setData(creature)
+    setFileName(
+      initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name)
+    )
+    setFileNameEdited(!!initialFileName)
+    setOpenLoot(false)
+    setOpenHostility(false)
+    setOpenCookies(false)
+    setSpritePickerOpen(false)
+    isDirtyRef.current = false
+    onDirtyChange?.(false)
+    setDupSnack(null)
+  }, [creature, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
-    if (!isDirtyRef.current) { isDirtyRef.current = true; onDirtyChange?.(true); }
-  }, [onDirtyChange]);
+    if (!isDirtyRef.current) {
+      isDirtyRef.current = true
+      onDirtyChange?.(true)
+    }
+  }, [onDirtyChange])
 
-  const updateData = useCallback((updater) => {
-    markDirtyLocal();
-    setData((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (!fileNameEdited) setFileName(computeCreatureFilename(next.meta?.family || '', next.name));
-      return next;
-    });
-  }, [fileNameEdited, markDirtyLocal]);
+  const updateData = useCallback(
+    (updater) => {
+      markDirtyLocal()
+      setData((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        if (!fileNameEdited)
+          setFileName(computeCreatureFilename(next.meta?.family || '', next.name))
+        return next
+      })
+    },
+    [fileNameEdited, markDirtyLocal]
+  )
 
-  const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }));
+  const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }))
 
   const handleRegenerate = () => {
-    markDirtyLocal();
-    setFileName(computeCreatureFilename(data.meta?.family || '', data.name));
-    setFileNameEdited(false);
-  };
+    markDirtyLocal()
+    setFileName(computeCreatureFilename(data.meta?.family || '', data.name))
+    setFileNameEdited(false)
+  }
 
   // Subtype helpers
-  const addSubtype = () => updateData((d) => ({
-    ...d, subtypes: [...d.subtypes, makeDefaultSubtype()],
-  }));
+  const addSubtype = () =>
+    updateData((d) => ({
+      ...d,
+      subtypes: [...d.subtypes, makeDefaultSubtype()]
+    }))
 
-  const updateSubtype = (i, updated) => updateData((d) => ({
-    ...d, subtypes: d.subtypes.map((s, idx) => idx === i ? updated : s),
-  }));
+  const updateSubtype = (i, updated) =>
+    updateData((d) => ({
+      ...d,
+      subtypes: d.subtypes.map((s, idx) => (idx === i ? updated : s))
+    }))
 
-  const removeSubtype = (i) => updateData((d) => ({
-    ...d, subtypes: d.subtypes.filter((_, idx) => idx !== i),
-  }));
+  const removeSubtype = (i) =>
+    updateData((d) => ({
+      ...d,
+      subtypes: d.subtypes.filter((_, idx) => idx !== i)
+    }))
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName);
+  if (saveRef) saveRef.current = () => onSave(data, fileName)
 
-  const SPRITE_PREVIEW = 96;
-  const spritePreviewKey = keyFromSprite(data.sprite);
-  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null;
-  const spritePreviewFrame = spritePreviewMeta ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW) : null;
+  const SPRITE_PREVIEW = 96
+  const spritePreviewKey = keyFromSprite(data.sprite)
+  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null
+  const spritePreviewFrame = spritePreviewMeta
+    ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW)
+    : null
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -462,7 +629,11 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
         computedFileName={computeCreatureFilename(data.meta?.family || '', data.name)}
         isExisting={isExisting}
         isArchived={isArchived}
-        onFileNameChange={(val) => { markDirtyLocal(); setFileName(val); setFileNameEdited(true); }}
+        onFileNameChange={(val) => {
+          markDirtyLocal()
+          setFileName(val)
+          setFileNameEdited(true)
+        }}
         onRegenerate={handleRegenerate}
         onSave={() => onSave(data, fileName)}
         onArchive={onArchive}
@@ -478,15 +649,51 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
               {/* Left: big sprite preview + browse button */}
-              <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: SPRITE_PREVIEW, height: SPRITE_PREVIEW, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                <Box
+                  sx={{
+                    width: SPRITE_PREVIEW,
+                    height: SPRITE_PREVIEW,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    bgcolor: 'action.hover'
+                  }}
+                >
                   {spritePreviewFrame && (
-                    <Box sx={{ width: spritePreviewFrame.clipW, height: spritePreviewFrame.clipH, overflow: 'hidden', flexShrink: 0 }}>
-                      <img src={spriteUrl(spritePreviewKey)} alt={spritePreviewKey} draggable={false} style={spritePreviewFrame.imgStyle} />
+                    <Box
+                      sx={{
+                        width: spritePreviewFrame.clipW,
+                        height: spritePreviewFrame.clipH,
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}
+                    >
+                      <img
+                        src={spriteUrl(spritePreviewKey)}
+                        alt={spritePreviewKey}
+                        draggable={false}
+                        style={spritePreviewFrame.imgStyle}
+                      />
                     </Box>
                   )}
                 </Box>
-                <Button size="small" startIcon={<GridViewIcon />} onClick={() => setSpritePickerOpen(true)}>
+                <Button
+                  size="small"
+                  startIcon={<GridViewIcon />}
+                  onClick={() => setSpritePickerOpen(true)}
+                >
                   Browse
                 </Button>
               </Box>
@@ -495,26 +702,34 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
                 {/* Row 1: Family | Name | Behavior Set */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <ConstantAutocomplete
-                    indexKey="creatureFamilies" label="Family" sx={{ width: 160 }}
+                    indexKey="creatureFamilies"
+                    label="Family"
+                    sx={{ width: 160 }}
                     value={data.meta?.family || ''}
-                    onChange={(val) => updateData((d) => ({ ...d, meta: { ...d.meta, family: val } }))}
+                    onChange={(val) =>
+                      updateData((d) => ({ ...d, meta: { ...d.meta, family: val } }))
+                    }
                     inputProps={{ maxLength: 64, spellCheck: false }}
                   />
                   <TextField
-                    label="Name" required size="small"
+                    label="Name"
+                    required
+                    size="small"
                     sx={{
                       flex: 1,
                       ...(dupStatus === 'archived' && {
                         '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
                         '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                        '& .MuiFormHelperText-root': { color: 'warning.main' },
-                      }),
+                        '& .MuiFormHelperText-root': { color: 'warning.main' }
+                      })
                     }}
                     error={dupStatus === 'active'}
                     helperText={
-                      dupStatus === 'active'   ? `"${data.name}" already exists` :
-                      dupStatus === 'archived' ? `"${data.name}" exists in archive` :
-                      undefined
+                      dupStatus === 'active'
+                        ? `"${data.name}" already exists`
+                        : dupStatus === 'archived'
+                          ? `"${data.name}" exists in archive`
+                          : undefined
                     }
                     value={data.name}
                     onChange={set('name')}
@@ -530,19 +745,26 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
                 {/* Row 2: Sprite # | Min Damage | Max Damage | Assail Sound */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
-                    label="Sprite" type="number" size="small" sx={{ width: 100 }}
+                    label="Sprite"
+                    type="number"
+                    size="small"
+                    sx={{ width: 100 }}
                     value={data.sprite}
                     onChange={(e) => updateData((d) => ({ ...d, sprite: e.target.value }))}
                     inputProps={{ min: 1, max: 9999 }}
                   />
                   <TextField
-                    label="Min Damage" size="small" sx={{ width: 120 }}
+                    label="Min Damage"
+                    size="small"
+                    sx={{ width: 120 }}
                     value={data.minDmg}
                     onChange={set('minDmg')}
                     inputProps={{ maxLength: 32 }}
                   />
                   <TextField
-                    label="Max Damage" size="small" sx={{ width: 120 }}
+                    label="Max Damage"
+                    size="small"
+                    sx={{ width: 120 }}
                     value={data.maxDmg}
                     onChange={set('maxDmg')}
                     inputProps={{ maxLength: 32 }}
@@ -556,7 +778,10 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
                 </Box>
                 {/* Row 3: Description */}
                 <TextField
-                  label="Description" size="small" multiline minRows={2}
+                  label="Description"
+                  size="small"
+                  multiline
+                  minRows={2}
                   value={data.description}
                   onChange={set('description')}
                   inputProps={{ maxLength: 1024 }}
@@ -571,8 +796,8 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
           value={data.sprite}
           onClose={() => setSpritePickerOpen(false)}
           onChange={(key) => {
-            updateData((d) => ({ ...d, sprite: String(parseInt(key.replace('monster', ''), 10)) }));
-            setSpritePickerOpen(false);
+            updateData((d) => ({ ...d, sprite: String(parseInt(key.replace('monster', ''), 10)) }))
+            setSpritePickerOpen(false)
           }}
         />
 
@@ -585,7 +810,11 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
         </Section>
 
         {/* Hostility */}
-        <Section title="Hostility" open={openHostility} onToggle={() => setOpenHostility((v) => !v)}>
+        <Section
+          title="Hostility"
+          open={openHostility}
+          onToggle={() => setOpenHostility((v) => !v)}
+        >
           <HostilityContent
             hostility={data.hostility}
             onChange={(val) => updateData((d) => ({ ...d, hostility: val }))}
@@ -602,7 +831,9 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
 
         {/* Subtypes */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Typography variant="subtitle2" sx={{ flexShrink: 0 }}>Subtypes</Typography>
+          <Typography variant="subtitle2" sx={{ flexShrink: 0 }}>
+            Subtypes
+          </Typography>
           <Divider sx={{ flex: 1 }} />
         </Box>
         {data.subtypes.map((sub, i) => (
@@ -616,7 +847,9 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
         ))}
 
         <Box sx={{ mb: 2 }}>
-          <Button startIcon={<AddIcon />} onClick={addSubtype}>Add Subtype</Button>
+          <Button startIcon={<AddIcon />} onClick={addSubtype}>
+            Add Subtype
+          </Button>
         </Box>
       </Box>
 
@@ -626,14 +859,18 @@ function CreatureEditor({ creature, initialFileName, isArchived, isExisting, onS
         onClose={() => setDupSnack(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={dupSnack === 'archived' ? 'warning' : 'error'} onClose={() => setDupSnack(null)} sx={{ width: '100%' }}>
+        <Alert
+          severity={dupSnack === 'archived' ? 'warning' : 'error'}
+          onClose={() => setDupSnack(null)}
+          sx={{ width: '100%' }}
+        >
           {dupSnack === 'active'
             ? `"${data.name}" already exists!`
             : `"${data.name}" exists in archive`}
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
-export default CreatureEditor;
+export default CreatureEditor

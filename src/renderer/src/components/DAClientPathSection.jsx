@@ -1,42 +1,40 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box, Typography, Button, Tooltip, IconButton, Paper, Stack,
-} from '@mui/material';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import ClearIcon from '@mui/icons-material/Clear';
-import HelpIcon from '@mui/icons-material/Help';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import { useRecoilState } from 'recoil';
-import { clientPathState } from '../recoil/atoms';
-import { clearAllClientCaches } from '../utils/daClient';
+import React, { useState, useEffect, useCallback } from 'react'
+import { Box, Typography, Button, Tooltip, IconButton, Paper, Stack } from '@mui/material'
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'
+import ClearIcon from '@mui/icons-material/Clear'
+import HelpIcon from '@mui/icons-material/Help'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import HighlightOffIcon from '@mui/icons-material/HighlightOff'
+import { useRecoilState } from 'recoil'
+import { clientPathState } from '../recoil/atoms'
+import { clearAllClientCaches } from '../utils/daClient'
 // Side-effect imports: register per-picker cache clearers.
-import '../data/itemSpriteData';
-import '../data/itemColorData';
-import '../data/soundData';
-import '../data/effectData';
-import '../data/khanData';
-import '../data/npcPortraitData';
-import '../data/iconData';
-import '../data/nationCrestData';
+import '../data/itemSpriteData'
+import '../data/itemColorData'
+import '../data/soundData'
+import '../data/effectData'
+import '../data/khanData'
+import '../data/npcPortraitData'
+import '../data/iconData'
+import '../data/nationCrestData'
 
 const STATUS_COLORS = {
-  green:  '#2e7d32',
+  green: '#2e7d32',
   yellow: '#ed6c02',
-  red:    '#d32f2f',
-  gray:   '#9e9e9e',
-};
+  red: '#d32f2f',
+  gray: '#9e9e9e'
+}
 
 const STATUS_LABELS = {
-  green:  'All known client files found',
+  green: 'All known client files found',
   yellow: 'Some client files missing — partial picker support',
-  red:    'No expected files found — wrong directory?',
-  gray:   'No path set',
-};
+  red: 'No expected files found — wrong directory?',
+  gray: 'No path set'
+}
 
 function StatusIndicator({ status, files }) {
-  const color = STATUS_COLORS[status];
-  const label = STATUS_LABELS[status];
+  const color = STATUS_COLORS[status]
+  const label = STATUS_LABELS[status]
 
   const tooltipBody = (
     <Box sx={{ p: 0.5, minWidth: 240 }}>
@@ -51,9 +49,11 @@ function StatusIndicator({ status, files }) {
         <Stack spacing={0.25}>
           {files.map((f) => (
             <Box key={f.rel} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {f.found
-                ? <CheckCircleOutlineIcon fontSize="inherit" sx={{ color: '#81c784' }} />
-                : <HighlightOffIcon fontSize="inherit" sx={{ color: '#e57373' }} />}
+              {f.found ? (
+                <CheckCircleOutlineIcon fontSize="inherit" sx={{ color: '#81c784' }} />
+              ) : (
+                <HighlightOffIcon fontSize="inherit" sx={{ color: '#e57373' }} />
+              )}
               <Typography variant="caption" sx={{ flex: 1 }}>
                 <code>{f.rel}</code> — {f.category}
               </Typography>
@@ -62,47 +62,49 @@ function StatusIndicator({ status, files }) {
         </Stack>
       )}
     </Box>
-  );
+  )
 
   return (
     <Tooltip title={tooltipBody} placement="right" arrow>
       <Box
         sx={{
-          width: 14, height: 14, borderRadius: '50%',
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
           backgroundColor: color,
           boxShadow: `0 0 6px ${color}`,
           cursor: 'help',
-          flexShrink: 0,
+          flexShrink: 0
         }}
       />
     </Tooltip>
-  );
+  )
 }
 
 const DAClientPathSection = () => {
-  const [clientPath, setClientPath] = useRecoilState(clientPathState);
-  const [check, setCheck] = useState({ status: 'gray', files: [] });
+  const [clientPath, setClientPath] = useRecoilState(clientPathState)
+  const [check, setCheck] = useState({ status: 'gray', files: [] })
 
   const refreshCheck = useCallback(async (path) => {
-    const result = await window.electronAPI.checkClientPath(path);
-    setCheck(result);
-  }, []);
+    const result = await window.electronAPI.checkClientPath(path)
+    setCheck(result)
+  }, [])
 
   useEffect(() => {
-    refreshCheck(clientPath);
-  }, [clientPath, refreshCheck]);
+    refreshCheck(clientPath)
+  }, [clientPath, refreshCheck])
 
   const handleBrowse = async () => {
-    const dir = await window.electronAPI.openDirectory();
-    if (!dir) return;
-    clearAllClientCaches();
-    setClientPath(dir);
-  };
+    const dir = await window.electronAPI.openDirectory()
+    if (!dir) return
+    clearAllClientCaches()
+    setClientPath(dir)
+  }
 
   const handleClear = () => {
-    clearAllClientCaches();
-    setClientPath(null);
-  };
+    clearAllClientCaches()
+    setClientPath(null)
+  }
 
   return (
     <Box sx={{ mt: 4 }}>
@@ -138,7 +140,7 @@ const DAClientPathSection = () => {
         </Typography>
       </Paper>
     </Box>
-  );
-};
+  )
+}
 
-export default DAClientPathSection;
+export default DAClientPathSection

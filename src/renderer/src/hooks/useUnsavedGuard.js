@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
-import { useRecoilState } from 'recoil';
-import { dirtyEditorState } from '../recoil/atoms';
+import { useState, useRef, useCallback } from 'react'
+import { useRecoilState } from 'recoil'
+import { dirtyEditorState } from '../recoil/atoms'
 
 /**
  * Provides within-page unsaved-changes guard (file switch / New) and registers
@@ -25,60 +25,68 @@ import { dirtyEditorState } from '../recoil/atoms';
  *     onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel} />
  */
 export function useUnsavedGuard(label) {
-  const [, setDirtyEditor] = useRecoilState(dirtyEditorState);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [, setDirtyEditor] = useRecoilState(dirtyEditorState)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   // Ref for the pending action to run after Save/Discard in the within-page dialog.
-  const pendingActionRef = useRef(null);
+  const pendingActionRef = useRef(null)
 
   // saveRef is set by the editor on each render so it always captures current data.
-  const saveRef = useRef(null);
+  const saveRef = useRef(null)
 
-  const isDirtyRef = useRef(false);
+  const isDirtyRef = useRef(false)
 
   const markDirty = useCallback(() => {
-    if (isDirtyRef.current) return;
-    isDirtyRef.current = true;
-    setDirtyEditor({ label, onSave: async () => { await saveRef.current?.(); } });
-  }, [label, setDirtyEditor]);
+    if (isDirtyRef.current) return
+    isDirtyRef.current = true
+    setDirtyEditor({
+      label,
+      onSave: async () => {
+        await saveRef.current?.()
+      }
+    })
+  }, [label, setDirtyEditor])
 
   const markClean = useCallback(() => {
-    isDirtyRef.current = false;
-    setDirtyEditor(null);
-  }, [setDirtyEditor]);
+    isDirtyRef.current = false
+    setDirtyEditor(null)
+  }, [setDirtyEditor])
 
   /** Runs `action` immediately if clean; otherwise opens the within-page dialog. */
   const guard = useCallback((action) => {
-    if (!isDirtyRef.current) { action(); return; }
-    pendingActionRef.current = action;
-    setDialogOpen(true);
-  }, []);
+    if (!isDirtyRef.current) {
+      action()
+      return
+    }
+    pendingActionRef.current = action
+    setDialogOpen(true)
+  }, [])
 
   const handleDialogSave = useCallback(async () => {
-    const action = pendingActionRef.current;
-    pendingActionRef.current = null;
-    setDialogOpen(false);
+    const action = pendingActionRef.current
+    pendingActionRef.current = null
+    setDialogOpen(false)
     try {
-      await saveRef.current?.();
+      await saveRef.current?.()
       // markClean is called by the page's handleSave after a successful save
     } catch {
-      return; // save failed — stay dirty, don't proceed
+      return // save failed — stay dirty, don't proceed
     }
-    action?.();
-  }, []);
+    action?.()
+  }, [])
 
   const handleDialogDiscard = useCallback(() => {
-    const action = pendingActionRef.current;
-    pendingActionRef.current = null;
-    setDialogOpen(false);
-    markClean();
-    action?.();
-  }, [markClean]);
+    const action = pendingActionRef.current
+    pendingActionRef.current = null
+    setDialogOpen(false)
+    markClean()
+    action?.()
+  }, [markClean])
 
   const handleDialogCancel = useCallback(() => {
-    pendingActionRef.current = null;
-    setDialogOpen(false);
-  }, []);
+    pendingActionRef.current = null
+    setDialogOpen(false)
+  }, [])
 
   return {
     markDirty,
@@ -88,6 +96,6 @@ export function useUnsavedGuard(label) {
     dialogOpen,
     handleDialogSave,
     handleDialogDiscard,
-    handleDialogCancel,
-  };
+    handleDialogCancel
+  }
 }

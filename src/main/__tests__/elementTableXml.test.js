@@ -95,7 +95,7 @@ describe('Field coverage — all fields', () => {
 
   it('reduced multiplier (0.8) becomes 80 in the matrix', async () => {
     const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[0][1]).toBe(80)  // Fire → Wind
+    expect(t.matrix[0][1]).toBe(80) // Fire → Wind
   })
 
   it('boosted multiplier (1.5) becomes 150 in the matrix', async () => {
@@ -110,7 +110,7 @@ describe('Field coverage — all fields', () => {
 
   it('fractional multiplier (0.9) becomes 90 in the matrix', async () => {
     const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[1][2]).toBe(90)  // Wind → Earth
+    expect(t.matrix[1][2]).toBe(90) // Wind → Earth
   })
 
   it('missing Target entry is treated as XML default 1.0, stored as integer 100', async () => {
@@ -127,7 +127,7 @@ describe('Field coverage — all fields', () => {
 </ElementTable>`
     const t = await parseElementTableXml(sparseXml)
     expect(t.matrix[0][0]).toBe(100) // Fire → Fire: absent → defaults to 1.0 → 100
-    expect(t.matrix[0][1]).toBe(50)  // Fire → Wind: explicit 0.5 → 50
+    expect(t.matrix[0][1]).toBe(50) // Fire → Wind: explicit 0.5 → 50
     expect(t.matrix[1][0]).toBe(100) // Wind → Fire: absent → defaults to 1.0 → 100
   })
 })
@@ -173,8 +173,8 @@ describe('Output structure', () => {
     elements: ['Fire', 'Wind'],
     matrix: [
       [100, 80],
-      [120, 100],
-    ],
+      [120, 100]
+    ]
   }
 
   it('root element is ElementTable', async () => {

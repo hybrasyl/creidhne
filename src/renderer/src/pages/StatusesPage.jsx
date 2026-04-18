@@ -1,174 +1,233 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRecoilValue, useRecoilState } from 'recoil';
+import React, { useState, useEffect, useCallback } from 'react'
+import { useRecoilValue, useRecoilState } from 'recoil'
 import {
-  Box, Typography, Divider, Button, Tooltip,
-  IconButton, Snackbar, Alert, CircularProgress,
-} from '@mui/material';
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
-import StatusEditor from '../components/statuses/StatusEditor';
-import EditorFileListPanel from '../components/shared/EditorFileListPanel';
-import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
-import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
+  Box,
+  Typography,
+  Divider,
+  Button,
+  Tooltip,
+  IconButton,
+  Snackbar,
+  Alert,
+  CircularProgress
+} from '@mui/material'
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import StatusEditor from '../components/statuses/StatusEditor'
+import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 
-const SUBDIR        = 'statuses';
-const IGNORE_SUBDIR = 'statuses/.ignore';
+const SUBDIR = 'statuses'
+const IGNORE_SUBDIR = 'statuses/.ignore'
 
 function makeDefaultEffectBlock() {
-  return { animations: null, messages: null, heal: null, damage: null, statModifiers: null, conditions: null, handler: null };
+  return {
+    animations: null,
+    messages: null,
+    heal: null,
+    damage: null,
+    statModifiers: null,
+    conditions: null,
+    handler: null
+  }
 }
 
 const DEFAULT_STATUS = {
-  name:             '',
-  comment:          '',
-  icon:             '',
-  duration:         '',
-  tick:             '',
-  removeChance:     '',
-  removeOnDeath:    false,
-  prohibitedMessage:    '',
+  name: '',
+  comment: '',
+  icon: '',
+  duration: '',
+  tick: '',
+  removeChance: '',
+  removeOnDeath: false,
+  prohibitedMessage: '',
   prohibitedMessageKey: '',
-  categories:       [],
+  categories: [],
   castRestrictions: [],
-  onApply:  makeDefaultEffectBlock(),
-  onTick:   makeDefaultEffectBlock(),
+  onApply: makeDefaultEffectBlock(),
+  onTick: makeDefaultEffectBlock(),
   onRemove: makeDefaultEffectBlock(),
-  onExpire: makeDefaultEffectBlock(),
-};
+  onExpire: makeDefaultEffectBlock()
+}
 
 function StatusesPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState);
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState);
-  const namesByFilename = libraryIndex?.statusesNamesByFilename;
-  const [files,          setFiles]          = useState([]);
-  const [archivedFiles,  setArchivedFiles]  = useState([]);
-  const [selectedFile,   setSelectedFile]   = useState(null);
-  const [editingStatus,  setEditingStatus]  = useState(null);
-  const [loading,        setLoading]        = useState(true);
-  const [loadingStatus,  setLoadingStatus]  = useState(false);
-  const [showArchived,   setShowArchived]   = useState(false);
-  const [loadError,      setLoadError]      = useState(null);
-  const [snackbar,       setSnackbar]       = useState(null);
+  const activeLibrary = useRecoilValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const namesByFilename = libraryIndex?.statusesNamesByFilename
+  const [files, setFiles] = useState([])
+  const [archivedFiles, setArchivedFiles] = useState([])
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [editingStatus, setEditingStatus] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingStatus, setLoadingStatus] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const [loadError, setLoadError] = useState(null)
+  const [snackbar, setSnackbar] = useState(null)
 
-  const { markDirty, markClean, saveRef, guard, dialogOpen,
-    handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Status');
+  const {
+    markDirty,
+    markClean,
+    saveRef,
+    guard,
+    dialogOpen,
+    handleDialogSave,
+    handleDialogDiscard,
+    handleDialogCancel
+  } = useUnsavedGuard('Status')
 
   const loadActiveFiles = async (library) => {
-    if (!library) { setFiles([]); return; }
-    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`);
-    setFiles(items);
-  };
+    if (!library) {
+      setFiles([])
+      return
+    }
+    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`)
+    setFiles(items)
+  }
 
   const loadArchivedFiles = async (library) => {
-    if (!library) { setArchivedFiles([]); return; }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`);
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })));
-  };
+    if (!library) {
+      setArchivedFiles([])
+      return
+    }
+    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
+    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
+  }
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingStatus(null); setLoading(false); return; }
-    setLoading(true);
-    Promise.all([
-      loadActiveFiles(activeLibrary),
-      loadArchivedFiles(activeLibrary),
-    ]).finally(() => setLoading(false));
-  }, [activeLibrary]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!activeLibrary) {
+      setFiles([])
+      setArchivedFiles([])
+      setSelectedFile(null)
+      setEditingStatus(null)
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
+      setLoading(false)
+    )
+  }, [activeLibrary]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggleArchived = async () => {
-    const next = !showArchived;
-    setShowArchived(next);
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
-  };
+    const next = !showArchived
+    setShowArchived(next)
+    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
+  }
 
   const doNew = () => {
-    setSelectedFile(null);
-    setLoadError(null);
-    setEditingStatus({ ...DEFAULT_STATUS, onApply: makeDefaultEffectBlock(), onTick: makeDefaultEffectBlock(), onRemove: makeDefaultEffectBlock(), onExpire: makeDefaultEffectBlock() });
-  };
-  const handleNew = () => guard(doNew);
+    setSelectedFile(null)
+    setLoadError(null)
+    setEditingStatus({
+      ...DEFAULT_STATUS,
+      onApply: makeDefaultEffectBlock(),
+      onTick: makeDefaultEffectBlock(),
+      onRemove: makeDefaultEffectBlock(),
+      onExpire: makeDefaultEffectBlock()
+    })
+  }
+  const handleNew = () => guard(doNew)
 
   const doSelect = async (file) => {
-    setSelectedFile(file);
-    setLoadError(null);
-    setEditingStatus(null);
-    setLoadingStatus(true);
+    setSelectedFile(file)
+    setLoadError(null)
+    setEditingStatus(null)
+    setLoadingStatus(true)
     try {
-      const s = await window.electronAPI.loadStatus(file.path);
-      setEditingStatus(s);
+      const s = await window.electronAPI.loadStatus(file.path)
+      setEditingStatus(s)
     } catch (err) {
-      console.error('Failed to load status:', err);
-      setLoadError(err?.message || 'Failed to parse XML.');
+      console.error('Failed to load status:', err)
+      setLoadError(err?.message || 'Failed to parse XML.')
     } finally {
-      setLoadingStatus(false);
+      setLoadingStatus(false)
     }
-  };
-  const handleSelect = (file) => guard(() => doSelect(file));
+  }
+  const handleSelect = (file) => guard(() => doSelect(file))
 
   const handleSave = async (data, fileName) => {
     try {
-      const isRename = !!(selectedFile && fileName !== selectedFile.name);
-      const newPath  = isRename || !selectedFile
-        ? `${activeLibrary}/${SUBDIR}/${fileName}`
-        : selectedFile.path;
+      const isRename = !!(selectedFile && fileName !== selectedFile.name)
+      const newPath =
+        isRename || !selectedFile ? `${activeLibrary}/${SUBDIR}/${fileName}` : selectedFile.path
 
-      await window.electronAPI.saveStatus(newPath, data);
-      setEditingStatus(data);
-      markClean();
+      await window.electronAPI.saveStatus(newPath, data)
+      setEditingStatus(data)
+      markClean()
 
       if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
-        );
-        setSelectedFile({ name: fileName, path: newPath });
-        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+        )
+        setSelectedFile({ name: fileName, path: newPath })
+        setSnackbar({
+          message: `Renamed. Old file archived as "${result.archivedAs}".`,
+          severity: 'success'
+        })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath });
+        setSelectedFile({ name: fileName, path: newPath })
       }
 
       if (activeLibrary) {
-        await loadActiveFiles(activeLibrary);
-        const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
-        setLibraryIndex((prev) => ({ ...prev, ...section }));
+        await loadActiveFiles(activeLibrary)
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
+        setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
     } catch (err) {
-      console.error('Failed to save status:', err);
+      console.error('Failed to save status:', err)
     }
-  };
+  }
 
   const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return;
+    if (!selectedFile || !activeLibrary) return
     const result = await window.electronAPI.moveFile(
       selectedFile.path,
       `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    );
-    if (result?.conflict) { setSnackbar({ message: 'An archived status with this name already exists.', severity: 'error' }); return; }
-    markClean();
-    setSelectedFile(null); setEditingStatus(null);
-    await loadActiveFiles(activeLibrary);
-    await loadArchivedFiles(activeLibrary);
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
-    setLibraryIndex((prev) => ({ ...prev, ...section }));
-  };
+    )
+    if (result?.conflict) {
+      setSnackbar({
+        message: 'An archived status with this name already exists.',
+        severity: 'error'
+      })
+      return
+    }
+    markClean()
+    setSelectedFile(null)
+    setEditingStatus(null)
+    await loadActiveFiles(activeLibrary)
+    await loadArchivedFiles(activeLibrary)
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
+    setLibraryIndex((prev) => ({ ...prev, ...section }))
+  }
 
   const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return;
+    if (!selectedFile || !activeLibrary) return
     const result = await window.electronAPI.moveFile(
       selectedFile.path,
       `${activeLibrary}/${SUBDIR}/${selectedFile.name}`
-    );
+    )
     if (result?.conflict) {
-      setSnackbar({ message: 'An active status with this name already exists. Rename before unarchiving.', severity: 'error' });
-      return;
+      setSnackbar({
+        message: 'An active status with this name already exists. Rename before unarchiving.',
+        severity: 'error'
+      })
+      return
     }
-    markClean();
-    setSelectedFile(null); setEditingStatus(null);
-    await loadActiveFiles(activeLibrary);
-    await loadArchivedFiles(activeLibrary);
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR);
-    setLibraryIndex((prev) => ({ ...prev, ...section }));
-  };
+    markClean()
+    setSelectedFile(null)
+    setEditingStatus(null)
+    await loadActiveFiles(activeLibrary)
+    await loadArchivedFiles(activeLibrary)
+    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
+    setLibraryIndex((prev) => ({ ...prev, ...section }))
+  }
 
-  const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
+  const handleDirtyChange = useCallback(
+    (dirty) => {
+      dirty ? markDirty() : markClean()
+    },
+    [markDirty, markClean]
+  )
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -191,8 +250,10 @@ function StatusesPage() {
             <strong>Failed to load status:</strong> {loadError}
           </Alert>
         ) : loadingStatus ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <CircularProgress size={64} thickness={4} color="info" disableShrink/>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+          >
+            <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingStatus ? (
           <StatusEditor
@@ -207,7 +268,9 @@ function StatusesPage() {
             saveRef={saveRef}
           />
         ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+          >
             <Typography variant="body1" color="text.secondary">
               Select a status or create a new one.
             </Typography>
@@ -215,16 +278,28 @@ function StatusesPage() {
         )}
       </Box>
       <UnsavedChangesDialog
-        open={dialogOpen} label="Status"
-        onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
+        open={dialogOpen}
+        label="Status"
+        onSave={handleDialogSave}
+        onDiscard={handleDialogDiscard}
+        onCancel={handleDialogCancel}
       />
-      <Snackbar open={!!snackbar} autoHideDuration={6000} onClose={() => setSnackbar(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity={snackbar?.severity ?? 'info'} onClose={() => setSnackbar(null)} sx={{ width: '100%' }}>
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snackbar?.severity ?? 'info'}
+          onClose={() => setSnackbar(null)}
+          sx={{ width: '100%' }}
+        >
           {snackbar?.message}
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
-export default StatusesPage;
+export default StatusesPage

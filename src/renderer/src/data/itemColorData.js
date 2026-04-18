@@ -38,7 +38,7 @@ export async function loadItemColorSwatches(clientPath) {
     if (entry?.colors) map.set(name, entry.colors)
   }
   swatchMapCache.set(clientPath, map)
-  // eslint-disable-next-line no-console
+
   console.log(`[itemColorData] loaded ${map.size} color swatches from color0.tbl`)
   return map
 }
@@ -57,12 +57,21 @@ export function useItemColorSwatches() {
   const [swatches, setSwatches] = useState(() => swatchMapCache.get(clientPath) || null)
 
   useEffect(() => {
-    if (!clientPath) { setSwatches(null); return undefined }
+    if (!clientPath) {
+      setSwatches(null)
+      return undefined
+    }
     let cancelled = false
     loadItemColorSwatches(clientPath)
-      .then((map) => { if (!cancelled) setSwatches(map) })
-      .catch(() => { if (!cancelled) setSwatches(null) })
-    return () => { cancelled = true }
+      .then((map) => {
+        if (!cancelled) setSwatches(map)
+      })
+      .catch(() => {
+        if (!cancelled) setSwatches(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [clientPath])
 
   return swatches

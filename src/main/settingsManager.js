@@ -5,7 +5,7 @@ const DEFAULTS = {
   libraries: [],
   activeLibrary: null,
   theme: 'light',
-  clientPath: null,
+  clientPath: null
 }
 
 function validate(data) {
@@ -19,7 +19,7 @@ function withDefaults(data) {
     libraries: Array.isArray(data?.libraries) ? data.libraries : DEFAULTS.libraries,
     activeLibrary: data?.activeLibrary ?? DEFAULTS.activeLibrary,
     theme: typeof data?.theme === 'string' ? data.theme : DEFAULTS.theme,
-    clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath,
+    clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath
   }
 }
 
@@ -36,8 +36,8 @@ async function tryReadJson(filePath) {
 
 export function createSettingsManager(userDataPath) {
   const primary = join(userDataPath, 'settings.json')
-  const backup  = join(userDataPath, 'settings.bak.json')
-  const tmp     = join(userDataPath, 'settings.tmp.json')
+  const backup = join(userDataPath, 'settings.bak.json')
+  const tmp = join(userDataPath, 'settings.tmp.json')
 
   async function load() {
     let data = await tryReadJson(primary)
@@ -64,7 +64,11 @@ export function createSettingsManager(userDataPath) {
       // 1. Write to tmp
       await fs.writeFile(tmp, content, 'utf-8')
       // 2. Rotate: current primary → backup
-      try { await fs.copyFile(primary, backup) } catch { /* primary may not exist yet */ }
+      try {
+        await fs.copyFile(primary, backup)
+      } catch {
+        /* primary may not exist yet */
+      }
       // 3. Atomic rename tmp → primary
       await fs.rename(tmp, primary)
     })

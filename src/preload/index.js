@@ -1,12 +1,12 @@
-import { contextBridge, ipcRenderer } from 'electron';
-import { electronAPI } from '@electron-toolkit/preload';
+import { contextBridge, ipcRenderer } from 'electron'
+import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
-const api = {};
+const api = {}
 
 // Expose Electron APIs to the renderer process
-contextBridge.exposeInMainWorld('electron', electronAPI);
-contextBridge.exposeInMainWorld('api', api);
+contextBridge.exposeInMainWorld('electron', electronAPI)
+contextBridge.exposeInMainWorld('api', api)
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
   loadSettings: () => ipcRenderer.invoke('settings:load'),
@@ -32,69 +32,83 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadLoot: (filePath) => ipcRenderer.invoke('xml:loadLoot', filePath),
   saveLoot: (filePath, lootData) => ipcRenderer.invoke('xml:saveLoot', filePath, lootData),
   loadVariantGroup: (filePath) => ipcRenderer.invoke('xml:loadVariantGroup', filePath),
-  saveVariantGroup: (filePath, variantGroupData) => ipcRenderer.invoke('xml:saveVariantGroup', filePath, variantGroupData),
+  saveVariantGroup: (filePath, variantGroupData) =>
+    ipcRenderer.invoke('xml:saveVariantGroup', filePath, variantGroupData),
   loadLocalization: (filePath) => ipcRenderer.invoke('xml:loadLocalization', filePath),
-  saveLocalization: (filePath, localizationData) => ipcRenderer.invoke('xml:saveLocalization', filePath, localizationData),
+  saveLocalization: (filePath, localizationData) =>
+    ipcRenderer.invoke('xml:saveLocalization', filePath, localizationData),
   loadCreature: (filePath) => ipcRenderer.invoke('xml:loadCreature', filePath),
-  saveCreature: (filePath, creatureData) => ipcRenderer.invoke('xml:saveCreature', filePath, creatureData),
+  saveCreature: (filePath, creatureData) =>
+    ipcRenderer.invoke('xml:saveCreature', filePath, creatureData),
   loadElementTable: (filePath) => ipcRenderer.invoke('xml:loadElementTable', filePath),
-  saveElementTable: (filePath, tableData) => ipcRenderer.invoke('xml:saveElementTable', filePath, tableData),
+  saveElementTable: (filePath, tableData) =>
+    ipcRenderer.invoke('xml:saveElementTable', filePath, tableData),
   loadStatus: (filePath) => ipcRenderer.invoke('xml:loadStatus', filePath),
   saveStatus: (filePath, statusData) => ipcRenderer.invoke('xml:saveStatus', filePath, statusData),
   loadCastable: (filePath) => ipcRenderer.invoke('xml:loadCastable', filePath),
-  saveCastable: (filePath, castableData) => ipcRenderer.invoke('xml:saveCastable', filePath, castableData),
+  saveCastable: (filePath, castableData) =>
+    ipcRenderer.invoke('xml:saveCastable', filePath, castableData),
   castableAddCategoryBulk: (libraryPath, castableNames, categoryName) =>
     ipcRenderer.invoke('castable:addCategoryBulk', libraryPath, castableNames, categoryName),
   loadBehaviorSet: (filePath) => ipcRenderer.invoke('xml:loadBehaviorSet', filePath),
-  saveBehaviorSet: (filePath, bvsData) => ipcRenderer.invoke('xml:saveBehaviorSet', filePath, bvsData),
+  saveBehaviorSet: (filePath, bvsData) =>
+    ipcRenderer.invoke('xml:saveBehaviorSet', filePath, bvsData),
   loadSpawngroup: (filePath) => ipcRenderer.invoke('xml:loadSpawngroup', filePath),
   saveSpawngroup: (filePath, sgData) => ipcRenderer.invoke('xml:saveSpawngroup', filePath, sgData),
   loadServerConfig: (filePath) => ipcRenderer.invoke('xml:loadServerConfig', filePath),
-  saveServerConfig: (filePath, cfgData) => ipcRenderer.invoke('xml:saveServerConfig', filePath, cfgData),
+  saveServerConfig: (filePath, cfgData) =>
+    ipcRenderer.invoke('xml:saveServerConfig', filePath, cfgData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   archiveFile: (src, archiveDir) => ipcRenderer.invoke('fs:archiveFile', src, archiveDir),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
-  buildIndexSection: (libraryPath, section) => ipcRenderer.invoke('index:buildSection', libraryPath, section),
+  buildIndexSection: (libraryPath, section) =>
+    ipcRenderer.invoke('index:buildSection', libraryPath, section),
   loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),
   getIndexStatus: (libraryPath) => ipcRenderer.invoke('index:status', libraryPath),
   deleteIndex: (libraryPath) => ipcRenderer.invoke('index:delete', libraryPath),
-  addConstantValue: (libraryPath, type, value) => ipcRenderer.invoke('constants:addValue', libraryPath, type, value),
+  addConstantValue: (libraryPath, type, value) =>
+    ipcRenderer.invoke('constants:addValue', libraryPath, type, value),
   loadXsdTypes: () => ipcRenderer.invoke('constants:loadXsdTypes'),
   scanCategories: (libraryPath) => ipcRenderer.invoke('constants:scanCategories', libraryPath),
   scanVendorTabs: (libraryPath) => ipcRenderer.invoke('constants:scanVendorTabs', libraryPath),
   scanNpcJobs: (libraryPath) => ipcRenderer.invoke('constants:scanNpcJobs', libraryPath),
-  scanCreatureFamilies: (libraryPath) => ipcRenderer.invoke('constants:scanCreatureFamilies', libraryPath),
+  scanCreatureFamilies: (libraryPath) =>
+    ipcRenderer.invoke('constants:scanCreatureFamilies', libraryPath),
   scanCookies: (libraryPath) => ipcRenderer.invoke('constants:scanCookies', libraryPath),
-  loadUserConstants: (libraryPath) => ipcRenderer.invoke('constants:loadUserConstants', libraryPath),
-  saveUserConstants: (libraryPath, data) => ipcRenderer.invoke('constants:saveUserConstants', libraryPath, data),
+  loadUserConstants: (libraryPath) =>
+    ipcRenderer.invoke('constants:loadUserConstants', libraryPath),
+  saveUserConstants: (libraryPath, data) =>
+    ipcRenderer.invoke('constants:saveUserConstants', libraryPath, data),
   loadFormulas: (libraryPath) => ipcRenderer.invoke('formulas:load', libraryPath),
   saveFormulas: (libraryPath, data) => ipcRenderer.invoke('formulas:save', libraryPath, data),
   importFormulas: (libraryPath) => ipcRenderer.invoke('formulas:import', libraryPath),
-  castableInfo: (libraryPath, name) => ipcRenderer.invoke('formulas:castableInfo', libraryPath, name),
+  castableInfo: (libraryPath, name) =>
+    ipcRenderer.invoke('formulas:castableInfo', libraryPath, name),
   exportCastablesCSV: (libraryPath) => ipcRenderer.invoke('export:castablesCSV', libraryPath),
   exportCastablesJSON: (libraryPath) => ipcRenderer.invoke('export:castablesJSON', libraryPath),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
-  loadReference: (libraryPath, type, name) => ipcRenderer.invoke('reference:load', libraryPath, type, name),
+  loadReference: (libraryPath, type, name) =>
+    ipcRenderer.invoke('reference:load', libraryPath, type, name),
   onIndexBuildProgress: (callback) => {
-    const listener = (_, event) => callback(event);
-    ipcRenderer.on('index:build-progress', listener);
-    return () => ipcRenderer.removeListener('index:build-progress', listener);
+    const listener = (_, event) => callback(event)
+    ipcRenderer.on('index:build-progress', listener)
+    return () => ipcRenderer.removeListener('index:build-progress', listener)
   },
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
-  confirmClose: () => ipcRenderer.send('app:confirm-close'),
-});
+  confirmClose: () => ipcRenderer.send('app:confirm-close')
+})
 
 // If context isolation is disabled, add to the DOM global directly
 if (!process.contextIsolated) {
-  window.electron = electronAPI;
-  window.api = api;
+  window.electron = electronAPI
+  window.api = api
   window.electronAPI = {
     openFile: () => ipcRenderer.invoke('dialog:openFile'),
     openDirectory: () => ipcRenderer.invoke('open-directory'),
-    loadSettings: () => ipcRenderer.invoke('settings:load'),  // Use IPC to load settings
-    saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),  // Use IPC to save settings
+    loadSettings: () => ipcRenderer.invoke('settings:load'), // Use IPC to load settings
+    saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings), // Use IPC to save settings
     getUserDataPath: () => ipcRenderer.invoke('get-user-data-path')
-  };
+  }
 }

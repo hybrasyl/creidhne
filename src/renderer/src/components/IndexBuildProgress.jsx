@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import React, { useEffect, useRef, useState } from 'react'
+import { Box, CircularProgress, Typography } from '@mui/material'
 
-const FADE_DELAY_MS = 800;
+const FADE_DELAY_MS = 800
 
 const TYPE_LABELS = {
   castables: 'castables',
@@ -19,8 +19,8 @@ const TYPE_LABELS = {
   spawngroups: 'spawn groups',
   statuses: 'statuses',
   variantgroups: 'variant groups',
-  worldmaps: 'world maps',
-};
+  worldmaps: 'world maps'
+}
 
 /**
  * Compact top-left status pill pinned below the AppBar. Shows during index
@@ -28,36 +28,37 @@ const TYPE_LABELS = {
  * partial); hides itself after the 'done' phase.
  */
 export default function IndexBuildProgress() {
-  const [progress, setProgress] = useState(null);
-  const hideTimerRef = useRef(null);
+  const [progress, setProgress] = useState(null)
+  const hideTimerRef = useRef(null)
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.onIndexBuildProgress((event) => {
       if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
+        clearTimeout(hideTimerRef.current)
+        hideTimerRef.current = null
       }
       if (event.phase === 'done') {
-        hideTimerRef.current = setTimeout(() => setProgress(null), FADE_DELAY_MS);
+        hideTimerRef.current = setTimeout(() => setProgress(null), FADE_DELAY_MS)
       }
-      setProgress(event);
-    });
+      setProgress(event)
+    })
     return () => {
-      unsubscribe();
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    };
-  }, []);
+      unsubscribe()
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+    }
+  }, [])
 
-  if (!progress) return null;
+  if (!progress) return null
 
-  const { phase, type, current, total } = progress;
-  const label = phase === 'done'
-    ? 'Index complete'
-    : phase === 'cross-ref'
-      ? 'Building cross-references…'
-      : type
-        ? `Scanning ${TYPE_LABELS[type] ?? type}${current && total ? ` (${current}/${total})` : '…'}`
-        : 'Building index…';
+  const { phase, type, current, total } = progress
+  const label =
+    phase === 'done'
+      ? 'Index complete'
+      : phase === 'cross-ref'
+        ? 'Building cross-references…'
+        : type
+          ? `Scanning ${TYPE_LABELS[type] ?? type}${current && total ? ` (${current}/${total})` : '…'}`
+          : 'Building index…'
 
   return (
     <Box
@@ -77,7 +78,7 @@ export default function IndexBuildProgress() {
         borderColor: 'divider',
         boxShadow: 2,
         pointerEvents: 'none',
-        maxWidth: 320,
+        maxWidth: 320
       }}
     >
       <CircularProgress size={14} thickness={5} />
@@ -85,5 +86,5 @@ export default function IndexBuildProgress() {
         {label}
       </Typography>
     </Box>
-  );
+  )
 }

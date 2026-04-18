@@ -35,7 +35,9 @@ async function handle(req) {
 }
 
 if (process.parentPort) {
-  process.parentPort.on('message', (e) => { handle(e.data) })
+  process.parentPort.on('message', (e) => {
+    handle(e.data)
+  })
 } else {
   // Fallback: started directly (e.g. for testing). Exit with error.
   reply({ kind: 'error', error: 'No parentPort — not running in utilityProcess?' })

@@ -1,6 +1,6 @@
-import React from 'react';
-import creidhneLogo from '../assets/creidhne.svg';
-import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material';
+import React from 'react'
+import creidhneLogo from '../assets/creidhne.svg'
+import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
 import {
   GiRadialBalance,
   GiMagicSwirl,
@@ -25,16 +25,16 @@ import {
   GiSettingsKnobs,
   GiContract,
   GiExpand,
-  GiDeathSkull,
-} from 'react-icons/gi';
+  GiDeathSkull
+} from 'react-icons/gi'
 
 const iconSx = {
   '& svg': {
     fontSize: '1.4em',
     stroke: 'rgba(0, 0, 0, 0.25)',
-    strokeWidth: 44,
+    strokeWidth: 44
   }
-};
+}
 
 const btnSx = {
   WebkitAppRegion: 'no-drag',
@@ -45,9 +45,9 @@ const btnSx = {
     backgroundColor: 'info.main',
     color: 'text.dark'
   }
-};
+}
 
-const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' };
+const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
 const winBtnSx = {
   WebkitAppRegion: 'no-drag',
@@ -57,27 +57,31 @@ const winBtnSx = {
     backgroundColor: 'info.main',
     color: 'text.dark'
   }
-};
+}
 
 const MainToolbar = ({ navigate }) => {
   const handleMinimize = () => {
-    window.electronAPI.minimizeWindow();
-  };
+    window.electronAPI.minimizeWindow()
+  }
 
   const handleMaximize = () => {
-    window.electronAPI.maximizeWindow();
-  };
+    window.electronAPI.maximizeWindow()
+  }
 
   const handleClose = () => {
-    window.electronAPI.closeWindow();
-  };
+    window.electronAPI.closeWindow()
+  }
 
   return (
     <>
       {/* Title Bar */}
       <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 36, px: 1.5 }}>
         <img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', flexGrow: 0 }} style={{ fontSize: '1.5rem' }}>
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: 'bold', flexGrow: 0 }}
+          style={{ fontSize: '1.5rem' }}
+        >
           Creidhne: XML Forge
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
@@ -106,7 +110,6 @@ const MainToolbar = ({ navigate }) => {
 
       {/* Nav Toolbar */}
       <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 40, opacity: 0.85 }}>
-
         {/* Left spacer — centers the editor group */}
         <Box sx={{ flexGrow: 1 }} />
 
@@ -222,10 +225,9 @@ const MainToolbar = ({ navigate }) => {
             <GiSettingsKnobs />
           </IconButton>
         </Tooltip>
-
       </Toolbar>
     </>
-  );
-};
+  )
+}
 
-export default MainToolbar;
+export default MainToolbar

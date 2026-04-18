@@ -9,19 +9,19 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/main/index.js'),
-          indexWorker: resolve('src/main/indexWorker.js'),
+          indexWorker: resolve('src/main/indexWorker.js')
         },
         output: {
-          entryFileNames: '[name].js',
-        },
-      },
-    },
+          entryFileNames: '[name].js'
+        }
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
-    base: './',  // Ensure the base URL is relative
+    base: './', // Ensure the base URL is relative
     publicDir: resolve('resources'),
     resolve: {
       alias: {
@@ -30,13 +30,13 @@ export default defineConfig({
     },
     plugins: [react()],
     optimizeDeps: {
-      include: ['react-window'],
+      include: ['react-window']
     },
     build: {
       outDir: 'out/renderer', // Output directory for your renderer build
       rollupOptions: {
-        external: [],
-      },
-    },
+        external: []
+      }
+    }
   }
 })
