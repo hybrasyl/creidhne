@@ -9,10 +9,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRecoilValue } from 'recoil'
-import {
-  SpfFile, SpfFormatType,
-  renderSpfPalettized, renderSpfColorized,
-} from '@eriscorp/dalib-ts'
+import { SpfFile, SpfFormatType, renderSpfPalettized, renderSpfColorized } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
 import { clientPathState } from '../recoil/atoms'
@@ -20,8 +17,8 @@ import { clientPathState } from '../recoil/atoms'
 const ARCHIVE = 'npc/npcbase.dat'
 
 const filenameIndexCache = new Map() // clientPath → string[] (sorted filenames)
-const spfCache           = new Map() // `${clientPath}|${filename}` → SpfFile
-const bitmapCache        = new Map() // `${clientPath}|${filename}|${frameIdx}` → ImageBitmap
+const spfCache = new Map() // `${clientPath}|${filename}` → SpfFile
+const bitmapCache = new Map() // `${clientPath}|${filename}|${frameIdx}` → ImageBitmap
 
 /**
  * Enumerate every .spf entry in npc/npcbase.dat. Cached per clientPath.
@@ -35,7 +32,7 @@ export async function getNpcPortraitIndex(clientPath) {
   const entries = archive.getEntriesByExtension('.spf')
   const names = entries.map((e) => e.entryName).sort((a, b) => a.localeCompare(b))
   filenameIndexCache.set(clientPath, names)
-  // eslint-disable-next-line no-console
+
   console.log(`[npcPortraitData] loaded ${names.length} portrait SPFs from ${ARCHIVE}`)
   return names
 }
@@ -89,7 +86,11 @@ export async function getNpcPortraitBitmap(clientPath, filename, frameIdx = 0) {
 
 export function clearNpcPortraitCache() {
   for (const bmp of bitmapCache.values()) {
-    try { bmp.close?.() } catch { /* ignore */ }
+    try {
+      bmp.close?.()
+    } catch {
+      /* ignore */
+    }
   }
   bitmapCache.clear()
   spfCache.clear()
@@ -102,12 +103,21 @@ export function useNpcPortraitIndex() {
   const clientPath = useRecoilValue(clientPathState)
   const [names, setNames] = useState(() => filenameIndexCache.get(clientPath) || null)
   useEffect(() => {
-    if (!clientPath) { setNames(null); return undefined }
+    if (!clientPath) {
+      setNames(null)
+      return undefined
+    }
     let cancelled = false
     getNpcPortraitIndex(clientPath)
-      .then((r) => { if (!cancelled) setNames(r) })
-      .catch(() => { if (!cancelled) setNames(null) })
-    return () => { cancelled = true }
+      .then((r) => {
+        if (!cancelled) setNames(r)
+      })
+      .catch(() => {
+        if (!cancelled) setNames(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [clientPath])
   return names
 }

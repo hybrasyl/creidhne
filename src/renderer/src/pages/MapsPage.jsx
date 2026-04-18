@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React from 'react'
+import { Box, Typography } from '@mui/material'
 
 function MapsPage() {
   return (
@@ -8,7 +8,7 @@ function MapsPage() {
         Welcome to Maps
       </Typography>
     </Box>
-  );
+  )
 }
 
-export default MapsPage;
+export default MapsPage

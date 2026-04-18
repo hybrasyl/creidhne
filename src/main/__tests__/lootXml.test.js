@@ -226,10 +226,17 @@ describe('Output structure', () => {
         rolls: '1',
         chance: '80',
         entries: [
-          { name: 'Short Sword', variants: ['Rusty'], unique: false, always: false, inInventory: true, max: '1' },
-        ],
-      },
-    },
+          {
+            name: 'Short Sword',
+            variants: ['Rusty'],
+            unique: false,
+            always: false,
+            inInventory: true,
+            max: '1'
+          }
+        ]
+      }
+    }
   }
 
   it('root element is LootSet', async () => {
@@ -315,7 +322,10 @@ describe('Output structure', () => {
   })
 
   it('omits Items element when entries is empty and no rolls/chance', async () => {
-    const noItems = { ...loot, table: { ...loot.table, items: { rolls: '', chance: '', entries: [] } } }
+    const noItems = {
+      ...loot,
+      table: { ...loot.table, items: { rolls: '', chance: '', entries: [] } }
+    }
     const parsed = await parseRaw(serializeLootXml(noItems))
     expect(parsed.LootSet.Table?.[0]?.Items).toBeUndefined()
   })

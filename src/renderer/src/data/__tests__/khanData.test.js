@@ -5,7 +5,7 @@ import {
   categoriesFor,
   defaultsFor,
   SLOT_TO_CATEGORY,
-  CATEGORY_DEFAULTS,
+  CATEGORY_DEFAULTS
 } from '../khanData.js'
 
 describe('khanArchiveName', () => {
@@ -91,8 +91,16 @@ describe('categoriesFor', () => {
 
   it('has all expected display-sprite slots mapped', () => {
     const expectedSlots = [
-      'Armor', 'Weapon', 'Shield', 'Foot', 'Coat', 'Helmet',
-      'Trousers', 'FirstAcc', 'SecondAcc', 'ThirdAcc',
+      'Armor',
+      'Weapon',
+      'Shield',
+      'Foot',
+      'Coat',
+      'Helmet',
+      'Trousers',
+      'FirstAcc',
+      'SecondAcc',
+      'ThirdAcc'
     ]
     for (const slot of expectedSlots) {
       expect(categoriesFor(slot).length).toBeGreaterThan(0)

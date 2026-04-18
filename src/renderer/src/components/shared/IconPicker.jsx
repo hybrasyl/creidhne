@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { Box, TextField, IconButton, Tooltip } from '@mui/material';
-import GridViewIcon from '@mui/icons-material/GridView';
-import HelpIcon from '@mui/icons-material/Help';
-import { useRecoilValue } from 'recoil';
-import { clientPathState } from '../../recoil/atoms';
-import IconCanvas from './IconCanvas';
-import IconPickerDialog from './IconPickerDialog';
+import React, { useState } from 'react'
+import { Box, TextField, IconButton, Tooltip } from '@mui/material'
+import GridViewIcon from '@mui/icons-material/GridView'
+import HelpIcon from '@mui/icons-material/Help'
+import { useRecoilValue } from 'recoil'
+import { clientPathState } from '../../recoil/atoms'
+import IconCanvas from './IconCanvas'
+import IconPickerDialog from './IconPickerDialog'
 
-const PREVIEW_SIZE = 48;
+const PREVIEW_SIZE = 48
 
 /**
  * Spell or skill icon picker. A single `type` prop drives which pool we show:
@@ -21,32 +21,34 @@ const PREVIEW_SIZE = 48;
  *   label       — TextField label (default "Icon")
  *   helpTooltip — optional help icon
  */
-export default function IconPicker({
-  type,
-  value,
-  onChange,
-  label = 'Icon',
-  helpTooltip,
-}) {
-  const [open, setOpen] = useState(false);
-  const clientPath = useRecoilValue(clientPathState);
+export default function IconPicker({ type, value, onChange, label = 'Icon', helpTooltip }) {
+  const [open, setOpen] = useState(false)
+  const clientPath = useRecoilValue(clientPathState)
 
   const handleSelect = (id) => {
-    onChange(String(id));
-    setOpen(false);
-  };
+    onChange(String(id))
+    setOpen(false)
+  }
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <IconCanvas type={type} id={value} size={PREVIEW_SIZE} />
       <TextField
-        label={label} size="small" type="number"
+        label={label}
+        size="small"
+        type="number"
         value={value ?? ''}
         onChange={(e) => onChange(String(e.target.value).replace(/\D/g, ''))}
         inputProps={{ min: 0 }}
         sx={{ width: 110 }}
       />
-      <Tooltip title={clientPath ? `Browse ${type} icons` : 'Set Dark Ages client path in Settings to browse icons'}>
+      <Tooltip
+        title={
+          clientPath
+            ? `Browse ${type} icons`
+            : 'Set Dark Ages client path in Settings to browse icons'
+        }
+      >
         <span>
           <IconButton size="small" onClick={() => setOpen(true)} disabled={!clientPath}>
             <GridViewIcon fontSize="small" />
@@ -68,5 +70,5 @@ export default function IconPicker({
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

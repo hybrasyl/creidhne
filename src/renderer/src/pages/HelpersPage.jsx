@@ -1,29 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import {
-  Box, Typography, Button, Alert, Paper, Stack, CircularProgress, Divider,
-} from '@mui/material';
-import BuildIcon from '@mui/icons-material/Build';
-import { useRecoilValue } from 'recoil';
-import { activeLibraryState } from '../recoil/atoms';
+  Box,
+  Typography,
+  Button,
+  Alert,
+  Paper,
+  Stack,
+  CircularProgress,
+  Divider
+} from '@mui/material'
+import BuildIcon from '@mui/icons-material/Build'
+import { useRecoilValue } from 'recoil'
+import { activeLibraryState } from '../recoil/atoms'
 
 export default function HelpersPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState);
-  const [installing, setInstalling] = useState(false);
-  const [result, setResult] = useState(null);
+  const activeLibrary = useRecoilValue(activeLibraryState)
+  const [installing, setInstalling] = useState(false)
+  const [result, setResult] = useState(null)
 
   const handleSetupLua = async () => {
-    if (!activeLibrary) return;
-    setInstalling(true);
-    setResult(null);
+    if (!activeLibrary) return
+    setInstalling(true)
+    setResult(null)
     try {
-      const res = await window.electronAPI.setupLuaEnvironment(activeLibrary);
-      setResult(res);
+      const res = await window.electronAPI.setupLuaEnvironment(activeLibrary)
+      setResult(res)
     } catch (err) {
-      setResult({ ok: false, error: err?.message || String(err) });
+      setResult({ ok: false, error: err?.message || String(err) })
     } finally {
-      setInstalling(false);
+      setInstalling(false)
     }
-  };
+  }
 
   return (
     <Box sx={{ p: 3, maxWidth: 800 }}>
@@ -117,5 +124,5 @@ export default function HelpersPage() {
         </Stack>
       </Paper>
     </Box>
-  );
+  )
 }

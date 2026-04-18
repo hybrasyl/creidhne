@@ -23,9 +23,9 @@ const EPF_NAME = 'nation.epf'
 export const DEFAULT_CREST_PALETTE = { pattern: 'gui', number: 5 }
 
 // Caches keyed per clientPath.
-const epfCache       = new Map() // clientPath → EpfFile
+const epfCache = new Map() // clientPath → EpfFile
 const allPalettesCache = new Map() // clientPath → Array<{ pattern, number, palette }>
-const bitmapCache    = new Map() // `${clientPath}|${flagNum}|${paletteKey}` → ImageBitmap
+const bitmapCache = new Map() // `${clientPath}|${flagNum}|${paletteKey}` → ImageBitmap
 
 async function getEpf(clientPath) {
   const cached = epfCache.get(clientPath)
@@ -34,7 +34,7 @@ async function getEpf(clientPath) {
   if (!archive.has(EPF_NAME)) return null
   const epf = EpfFile.fromArchive(EPF_NAME, archive)
   epfCache.set(clientPath, epf)
-  // eslint-disable-next-line no-console
+
   console.log(`[nationCrestData] ${EPF_NAME} has ${epf.frames.length} frames`)
   return epf
 }
@@ -68,7 +68,7 @@ async function getAllPalettes(clientPath) {
     a.pattern === b.pattern ? a.number - b.number : a.pattern.localeCompare(b.pattern)
   )
   allPalettesCache.set(clientPath, all)
-  // eslint-disable-next-line no-console
+
   console.log(
     `[nationCrestData] loaded ${all.length} palettes from ${ARCHIVE}:`,
     `[${Array.from(new Set(all.map((p) => p.pattern))).join(', ')}]`
@@ -150,7 +150,11 @@ export async function getAvailableCrestPalettes(clientPath) {
 
 export function clearNationCrestCache() {
   for (const bmp of bitmapCache.values()) {
-    try { bmp.close?.() } catch { /* ignore */ }
+    try {
+      bmp.close?.()
+    } catch {
+      /* ignore */
+    }
   }
   bitmapCache.clear()
   epfCache.clear()
@@ -163,12 +167,21 @@ export function useNationCrestIndex() {
   const clientPath = useRecoilValue(clientPathState)
   const [result, setResult] = useState(null)
   useEffect(() => {
-    if (!clientPath) { setResult(null); return undefined }
+    if (!clientPath) {
+      setResult(null)
+      return undefined
+    }
     let cancelled = false
     getNationCrestIndex(clientPath)
-      .then((r) => { if (!cancelled) setResult(r) })
-      .catch(() => { if (!cancelled) setResult(null) })
-    return () => { cancelled = true }
+      .then((r) => {
+        if (!cancelled) setResult(r)
+      })
+      .catch(() => {
+        if (!cancelled) setResult(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [clientPath])
   return result
 }

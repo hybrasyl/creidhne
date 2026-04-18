@@ -14,9 +14,9 @@ const FRAMES_PER_EPF = 266
 
 // Caches keyed by clientPath so switching clients invalidates cleanly.
 const paletteLookupCache = new Map() // clientPath → PaletteLookup
-const epfMapCache        = new Map() // clientPath → Map<epfNum, EpfFile>
-const bitmapCache        = new Map() // `${clientPath}|${id}` → ImageBitmap
-const indexCache         = new Map() // clientPath → { total, visibleIds }
+const epfMapCache = new Map() // clientPath → Map<epfNum, EpfFile>
+const bitmapCache = new Map() // `${clientPath}|${id}` → ImageBitmap
+const indexCache = new Map() // clientPath → { total, visibleIds }
 
 /**
  * Convert a 1-based sprite id to its EPF number and the frame index within
@@ -28,7 +28,7 @@ const indexCache         = new Map() // clientPath → { total, visibleIds }
 export function resolveItemSprite(id) {
   const n = Number(id)
   if (!Number.isFinite(n) || n < 1) return null
-  const epfNum   = Math.floor((n - 1) / FRAMES_PER_EPF) + 1
+  const epfNum = Math.floor((n - 1) / FRAMES_PER_EPF) + 1
   const frameIdx = (n - 1) % FRAMES_PER_EPF
   return { epfNum, frameIdx }
 }
@@ -45,7 +45,7 @@ async function getPaletteLookup(clientPath) {
     const palEntries = archive.getEntriesByPattern('item', '.pal')
     const tblEntries = archive.getEntriesByPattern('item', '.tbl')
     const palIds = Array.from(lookup.palettes.keys()).sort((a, b) => a - b)
-    // eslint-disable-next-line no-console
+
     console.log(
       `[itemSpriteData] legend.dat: ${palEntries.length} item*.pal, ${tblEntries.length} item*.tbl;`,
       `PaletteLookup has ${palIds.length} palette ids (range ${palIds[0]}..${palIds[palIds.length - 1]})`
@@ -77,7 +77,7 @@ async function getEpfMap(clientPath) {
     foundNums.push(n)
   }
   foundNums.sort((a, b) => a - b)
-  // eslint-disable-next-line no-console
+
   console.log(`[itemSpriteData] loaded ${map.size} item EPFs: [${foundNums.join(',')}]`)
   epfMapCache.set(clientPath, map)
   return map
@@ -89,8 +89,10 @@ const fallbackWarnedEpfs = new Set()
 function warnFallbackOnce(epfNum) {
   if (fallbackWarnedEpfs.has(epfNum)) return
   fallbackWarnedEpfs.add(epfNum)
-  // eslint-disable-next-line no-console
-  console.warn(`[itemSpriteData] item${String(epfNum).padStart(3, '0')}.epf has no palette table entry; using palette 0 default`)
+
+  console.warn(
+    `[itemSpriteData] item${String(epfNum).padStart(3, '0')}.epf has no palette table entry; using palette 0 default`
+  )
 }
 
 /**
@@ -138,7 +140,7 @@ export async function getItemSpriteIndex(clientPath) {
   }
   const result = { total, visibleIds }
   indexCache.set(clientPath, result)
-  // eslint-disable-next-line no-console
+
   console.log(`[itemSpriteData] scanned ${total} frames; ${visibleIds.length} non-blank`)
   return result
 }
@@ -189,7 +191,11 @@ export async function getItemSpriteBitmap(clientPath, id) {
  */
 export function clearItemSpriteCache() {
   for (const bitmap of bitmapCache.values()) {
-    try { bitmap.close?.() } catch { /* ignore */ }
+    try {
+      bitmap.close?.()
+    } catch {
+      /* ignore */
+    }
   }
   bitmapCache.clear()
   epfMapCache.clear()

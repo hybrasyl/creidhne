@@ -19,10 +19,10 @@ const ARCHIVE = 'roh.dat'
 
 // Caches keyed by clientPath.
 const paletteLookupCache = new Map() // clientPath → PaletteLookup   (for EPF rendering)
-const effectMapCache     = new Map() // clientPath → Map<id, { kind, entry }>
-const loadedFileCache    = new Map() // `${clientPath}|${id}` → { kind, file }
-const framesCache        = new Map() // `${clientPath}|${id}` → { width, height, frames, defaultFrameIntervalMs }
-const indexCache         = new Map() // clientPath → { total, visibleIds }
+const effectMapCache = new Map() // clientPath → Map<id, { kind, entry }>
+const loadedFileCache = new Map() // `${clientPath}|${id}` → { kind, file }
+const framesCache = new Map() // `${clientPath}|${id}` → { width, height, frames, defaultFrameIntervalMs }
+const indexCache = new Map() // clientPath → { total, visibleIds }
 
 const fallbackWarnedIds = new Set()
 
@@ -37,7 +37,7 @@ async function getPaletteLookup(clientPath) {
     const palEntries = archive.getEntriesByPattern('eff', '.pal')
     const tblEntries = archive.getEntriesByPattern('effpal', '.tbl')
     const palIds = Array.from(lookup.palettes.keys()).sort((a, b) => a - b)
-    // eslint-disable-next-line no-console
+
     console.log(
       `[effectData] ${ARCHIVE}: ${palEntries.length} eff*.pal, ${tblEntries.length} effpal*.tbl;`,
       `PaletteLookup has ${palIds.length} palette ids (range ${palIds[0]}..${palIds[palIds.length - 1]})`
@@ -54,14 +54,13 @@ async function getPaletteLookup(clientPath) {
     const largeRefs = refSorted.filter((n) => n >= 1000)
     const missingSmall = smallRefs.filter((n) => !paletteIdSet.has(n))
     const missingAfterSubtract = largeRefs.filter((n) => !paletteIdSet.has(n - 1000))
-    // eslint-disable-next-line no-console
+
     console.log(
       `[effectData] table references ${refSorted.length} palette ids;`,
       `small (<1000): ${smallRefs.length} [${smallRefs.slice(0, 10).join(',')}${smallRefs.length > 10 ? ',…' : ''}];`,
       `large (≥1000): ${largeRefs.length} [${largeRefs.slice(0, 10).join(',')}${largeRefs.length > 10 ? ',…' : ''}]`
     )
     if (missingSmall.length || missingAfterSubtract.length) {
-      // eslint-disable-next-line no-console
       console.warn(
         `[effectData] palette numbers referenced but not in archive:`,
         `small missing: [${missingSmall.join(',')}];`,
@@ -75,12 +74,16 @@ async function getPaletteLookup(clientPath) {
         const rawEntry = lookup.table.entries.get(Number(id))
         const rawOverride = lookup.table.overrides.get(Number(id))
         const rawFinal = lookup.table.getPaletteNumber(Number(id))
-        // eslint-disable-next-line no-console
-        console.log(`[effectData] effect ${id}: entries=${rawEntry ?? '∅'}, overrides=${rawOverride ?? '∅'}, getPaletteNumber=${rawFinal}`)
+
+        console.log(
+          `[effectData] effect ${id}: entries=${rawEntry ?? '∅'}, overrides=${rawOverride ?? '∅'}, getPaletteNumber=${rawFinal}`
+        )
         return { entry: rawEntry, override: rawOverride, final: rawFinal }
       }
     }
-  } catch { /* diagnostics only */ }
+  } catch {
+    /* diagnostics only */
+  }
   paletteLookupCache.set(clientPath, lookup)
   return lookup
 }
@@ -105,8 +108,10 @@ async function getEffectMap(clientPath) {
     map.set(n, { kind: 'efa', entry }) // overrides epf if both exist
     efaCount++
   }
-  // eslint-disable-next-line no-console
-  console.log(`[effectData] ${ARCHIVE}: ${epfEntries.length} efct*.epf, ${efaEntries.length} efct*.efa (${efaCount} used); ${map.size} unique effect ids`)
+
+  console.log(
+    `[effectData] ${ARCHIVE}: ${epfEntries.length} efct*.epf, ${efaEntries.length} efct*.efa (${efaCount} used); ${map.size} unique effect ids`
+  )
   effectMapCache.set(clientPath, map)
   return map
 }
@@ -147,8 +152,10 @@ export async function getEffectIndex(clientPath) {
 // frame's (left, top) so the animation renders at origin (0, 0). Returns
 // { width, height, frames } where frames have their left/top adjusted.
 export function tightBoundsAndNormalize(rawFrames) {
-  let minLeft = Infinity, minTop = Infinity
-  let maxRight = -Infinity, maxBottom = -Infinity
+  let minLeft = Infinity,
+    minTop = Infinity
+  let maxRight = -Infinity,
+    maxBottom = -Infinity
   for (const f of rawFrames) {
     if (!f) continue
     if (f.left < minLeft) minLeft = f.left
@@ -161,7 +168,9 @@ export function tightBoundsAndNormalize(rawFrames) {
   if (!Number.isFinite(minLeft)) return { width: 1, height: 1, frames: rawFrames }
   const width = Math.max(1, maxRight - minLeft)
   const height = Math.max(1, maxBottom - minTop)
-  const frames = rawFrames.map((f) => (f ? { bitmap: f.bitmap, left: f.left - minLeft, top: f.top - minTop } : null))
+  const frames = rawFrames.map((f) =>
+    f ? { bitmap: f.bitmap, left: f.left - minLeft, top: f.top - minTop } : null
+  )
   return { width, height, frames }
 }
 
@@ -173,7 +182,9 @@ async function renderEpfFrames(loaded, id, clientPath) {
   let palette = null
   try {
     palette = lookup.getPaletteForId(Number(id))
-  } catch { /* fall through to fallback */ }
+  } catch {
+    /* fall through to fallback */
+  }
   if (!palette) {
     palette = lookup.palettes.get(0)
     if (!palette) {
@@ -183,17 +194,23 @@ async function renderEpfFrames(loaded, id, clientPath) {
     if (!palette) return null
     if (!fallbackWarnedIds.has(Number(id))) {
       fallbackWarnedIds.add(Number(id))
-      // eslint-disable-next-line no-console
+
       console.warn(`[effectData] effect id ${id}: palette unavailable, using palette 0 default`)
     }
   }
 
   const rawFrames = []
   for (const frame of epf.frames) {
-    if (!frame || !frame.data || frame.data.length === 0) { rawFrames.push(null); continue }
+    if (!frame || !frame.data || frame.data.length === 0) {
+      rawFrames.push(null)
+      continue
+    }
     const w = frame.right - frame.left
     const h = frame.bottom - frame.top
-    if (w <= 0 || h <= 0) { rawFrames.push(null); continue }
+    if (w <= 0 || h <= 0) {
+      rawFrames.push(null)
+      continue
+    }
     try {
       const rgba = renderEpf(frame, palette)
       const bitmap = await createImageBitmap(toImageData(rgba))
@@ -211,14 +228,20 @@ async function renderEfaFrames(loaded) {
   for (const frame of efa.frames) {
     try {
       const rgba = renderEfa(frame, efa.blendingType)
-      if (!rgba || rgba.width === 0 || rgba.height === 0) { rawFrames.push(null); continue }
+      if (!rgba || rgba.width === 0 || rgba.height === 0) {
+        rawFrames.push(null)
+        continue
+      }
       const bitmap = await createImageBitmap(toImageData(rgba))
       rawFrames.push({ bitmap, left: frame.left || 0, top: frame.top || 0 })
     } catch {
       rawFrames.push(null)
     }
   }
-  return { ...tightBoundsAndNormalize(rawFrames), defaultFrameIntervalMs: efa.frameIntervalMs || null }
+  return {
+    ...tightBoundsAndNormalize(rawFrames),
+    defaultFrameIntervalMs: efa.frameIntervalMs || null
+  }
 }
 
 /**
@@ -250,7 +273,11 @@ export function clearEffectCache() {
     if (!result) continue
     for (const f of result.frames) {
       if (f?.bitmap) {
-        try { f.bitmap.close?.() } catch { /* ignore */ }
+        try {
+          f.bitmap.close?.()
+        } catch {
+          /* ignore */
+        }
       }
     }
   }
@@ -268,12 +295,21 @@ export function useEffectIndex() {
   const clientPath = useRecoilValue(clientPathState)
   const [result, setResult] = useState(() => indexCache.get(clientPath) || null)
   useEffect(() => {
-    if (!clientPath) { setResult(null); return undefined }
+    if (!clientPath) {
+      setResult(null)
+      return undefined
+    }
     let cancelled = false
     getEffectIndex(clientPath)
-      .then((r) => { if (!cancelled) setResult(r) })
-      .catch(() => { if (!cancelled) setResult(null) })
-    return () => { cancelled = true }
+      .then((r) => {
+        if (!cancelled) setResult(r)
+      })
+      .catch(() => {
+        if (!cancelled) setResult(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [clientPath])
   return result
 }

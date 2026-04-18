@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { join } from 'path'
 
 const mockFs = {
-  readFile:  vi.fn(),
+  readFile: vi.fn(),
   writeFile: vi.fn(),
-  mkdir:     vi.fn(),
+  mkdir: vi.fn()
 }
 
 vi.mock('fs', () => ({ promises: mockFs }))
@@ -18,20 +18,21 @@ beforeEach(() => {
 })
 
 const EMPTY_SHAPE = {
-  vendorTabs:         [],
-  itemCategories:     [],
+  vendorTabs: [],
+  itemCategories: [],
   castableCategories: [],
-  statusCategories:   [],
-  cookies:            [],
-  npcJobs:            [],
-  creatureFamilies:   [],
-  motions:            [],
+  statusCategories: [],
+  cookies: [],
+  npcJobs: [],
+  creatureFamilies: [],
+  motions: []
 }
 
 describe('getConstantsPath', () => {
   it('points to constants.json inside .creidhne', () => {
-    expect(getConstantsPath('/worlds/test/xml'))
-      .toBe(join('/worlds/test/xml', '..', '.creidhne', 'constants.json'))
+    expect(getConstantsPath('/worlds/test/xml')).toBe(
+      join('/worlds/test/xml', '..', '.creidhne', 'constants.json')
+    )
   })
 })
 
@@ -49,10 +50,12 @@ describe('loadConstants', () => {
   })
 
   it('merges saved data with defaults, preserving all default keys', async () => {
-    mockFs.readFile.mockResolvedValue(JSON.stringify({
-      vendorTabs: ['Weapons', 'Armor'],
-      npcJobs:    ['Vendor'],
-    }))
+    mockFs.readFile.mockResolvedValue(
+      JSON.stringify({
+        vendorTabs: ['Weapons', 'Armor'],
+        npcJobs: ['Vendor']
+      })
+    )
     const result = await loadConstants('/worlds/test/xml')
     expect(result.vendorTabs).toEqual(['Weapons', 'Armor'])
     expect(result.npcJobs).toEqual(['Vendor'])
@@ -67,14 +70,13 @@ describe('saveConstants', () => {
     const data = { vendorTabs: ['Tavern'], itemCategories: ['Food'] }
     await saveConstants('/worlds/test/xml', data)
 
-    expect(mockFs.mkdir).toHaveBeenCalledWith(
-      expect.stringContaining('.creidhne'),
-      { recursive: true },
-    )
+    expect(mockFs.mkdir).toHaveBeenCalledWith(expect.stringContaining('.creidhne'), {
+      recursive: true
+    })
     expect(mockFs.writeFile).toHaveBeenCalledWith(
       getConstantsPath('/worlds/test/xml'),
       JSON.stringify(data, null, 2),
-      'utf-8',
+      'utf-8'
     )
   })
 })

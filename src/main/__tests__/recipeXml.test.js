@@ -139,7 +139,7 @@ describe('Output structure', () => {
     description: '',
     produces: 'Iron Shield',
     duration: '20',
-    ingredients: [{ name: 'Iron Bar', quantity: '5' }],
+    ingredients: [{ name: 'Iron Bar', quantity: '5' }]
   }
 
   it('root element is Recipe', async () => {

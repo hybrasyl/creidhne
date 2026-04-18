@@ -8,7 +8,7 @@ const DEFAULT_BUDGET_MODIFIER = {
   mode: 'none',
   application: 'additive',
   lines: { baseline: 4, step: 0.03, cap: null },
-  cooldown: { baseline: 6, step: 0.01, cap: 0.2 },
+  cooldown: { baseline: 6, step: 0.01, cap: 0.2 }
 }
 
 const DEFAULT_SETTINGS = {
@@ -16,16 +16,16 @@ const DEFAULT_SETTINGS = {
   customVariables: {
     LevelUpper: 110,
     LevelDiv: 10,
-    Divisor: 1500,
+    Divisor: 1500
   },
   coefficients: {},
-  defaultPatternId: null,
+  defaultPatternId: null
 }
 
 const EMPTY = {
-  settings:  { ...DEFAULT_SETTINGS },
-  patterns:  [],
-  formulas:  [],
+  settings: { ...DEFAULT_SETTINGS },
+  patterns: [],
+  formulas: []
 }
 
 /**
@@ -41,7 +41,7 @@ function migrateIfNeeded(data) {
   if (data.globals && !data.settings) {
     migrated.settings = {
       ...DEFAULT_SETTINGS,
-      customVariables: { ...data.globals },
+      customVariables: { ...data.globals }
     }
   }
   delete migrated.globals
@@ -66,7 +66,7 @@ export async function loadFormulas(libraryPath) {
     return {
       settings: { ...DEFAULT_SETTINGS, ...data.settings },
       patterns: data.patterns || [],
-      formulas: data.formulas || [],
+      formulas: data.formulas || []
     }
   } catch {
     return { ...EMPTY }
@@ -105,7 +105,7 @@ export async function importFormulas(luaFilePath, existingData) {
   }
 
   const existing = existingData.formulas || []
-  const byName    = new Map(existing.map((f) => [f.name, f]))
+  const byName = new Map(existing.map((f) => [f.name, f]))
   const byFormula = new Map(existing.map((f) => [f.formula, f]))
 
   const updated = []
@@ -126,5 +126,10 @@ export async function importFormulas(luaFilePath, existingData) {
     }
   }
 
-  return { updated: updated.length, added: added.length, duplicates, data: { ...existingData, formulas: result } }
+  return {
+    updated: updated.length,
+    added: added.length,
+    duplicates,
+    data: { ...existingData, formulas: result }
+  }
 }

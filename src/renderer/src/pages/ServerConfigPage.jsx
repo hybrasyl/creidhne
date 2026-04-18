@@ -1,17 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
+import React, { useState, useEffect, useCallback } from 'react'
+import { useRecoilValue } from 'recoil'
 import {
-  Box, Typography, Divider, Button, Tooltip,
-  IconButton, Alert, Snackbar,
-} from '@mui/material';
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
-import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor';
-import EditorFileListPanel from '../components/shared/EditorFileListPanel';
-import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
-import UnsavedChangesDialog from '../components/UnsavedChangesDialog';
+  Box,
+  Typography,
+  Divider,
+  Button,
+  Tooltip,
+  IconButton,
+  Alert,
+  Snackbar
+} from '@mui/material'
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor'
+import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 
-const SUBDIR = 'serverconfigs';
-const IGNORE_SUBDIR = 'serverconfigs/.ignore';
+const SUBDIR = 'serverconfigs'
+const IGNORE_SUBDIR = 'serverconfigs/.ignore'
 
 export const DEFAULT_SERVERCONFIG = {
   name: '',
@@ -21,151 +27,204 @@ export const DEFAULT_SERVERCONFIG = {
   motd: '',
   worldDataDir: '',
   logging: { singleStreamEnabled: false, jsonOutputEnabled: false, minimumLevel: 'Info', logs: [] },
-  dataStore: { type: 'redis', host: '127.0.0.1', port: '', database: '', username: '', password: '', hasCredentials: false },
+  dataStore: {
+    type: 'redis',
+    host: '127.0.0.1',
+    port: '',
+    database: '',
+    username: '',
+    password: '',
+    hasCredentials: false
+  },
   network: {
     lobby: { bindAddress: '127.0.0.1', externalAddress: '', port: '2610' },
     login: { bindAddress: '127.0.0.1', externalAddress: '', port: '2611' },
     world: { bindAddress: '127.0.0.1', externalAddress: '', port: '2612' },
-    grpc: null,
+    grpc: null
   },
-  apiEndpoints: { sentry: '', encryptionEndpoint: '', validationEndpoint: '', telemetryEndpoint: '', metricsEndpoint: null },
+  apiEndpoints: {
+    sentry: '',
+    encryptionEndpoint: '',
+    validationEndpoint: '',
+    telemetryEndpoint: '',
+    metricsEndpoint: null
+  },
   access: { privileged: '', reserved: '' },
   boards: [],
   time: { ages: [], serverStart: { value: '', defaultAge: '', defaultYear: '' } },
   handlers: {
     death: null,
     chat: null,
-    newPlayer: { startMaps: [] },
+    newPlayer: { startMaps: [] }
   },
   plugins: { message: [] },
   clientSettings: [],
   constants: {},
-  formulas: {},
-};
+  formulas: {}
+}
 
 function ServerConfigPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState);
-  const libraryIndex = useRecoilValue(libraryIndexState);
-  const namesByFilename = libraryIndex?.serverconfigsNamesByFilename;
-  const [files, setFiles] = useState([]);
-  const [archivedFiles, setArchivedFiles] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [editingConfig, setEditingConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showArchived, setShowArchived] = useState(false);
-  const [loadError, setLoadError] = useState(null);
-  const [snackbar, setSnackbar] = useState(null);
+  const activeLibrary = useRecoilValue(activeLibraryState)
+  const libraryIndex = useRecoilValue(libraryIndexState)
+  const namesByFilename = libraryIndex?.serverconfigsNamesByFilename
+  const [files, setFiles] = useState([])
+  const [archivedFiles, setArchivedFiles] = useState([])
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [editingConfig, setEditingConfig] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [showArchived, setShowArchived] = useState(false)
+  const [loadError, setLoadError] = useState(null)
+  const [snackbar, setSnackbar] = useState(null)
 
-  const { markDirty, markClean, saveRef, guard, dialogOpen,
-    handleDialogSave, handleDialogDiscard, handleDialogCancel } = useUnsavedGuard('Server Config');
+  const {
+    markDirty,
+    markClean,
+    saveRef,
+    guard,
+    dialogOpen,
+    handleDialogSave,
+    handleDialogDiscard,
+    handleDialogCancel
+  } = useUnsavedGuard('Server Config')
 
   const loadFiles = async (library) => {
-    if (!library) { setFiles([]); return; }
-    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`);
-    setFiles(items);
-  };
+    if (!library) {
+      setFiles([])
+      return
+    }
+    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`)
+    setFiles(items)
+  }
 
   const loadArchivedFiles = async (library) => {
-    if (!library) { setArchivedFiles([]); return; }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`);
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })));
-  };
+    if (!library) {
+      setArchivedFiles([])
+      return
+    }
+    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
+    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
+  }
 
   useEffect(() => {
-    if (!activeLibrary) { setFiles([]); setArchivedFiles([]); setSelectedFile(null); setEditingConfig(null); setLoading(false); return; }
-    setLoading(true);
-    Promise.all([
-      loadFiles(activeLibrary),
-      loadArchivedFiles(activeLibrary),
-    ]).finally(() => setLoading(false));
-  }, [activeLibrary]);
+    if (!activeLibrary) {
+      setFiles([])
+      setArchivedFiles([])
+      setSelectedFile(null)
+      setEditingConfig(null)
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    Promise.all([loadFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
+      setLoading(false)
+    )
+  }, [activeLibrary])
 
   const handleToggleArchived = async () => {
-    const next = !showArchived;
-    setShowArchived(next);
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary);
-  };
+    const next = !showArchived
+    setShowArchived(next)
+    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
+  }
 
   const doNew = () => {
-    setSelectedFile(null);
-    setLoadError(null);
-    setEditingConfig(DEFAULT_SERVERCONFIG);
-  };
-  const handleNew = () => guard(doNew);
+    setSelectedFile(null)
+    setLoadError(null)
+    setEditingConfig(DEFAULT_SERVERCONFIG)
+  }
+  const handleNew = () => guard(doNew)
 
   const doSelect = async (file) => {
-    setSelectedFile(file);
-    setLoadError(null);
+    setSelectedFile(file)
+    setLoadError(null)
     try {
-      const cfg = await window.electronAPI.loadServerConfig(file.path);
-      setEditingConfig(cfg);
+      const cfg = await window.electronAPI.loadServerConfig(file.path)
+      setEditingConfig(cfg)
     } catch (err) {
-      console.error('Failed to load server config:', err);
-      setEditingConfig(null);
-      setLoadError(err?.message || 'Failed to parse XML.');
+      console.error('Failed to load server config:', err)
+      setEditingConfig(null)
+      setLoadError(err?.message || 'Failed to parse XML.')
     }
-  };
-  const handleSelect = (file) => guard(() => doSelect(file));
+  }
+  const handleSelect = (file) => guard(() => doSelect(file))
 
   const handleSave = async (data, fileName) => {
     try {
-      const isRename = !!(selectedFile && fileName !== selectedFile.name);
-      const newPath  = isRename || !selectedFile
-        ? `${activeLibrary}/${SUBDIR}/${fileName}`
-        : selectedFile.path;
+      const isRename = !!(selectedFile && fileName !== selectedFile.name)
+      const newPath =
+        isRename || !selectedFile ? `${activeLibrary}/${SUBDIR}/${fileName}` : selectedFile.path
 
-      await window.electronAPI.saveServerConfig(newPath, data);
-      setEditingConfig(data);  // #6: sync editor to saved data before any selectedFile change
+      await window.electronAPI.saveServerConfig(newPath, data)
+      setEditingConfig(data) // #6: sync editor to saved data before any selectedFile change
 
       if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
-        );
-        setSelectedFile({ name: fileName, path: newPath });
-        setSnackbar({ message: `Renamed. Old file archived as "${result.archivedAs}".`, severity: 'success' });
+        )
+        setSelectedFile({ name: fileName, path: newPath })
+        setSnackbar({
+          message: `Renamed. Old file archived as "${result.archivedAs}".`,
+          severity: 'success'
+        })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath });  // #5: associate with file after first save
+        setSelectedFile({ name: fileName, path: newPath }) // #5: associate with file after first save
       }
 
-      markClean();
-      if (activeLibrary) await loadFiles(activeLibrary);
+      markClean()
+      if (activeLibrary) await loadFiles(activeLibrary)
     } catch (err) {
-      console.error('Failed to save server config:', err);
-      setSnackbar({ message: `Failed to save: ${err?.message}`, severity: 'error' });
+      console.error('Failed to save server config:', err)
+      setSnackbar({ message: `Failed to save: ${err?.message}`, severity: 'error' })
     }
-  };
+  }
 
   const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return;
+    if (!selectedFile || !activeLibrary) return
     const result = await window.electronAPI.moveFile(
       selectedFile.path,
       `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    );
-    if (result?.conflict) { setSnackbar({ message: 'An archived config with this name already exists.', severity: 'error' }); return; }
-    markClean();
-    setSelectedFile(null); setEditingConfig(null);
-    await loadFiles(activeLibrary);
-    await loadArchivedFiles(activeLibrary);
-  };
+    )
+    if (result?.conflict) {
+      setSnackbar({
+        message: 'An archived config with this name already exists.',
+        severity: 'error'
+      })
+      return
+    }
+    markClean()
+    setSelectedFile(null)
+    setEditingConfig(null)
+    await loadFiles(activeLibrary)
+    await loadArchivedFiles(activeLibrary)
+  }
 
   const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return;
+    if (!selectedFile || !activeLibrary) return
     const result = await window.electronAPI.moveFile(
       selectedFile.path,
       `${activeLibrary}/${SUBDIR}/${selectedFile.name}`
-    );
+    )
     if (result?.conflict) {
-      setSnackbar({ message: 'An active config with this name already exists. Rename the archived file before unarchiving.', severity: 'error' });
-      return;
+      setSnackbar({
+        message:
+          'An active config with this name already exists. Rename the archived file before unarchiving.',
+        severity: 'error'
+      })
+      return
     }
-    markClean();
-    setSelectedFile(null); setEditingConfig(null);
-    await loadFiles(activeLibrary);
-    await loadArchivedFiles(activeLibrary);
-  };
+    markClean()
+    setSelectedFile(null)
+    setEditingConfig(null)
+    await loadFiles(activeLibrary)
+    await loadArchivedFiles(activeLibrary)
+  }
 
-  const handleDirtyChange = useCallback((dirty) => { dirty ? markDirty() : markClean(); }, [markDirty, markClean]);
+  const handleDirtyChange = useCallback(
+    (dirty) => {
+      dirty ? markDirty() : markClean()
+    },
+    [markDirty, markClean]
+  )
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -200,7 +259,9 @@ function ServerConfigPage() {
             saveRef={saveRef}
           />
         ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+          >
             <Typography variant="body1" color="text.secondary">
               Select a config or create a new one.
             </Typography>
@@ -208,16 +269,28 @@ function ServerConfigPage() {
         )}
       </Box>
       <UnsavedChangesDialog
-        open={dialogOpen} label="Server Config"
-        onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel}
+        open={dialogOpen}
+        label="Server Config"
+        onSave={handleDialogSave}
+        onDiscard={handleDialogDiscard}
+        onCancel={handleDialogCancel}
       />
-      <Snackbar open={!!snackbar} autoHideDuration={6000} onClose={() => setSnackbar(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity={snackbar?.severity ?? 'info'} onClose={() => setSnackbar(null)} sx={{ width: '100%' }}>
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snackbar?.severity ?? 'info'}
+          onClose={() => setSnackbar(null)}
+          sx={{ width: '100%' }}
+        >
           {snackbar?.message}
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
-export default ServerConfigPage;
+export default ServerConfigPage

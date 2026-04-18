@@ -1,69 +1,120 @@
-import React from 'react';
-import { Box, TextField, Typography, Divider, Switch, FormControlLabel, Button } from '@mui/material';
-import SoundPicker from '../shared/SoundPicker';
-import EffectPicker from '../shared/EffectPicker';
+import React from 'react'
+import {
+  Box,
+  TextField,
+  Typography,
+  Divider,
+  Switch,
+  FormControlLabel,
+  Button
+} from '@mui/material'
+import SoundPicker from '../shared/SoundPicker'
+import EffectPicker from '../shared/EffectPicker'
 
 const PLAYER_CLASSES = [
   { key: 'peasant', label: 'Peasant' },
   { key: 'warrior', label: 'Warrior' },
-  { key: 'wizard',  label: 'Wizard'  },
-  { key: 'priest',  label: 'Priest'  },
-  { key: 'rogue',   label: 'Rogue'   },
-  { key: 'monk',    label: 'Monk'    },
-];
+  { key: 'wizard', label: 'Wizard' },
+  { key: 'priest', label: 'Priest' },
+  { key: 'rogue', label: 'Rogue' },
+  { key: 'monk', label: 'Monk' }
+]
 
-const EMPTY_MOTION = { id: '', speed: '' };
+const EMPTY_MOTION = { id: '', speed: '' }
 
 const EMPTY_GROUP = {
   player: {
-    peasant: { ...EMPTY_MOTION }, warrior: { ...EMPTY_MOTION },
-    wizard:  { ...EMPTY_MOTION }, priest:  { ...EMPTY_MOTION },
-    rogue:   { ...EMPTY_MOTION }, monk:    { ...EMPTY_MOTION },
+    peasant: { ...EMPTY_MOTION },
+    warrior: { ...EMPTY_MOTION },
+    wizard: { ...EMPTY_MOTION },
+    priest: { ...EMPTY_MOTION },
+    rogue: { ...EMPTY_MOTION },
+    monk: { ...EMPTY_MOTION }
   },
   spellEffect: { ...EMPTY_MOTION },
-  target:      { ...EMPTY_MOTION },
-};
+  target: { ...EMPTY_MOTION }
+}
 
 // class -> motionId for each preset
-const SKILL_PRESET = { peasant: 1, warrior: 1, wizard: 1, priest: 1, rogue: 1, monk: 1 };
-const SPELL_PRESET = { peasant: 6, warrior: 6, wizard: 136, priest: 128, rogue: 6, monk: 6 };
+const SKILL_PRESET = { peasant: 1, warrior: 1, wizard: 1, priest: 1, rogue: 1, monk: 1 }
+const SPELL_PRESET = { peasant: 6, warrior: 6, wizard: 136, priest: 128, rogue: 6, monk: 6 }
 
 // Hardcoded fallback speeds per motion id
-const FALLBACK_SPEEDS = { 1: 20, 6: 40, 128: 20, 129: 20, 130: 20, 131: 20, 132: 20, 133: 20, 134: 40, 135: 40, 136: 20, 137: 20, 138: 20, 139: 20, 140: 20, 141: 20, 142: 20, 143: 20, 144: 20, 145: 40 };
+const FALLBACK_SPEEDS = {
+  1: 20,
+  6: 40,
+  128: 20,
+  129: 20,
+  130: 20,
+  131: 20,
+  132: 20,
+  133: 20,
+  134: 40,
+  135: 40,
+  136: 20,
+  137: 20,
+  138: 20,
+  139: 20,
+  140: 20,
+  141: 20,
+  142: 20,
+  143: 20,
+  144: 20,
+  145: 40
+}
 
 function lookupSpeed(id, motions) {
-  const entry = (motions || []).find(m => String(m.id) === String(id));
-  return entry ? String(entry.speed) : String(FALLBACK_SPEEDS[Number(id)] ?? 20);
+  const entry = (motions || []).find((m) => String(m.id) === String(id))
+  return entry ? String(entry.speed) : String(FALLBACK_SPEEDS[Number(id)] ?? 20)
 }
 
 function applyPreset(presetMap, motions) {
-  const player = {};
+  const player = {}
   for (const cls of Object.keys(SKILL_PRESET)) {
-    const id = presetMap[cls];
-    player[cls] = { id: String(id), speed: lookupSpeed(id, motions) };
+    const id = presetMap[cls]
+    player[cls] = { id: String(id), speed: lookupSpeed(id, motions) }
   }
-  return { ...EMPTY_GROUP, player };
+  return { ...EMPTY_GROUP, player }
 }
 
 function MotionRow({ label, motion, onChange }) {
-  const setNum = (field) => (e) => onChange({ ...motion, [field]: e.target.value.replace(/\D/g, '') });
+  const setNum = (field) => (e) =>
+    onChange({ ...motion, [field]: e.target.value.replace(/\D/g, '') })
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.75 }}>
-      <Typography variant="body2" sx={{ width: 84, flexShrink: 0, color: 'text.secondary' }}>{label}</Typography>
-      <TextField label="ID"    size="small" sx={{ width: 90 }} value={motion.id    || ''} onChange={setNum('id')}    inputProps={{ inputMode: 'numeric' }} />
-      <TextField label="Speed" size="small" sx={{ width: 90 }} value={motion.speed || ''} onChange={setNum('speed')} inputProps={{ inputMode: 'numeric' }} />
+      <Typography variant="body2" sx={{ width: 84, flexShrink: 0, color: 'text.secondary' }}>
+        {label}
+      </Typography>
+      <TextField
+        label="ID"
+        size="small"
+        sx={{ width: 90 }}
+        value={motion.id || ''}
+        onChange={setNum('id')}
+        inputProps={{ inputMode: 'numeric' }}
+      />
+      <TextField
+        label="Speed"
+        size="small"
+        sx={{ width: 90 }}
+        value={motion.speed || ''}
+        onChange={setNum('speed')}
+        inputProps={{ inputMode: 'numeric' }}
+      />
     </Box>
-  );
+  )
 }
 
 function AnimationGroup({ group, onChange }) {
-  const setPlayer     = (cls, val) => onChange({ ...group, player:      { ...group.player, [cls]: val } });
-  const setSpellEffect = (val)     => onChange({ ...group, spellEffect: val });
-  const setTarget      = (val)     => onChange({ ...group, target:      val });
+  const setPlayer = (cls, val) => onChange({ ...group, player: { ...group.player, [cls]: val } })
+  const setSpellEffect = (val) => onChange({ ...group, spellEffect: val })
+  const setTarget = (val) => onChange({ ...group, target: val })
 
   return (
     <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>Player</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+        Player
+      </Typography>
       {PLAYER_CLASSES.map(({ key, label }) => (
         <MotionRow
           key={key}
@@ -73,19 +124,29 @@ function AnimationGroup({ group, onChange }) {
         />
       ))}
       <Box sx={{ mt: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>Spell Effect</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+          Spell Effect
+        </Typography>
         <EffectPicker
-          label="Effect ID" speedLabel="Speed"
+          label="Effect ID"
+          speedLabel="Speed"
           effectId={(group.spellEffect || EMPTY_MOTION).id}
           speed={(group.spellEffect || EMPTY_MOTION).speed}
-          onEffectIdChange={(val) => setSpellEffect({ ...(group.spellEffect || EMPTY_MOTION), id: val })}
-          onSpeedChange={(val) => setSpellEffect({ ...(group.spellEffect || EMPTY_MOTION), speed: val })}
+          onEffectIdChange={(val) =>
+            setSpellEffect({ ...(group.spellEffect || EMPTY_MOTION), id: val })
+          }
+          onSpeedChange={(val) =>
+            setSpellEffect({ ...(group.spellEffect || EMPTY_MOTION), speed: val })
+          }
         />
       </Box>
       <Box sx={{ mt: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>Target</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+          Target
+        </Typography>
         <EffectPicker
-          label="Effect ID" speedLabel="Speed"
+          label="Effect ID"
+          speedLabel="Speed"
           effectId={(group.target || EMPTY_MOTION).id}
           speed={(group.target || EMPTY_MOTION).speed}
           onEffectIdChange={(val) => setTarget({ ...(group.target || EMPTY_MOTION), id: val })}
@@ -93,7 +154,7 @@ function AnimationGroup({ group, onChange }) {
         />
       </Box>
     </Box>
-  );
+  )
 }
 
 function AnimationGroupSection({ label, group, motions, onToggle, onChange }) {
@@ -101,17 +162,31 @@ function AnimationGroupSection({ label, group, motions, onToggle, onChange }) {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <FormControlLabel
-          control={<Switch checked={group !== null} onChange={(e) => onToggle(e.target.checked)} size="small" />}
+          control={
+            <Switch
+              checked={group !== null}
+              onChange={(e) => onToggle(e.target.checked)}
+              size="small"
+            />
+          }
           label={<Typography variant="subtitle2">{label}</Typography>}
         />
         {group !== null && (
           <>
-            <Button size="small" variant="outlined" sx={{ py: 0, minWidth: 0, fontSize: '0.7rem' }}
-              onClick={() => onChange(applyPreset(SKILL_PRESET, motions))}>
+            <Button
+              size="small"
+              variant="outlined"
+              sx={{ py: 0, minWidth: 0, fontSize: '0.7rem' }}
+              onClick={() => onChange(applyPreset(SKILL_PRESET, motions))}
+            >
               Skill
             </Button>
-            <Button size="small" variant="outlined" sx={{ py: 0, minWidth: 0, fontSize: '0.7rem' }}
-              onClick={() => onChange(applyPreset(SPELL_PRESET, motions))}>
+            <Button
+              size="small"
+              variant="outlined"
+              sx={{ py: 0, minWidth: 0, fontSize: '0.7rem' }}
+              onClick={() => onChange(applyPreset(SPELL_PRESET, motions))}
+            >
               Spell
             </Button>
           </>
@@ -123,24 +198,25 @@ function AnimationGroupSection({ label, group, motions, onToggle, onChange }) {
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimationsChange }) {
-  const onCast = animations?.onCast ?? null;
-  const onEnd  = animations?.onEnd  ?? null;
+  const onCast = animations?.onCast ?? null
+  const onEnd = animations?.onEnd ?? null
 
   const toggleOnCast = (enabled) =>
-    onAnimationsChange({ onCast: enabled ? { ...EMPTY_GROUP } : null, onEnd });
+    onAnimationsChange({ onCast: enabled ? { ...EMPTY_GROUP } : null, onEnd })
   const toggleOnEnd = (enabled) =>
-    onAnimationsChange({ onCast, onEnd: enabled ? { ...EMPTY_GROUP } : null });
+    onAnimationsChange({ onCast, onEnd: enabled ? { ...EMPTY_GROUP } : null })
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-
       {/* Sound */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Typography variant="body2" sx={{ flexShrink: 0 }}>Sound</Typography>
+        <Typography variant="body2" sx={{ flexShrink: 0 }}>
+          Sound
+        </Typography>
         <SoundPicker
           label="Sound ID"
           width={120}
@@ -168,9 +244,8 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
         onToggle={toggleOnEnd}
         onChange={(val) => onAnimationsChange({ onCast, onEnd: val })}
       />
-
     </Box>
-  );
+  )
 }
 
-export default AnimationsSection;
+export default AnimationsSection

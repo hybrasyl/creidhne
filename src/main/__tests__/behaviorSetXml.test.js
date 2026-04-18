@@ -135,7 +135,7 @@ describe('Field coverage — all fields', () => {
       type: 'Element',
       value: 'Fire',
       messageType: 'Say',
-      message: 'Immune!',
+      message: 'Immune!'
     })
   })
 
@@ -154,7 +154,7 @@ describe('Field coverage — all fields', () => {
     expect(bvs.statModifiers.elementalModifiers[0]).toEqual({
       type: 'Augment',
       element: 'Fire',
-      modifier: '1.5',
+      modifier: '1.5'
     })
   })
 })
@@ -233,19 +233,19 @@ describe('Output structure', () => {
         healthPercentage: '',
         random: true,
         categories: '',
-        castables: [{ name: 'Bite', healthPercentage: '', interval: '' }],
-      },
+        castables: [{ name: 'Bite', healthPercentage: '', interval: '' }]
+      }
     ],
     hostility: {
       monsters: { enabled: true, exceptCookie: '', onlyCookie: '' },
-      players: { enabled: false, exceptCookie: '', onlyCookie: '' },
+      players: { enabled: false, exceptCookie: '', onlyCookie: '' }
     },
     cookies: [{ name: 'bit', value: 'true' }],
     immunities: [{ type: 'Element', value: 'Fire', messageType: 'Say', message: '' }],
     statModifiers: {
       rows: [{ key: 'BaseStr', value: '2' }],
-      elementalModifiers: [{ type: 'Augment', element: 'Wind', modifier: '1.2' }],
-    },
+      elementalModifiers: [{ type: 'Augment', element: 'Wind', modifier: '1.2' }]
+    }
   }
 
   it('serializes valid XML that re-parses without error', async () => {

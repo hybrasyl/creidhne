@@ -182,7 +182,11 @@ describe('Field coverage — all fields', () => {
     expect(npc.roles.train).not.toBeNull()
     expect(npc.roles.train.exceptCookie).toBe('novice-only')
     expect(npc.roles.train.castables).toHaveLength(2)
-    expect(npc.roles.train.castables[0]).toEqual({ name: 'Ao Beag Cradh', type: 'Spell', class: 'Priest' })
+    expect(npc.roles.train.castables[0]).toEqual({
+      name: 'Ao Beag Cradh',
+      type: 'Spell',
+      class: 'Priest'
+    })
     expect(npc.roles.train.castables[1]).toEqual({ name: 'Lam', type: 'Skill', class: 'Warrior' })
     expect(npc.roles.train.adjustments).toHaveLength(1)
     expect(npc.roles.train.adjustments[0]).toEqual({ nation: '', value: '0.75' })
@@ -284,15 +288,15 @@ describe('Output structure', () => {
         exceptCookie: '',
         onlyCookie: '',
         items: [{ name: 'Sword', quantity: '1', restock: '' }],
-        adjustments: [{ nation: 'Mileth', value: '0.90' }],
+        adjustments: [{ nation: 'Mileth', value: '0.90' }]
       },
       train: {
         exceptCookie: '',
         onlyCookie: '',
         castables: [{ name: 'Punch', type: 'Skill', class: 'Warrior' }],
-        adjustments: [{ nation: '', value: '0.85' }],
-      },
-    },
+        adjustments: [{ nation: '', value: '0.85' }]
+      }
+    }
   }
 
   it('serializes valid XML that re-parses without error', async () => {
@@ -398,7 +402,10 @@ describe('Output structure', () => {
   })
 
   it('omits Roles element when all roles are null', async () => {
-    const noRoles = { ...npc, roles: { disableForget: false, bank: null, post: null, repair: null, vend: null, train: null } }
+    const noRoles = {
+      ...npc,
+      roles: { disableForget: false, bank: null, post: null, repair: null, vend: null, train: null }
+    }
     const xml = serializeNpcXml(noRoles)
     const parsed = await parseRaw(xml)
     expect(parsed.Npc.Roles).toBeUndefined()

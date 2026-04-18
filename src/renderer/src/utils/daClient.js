@@ -82,7 +82,11 @@ export function registerCacheClearer(fn) {
 /** Flush every registered cache plus the archive cache. */
 export function clearAllClientCaches() {
   for (const fn of cacheClearers) {
-    try { fn() } catch { /* keep flushing others */ }
+    try {
+      fn()
+    } catch {
+      /* keep flushing others */
+    }
   }
   clearArchiveCache()
 }

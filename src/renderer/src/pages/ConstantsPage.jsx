@@ -1,17 +1,35 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
-  Box, Typography, Tabs, Tab, Divider, List, ListItem, ListItemText,
-  ListItemButton, TextField, IconButton, Tooltip, Button, Chip,
-  Table, TableBody, TableCell, TableHead, TableRow,
-  InputAdornment, Alert, CircularProgress,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SearchIcon from '@mui/icons-material/Search';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { useRecoilValue, useRecoilState } from 'recoil';
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms';
-import { useUnsavedGuard } from '../hooks/useUnsavedGuard';
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemButton,
+  TextField,
+  IconButton,
+  Tooltip,
+  Button,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  InputAdornment,
+  Alert,
+  CircularProgress
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import SearchIcon from '@mui/icons-material/Search'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import { useRecoilValue, useRecoilState } from 'recoil'
+import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 
 const EMPTY_CONSTANTS = {
   vendorTabs: [],
@@ -22,48 +40,76 @@ const EMPTY_CONSTANTS = {
   npcJobs: [],
   creatureFamilies: [],
   motions: [],
-  spellBooks: [],
-};
+  spellBooks: []
+}
 
 // ─── Simple Types Tab ──────────────────────────────────────────────────────────
 
 function SimpleTypesTab() {
-  const [xsdTypes, setXsdTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [search, setSearch] = useState('');
+  const [xsdTypes, setXsdTypes] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [selected, setSelected] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
-    setLoading(true);
-    window.electronAPI.loadXsdTypes()
-      .then(types => { setXsdTypes(types); if (types.length) setSelected(types[0]); })
+    setLoading(true)
+    window.electronAPI
+      .loadXsdTypes()
+      .then((types) => {
+        setXsdTypes(types)
+        if (types.length) setSelected(types[0])
+      })
       .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = search.trim()
-    ? xsdTypes.filter(t => t.name.toLowerCase().includes(search.toLowerCase()))
-    : xsdTypes;
+    ? xsdTypes.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
+    : xsdTypes
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left: type list */}
-      <Box sx={{ width: 240, flexShrink: 0, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          width: 240,
+          flexShrink: 0,
+          borderRight: 1,
+          borderColor: 'divider',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+      >
         <Box sx={{ p: 1 }}>
           <TextField
-            size="small" fullWidth placeholder="Filter types..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+            size="small"
+            fullWidth
+            placeholder="Filter types..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              )
+            }}
           />
         </Box>
         <Divider />
         {loading ? (
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}><CircularProgress size={20} /></Box>
+          <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress size={20} />
+          </Box>
         ) : (
           <List dense disablePadding sx={{ flex: 1, overflow: 'auto' }}>
-            {filtered.map(type => (
+            {filtered.map((type) => (
               <ListItem key={type.name} disablePadding>
-                <ListItemButton selected={selected?.name === type.name} onClick={() => setSelected(type)}>
+                <ListItemButton
+                  selected={selected?.name === type.name}
+                  onClick={() => setSelected(type)}
+                >
                   <ListItemText
                     primary={type.name}
                     secondary={type.sourceFile}
@@ -74,7 +120,9 @@ function SimpleTypesTab() {
               </ListItem>
             ))}
             {filtered.length === 0 && !loading && (
-              <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>No matches.</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                No matches.
+              </Typography>
             )}
           </List>
         )}
@@ -85,7 +133,9 @@ function SimpleTypesTab() {
           <>
             <Box sx={{ px: 2, pt: 2, pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="h6">{selected.name}</Typography>
-              {selected.isList && <Chip size="small" label="flags list" color="info" variant="outlined" />}
+              {selected.isList && (
+                <Chip size="small" label="flags list" color="info" variant="outlined" />
+              )}
               <Chip size="small" label={selected.sourceFile} variant="outlined" />
               <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
                 {selected.values.length} value{selected.values.length !== 1 ? 's' : ''}
@@ -101,7 +151,7 @@ function SimpleTypesTab() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {selected.values.map(v => (
+                  {selected.values.map((v) => (
                     <TableRow key={v} hover>
                       <TableCell>
                         <Typography variant="body2">{v}</Typography>
@@ -119,77 +169,93 @@ function SimpleTypesTab() {
         )}
       </Box>
     </Box>
-  );
+  )
 }
 
 // ─── Vendor Tabs Tab ───────────────────────────────────────────────────────────
 
 function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, onIndexUpdated }) {
-  const [newTab, setNewTab] = useState('');
-  const [scanning, setScanning] = useState(false);
-  const [scanData, setScanData] = useState(initialDetails || null);
+  const [newTab, setNewTab] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [scanData, setScanData] = useState(initialDetails || null)
 
   const handleAdd = () => {
-    const val = newTab.trim();
-    if (!val || vendorTabs.includes(val)) return;
-    onChange([...vendorTabs, val].sort());
-    setNewTab('');
-  };
+    const val = newTab.trim()
+    if (!val || vendorTabs.includes(val)) return
+    onChange([...vendorTabs, val].sort())
+    setNewTab('')
+  }
 
   const handleScan = async () => {
-    if (!activeLibrary) return;
-    setScanning(true);
+    if (!activeLibrary) return
+    setScanning(true)
     try {
-      const details = await window.electronAPI.scanVendorTabs(activeLibrary);
-      setScanData(details);
-      const scannedNames = details.map(d => d.name);
-      const merged = [...new Set([...vendorTabs, ...scannedNames])].sort();
-      onChange(merged);
-      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
-      if (updatedIndex) onIndexUpdated(updatedIndex);
+      const details = await window.electronAPI.scanVendorTabs(activeLibrary)
+      setScanData(details)
+      const scannedNames = details.map((d) => d.name)
+      const merged = [...new Set([...vendorTabs, ...scannedNames])].sort()
+      onChange(merged)
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary)
+      if (updatedIndex) onIndexUpdated(updatedIndex)
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setScanning(false);
+      setScanning(false)
     }
-  };
+  }
 
   const rows = useMemo(() => {
-    const scanMap = {};
-    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
-    return vendorTabs.map(name => ({
+    const scanMap = {}
+    if (scanData)
+      scanData.forEach((r) => {
+        scanMap[r.name] = r
+      })
+    return vendorTabs.map((name) => ({
       name,
       count: scanMap[name]?.count ?? (scanData ? 0 : null),
-      usedBy: scanMap[name]?.usedBy ?? [],
-    }));
-  }, [vendorTabs, scanData]);
+      usedBy: scanMap[name]?.usedBy ?? []
+    }))
+  }, [vendorTabs, scanData])
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           Vendor tab names used on item definitions (<code>Vendor/@ShopTab</code>).
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
         <Button
-          size="small" variant="outlined"
+          size="small"
+          variant="outlined"
           startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
-          onClick={handleScan} disabled={scanning || !activeLibrary}
+          onClick={handleScan}
+          disabled={scanning || !activeLibrary}
         >
           Scan Items
         </Button>
       </Box>
       {!activeLibrary && (
-        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for vendor tabs.</Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Set an active library to scan for vendor tabs.
+        </Alert>
       )}
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
-          size="small" placeholder="New vendor tab name..." value={newTab}
-          onChange={e => setNewTab(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="New vendor tab name..."
+          value={newTab}
+          onChange={(e) => setNewTab(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           sx={{ maxWidth: 300 }}
         />
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newTab.trim()}>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newTab.trim()}
+        >
           Add
         </Button>
       </Box>
@@ -209,29 +275,40 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, on
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map(row => (
+              {rows.map((row) => (
                 <TableRow key={row.name} hover>
-                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
                   <TableCell>
-                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                    <Typography variant="body2">{row.name}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      color={row.count === null ? 'text.disabled' : 'text.primary'}
+                    >
                       {row.count === null ? '—' : row.count}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     {row.usedBy.length > 0 && (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {row.usedBy.map(name => (
+                        {row.usedBy.map((name) => (
                           <Chip key={name} label={name} size="small" variant="outlined" />
                         ))}
                       </Box>
                     )}
                   </TableCell>
                   <TableCell padding="none">
-                    <Tooltip title={row.count > 0 ? `In use by ${row.count} item${row.count !== 1 ? 's' : ''} — removing may break editors` : ''}>
+                    <Tooltip
+                      title={
+                        row.count > 0
+                          ? `In use by ${row.count} item${row.count !== 1 ? 's' : ''} — removing may break editors`
+                          : ''
+                      }
+                    >
                       <IconButton
                         size="small"
                         color={row.count > 0 ? 'warning' : 'default'}
-                        onClick={() => onChange(vendorTabs.filter(t => t !== row.name))}
+                        onClick={() => onChange(vendorTabs.filter((t) => t !== row.name))}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -244,77 +321,94 @@ function VendorTabsTab({ vendorTabs, onChange, activeLibrary, initialDetails, on
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── NPC Jobs Tab ──────────────────────────────────────────────────────────────
 
 function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexUpdated }) {
-  const [newJob, setNewJob] = useState('');
-  const [scanning, setScanning] = useState(false);
-  const [scanData, setScanData] = useState(initialDetails || null);
+  const [newJob, setNewJob] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [scanData, setScanData] = useState(initialDetails || null)
 
   const handleAdd = () => {
-    const val = newJob.trim();
-    if (!val || npcJobs.includes(val)) return;
-    onChange([...npcJobs, val].sort());
-    setNewJob('');
-  };
+    const val = newJob.trim()
+    if (!val || npcJobs.includes(val)) return
+    onChange([...npcJobs, val].sort())
+    setNewJob('')
+  }
 
   const handleScan = async () => {
-    if (!activeLibrary) return;
-    setScanning(true);
+    if (!activeLibrary) return
+    setScanning(true)
     try {
-      const details = await window.electronAPI.scanNpcJobs(activeLibrary);
-      setScanData(details);
-      const scannedNames = details.map(d => d.name);
-      const merged = [...new Set([...npcJobs, ...scannedNames])].sort();
-      onChange(merged);
-      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
-      if (updatedIndex) onIndexUpdated(updatedIndex);
+      const details = await window.electronAPI.scanNpcJobs(activeLibrary)
+      setScanData(details)
+      const scannedNames = details.map((d) => d.name)
+      const merged = [...new Set([...npcJobs, ...scannedNames])].sort()
+      onChange(merged)
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary)
+      if (updatedIndex) onIndexUpdated(updatedIndex)
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setScanning(false);
+      setScanning(false)
     }
-  };
+  }
 
   const rows = useMemo(() => {
-    const scanMap = {};
-    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
-    return npcJobs.map(name => ({
+    const scanMap = {}
+    if (scanData)
+      scanData.forEach((r) => {
+        scanMap[r.name] = r
+      })
+    return npcJobs.map((name) => ({
       name,
       count: scanMap[name]?.count ?? (scanData ? 0 : null),
-      usedBy: scanMap[name]?.usedBy ?? [],
-    }));
-  }, [npcJobs, scanData]);
+      usedBy: scanMap[name]?.usedBy ?? []
+    }))
+  }, [npcJobs, scanData])
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-          NPC job names derived from filename prefixes (e.g. <code>blacksmith</code> in <code>blacksmith_anvil.xml</code>).
+          NPC job names derived from filename prefixes (e.g. <code>blacksmith</code> in{' '}
+          <code>blacksmith_anvil.xml</code>).
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
         <Button
-          size="small" variant="outlined"
+          size="small"
+          variant="outlined"
           startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
-          onClick={handleScan} disabled={scanning || !activeLibrary}
+          onClick={handleScan}
+          disabled={scanning || !activeLibrary}
         >
           Scan NPCs
         </Button>
       </Box>
       {!activeLibrary && (
-        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for NPC jobs.</Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Set an active library to scan for NPC jobs.
+        </Alert>
       )}
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
-          size="small" placeholder="New job name..." value={newJob}
-          onChange={e => setNewJob(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="New job name..."
+          value={newJob}
+          onChange={(e) => setNewJob(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           sx={{ maxWidth: 300 }}
         />
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newJob.trim()}>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newJob.trim()}
+        >
           Add
         </Button>
       </Box>
@@ -334,29 +428,40 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexU
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map(row => (
+              {rows.map((row) => (
                 <TableRow key={row.name} hover>
-                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
                   <TableCell>
-                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                    <Typography variant="body2">{row.name}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      color={row.count === null ? 'text.disabled' : 'text.primary'}
+                    >
                       {row.count === null ? '—' : row.count}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     {row.usedBy.length > 0 && (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {row.usedBy.map(name => (
+                        {row.usedBy.map((name) => (
                           <Chip key={name} label={name} size="small" variant="outlined" />
                         ))}
                       </Box>
                     )}
                   </TableCell>
                   <TableCell padding="none">
-                    <Tooltip title={row.count > 0 ? `In use by ${row.count} NPC${row.count !== 1 ? 's' : ''} — removing may break editors` : ''}>
+                    <Tooltip
+                      title={
+                        row.count > 0
+                          ? `In use by ${row.count} NPC${row.count !== 1 ? 's' : ''} — removing may break editors`
+                          : ''
+                      }
+                    >
                       <IconButton
                         size="small"
                         color={row.count > 0 ? 'warning' : 'default'}
-                        onClick={() => onChange(npcJobs.filter(j => j !== row.name))}
+                        onClick={() => onChange(npcJobs.filter((j) => j !== row.name))}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -369,77 +474,100 @@ function NpcJobsTab({ npcJobs, onChange, activeLibrary, initialDetails, onIndexU
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── Creature Families Tab ─────────────────────────────────────────────────────
 
-function CreatureFamiliesTab({ creatureFamilies, onChange, activeLibrary, initialDetails, onIndexUpdated }) {
-  const [newFamily, setNewFamily] = useState('');
-  const [scanning, setScanning] = useState(false);
-  const [scanData, setScanData] = useState(initialDetails || null);
+function CreatureFamiliesTab({
+  creatureFamilies,
+  onChange,
+  activeLibrary,
+  initialDetails,
+  onIndexUpdated
+}) {
+  const [newFamily, setNewFamily] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [scanData, setScanData] = useState(initialDetails || null)
 
   const handleAdd = () => {
-    const val = newFamily.trim();
-    if (!val || creatureFamilies.includes(val)) return;
-    onChange([...creatureFamilies, val].sort());
-    setNewFamily('');
-  };
+    const val = newFamily.trim()
+    if (!val || creatureFamilies.includes(val)) return
+    onChange([...creatureFamilies, val].sort())
+    setNewFamily('')
+  }
 
   const handleScan = async () => {
-    if (!activeLibrary) return;
-    setScanning(true);
+    if (!activeLibrary) return
+    setScanning(true)
     try {
-      const details = await window.electronAPI.scanCreatureFamilies(activeLibrary);
-      setScanData(details);
-      const scannedNames = details.map(d => d.name);
-      const merged = [...new Set([...creatureFamilies, ...scannedNames])].sort();
-      onChange(merged);
-      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
-      if (updatedIndex) onIndexUpdated(updatedIndex);
+      const details = await window.electronAPI.scanCreatureFamilies(activeLibrary)
+      setScanData(details)
+      const scannedNames = details.map((d) => d.name)
+      const merged = [...new Set([...creatureFamilies, ...scannedNames])].sort()
+      onChange(merged)
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary)
+      if (updatedIndex) onIndexUpdated(updatedIndex)
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setScanning(false);
+      setScanning(false)
     }
-  };
+  }
 
   const rows = useMemo(() => {
-    const scanMap = {};
-    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
-    return creatureFamilies.map(name => ({
+    const scanMap = {}
+    if (scanData)
+      scanData.forEach((r) => {
+        scanMap[r.name] = r
+      })
+    return creatureFamilies.map((name) => ({
       name,
       count: scanMap[name]?.count ?? (scanData ? 0 : null),
-      usedBy: scanMap[name]?.usedBy ?? [],
-    }));
-  }, [creatureFamilies, scanData]);
+      usedBy: scanMap[name]?.usedBy ?? []
+    }))
+  }, [creatureFamilies, scanData])
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-          Creature family names derived from filename prefixes (e.g. <code>goblin</code> in <code>goblin_shaman.xml</code>).
+          Creature family names derived from filename prefixes (e.g. <code>goblin</code> in{' '}
+          <code>goblin_shaman.xml</code>).
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
         <Button
-          size="small" variant="outlined"
+          size="small"
+          variant="outlined"
           startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
-          onClick={handleScan} disabled={scanning || !activeLibrary}
+          onClick={handleScan}
+          disabled={scanning || !activeLibrary}
         >
           Scan Creatures
         </Button>
       </Box>
       {!activeLibrary && (
-        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for creature families.</Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Set an active library to scan for creature families.
+        </Alert>
       )}
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
-          size="small" placeholder="New family name..." value={newFamily}
-          onChange={e => setNewFamily(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="New family name..."
+          value={newFamily}
+          onChange={(e) => setNewFamily(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           sx={{ maxWidth: 300 }}
         />
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newFamily.trim()}>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newFamily.trim()}
+        >
           Add
         </Button>
       </Box>
@@ -459,29 +587,40 @@ function CreatureFamiliesTab({ creatureFamilies, onChange, activeLibrary, initia
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map(row => (
+              {rows.map((row) => (
                 <TableRow key={row.name} hover>
-                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
                   <TableCell>
-                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                    <Typography variant="body2">{row.name}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      color={row.count === null ? 'text.disabled' : 'text.primary'}
+                    >
                       {row.count === null ? '—' : row.count}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     {row.usedBy.length > 0 && (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {row.usedBy.map(name => (
+                        {row.usedBy.map((name) => (
                           <Chip key={name} label={name} size="small" variant="outlined" />
                         ))}
                       </Box>
                     )}
                   </TableCell>
                   <TableCell padding="none">
-                    <Tooltip title={row.count > 0 ? `In use by ${row.count} creature${row.count !== 1 ? 's' : ''} — removing may break editors` : ''}>
+                    <Tooltip
+                      title={
+                        row.count > 0
+                          ? `In use by ${row.count} creature${row.count !== 1 ? 's' : ''} — removing may break editors`
+                          : ''
+                      }
+                    >
                       <IconButton
                         size="small"
                         color={row.count > 0 ? 'warning' : 'default'}
-                        onClick={() => onChange(creatureFamilies.filter(f => f !== row.name))}
+                        onClick={() => onChange(creatureFamilies.filter((f) => f !== row.name))}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -494,84 +633,109 @@ function CreatureFamiliesTab({ creatureFamilies, onChange, activeLibrary, initia
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── Category Tab (reused for Item / Castable / Status) ────────────────────────
 
-function CategoryTab({ label, scanResultKey, categories, onChange, activeLibrary, onIndexUpdated, initialDetails }) {
-  const [scanning, setScanning] = useState(false);
-  const [scanData, setScanData] = useState(initialDetails || null);
-  const [newCat, setNewCat] = useState('');
+function CategoryTab({
+  label,
+  scanResultKey,
+  categories,
+  onChange,
+  activeLibrary,
+  onIndexUpdated,
+  initialDetails
+}) {
+  const [scanning, setScanning] = useState(false)
+  const [scanData, setScanData] = useState(initialDetails || null)
+  const [newCat, setNewCat] = useState('')
 
   const handleScan = async () => {
-    if (!activeLibrary) return;
-    setScanning(true);
+    if (!activeLibrary) return
+    setScanning(true)
     try {
-      const result = await window.electronAPI.scanCategories(activeLibrary);
-      const scanned = result[scanResultKey] || [];
-      setScanData(scanned);
-      const scannedNames = scanned.map(c => c.name);
-      const merged = [...new Set([...categories, ...scannedNames])].sort();
-      onChange(merged);
+      const result = await window.electronAPI.scanCategories(activeLibrary)
+      const scanned = result[scanResultKey] || []
+      setScanData(scanned)
+      const scannedNames = scanned.map((c) => c.name)
+      const merged = [...new Set([...categories, ...scannedNames])].sort()
+      onChange(merged)
       // Reload index so other editors see updated category lists
-      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary);
-      if (updatedIndex) onIndexUpdated(updatedIndex);
+      const updatedIndex = await window.electronAPI.loadIndex(activeLibrary)
+      if (updatedIndex) onIndexUpdated(updatedIndex)
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setScanning(false);
+      setScanning(false)
     }
-  };
+  }
 
   const handleAdd = () => {
-    const val = newCat.trim();
-    if (!val || categories.includes(val)) return;
-    onChange([...categories, val].sort());
-    setNewCat('');
-  };
+    const val = newCat.trim()
+    if (!val || categories.includes(val)) return
+    onChange([...categories, val].sort())
+    setNewCat('')
+  }
 
   const handleDelete = (cat) => {
-    onChange(categories.filter(c => c !== cat));
-  };
+    onChange(categories.filter((c) => c !== cat))
+  }
 
   // Build display rows: join category list with scan data (for count/usedBy)
   const rows = useMemo(() => {
-    const scanMap = {};
-    if (scanData) scanData.forEach(r => { scanMap[r.name] = r; });
-    return categories.map(name => ({
+    const scanMap = {}
+    if (scanData)
+      scanData.forEach((r) => {
+        scanMap[r.name] = r
+      })
+    return categories.map((name) => ({
       name,
       count: scanMap[name]?.count ?? (scanData ? 0 : null),
-      usedBy: scanMap[name]?.usedBy ?? [],
-    }));
-  }, [categories, scanData]);
+      usedBy: scanMap[name]?.usedBy ?? []
+    }))
+  }, [categories, scanData])
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           {label} defined in this library.
           {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
         </Typography>
         <Button
-          size="small" variant="outlined"
+          size="small"
+          variant="outlined"
           startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
-          onClick={handleScan} disabled={scanning || !activeLibrary}
+          onClick={handleScan}
+          disabled={scanning || !activeLibrary}
         >
           Scan XML
         </Button>
       </Box>
       {!activeLibrary && (
-        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for categories.</Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Set an active library to scan for categories.
+        </Alert>
       )}
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
-          size="small" placeholder="Add category..." value={newCat}
-          onChange={e => setNewCat(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="Add category..."
+          value={newCat}
+          onChange={(e) => setNewCat(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           sx={{ maxWidth: 300 }}
         />
-        <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newCat.trim()}>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newCat.trim()}
+        >
           Add
         </Button>
       </Box>
@@ -591,18 +755,23 @@ function CategoryTab({ label, scanResultKey, categories, onChange, activeLibrary
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map(row => (
+              {rows.map((row) => (
                 <TableRow key={row.name} hover>
-                  <TableCell><Typography variant="body2">{row.name}</Typography></TableCell>
                   <TableCell>
-                    <Typography variant="body2" color={row.count === null ? 'text.disabled' : 'text.primary'}>
+                    <Typography variant="body2">{row.name}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      color={row.count === null ? 'text.disabled' : 'text.primary'}
+                    >
                       {row.count === null ? '—' : row.count}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     {row.usedBy.length > 0 && (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {row.usedBy.map(name => (
+                        {row.usedBy.map((name) => (
                           <Chip key={name} label={name} size="small" variant="outlined" />
                         ))}
                       </Box>
@@ -620,86 +789,106 @@ function CategoryTab({ label, scanResultKey, categories, onChange, activeLibrary
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── Cookies Tab ───────────────────────────────────────────────────────────────
 
 function CookiesTab({ userConstants, onChange, activeLibrary }) {
-  const [scanning, setScanning] = useState(false);
-  const [newCookieName, setNewCookieName] = useState('');
+  const [scanning, setScanning] = useState(false)
+  const [newCookieName, setNewCookieName] = useState('')
 
-  const cookies = userConstants.cookies || [];
+  const cookies = userConstants.cookies || []
 
   const handleScan = async () => {
-    if (!activeLibrary) return;
-    setScanning(true);
+    if (!activeLibrary) return
+    setScanning(true)
     try {
-      const scanned = await window.electronAPI.scanCookies(activeLibrary);
-      const commentMap = {};
-      cookies.forEach(c => { commentMap[c.name] = c.comment || ''; });
-      const merged = scanned.map(c => ({
+      const scanned = await window.electronAPI.scanCookies(activeLibrary)
+      const commentMap = {}
+      cookies.forEach((c) => {
+        commentMap[c.name] = c.comment || ''
+      })
+      const merged = scanned.map((c) => ({
         name: c.name,
         sourceFile: c.sourceFile,
-        comment: commentMap[c.name] || '',
-      }));
-      const scannedNames = new Set(scanned.map(c => c.name));
+        comment: commentMap[c.name] || ''
+      }))
+      const scannedNames = new Set(scanned.map((c) => c.name))
       for (const c of cookies) {
         if (!scannedNames.has(c.name)) {
-          merged.push({ name: c.name, sourceFile: c.sourceFile || '', comment: c.comment || '' });
+          merged.push({ name: c.name, sourceFile: c.sourceFile || '', comment: c.comment || '' })
         }
       }
-      merged.sort((a, b) => a.name.localeCompare(b.name));
-      onChange({ ...userConstants, cookies: merged });
+      merged.sort((a, b) => a.name.localeCompare(b.name))
+      onChange({ ...userConstants, cookies: merged })
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setScanning(false);
+      setScanning(false)
     }
-  };
+  }
 
   const handleUpdateComment = (name, comment) => {
-    onChange({ ...userConstants, cookies: cookies.map(c => c.name === name ? { ...c, comment } : c) });
-  };
+    onChange({
+      ...userConstants,
+      cookies: cookies.map((c) => (c.name === name ? { ...c, comment } : c))
+    })
+  }
 
   const handleDelete = (name) => {
-    onChange({ ...userConstants, cookies: cookies.filter(c => c.name !== name) });
-  };
+    onChange({ ...userConstants, cookies: cookies.filter((c) => c.name !== name) })
+  }
 
   const handleAdd = () => {
-    const name = newCookieName.trim();
-    if (!name || cookies.some(c => c.name === name)) return;
-    const updated = [...cookies, { name, sourceFile: '', comment: '' }]
-      .sort((a, b) => a.name.localeCompare(b.name));
-    onChange({ ...userConstants, cookies: updated });
-    setNewCookieName('');
-  };
+    const name = newCookieName.trim()
+    if (!name || cookies.some((c) => c.name === name)) return
+    const updated = [...cookies, { name, sourceFile: '', comment: '' }].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )
+    onChange({ ...userConstants, cookies: updated })
+    setNewCookieName('')
+  }
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           Cookies set by Lua scripts. Scan to auto-discover, or add manually.
         </Typography>
         <Button
-          size="small" variant="outlined"
+          size="small"
+          variant="outlined"
           startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
-          onClick={handleScan} disabled={scanning || !activeLibrary}
+          onClick={handleScan}
+          disabled={scanning || !activeLibrary}
         >
           Scan Scripts
         </Button>
       </Box>
       {!activeLibrary && (
-        <Alert severity="info" sx={{ mb: 2 }}>Set an active library to scan for cookies.</Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Set an active library to scan for cookies.
+        </Alert>
       )}
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
-          size="small" placeholder="Cookie name..." value={newCookieName}
-          onChange={e => setNewCookieName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="Cookie name..."
+          value={newCookieName}
+          onChange={(e) => setNewCookieName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           sx={{ maxWidth: 300 }}
         />
-        <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newCookieName.trim()}>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newCookieName.trim()}
+        >
           Add
         </Button>
       </Box>
@@ -718,7 +907,7 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {cookies.map(cookie => (
+              {cookies.map((cookie) => (
                 <TableRow key={cookie.name} hover>
                   <TableCell>
                     <Typography variant="body2">{cookie.name}</Typography>
@@ -730,11 +919,16 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
                   </TableCell>
                   <TableCell>
                     <TextField
-                      size="small" fullWidth variant="standard"
+                      size="small"
+                      fullWidth
+                      variant="standard"
                       placeholder="Add a comment..."
                       value={cookie.comment || ''}
-                      onChange={e => handleUpdateComment(cookie.name, e.target.value)}
-                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                      onChange={(e) => handleUpdateComment(cookie.name, e.target.value)}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
                     />
                   </TableCell>
                   <TableCell padding="none">
@@ -749,64 +943,68 @@ function CookiesTab({ userConstants, onChange, activeLibrary }) {
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── Motions Tab ───────────────────────────────────────────────────────────────
 
 const DEFAULT_MOTIONS = [
-  { name: 'Basic - Assail',      id: 1,   speed: 20 },
-  { name: 'Basic - Cast',        id: 6,   speed: 40 },
-  { name: 'Priest - Cast',       id: 128, speed: 20 },
+  { name: 'Basic - Assail', id: 1, speed: 20 },
+  { name: 'Basic - Cast', id: 6, speed: 40 },
+  { name: 'Priest - Cast', id: 128, speed: 20 },
   { name: 'Warrior - 2h Attack', id: 129, speed: 20 },
-  { name: 'Warrior - Charge',    id: 130, speed: 20 },
-  { name: 'Monk - Kick',         id: 131, speed: 20 },
-  { name: 'Monk - Punch',        id: 132, speed: 20 },
-  { name: 'Monk - Kick 2',       id: 133, speed: 20 },
-  { name: 'Rogue - Stab Once',   id: 134, speed: 40 },
-  { name: 'Rogue - Stab Twice',  id: 135, speed: 40 },
-  { name: 'Wizard - Cast',       id: 136, speed: 20 },
-  { name: 'Bard - Sing',         id: 137, speed: 20 },
-  { name: 'Bard - Attack',       id: 138, speed: 20 },
-  { name: 'Gladiator - Swipe',   id: 139, speed: 20 },
-  { name: 'Gladiator - Sweep',   id: 140, speed: 20 },
-  { name: 'Gladiator - Hop',     id: 141, speed: 20 },
-  { name: 'Archer - Shoot',      id: 142, speed: 20 },
+  { name: 'Warrior - Charge', id: 130, speed: 20 },
+  { name: 'Monk - Kick', id: 131, speed: 20 },
+  { name: 'Monk - Punch', id: 132, speed: 20 },
+  { name: 'Monk - Kick 2', id: 133, speed: 20 },
+  { name: 'Rogue - Stab Once', id: 134, speed: 40 },
+  { name: 'Rogue - Stab Twice', id: 135, speed: 40 },
+  { name: 'Wizard - Cast', id: 136, speed: 20 },
+  { name: 'Bard - Sing', id: 137, speed: 20 },
+  { name: 'Bard - Attack', id: 138, speed: 20 },
+  { name: 'Gladiator - Swipe', id: 139, speed: 20 },
+  { name: 'Gladiator - Sweep', id: 140, speed: 20 },
+  { name: 'Gladiator - Hop', id: 141, speed: 20 },
+  { name: 'Archer - Shoot', id: 142, speed: 20 },
   { name: 'Archer - Long Shoot', id: 143, speed: 20 },
-  { name: 'Archer - Far Shoot',  id: 144, speed: 20 },
-  { name: 'Summoner - Cast',     id: 145, speed: 40 },
-];
+  { name: 'Archer - Far Shoot', id: 144, speed: 20 },
+  { name: 'Summoner - Cast', id: 145, speed: 40 }
+]
 
 function MotionsTab({ userConstants, onChange }) {
-  const motions = userConstants.motions || [];
-  const [newName,  setNewName]  = useState('');
-  const [newId,    setNewId]    = useState('');
-  const [newSpeed, setNewSpeed] = useState('');
+  const motions = userConstants.motions || []
+  const [newName, setNewName] = useState('')
+  const [newId, setNewId] = useState('')
+  const [newSpeed, setNewSpeed] = useState('')
 
   const handleUpdate = (index, field, value) => {
-    const updated = motions.map((m, i) => i === index ? { ...m, [field]: value } : m);
-    onChange({ ...userConstants, motions: updated });
-  };
+    const updated = motions.map((m, i) => (i === index ? { ...m, [field]: value } : m))
+    onChange({ ...userConstants, motions: updated })
+  }
 
   const handleDelete = (index) => {
-    onChange({ ...userConstants, motions: motions.filter((_, i) => i !== index) });
-  };
+    onChange({ ...userConstants, motions: motions.filter((_, i) => i !== index) })
+  }
 
   const handleAdd = () => {
-    const name  = newName.trim();
-    const id    = Number(newId);
-    const speed = Number(newSpeed);
-    if (!name || !newId) return;
-    onChange({ ...userConstants, motions: [...motions, { name, id, speed: speed || 20 }] });
-    setNewName(''); setNewId(''); setNewSpeed('');
-  };
+    const name = newName.trim()
+    const id = Number(newId)
+    const speed = Number(newSpeed)
+    if (!name || !newId) return
+    onChange({ ...userConstants, motions: [...motions, { name, id, speed: speed || 20 }] })
+    setNewName('')
+    setNewId('')
+    setNewSpeed('')
+  }
 
   const handleReset = () => {
-    onChange({ ...userConstants, motions: DEFAULT_MOTIONS.map(m => ({ ...m })) });
-  };
+    onChange({ ...userConstants, motions: DEFAULT_MOTIONS.map((m) => ({ ...m })) })
+  }
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           Player motion IDs and speeds used by the animation preset buttons in the castable editor.
@@ -817,8 +1015,12 @@ function MotionsTab({ userConstants, onChange }) {
       </Box>
       {motions.length === 0 ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Alert severity="info" sx={{ flex: 1 }}>No motions defined. Load the defaults or add entries manually.</Alert>
-          <Button size="small" variant="contained" onClick={handleReset}>Load defaults</Button>
+          <Alert severity="info" sx={{ flex: 1 }}>
+            No motions defined. Load the defaults or add entries manually.
+          </Alert>
+          <Button size="small" variant="contained" onClick={handleReset}>
+            Load defaults
+          </Button>
         </Box>
       ) : (
         <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -836,28 +1038,47 @@ function MotionsTab({ userConstants, onChange }) {
                 <TableRow key={index} hover>
                   <TableCell>
                     <TextField
-                      size="small" fullWidth variant="standard"
+                      size="small"
+                      fullWidth
+                      variant="standard"
                       value={motion.name || ''}
-                      onChange={e => handleUpdate(index, 'name', e.target.value)}
-                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                      onChange={(e) => handleUpdate(index, 'name', e.target.value)}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
                     />
                   </TableCell>
                   <TableCell>
                     <TextField
-                      size="small" fullWidth variant="standard"
+                      size="small"
+                      fullWidth
+                      variant="standard"
                       value={motion.id ?? ''}
-                      onChange={e => handleUpdate(index, 'id', Number(e.target.value.replace(/\D/g, '')))}
+                      onChange={(e) =>
+                        handleUpdate(index, 'id', Number(e.target.value.replace(/\D/g, '')))
+                      }
                       inputProps={{ inputMode: 'numeric' }}
-                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
                     />
                   </TableCell>
                   <TableCell>
                     <TextField
-                      size="small" fullWidth variant="standard"
+                      size="small"
+                      fullWidth
+                      variant="standard"
                       value={motion.speed ?? ''}
-                      onChange={e => handleUpdate(index, 'speed', Number(e.target.value.replace(/\D/g, '')))}
+                      onChange={(e) =>
+                        handleUpdate(index, 'speed', Number(e.target.value.replace(/\D/g, '')))
+                      }
                       inputProps={{ inputMode: 'numeric' }}
-                      sx={{ '& .MuiInput-root::before': { borderBottom: 'none' }, '& input': { fontSize: '0.875rem' } }}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
                     />
                   </TableCell>
                   <TableCell padding="none">
@@ -873,31 +1094,43 @@ function MotionsTab({ userConstants, onChange }) {
       )}
       <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
         <TextField
-          size="small" placeholder="Name..." value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="Name..."
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           sx={{ flex: 1, maxWidth: 300 }}
         />
         <TextField
-          size="small" placeholder="ID..." value={newId}
-          onChange={e => setNewId(e.target.value.replace(/\D/g, ''))}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="ID..."
+          value={newId}
+          onChange={(e) => setNewId(e.target.value.replace(/\D/g, ''))}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           inputProps={{ inputMode: 'numeric' }}
           sx={{ width: 90 }}
         />
         <TextField
-          size="small" placeholder="Speed..." value={newSpeed}
-          onChange={e => setNewSpeed(e.target.value.replace(/\D/g, ''))}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          size="small"
+          placeholder="Speed..."
+          value={newSpeed}
+          onChange={(e) => setNewSpeed(e.target.value.replace(/\D/g, ''))}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           inputProps={{ inputMode: 'numeric' }}
           sx={{ width: 90 }}
         />
-        <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleAdd} disabled={!newName.trim() || !newId}>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newName.trim() || !newId}
+        >
           Add
         </Button>
       </Box>
     </Box>
-  );
+  )
 }
 
 // ─── Spell Books Tab ───────────────────────────────────────────────────────────
@@ -910,118 +1143,133 @@ function MotionsTab({ userConstants, onChange }) {
 // with a dual-list picker (Available ↔ In book) and > / >> / < / << buttons.
 
 function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIndexUpdated }) {
-  const [selectedBookId, setSelectedBookId] = useState(null);
-  const [draft, setDraft] = useState({ name: '', castables: [] });
-  const [leftSel, setLeftSel] = useState(new Set());
-  const [rightSel, setRightSel] = useState(new Set());
-  const [search, setSearch] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [snackbar, setSnackbar] = useState(null);
+  const [selectedBookId, setSelectedBookId] = useState(null)
+  const [draft, setDraft] = useState({ name: '', castables: [] })
+  const [leftSel, setLeftSel] = useState(new Set())
+  const [rightSel, setRightSel] = useState(new Set())
+  const [search, setSearch] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [snackbar, setSnackbar] = useState(null)
 
   const selectedBook = useMemo(
-    () => (selectedBookId ? (spellBooks || []).find(b => b.id === selectedBookId) : null),
-    [selectedBookId, spellBooks],
-  );
+    () => (selectedBookId ? (spellBooks || []).find((b) => b.id === selectedBookId) : null),
+    [selectedBookId, spellBooks]
+  )
 
   // Sync draft when switching books
   useEffect(() => {
     if (selectedBook) {
-      setDraft({ name: selectedBook.name || '', castables: [...(selectedBook.castables || [])] });
+      setDraft({ name: selectedBook.name || '', castables: [...(selectedBook.castables || [])] })
     } else {
-      setDraft({ name: '', castables: [] });
+      setDraft({ name: '', castables: [] })
     }
-    setLeftSel(new Set());
-    setRightSel(new Set());
-  }, [selectedBookId, selectedBook]);
+    setLeftSel(new Set())
+    setRightSel(new Set())
+  }, [selectedBookId, selectedBook])
 
-  const allCastables = libraryIndex?.castables || [];
+  const allCastables = libraryIndex?.castables || []
   const available = useMemo(() => {
-    const inBook = new Set(draft.castables);
-    const q = search.trim().toLowerCase();
-    return allCastables.filter(n => !inBook.has(n) && (!q || n.toLowerCase().includes(q)));
-  }, [allCastables, draft.castables, search]);
+    const inBook = new Set(draft.castables)
+    const q = search.trim().toLowerCase()
+    return allCastables.filter((n) => !inBook.has(n) && (!q || n.toLowerCase().includes(q)))
+  }, [allCastables, draft.castables, search])
 
   const handleNew = () => {
-    const id = crypto.randomUUID();
-    const next = [...(spellBooks || []), { id, name: 'New Spell Book', castables: [] }];
-    onChange(next);
-    setSelectedBookId(id);
-  };
+    const id = crypto.randomUUID()
+    const next = [...(spellBooks || []), { id, name: 'New Spell Book', castables: [] }]
+    onChange(next)
+    setSelectedBookId(id)
+  }
 
   const handleDelete = () => {
-    if (!selectedBookId) return;
-    onChange((spellBooks || []).filter(b => b.id !== selectedBookId));
-    setSelectedBookId(null);
-  };
+    if (!selectedBookId) return
+    onChange((spellBooks || []).filter((b) => b.id !== selectedBookId))
+    setSelectedBookId(null)
+  }
 
   const commitDraft = (partial) => {
-    if (!selectedBookId) return;
-    const merged = { ...draft, ...partial };
-    setDraft(merged);
-    onChange((spellBooks || []).map(b => b.id === selectedBookId ? { ...b, ...merged } : b));
-  };
+    if (!selectedBookId) return
+    const merged = { ...draft, ...partial }
+    setDraft(merged)
+    onChange((spellBooks || []).map((b) => (b.id === selectedBookId ? { ...b, ...merged } : b)))
+  }
 
   const moveRight = (all = false) => {
-    const moving = all ? available : available.filter(n => leftSel.has(n));
-    if (!moving.length) return;
-    commitDraft({ castables: [...draft.castables, ...moving].sort() });
-    setLeftSel(new Set());
-  };
+    const moving = all ? available : available.filter((n) => leftSel.has(n))
+    if (!moving.length) return
+    commitDraft({ castables: [...draft.castables, ...moving].sort() })
+    setLeftSel(new Set())
+  }
 
   const moveLeft = (all = false) => {
-    const keep = all ? [] : draft.castables.filter(n => !rightSel.has(n));
-    commitDraft({ castables: keep });
-    setRightSel(new Set());
-  };
+    const keep = all ? [] : draft.castables.filter((n) => !rightSel.has(n))
+    commitDraft({ castables: keep })
+    setRightSel(new Set())
+  }
 
   const toggleSel = (setSel, value) => (event) => {
-    setSel(prev => {
-      const next = new Set(prev);
+    setSel((prev) => {
+      const next = new Set(prev)
       if (event.shiftKey || event.ctrlKey || event.metaKey) {
-        if (next.has(value)) next.delete(value); else next.add(value);
+        if (next.has(value)) next.delete(value)
+        else next.add(value)
       } else {
-        next.clear();
-        next.add(value);
+        next.clear()
+        next.add(value)
       }
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const handleSaveAndApply = async () => {
-    if (!selectedBookId || !activeLibrary || !draft.name.trim()) return;
-    setSaving(true);
+    if (!selectedBookId || !activeLibrary || !draft.name.trim()) return
+    setSaving(true)
     try {
       const result = await window.electronAPI.castableAddCategoryBulk(
-        activeLibrary, draft.castables, draft.name.trim(),
-      );
-      const { updated = [], unchanged = [], failed = [] } = result || {};
-      const msg = `${updated.length} updated, ${unchanged.length} already had category, ${failed.length} failed.`;
-      setSnackbar({ message: msg, severity: failed.length ? 'warning' : 'success' });
+        activeLibrary,
+        draft.castables,
+        draft.name.trim()
+      )
+      const { updated = [], unchanged = [], failed = [] } = result || {}
+      const msg = `${updated.length} updated, ${unchanged.length} already had category, ${failed.length} failed.`
+      setSnackbar({ message: msg, severity: failed.length ? 'warning' : 'success' })
       // Request a castables section re-index so libraryIndex picks up the new category
       if (updated.length) {
-        const section = await window.electronAPI.buildIndexSection(activeLibrary, 'castables');
-        onIndexUpdated?.(section);
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, 'castables')
+        onIndexUpdated?.(section)
       }
     } catch (err) {
-      setSnackbar({ message: `Save failed: ${err?.message || err}`, severity: 'error' });
+      setSnackbar({ message: `Save failed: ${err?.message || err}`, severity: 'error' })
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   return (
     <Box sx={{ height: '100%', display: 'flex', overflow: 'hidden' }}>
       {/* Left: list of books */}
-      <Box sx={{ width: 220, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          width: 220,
+          borderRight: 1,
+          borderColor: 'divider',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5 }}>
-          <Typography variant="subtitle2" sx={{ flex: 1 }}>Spell Books</Typography>
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>
+            Spell Books
+          </Typography>
           <Tooltip title="New spell book">
-            <IconButton size="small" onClick={handleNew}><AddIcon fontSize="small" /></IconButton>
+            <IconButton size="small" onClick={handleNew}>
+              <AddIcon fontSize="small" />
+            </IconButton>
           </Tooltip>
         </Box>
         <Divider />
         <List dense disablePadding sx={{ overflow: 'auto', flex: 1 }}>
-          {(spellBooks || []).map(book => (
+          {(spellBooks || []).map((book) => (
             <ListItem key={book.id} disablePadding>
               <ListItemButton
                 selected={book.id === selectedBookId}
@@ -1045,7 +1293,16 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
       </Box>
 
       {/* Right: editor */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden', minWidth: 0 }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          p: 2,
+          overflow: 'hidden',
+          minWidth: 0
+        }}
+      >
         {!selectedBook ? (
           <Typography variant="body2" color="text.secondary">
             Select a spell book or create a new one.
@@ -1054,35 +1311,62 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
           <>
             <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
               <TextField
-                size="small" label="Name" sx={{ flex: 1, maxWidth: 360 }}
+                size="small"
+                label="Name"
+                sx={{ flex: 1, maxWidth: 360 }}
                 value={draft.name}
                 onChange={(e) => commitDraft({ name: e.target.value })}
               />
               <Tooltip title="Delete spell book">
-                <IconButton size="small" onClick={handleDelete}><DeleteIcon fontSize="small" /></IconButton>
+                <IconButton size="small" onClick={handleDelete}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
               </Tooltip>
             </Box>
 
             <Box sx={{ flex: 1, display: 'flex', gap: 1, minHeight: 0 }}>
               {/* Available */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <Typography variant="caption" color="text.secondary">Available ({available.length})</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Available ({available.length})
+                </Typography>
                 <TextField
-                  size="small" placeholder="Filter…" sx={{ mb: 0.5 }}
+                  size="small"
+                  placeholder="Filter…"
+                  sx={{ mb: 0.5 }}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    )
+                  }}
                 />
-                <Box sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1
+                  }}
+                >
                   <List dense disablePadding>
-                    {available.map(n => (
+                    {available.map((n) => (
                       <ListItemButton
                         key={n}
                         selected={leftSel.has(n)}
                         onClick={toggleSel(setLeftSel, n)}
-                        onDoubleClick={() => { commitDraft({ castables: [...draft.castables, n].sort() }); }}
+                        onDoubleClick={() => {
+                          commitDraft({ castables: [...draft.castables, n].sort() })
+                        }}
                       >
-                        <ListItemText primary={n} primaryTypographyProps={{ variant: 'body2', noWrap: true }} />
+                        <ListItemText
+                          primary={n}
+                          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                        />
                       </ListItemButton>
                     ))}
                   </List>
@@ -1090,26 +1374,77 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
               </Box>
 
               {/* Move buttons */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.5 }}>
-                <Button size="small" variant="outlined" onClick={() => moveRight(false)} disabled={leftSel.size === 0}>&gt;</Button>
-                <Button size="small" variant="outlined" onClick={() => moveRight(true)} disabled={available.length === 0}>&gt;&gt;</Button>
-                <Button size="small" variant="outlined" onClick={() => moveLeft(false)} disabled={rightSel.size === 0}>&lt;</Button>
-                <Button size="small" variant="outlined" onClick={() => moveLeft(true)} disabled={draft.castables.length === 0}>&lt;&lt;</Button>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  gap: 0.5
+                }}
+              >
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => moveRight(false)}
+                  disabled={leftSel.size === 0}
+                >
+                  &gt;
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => moveRight(true)}
+                  disabled={available.length === 0}
+                >
+                  &gt;&gt;
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => moveLeft(false)}
+                  disabled={rightSel.size === 0}
+                >
+                  &lt;
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => moveLeft(true)}
+                  disabled={draft.castables.length === 0}
+                >
+                  &lt;&lt;
+                </Button>
               </Box>
 
               {/* In book */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <Typography variant="caption" color="text.secondary">In spell book ({draft.castables.length})</Typography>
-                <Box sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, mt: '22px' /* align with left col */ }}>
+                <Typography variant="caption" color="text.secondary">
+                  In spell book ({draft.castables.length})
+                </Typography>
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    mt: '22px' /* align with left col */
+                  }}
+                >
                   <List dense disablePadding>
-                    {draft.castables.map(n => (
+                    {draft.castables.map((n) => (
                       <ListItemButton
                         key={n}
                         selected={rightSel.has(n)}
                         onClick={toggleSel(setRightSel, n)}
-                        onDoubleClick={() => commitDraft({ castables: draft.castables.filter(x => x !== n) })}
+                        onDoubleClick={() =>
+                          commitDraft({ castables: draft.castables.filter((x) => x !== n) })
+                        }
                       >
-                        <ListItemText primary={n} primaryTypographyProps={{ variant: 'body2', noWrap: true }} />
+                        <ListItemText
+                          primary={n}
+                          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                        />
                       </ListItemButton>
                     ))}
                   </List>
@@ -1121,13 +1456,16 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
               <Button
                 variant="contained"
                 onClick={handleSaveAndApply}
-                disabled={saving || !draft.name.trim() || draft.castables.length === 0 || !activeLibrary}
+                disabled={
+                  saving || !draft.name.trim() || draft.castables.length === 0 || !activeLibrary
+                }
                 startIcon={saving ? <CircularProgress size={14} color="inherit" /> : null}
               >
                 {saving ? 'Applying…' : 'Save & apply category to castables'}
               </Button>
               <Typography variant="caption" color="text.secondary">
-                Writes "{draft.name.trim() || '…'}" as a category onto {draft.castables.length} castable XML file{draft.castables.length === 1 ? '' : 's'}.
+                Writes "{draft.name.trim() || '…'}" as a category onto {draft.castables.length}{' '}
+                castable XML file{draft.castables.length === 1 ? '' : 's'}.
               </Typography>
             </Box>
           </>
@@ -1144,7 +1482,7 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
         </Alert>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
@@ -1159,97 +1497,122 @@ const TABS = [
   { label: 'Status Categories' },
   { label: 'Cookies' },
   { label: 'Motions' },
-  { label: 'Spell Books' },
-];
+  { label: 'Spell Books' }
+]
 
 function ConstantsPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState);
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState);
-  const [tab, setTab] = useState(0);
-  const [userConstants, setUserConstants] = useState(EMPTY_CONSTANTS);
-  const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const { markDirty, markClean, saveRef } = useUnsavedGuard('Constants');
-  const handleSaveRef = useRef(null);
+  const activeLibrary = useRecoilValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const [tab, setTab] = useState(0)
+  const [userConstants, setUserConstants] = useState(EMPTY_CONSTANTS)
+  const [dirty, setDirty] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const { markDirty, markClean, saveRef } = useUnsavedGuard('Constants')
+  const handleSaveRef = useRef(null)
 
   // Keep saveRef pointed at the current save function
-  useEffect(() => { saveRef.current = () => handleSaveRef.current?.(); });
+  useEffect(() => {
+    saveRef.current = () => handleSaveRef.current?.()
+  })
 
   useEffect(() => {
-    window.electronAPI.loadUserConstants(activeLibrary)
-      .then(data => setUserConstants({ ...EMPTY_CONSTANTS, ...data }))
-      .catch(console.error);
-    setDirty(false);
-    markClean();
-  }, [activeLibrary, markClean]);
+    window.electronAPI
+      .loadUserConstants(activeLibrary)
+      .then((data) => setUserConstants({ ...EMPTY_CONSTANTS, ...data }))
+      .catch(console.error)
+    setDirty(false)
+    markClean()
+  }, [activeLibrary, markClean])
 
-  const handleChange = useCallback((newConstants) => {
-    setUserConstants(newConstants);
-    setDirty(true);
-    markDirty();
-  }, [markDirty]);
+  const handleChange = useCallback(
+    (newConstants) => {
+      setUserConstants(newConstants)
+      setDirty(true)
+      markDirty()
+    },
+    [markDirty]
+  )
 
-  const handleCategoryChange = useCallback((key, names) => {
-    setUserConstants(prev => {
-      const next = { ...prev, [key]: names };
-      setDirty(true);
-      markDirty();
-      return next;
-    });
-  }, [markDirty]);
+  const handleCategoryChange = useCallback(
+    (key, names) => {
+      setUserConstants((prev) => {
+        const next = { ...prev, [key]: names }
+        setDirty(true)
+        markDirty()
+        return next
+      })
+    },
+    [markDirty]
+  )
 
   // After any scan that writes to the index, reload it and merge with current user constants
-  const handleIndexUpdated = useCallback((rawIndex) => {
-    if (!rawIndex) return;
-    const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort();
-    setLibraryIndex({
-      ...rawIndex,
-      vendorTabs:         dedup(rawIndex.vendorTabs,         userConstants.vendorTabs),
-      npcJobs:            dedup(rawIndex.npcJobs,            userConstants.npcJobs),
-      creatureFamilies:   dedup(rawIndex.creatureFamilies,   userConstants.creatureFamilies),
-      itemCategories:     dedup(rawIndex.itemCategories,     userConstants.itemCategories),
-      castableCategories: dedup(rawIndex.castableCategories, userConstants.castableCategories),
-      statusCategories:   dedup(rawIndex.statusCategories,   userConstants.statusCategories),
-      cookieNames:        dedup(rawIndex.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
-      motions:            userConstants.motions || [],
-    });
-  }, [setLibraryIndex, userConstants]);
+  const handleIndexUpdated = useCallback(
+    (rawIndex) => {
+      if (!rawIndex) return
+      const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort()
+      setLibraryIndex({
+        ...rawIndex,
+        vendorTabs: dedup(rawIndex.vendorTabs, userConstants.vendorTabs),
+        npcJobs: dedup(rawIndex.npcJobs, userConstants.npcJobs),
+        creatureFamilies: dedup(rawIndex.creatureFamilies, userConstants.creatureFamilies),
+        itemCategories: dedup(rawIndex.itemCategories, userConstants.itemCategories),
+        castableCategories: dedup(rawIndex.castableCategories, userConstants.castableCategories),
+        statusCategories: dedup(rawIndex.statusCategories, userConstants.statusCategories),
+        cookieNames: dedup(
+          rawIndex.cookieNames,
+          (userConstants.cookies || []).map((c) => c.name)
+        ),
+        motions: userConstants.motions || []
+      })
+    },
+    [setLibraryIndex, userConstants]
+  )
 
   const handleSave = useCallback(async () => {
-    setSaving(true);
+    setSaving(true)
     try {
-      await window.electronAPI.saveUserConstants(activeLibrary, userConstants);
-      const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort();
+      await window.electronAPI.saveUserConstants(activeLibrary, userConstants)
+      const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort()
       setLibraryIndex((prev) => ({
         ...prev,
-        vendorTabs:         dedup(prev.vendorTabs,         userConstants.vendorTabs),
-        npcJobs:            dedup(prev.npcJobs,            userConstants.npcJobs),
-        creatureFamilies:   dedup(prev.creatureFamilies,   userConstants.creatureFamilies),
-        itemCategories:     dedup(prev.itemCategories,     userConstants.itemCategories),
+        vendorTabs: dedup(prev.vendorTabs, userConstants.vendorTabs),
+        npcJobs: dedup(prev.npcJobs, userConstants.npcJobs),
+        creatureFamilies: dedup(prev.creatureFamilies, userConstants.creatureFamilies),
+        itemCategories: dedup(prev.itemCategories, userConstants.itemCategories),
         castableCategories: dedup(prev.castableCategories, userConstants.castableCategories),
-        statusCategories:   dedup(prev.statusCategories,   userConstants.statusCategories),
-        cookieNames:        dedup(prev.cookieNames,        (userConstants.cookies || []).map(c => c.name)),
-        motions:            userConstants.motions || [],
-      }));
-      setDirty(false);
-      markClean();
+        statusCategories: dedup(prev.statusCategories, userConstants.statusCategories),
+        cookieNames: dedup(
+          prev.cookieNames,
+          (userConstants.cookies || []).map((c) => c.name)
+        ),
+        motions: userConstants.motions || []
+      }))
+      setDirty(false)
+      markClean()
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  }, [activeLibrary, userConstants, setLibraryIndex, markClean]);
+  }, [activeLibrary, userConstants, setLibraryIndex, markClean])
 
   // Keep the stable ref in sync for saveRef
-  useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
+  useEffect(() => {
+    handleSaveRef.current = handleSave
+  }, [handleSave])
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ flex: 1 }}>Constants</Typography>
+        <Typography variant="h5" fontWeight="bold" sx={{ flex: 1 }}>
+          Constants
+        </Typography>
         {dirty && (
           <Button
-            size="small" variant="contained" onClick={handleSave} disabled={saving}
+            size="small"
+            variant="contained"
+            onClick={handleSave}
+            disabled={saving}
             startIcon={saving ? <CircularProgress size={14} color="inherit" /> : null}
           >
             Save
@@ -1259,7 +1622,9 @@ function ConstantsPage() {
       <Divider sx={{ mb: 1 }} />
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-          {TABS.map(t => <Tab key={t.label} label={t.label} />)}
+          {TABS.map((t) => (
+            <Tab key={t.label} label={t.label} />
+          ))}
         </Tabs>
       </Box>
       <Box sx={{ flex: 1, overflow: 'hidden' }}>
@@ -1267,7 +1632,7 @@ function ConstantsPage() {
         {tab === 1 && (
           <VendorTabsTab
             vendorTabs={userConstants.vendorTabs || []}
-            onChange={tabs => handleCategoryChange('vendorTabs', tabs)}
+            onChange={(tabs) => handleCategoryChange('vendorTabs', tabs)}
             activeLibrary={activeLibrary}
             initialDetails={libraryIndex.vendorTabDetails}
             onIndexUpdated={handleIndexUpdated}
@@ -1276,7 +1641,7 @@ function ConstantsPage() {
         {tab === 2 && (
           <NpcJobsTab
             npcJobs={userConstants.npcJobs || []}
-            onChange={jobs => handleCategoryChange('npcJobs', jobs)}
+            onChange={(jobs) => handleCategoryChange('npcJobs', jobs)}
             activeLibrary={activeLibrary}
             initialDetails={libraryIndex.npcJobDetails}
             onIndexUpdated={handleIndexUpdated}
@@ -1285,7 +1650,7 @@ function ConstantsPage() {
         {tab === 3 && (
           <CreatureFamiliesTab
             creatureFamilies={userConstants.creatureFamilies || []}
-            onChange={families => handleCategoryChange('creatureFamilies', families)}
+            onChange={(families) => handleCategoryChange('creatureFamilies', families)}
             activeLibrary={activeLibrary}
             initialDetails={libraryIndex.creatureFamilyDetails}
             onIndexUpdated={handleIndexUpdated}
@@ -1296,7 +1661,7 @@ function ConstantsPage() {
             label="Item categories"
             scanResultKey="items"
             categories={userConstants.itemCategories || []}
-            onChange={names => handleCategoryChange('itemCategories', names)}
+            onChange={(names) => handleCategoryChange('itemCategories', names)}
             activeLibrary={activeLibrary}
             onIndexUpdated={handleIndexUpdated}
             initialDetails={libraryIndex.itemCategoryDetails}
@@ -1307,7 +1672,7 @@ function ConstantsPage() {
             label="Castable categories"
             scanResultKey="castables"
             categories={userConstants.castableCategories || []}
-            onChange={names => handleCategoryChange('castableCategories', names)}
+            onChange={(names) => handleCategoryChange('castableCategories', names)}
             activeLibrary={activeLibrary}
             onIndexUpdated={handleIndexUpdated}
             initialDetails={libraryIndex.castableCategoryDetails}
@@ -1318,7 +1683,7 @@ function ConstantsPage() {
             label="Status categories"
             scanResultKey="statuses"
             categories={userConstants.statusCategories || []}
-            onChange={names => handleCategoryChange('statusCategories', names)}
+            onChange={(names) => handleCategoryChange('statusCategories', names)}
             activeLibrary={activeLibrary}
             onIndexUpdated={handleIndexUpdated}
             initialDetails={libraryIndex.statusCategoryDetails}
@@ -1331,12 +1696,7 @@ function ConstantsPage() {
             activeLibrary={activeLibrary}
           />
         )}
-        {tab === 8 && (
-          <MotionsTab
-            userConstants={userConstants}
-            onChange={handleChange}
-          />
-        )}
+        {tab === 8 && <MotionsTab userConstants={userConstants} onChange={handleChange} />}
         {tab === 9 && (
           <SpellBooksTab
             spellBooks={userConstants.spellBooks || []}
@@ -1348,7 +1708,7 @@ function ConstantsPage() {
         )}
       </Box>
     </Box>
-  );
+  )
 }
 
-export default ConstantsPage;
+export default ConstantsPage

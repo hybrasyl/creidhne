@@ -1,36 +1,47 @@
-import React, { useState } from 'react';
-import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, Alert, Link, CircularProgress } from '@mui/material';
-import { useRecoilState } from 'recoil';
-import { themeState } from '../recoil/atoms';
-import ManageLibraries from '../components/ManageLibraries';
-import DAClientPathSection from '../components/DAClientPathSection';
-import AboutDialog from '../components/AboutDialog';
+import React, { useState } from 'react'
+import {
+  Box,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Button,
+  Alert,
+  Link,
+  CircularProgress
+} from '@mui/material'
+import { useRecoilState } from 'recoil'
+import { themeState } from '../recoil/atoms'
+import ManageLibraries from '../components/ManageLibraries'
+import DAClientPathSection from '../components/DAClientPathSection'
+import AboutDialog from '../components/AboutDialog'
 
 const THEMES = [
   { value: 'hybrasyl', label: 'Hybrasyl' },
-  { value: 'chadul',   label: 'Chadul' },
-  { value: 'danaan',   label: 'Danaan' },
-  { value: 'grinneal', label: 'Grinneal' },
-];
+  { value: 'chadul', label: 'Chadul' },
+  { value: 'danaan', label: 'Danaan' },
+  { value: 'grinneal', label: 'Grinneal' }
+]
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
-  const [theme, setTheme] = useRecoilState(themeState);
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [updateChecking, setUpdateChecking] = useState(false);
-  const [updateResult, setUpdateResult] = useState(null);
+  const [theme, setTheme] = useRecoilState(themeState)
+  const [aboutOpen, setAboutOpen] = useState(false)
+  const [updateChecking, setUpdateChecking] = useState(false)
+  const [updateResult, setUpdateResult] = useState(null)
 
   const handleCheckForUpdates = async () => {
-    setUpdateChecking(true);
-    setUpdateResult(null);
+    setUpdateChecking(true)
+    setUpdateResult(null)
     try {
-      const result = await window.electronAPI.checkForUpdates();
-      setUpdateResult(result);
+      const result = await window.electronAPI.checkForUpdates()
+      setUpdateResult(result)
     } catch (err) {
-      setUpdateResult({ ok: false, error: err?.message || String(err) });
+      setUpdateResult({ ok: false, error: err?.message || String(err) })
     } finally {
-      setUpdateChecking(false);
+      setUpdateChecking(false)
     }
-  };
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -39,13 +50,11 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       </Typography>
       <FormControl size="small" sx={{ minWidth: 280, mb: 3 }}>
         <InputLabel>Theme</InputLabel>
-        <Select
-          value={theme}
-          label="Theme"
-          onChange={(e) => setTheme(e.target.value)}
-        >
+        <Select value={theme} label="Theme" onChange={(e) => setTheme(e.target.value)}>
           {THEMES.map((t) => (
-            <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+            <MenuItem key={t.value} value={t.value}>
+              {t.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -78,7 +87,8 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           )}
           {updateResult.ok && updateResult.updateAvailable && (
             <Alert severity="info" onClose={() => setUpdateResult(null)}>
-              Creidhne {updateResult.latestVersion} is available (you have {updateResult.currentVersion}).{' '}
+              Creidhne {updateResult.latestVersion} is available (you have{' '}
+              {updateResult.currentVersion}).{' '}
               <Link href={updateResult.releaseUrl} target="_blank" rel="noopener noreferrer">
                 View release
               </Link>
@@ -95,7 +105,7 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       )}
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </Box>
-  );
-};
+  )
+}
 
-export default SettingsPage;
+export default SettingsPage

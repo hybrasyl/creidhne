@@ -25,22 +25,22 @@ export async function readBinaryFile(filePath) {
 // Source: sprite_pickers_roadmap.md
 // `category` controls which pickers are affected when a file is missing.
 export const KNOWN_DAT_FILES = [
-  { rel: 'legend.dat',       category: 'sounds + spell/skill icons + item sprites' },
-  { rel: 'roh.dat',          category: 'spell effects' },
-  { rel: 'setoa.dat',        category: 'nation crests (nation.epf)' },
-  { rel: 'npc/npcbase.dat',  category: 'NPC portraits' },
+  { rel: 'legend.dat', category: 'sounds + spell/skill icons + item sprites' },
+  { rel: 'roh.dat', category: 'spell effects' },
+  { rel: 'setoa.dat', category: 'nation crests (nation.epf)' },
+  { rel: 'npc/npcbase.dat', category: 'NPC portraits' },
   // Khan dats (item display sprites — armor): 5 male + 5 female + 1 palettes.
-  { rel: 'khanmad.dat',      category: 'item display sprites (male)' },
-  { rel: 'khanmeh.dat',      category: 'item display sprites (male)' },
-  { rel: 'khanmim.dat',      category: 'item display sprites (male)' },
-  { rel: 'khanmns.dat',      category: 'item display sprites (male)' },
-  { rel: 'khanmtz.dat',      category: 'item display sprites (male)' },
-  { rel: 'khanwad.dat',      category: 'item display sprites (female)' },
-  { rel: 'khanweh.dat',      category: 'item display sprites (female)' },
-  { rel: 'khanwim.dat',      category: 'item display sprites (female)' },
-  { rel: 'khanwns.dat',      category: 'item display sprites (female)' },
-  { rel: 'khanwtz.dat',      category: 'item display sprites (female)' },
-  { rel: 'khanpal.dat',      category: 'item display sprites (palettes)' },
+  { rel: 'khanmad.dat', category: 'item display sprites (male)' },
+  { rel: 'khanmeh.dat', category: 'item display sprites (male)' },
+  { rel: 'khanmim.dat', category: 'item display sprites (male)' },
+  { rel: 'khanmns.dat', category: 'item display sprites (male)' },
+  { rel: 'khanmtz.dat', category: 'item display sprites (male)' },
+  { rel: 'khanwad.dat', category: 'item display sprites (female)' },
+  { rel: 'khanweh.dat', category: 'item display sprites (female)' },
+  { rel: 'khanwim.dat', category: 'item display sprites (female)' },
+  { rel: 'khanwns.dat', category: 'item display sprites (female)' },
+  { rel: 'khanwtz.dat', category: 'item display sprites (female)' },
+  { rel: 'khanpal.dat', category: 'item display sprites (palettes)' }
 ]
 // Note: item sprites (item001.epf – item054.epf) live inside legend.dat,
 // so they're covered by the legend.dat check above.
@@ -56,7 +56,9 @@ export async function checkClientPath(clientPath) {
       try {
         await fs.access(fullPath)
         found = true
-      } catch { /* not found */ }
+      } catch {
+        /* not found */
+      }
       return { rel, category, found }
     })
   )
@@ -86,7 +88,7 @@ export async function moveFile(src, dest) {
 
 export async function archiveFile(src, archiveDir) {
   const baseName = src.split(/[\\/]/).pop()
-  const ext  = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
+  const ext = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
   const stem = ext ? baseName.slice(0, -ext.length) : baseName
   await fs.mkdir(archiveDir, { recursive: true })
   let dest = join(archiveDir, baseName)

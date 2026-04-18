@@ -24,7 +24,7 @@ const XSD_FILES = [
   'Status.xsd',
   'Localization.xsd',
   'Recipe.xsd',
-  'Spawns.xsd',
+  'Spawns.xsd'
 ]
 
 // Master schema — same namespace as the real XSDs. Pulls in every individual
@@ -80,7 +80,7 @@ export async function validateHybrasylXml(xml, fileName = 'test.xml') {
     xml: [{ fileName, contents: xml }],
     schema: [MASTER_XSD],
     preload,
-    initialMemoryPages: 256,
+    initialMemoryPages: 256
   })
   return result
 }

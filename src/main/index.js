@@ -22,7 +22,15 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
-import { listDir, readFile, writeFile, moveFile, archiveFile, readBinaryFile, checkClientPath } from './fsHandlers'
+import {
+  listDir,
+  readFile,
+  writeFile,
+  moveFile,
+  archiveFile,
+  readBinaryFile,
+  checkClientPath
+} from './fsHandlers'
 import { checkForUpdates } from './updateCheck.js'
 import { loadReference } from './referenceLoader.js'
 import {
@@ -30,14 +38,14 @@ import {
   buildSectionInWorker,
   loadIndex,
   getIndexStatus,
-  deleteIndex,
+  deleteIndex
 } from './indexService.js'
 import { saveSection } from '@eriscorp/hybindex-ts'
 
 // Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
-const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne');
-const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne');
-app.setPath('userData', cachePath);
+const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne')
+const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne')
+app.setPath('userData', cachePath)
 
 const settingsManager = createSettingsManager(settingsPath)
 
@@ -124,13 +132,15 @@ app.whenReady().then(() => {
   ipcMain.handle('open-directory', handleDirectoryOpen)
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
-  ipcMain.handle('reference:load', (_, libraryPath, type, name) => loadReference(libraryPath, type, name))
+  ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
+    loadReference(libraryPath, type, name)
+  )
 
-  ipcMain.handle('fs:listDir',         (_, dirPath)          => listDir(dirPath))
-  ipcMain.handle('fs:readFile',        (_, filePath)          => readFile(filePath))
-  ipcMain.handle('fs:writeFile',       (_, filePath, content) => writeFile(filePath, content))
-  ipcMain.handle('fs:readBinaryFile',  (_, filePath)          => readBinaryFile(filePath))
-  ipcMain.handle('fs:checkClientPath', (_, clientPath)        => checkClientPath(clientPath))
+  ipcMain.handle('fs:listDir', (_, dirPath) => listDir(dirPath))
+  ipcMain.handle('fs:readFile', (_, filePath) => readFile(filePath))
+  ipcMain.handle('fs:writeFile', (_, filePath, content) => writeFile(filePath, content))
+  ipcMain.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(filePath))
+  ipcMain.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(clientPath))
 
   ipcMain.handle('xml:loadItem', async (_, filePath) => {
     const xml = await fs.readFile(filePath, 'utf-8')
@@ -272,8 +282,8 @@ app.whenReady().then(() => {
     await fs.writeFile(filePath, xml, 'utf-8')
   })
 
-  ipcMain.handle('fs:moveFile',    (_, src, dest)          => moveFile(src, dest))
-  ipcMain.handle('fs:archiveFile', (_, src, archiveDir)    => archiveFile(src, archiveDir))
+  ipcMain.handle('fs:moveFile', (_, src, dest) => moveFile(src, dest))
+  ipcMain.handle('fs:archiveFile', (_, src, archiveDir) => archiveFile(src, archiveDir))
 
   // Handling settings load and save
   ipcMain.handle('settings:load', () => settingsManager.load())
@@ -291,9 +301,11 @@ app.whenReady().then(() => {
     return { success: true, builtAt: index.builtAt }
   })
 
-  ipcMain.handle('index:buildSection', (_, libraryPath, section) => buildSectionInWorker(libraryPath, section))
+  ipcMain.handle('index:buildSection', (_, libraryPath, section) =>
+    buildSectionInWorker(libraryPath, section)
+  )
 
-  ipcMain.handle('index:load',   (_, libraryPath) => loadIndex(libraryPath))
+  ipcMain.handle('index:load', (_, libraryPath) => loadIndex(libraryPath))
   ipcMain.handle('index:status', (_, libraryPath) => getIndexStatus(libraryPath))
   ipcMain.handle('index:delete', (_, libraryPath) => deleteIndex(libraryPath))
 
@@ -319,7 +331,7 @@ app.whenReady().then(() => {
       await fs.mkdir(typesDir, { recursive: true })
 
       // Copy every .lua stub
-      const stubs = (await fs.readdir(stubsSrc)).filter(f => f.endsWith('.lua'))
+      const stubs = (await fs.readdir(stubsSrc)).filter((f) => f.endsWith('.lua'))
       for (const stub of stubs) {
         await fs.copyFile(join(stubsSrc, stub), join(typesDir, stub))
       }
@@ -339,7 +351,9 @@ app.whenReady().then(() => {
   // — no extension. Returns { ok, path } on success, { ok: false, error } on
   // failure (file missing, no library, etc.).
   ipcMain.handle('script:open', async (_, libraryPath, relativePath) => {
-    if (!libraryPath || !relativePath) return { ok: false, error: 'Missing libraryPath or relativePath' }
+    if (!libraryPath || !relativePath) {
+      return { ok: false, error: 'Missing libraryPath or relativePath' }
+    }
     const scriptPath = join(libraryPath, '..', 'scripts', `${relativePath}.lua`)
     try {
       await fs.access(scriptPath)
@@ -359,7 +373,7 @@ app.whenReady().then(() => {
       const child = spawn('code', ['--new-window', scriptsDir, '--goto', scriptPath], {
         shell: true,
         detached: true,
-        stdio: 'ignore',
+        stdio: 'ignore'
       })
       child.unref()
       return { ok: true, path: scriptPath }
@@ -371,35 +385,50 @@ app.whenReady().then(() => {
     }
   })
 
-  ipcMain.handle('castable:addCategoryBulk', async (_, libraryPath, castableNames, categoryName) => {
-    if (!libraryPath || !Array.isArray(castableNames) || !categoryName) {
-      return { updated: [], unchanged: [], failed: [{ name: '(invalid args)', error: 'Missing libraryPath, castableNames, or categoryName' }] }
-    }
-    const index = await loadIndex(libraryPath)
-    const filenames = index?.castableFilenames || {}
-    const updated = []
-    const unchanged = []
-    const failed = []
-    for (const name of castableNames) {
-      const filename = filenames[name]
-      if (!filename) { failed.push({ name, error: 'Not found in index' }); continue }
-      const filePath = join(libraryPath, 'castables', filename)
-      try {
-        const xml = await fs.readFile(filePath, 'utf-8')
-        const castable = await parseCastableXml(xml)
-        const categories = Array.isArray(castable.categories) ? [...castable.categories] : []
-        if (categories.includes(categoryName)) { unchanged.push(name); continue }
-        categories.push(categoryName)
-        const next = { ...castable, categories }
-        const outXml = serializeCastableXml(next)
-        await fs.writeFile(filePath, outXml, 'utf-8')
-        updated.push(name)
-      } catch (err) {
-        failed.push({ name, error: err?.message || String(err) })
+  ipcMain.handle(
+    'castable:addCategoryBulk',
+    async (_, libraryPath, castableNames, categoryName) => {
+      if (!libraryPath || !Array.isArray(castableNames) || !categoryName) {
+        return {
+          updated: [],
+          unchanged: [],
+          failed: [
+            { name: '(invalid args)', error: 'Missing libraryPath, castableNames, or categoryName' }
+          ]
+        }
       }
+      const index = await loadIndex(libraryPath)
+      const filenames = index?.castableFilenames || {}
+      const updated = []
+      const unchanged = []
+      const failed = []
+      for (const name of castableNames) {
+        const filename = filenames[name]
+        if (!filename) {
+          failed.push({ name, error: 'Not found in index' })
+          continue
+        }
+        const filePath = join(libraryPath, 'castables', filename)
+        try {
+          const xml = await fs.readFile(filePath, 'utf-8')
+          const castable = await parseCastableXml(xml)
+          const categories = Array.isArray(castable.categories) ? [...castable.categories] : []
+          if (categories.includes(categoryName)) {
+            unchanged.push(name)
+            continue
+          }
+          categories.push(categoryName)
+          const next = { ...castable, categories }
+          const outXml = serializeCastableXml(next)
+          await fs.writeFile(filePath, outXml, 'utf-8')
+          updated.push(name)
+        } catch (err) {
+          failed.push({ name, error: err?.message || String(err) })
+        }
+      }
+      return { updated, unchanged, failed }
     }
-    return { updated, unchanged, failed }
-  })
+  )
 
   // --- Constants (XSD simple types, categories, cookies) ---
 
@@ -408,7 +437,7 @@ app.whenReady().then(() => {
     const result = []
     try {
       const files = await fs.readdir(xsdDir)
-      for (const fileName of files.filter(f => f.endsWith('.xsd'))) {
+      for (const fileName of files.filter((f) => f.endsWith('.xsd'))) {
         const content = await fs.readFile(join(xsdDir, fileName), 'utf-8')
         const simpleTypeRegex = /<xs:simpleType\s+name="([^"]+)"[^>]*>([\s\S]*?)<\/xs:simpleType>/g
         let match
@@ -444,9 +473,10 @@ app.whenReady().then(() => {
       const catMap = {}
       try {
         const entries = await fs.readdir(dir, { withFileTypes: true })
-        for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+        for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
           const content = await fs.readFile(join(dir, entry.name), 'utf-8')
-          const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
+          const nameMatch =
+            /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
           const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
           const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
           if (!catSection) continue
@@ -455,32 +485,44 @@ app.whenReady().then(() => {
           const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
           const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
           let m
-          while ((m = catElemRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
-          while ((m = catAttrRegex.exec(body)) !== null) { const c = m[1].trim(); if (c) cats.add(c) }
+          while ((m = catElemRegex.exec(body)) !== null) {
+            const c = m[1].trim()
+            if (c) cats.add(c)
+          }
+          while ((m = catAttrRegex.exec(body)) !== null) {
+            const c = m[1].trim()
+            if (c) cats.add(c)
+          }
           for (const cat of cats) {
             if (!catMap[cat]) catMap[cat] = { count: 0, usedBy: [] }
             catMap[cat].count++
             if (catMap[cat].usedBy.length < 5) catMap[cat].usedBy.push(itemName)
           }
         }
-      } catch { /* dir may not exist */ }
-      target.push(...Object.entries(catMap)
-        .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
-        .sort((a, b) => a.name.localeCompare(b.name)))
+      } catch {
+        /* dir may not exist */
+      }
+      target.push(
+        ...Object.entries(catMap)
+          .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      )
     }
     await scanDir(join(libraryPath, 'items'), result.items)
     await scanDir(join(libraryPath, 'castables'), result.castables)
     await scanDir(join(libraryPath, 'statuses'), result.statuses)
     try {
       await updateIndexFields(libraryPath, {
-        itemCategories:          result.items.map(c => c.name),
-        castableCategories:      result.castables.map(c => c.name),
-        statusCategories:        result.statuses.map(c => c.name),
-        itemCategoryDetails:     result.items,
+        itemCategories: result.items.map((c) => c.name),
+        castableCategories: result.castables.map((c) => c.name),
+        statusCategories: result.statuses.map((c) => c.name),
+        itemCategoryDetails: result.items,
         castableCategoryDetails: result.castables,
-        statusCategoryDetails:   result.statuses,
+        statusCategoryDetails: result.statuses
       })
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
     return result
   })
 
@@ -489,7 +531,7 @@ app.whenReady().then(() => {
     try {
       const itemsDir = join(libraryPath, 'items')
       const entries = await fs.readdir(itemsDir, { withFileTypes: true })
-      for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
         const content = await fs.readFile(join(itemsDir, entry.name), 'utf-8')
         const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
         const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
@@ -503,16 +545,20 @@ app.whenReady().then(() => {
           if (tabMap[val].usedBy.length < 5) tabMap[val].usedBy.push(itemName)
         }
       }
-    } catch { /* dir may not exist */ }
+    } catch {
+      /* dir may not exist */
+    }
     const details = Object.entries(tabMap)
       .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
       .sort((a, b) => a.name.localeCompare(b.name))
     try {
       await updateIndexFields(libraryPath, {
-        vendorTabs:        details.map(t => t.name),
-        vendorTabDetails:  details,
+        vendorTabs: details.map((t) => t.name),
+        vendorTabDetails: details
       })
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
     return details
   })
 
@@ -521,7 +567,7 @@ app.whenReady().then(() => {
     try {
       const npcsDir = join(libraryPath, 'npcs')
       const entries = await fs.readdir(npcsDir, { withFileTypes: true })
-      for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
         const namePart = entry.name.replace(/\.xml$/i, '')
         const underscoreIdx = namePart.indexOf('_')
         if (underscoreIdx <= 0) continue
@@ -534,16 +580,20 @@ app.whenReady().then(() => {
         jobMap[prefix].count++
         if (jobMap[prefix].usedBy.length < 5) jobMap[prefix].usedBy.push(npcName)
       }
-    } catch { /* dir may not exist */ }
+    } catch {
+      /* dir may not exist */
+    }
     const details = Object.entries(jobMap)
       .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
       .sort((a, b) => a.name.localeCompare(b.name))
     try {
       await updateIndexFields(libraryPath, {
-        npcJobs:        details.map(j => j.name),
-        npcJobDetails:  details,
+        npcJobs: details.map((j) => j.name),
+        npcJobDetails: details
       })
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
     return details
   })
 
@@ -552,7 +602,7 @@ app.whenReady().then(() => {
     try {
       const creaturesDir = join(libraryPath, 'creatures')
       const entries = await fs.readdir(creaturesDir, { withFileTypes: true })
-      for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
         const namePart = entry.name.replace(/\.xml$/i, '')
         const underscoreIdx = namePart.indexOf('_')
         if (underscoreIdx <= 0) continue
@@ -565,18 +615,24 @@ app.whenReady().then(() => {
           const nameMatch = /Name="([^"]+)"/.exec(content)
           const creatureName = nameMatch ? nameMatch[1].trim() : namePart
           if (familyMap[prefix].usedBy.length < 5) familyMap[prefix].usedBy.push(creatureName)
-        } catch { /* skip name for this file */ }
+        } catch {
+          /* skip name for this file */
+        }
       }
-    } catch { /* dir may not exist */ }
+    } catch {
+      /* dir may not exist */
+    }
     const details = Object.entries(familyMap)
       .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
       .sort((a, b) => a.name.localeCompare(b.name))
     try {
       await updateIndexFields(libraryPath, {
-        creatureFamilies:        details.map(f => f.name),
-        creatureFamilyDetails:   details,
+        creatureFamilies: details.map((f) => f.name),
+        creatureFamilyDetails: details
       })
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
     return details
   })
 
@@ -597,21 +653,25 @@ app.whenReady().then(() => {
             let m
             while ((m = cookieRegex.exec(content)) !== null) {
               const name = m[1]
-              if (name && !cookies.some(c => c.name === name && c.sourceFile === relPath)) {
+              if (name && !cookies.some((c) => c.name === name && c.sourceFile === relPath)) {
                 cookies.push({ name, sourceFile: relPath })
               }
             }
           }
         }
-      } catch { /* dir may not exist */ }
+      } catch {
+        /* dir may not exist */
+      }
     }
     await scanDir(scriptsDir, scriptsDir)
     cookies.sort((a, b) => a.name.localeCompare(b.name))
     try {
       await updateIndexFields(libraryPath, {
-        cookieNames: [...new Set(cookies.map(c => c.name))].sort(),
+        cookieNames: [...new Set(cookies.map((c) => c.name))].sort()
       })
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
     return cookies
   })
 
@@ -632,7 +692,16 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:loadUserConstants', async (_, libraryPath) => {
-    if (!libraryPath) return { vendorTabs: [], itemCategories: [], castableCategories: [], statusCategories: [], cookies: [], npcJobs: [], creatureFamilies: [] }
+    if (!libraryPath)
+      return {
+        vendorTabs: [],
+        itemCategories: [],
+        castableCategories: [],
+        statusCategories: [],
+        cookies: [],
+        npcJobs: [],
+        creatureFamilies: []
+      }
     return loadConstants(libraryPath)
   })
 
@@ -659,7 +728,7 @@ app.whenReady().then(() => {
     const { canceled, filePaths } = await dialog.showOpenDialog(window, {
       title: 'Import Formula Library',
       filters: [{ name: 'Lua Files', extensions: ['lua'] }],
-      properties: ['openFile'],
+      properties: ['openFile']
     })
     if (canceled || !filePaths[0]) return null
     const existing = await loadFormulas(libraryPath)
@@ -674,7 +743,9 @@ app.whenReady().then(() => {
       try {
         const indexData = await loadIndex(libraryPath)
         filename = indexData?.castableFilenames?.[castableName]
-      } catch { /* index not available */ }
+      } catch {
+        /* index not available */
+      }
 
       // Fallback: scan directory files for matching <Name> element
       if (!filename) {
@@ -698,7 +769,7 @@ app.whenReady().then(() => {
       return {
         lines: castable.lines ? Number(castable.lines) : null,
         cooldown: castable.cooldown ? Number(castable.cooldown) : null,
-        book: castable.book || null,
+        book: castable.book || null
       }
     } catch {
       return null
@@ -709,7 +780,7 @@ app.whenReady().then(() => {
     const window = BrowserWindow.getFocusedWindow()
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
       defaultPath: defaultName,
-      filters: [{ name: 'CSV Files', extensions: ['csv'] }],
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
     })
     if (canceled || !filePath) return { canceled: true }
     await fs.writeFile(filePath, content, 'utf-8')
@@ -723,7 +794,9 @@ app.whenReady().then(() => {
     try {
       const indexData = await loadIndex(libraryPath)
       castableTrainers = indexData?.castableTrainers || {}
-    } catch { /* no index — trainers will be empty */ }
+    } catch {
+      /* no index — trainers will be empty */
+    }
 
     const ALL_CLASSES = ['Warrior', 'Wizard', 'Priest', 'Rogue', 'Monk', 'Peasant']
 
@@ -734,18 +807,25 @@ app.whenReady().then(() => {
 
     function deriveType(book) {
       switch (book) {
-        case 'PrimarySkill':   case 'SecondarySkill':  return 'Skill'
-        case 'PrimarySpell':   case 'SecondarySpell':  return 'Spell'
-        case 'UtilitySkill':  return 'Utility Skill'
-        case 'UtilitySpell':  return 'Utility Spell'
-        default: return book
+        case 'PrimarySkill':
+        case 'SecondarySkill':
+          return 'Skill'
+        case 'PrimarySpell':
+        case 'SecondarySpell':
+          return 'Spell'
+        case 'UtilitySkill':
+          return 'Utility Skill'
+        case 'UtilitySpell':
+          return 'Utility Spell'
+        default:
+          return book
       }
     }
 
     function deriveClass(cls) {
       if (!cls) return 'Universal'
       const words = cls.split(/\s+/).filter(Boolean)
-      if (words.length === 0 || ALL_CLASSES.every(c => words.includes(c))) return 'Universal'
+      if (words.length === 0 || ALL_CLASSES.every((c) => words.includes(c))) return 'Universal'
       return cls
     }
 
@@ -753,7 +833,7 @@ app.whenReady().then(() => {
       if (!req) return 'No Cost'
       const parts = []
       if (req.gold) parts.push(`${req.gold} gold`)
-      for (const item of (req.items || [])) {
+      for (const item of req.items || []) {
         const qty = Number(item.quantity) > 1 ? `${item.quantity} ` : ''
         parts.push(`${qty}${item.itemName}`)
       }
@@ -762,32 +842,36 @@ app.whenReady().then(() => {
 
     function formatCastCost(castCosts) {
       if (!castCosts || castCosts.length === 0) return ''
-      return castCosts.map(cost => {
-        if (cost.type === 'Item') return `${cost.quantity || 1} ${cost.itemName}`
-        const val = String(cost.value || '')
-        const hpMatch  = /SOURCEBASEHP\s*\*\s*([\d.]+)/.exec(val)
-        const mpMatch  = /SOURCEBASEMP\s*\*\s*([\d.]+)/.exec(val)
-        const gldMatch = /SOURCEGOLD\s*\*\s*([\d.]+)/.exec(val)
-        if (hpMatch)  return `${Math.round(Number(hpMatch[1])  * 100)}% of Base Health`
-        if (mpMatch)  return `${Math.round(Number(mpMatch[1])  * 100)}% of Base Mana`
-        if (gldMatch) return `${Math.round(Number(gldMatch[1]) * 100)}% of Gold`
-        if (/^SOURCEBASEHP$/i.test(val)) return '100% of Base Health'
-        if (/^SOURCEBASEMP$/i.test(val)) return '100% of Base Mana'
-        if (/^SOURCEGOLD$/i.test(val))   return '100% of Gold'
-        if (cost.type === 'Hp')   return `${val} HP`
-        if (cost.type === 'Mp')   return `${val} Mana`
-        if (cost.type === 'Gold') return `${val} Gold`
-        return val
-      }).join(', ')
+      return castCosts
+        .map((cost) => {
+          if (cost.type === 'Item') return `${cost.quantity || 1} ${cost.itemName}`
+          const val = String(cost.value || '')
+          const hpMatch = /SOURCEBASEHP\s*\*\s*([\d.]+)/.exec(val)
+          const mpMatch = /SOURCEBASEMP\s*\*\s*([\d.]+)/.exec(val)
+          const gldMatch = /SOURCEGOLD\s*\*\s*([\d.]+)/.exec(val)
+          if (hpMatch) return `${Math.round(Number(hpMatch[1]) * 100)}% of Base Health`
+          if (mpMatch) return `${Math.round(Number(mpMatch[1]) * 100)}% of Base Mana`
+          if (gldMatch) return `${Math.round(Number(gldMatch[1]) * 100)}% of Gold`
+          if (/^SOURCEBASEHP$/i.test(val)) return '100% of Base Health'
+          if (/^SOURCEBASEMP$/i.test(val)) return '100% of Base Mana'
+          if (/^SOURCEGOLD$/i.test(val)) return '100% of Gold'
+          if (cost.type === 'Hp') return `${val} HP`
+          if (cost.type === 'Mp') return `${val} Mana`
+          if (cost.type === 'Gold') return `${val} Gold`
+          return val
+        })
+        .join(', ')
     }
 
     function esc(val) {
       const s = String(val ?? '')
-      return (s.includes(',') || s.includes('"') || s.includes('\n'))
-        ? `"${s.replace(/"/g, '""')}"` : s
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s
     }
 
-    const header = 'Name,Icon,Description,Class,Subclass,Location,StatStr,StatInt,StatWis,StatDex,StatCon,Mats,Level,Type,CastCost,Cooldown'
+    const header =
+      'Name,Icon,Description,Class,Subclass,Location,StatStr,StatInt,StatWis,StatDex,StatCon,Mats,Level,Type,CastCost,Cooldown'
     const rows = [header]
 
     let entries = []
@@ -797,7 +881,7 @@ app.whenReady().then(() => {
       return { error: 'Could not read castables directory' }
     }
 
-    for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.xml'))) {
+    for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
       try {
         const xmlString = await fs.readFile(join(castDir, entry.name), 'utf-8')
         const meta = extractMeta(xmlString)
@@ -810,25 +894,29 @@ app.whenReady().then(() => {
         else if (meta.givenViaScript) location = 'Awarded by a Quest'
         const classLabel = deriveClass(castable.class)
         const subclass = meta.specialty || classLabel
-        rows.push([
-          esc(castable.name),
-          esc(deriveIcon(castable.book, castable.icon)),
-          esc(castable.descriptions[0]?.text || ''),
-          esc(classLabel),
-          esc(subclass),
-          esc(location),
-          esc(req?.str  || '3'),
-          esc(req?.int  || '3'),
-          esc(req?.wis  || '3'),
-          esc(req?.dex  || '3'),
-          esc(req?.con  || '3'),
-          esc(formatMats(req)),
-          esc(req?.levelMin || '1'),
-          esc(deriveType(castable.book)),
-          esc(formatCastCost(castable.castCosts)),
-          esc(castable.cooldown || ''),
-        ].join(','))
-      } catch { /* skip malformed file */ }
+        rows.push(
+          [
+            esc(castable.name),
+            esc(deriveIcon(castable.book, castable.icon)),
+            esc(castable.descriptions[0]?.text || ''),
+            esc(classLabel),
+            esc(subclass),
+            esc(location),
+            esc(req?.str || '3'),
+            esc(req?.int || '3'),
+            esc(req?.wis || '3'),
+            esc(req?.dex || '3'),
+            esc(req?.con || '3'),
+            esc(formatMats(req)),
+            esc(req?.levelMin || '1'),
+            esc(deriveType(castable.book)),
+            esc(formatCastCost(castable.castCosts)),
+            esc(castable.cooldown || '')
+          ].join(',')
+        )
+      } catch {
+        /* skip malformed file */
+      }
     }
 
     return { csv: rows.join('\r\n') }

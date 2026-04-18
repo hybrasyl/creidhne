@@ -21,7 +21,7 @@ describe('tightBoundsAndNormalize', () => {
   it('computes tight bounds across multiple frames', () => {
     const frames = [
       { bitmap: fakeBitmap(10, 10), left: 5, top: 5 },
-      { bitmap: fakeBitmap(20, 10), left: 10, top: 0 },
+      { bitmap: fakeBitmap(20, 10), left: 10, top: 0 }
     ]
     const r = tightBoundsAndNormalize(frames)
     // min: (5, 0), max: (30, 15) → width 25, height 15
@@ -32,7 +32,7 @@ describe('tightBoundsAndNormalize', () => {
   it('normalizes each frame so min-left and min-top become origin', () => {
     const frames = [
       { bitmap: fakeBitmap(10, 10), left: 5, top: 5 },
-      { bitmap: fakeBitmap(20, 10), left: 10, top: 0 },
+      { bitmap: fakeBitmap(20, 10), left: 10, top: 0 }
     ]
     const r = tightBoundsAndNormalize(frames)
     // min-left = 5, min-top = 0
@@ -54,10 +54,10 @@ describe('tightBoundsAndNormalize', () => {
   it('handles negative left/top offsets', () => {
     const frames = [
       { bitmap: fakeBitmap(10, 10), left: -5, top: -3 },
-      { bitmap: fakeBitmap(10, 10), left: 5, top: 7 },
+      { bitmap: fakeBitmap(10, 10), left: 5, top: 7 }
     ]
     const r = tightBoundsAndNormalize(frames)
-    expect(r.width).toBe(20)  // -5 to 15
+    expect(r.width).toBe(20) // -5 to 15
     expect(r.height).toBe(20) // -3 to 17
     expect(r.frames[0]).toEqual({ bitmap: frames[0].bitmap, left: 0, top: 0 })
     expect(r.frames[1]).toEqual({ bitmap: frames[1].bitmap, left: 10, top: 10 })

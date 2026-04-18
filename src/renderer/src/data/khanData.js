@@ -31,7 +31,7 @@ export const CATEGORY_DEFAULTS = {
   W: { pose: '01', frameIdx: 0 }, // Weapons
   S: { pose: '01', frameIdx: 6 }, // Shields
   L: { pose: '03', frameIdx: 5 }, // Boots (Foot)
-  E: { pose: '03', frameIdx: 5 }, // Hats (Coat slot)
+  E: { pose: '03', frameIdx: 5 } // Hats (Coat slot)
   // C: accessories — use global default until confirmed.
 }
 
@@ -57,16 +57,16 @@ const POSE_FALLBACK_ORDER = ['03', '02', '01', 'b', 'c', 'd', 'e', 'f']
 // Slot → category. Value may be a single letter or an array of letters when
 // a slot's sprites live across multiple categories (merged in the picker).
 export const SLOT_TO_CATEGORY = {
-  Armor:     'U',       // Body Armors
-  Weapon:    'W',       // Weapons, regular animations
-  Shield:    'S',
-  Foot:      'L',       // Boots
-  Coat:      ['E', 'F'], // Hats — both categories hold coat-slot hats
-  Helmet:    'H',       // Hats (in DA, hairstyles ARE hats)
-  Trousers:  'U',       // Body armors — same sprites as Armor slot
-  FirstAcc:  'C',       // Accessories
+  Armor: 'U', // Body Armors
+  Weapon: 'W', // Weapons, regular animations
+  Shield: 'S',
+  Foot: 'L', // Boots
+  Coat: ['E', 'F'], // Hats — both categories hold coat-slot hats
+  Helmet: 'H', // Hats (in DA, hairstyles ARE hats)
+  Trousers: 'U', // Body armors — same sprites as Armor slot
+  FirstAcc: 'C', // Accessories
   SecondAcc: 'C',
-  ThirdAcc:  'C',
+  ThirdAcc: 'C'
 }
 
 /** Normalize a slot mapping value (string | array) to an array of category letters. */
@@ -82,7 +82,7 @@ const KHAN_RANGES = [
   { start: 'E', end: 'H', suffix: 'eh' },
   { start: 'I', end: 'M', suffix: 'im' },
   { start: 'N', end: 'S', suffix: 'ns' },
-  { start: 'T', end: 'Z', suffix: 'tz' },
+  { start: 'T', end: 'Z', suffix: 'tz' }
 ]
 
 export function khanArchiveName(category, gender) {
@@ -101,9 +101,9 @@ export function entryName(category, gender, displaySprite, pose) {
 
 // ── Caches (keyed by clientPath so a path change clears everything) ───────────
 const paletteLookupCache = new Map() // `${clientPath}|${category}` → PaletteLookup
-const epfCache           = new Map() // `${clientPath}|${entryName}` → EpfFile
-const bitmapCache        = new Map() // `${clientPath}|${entryName}|${frameIdx}` → ImageBitmap
-const availableIdsCache  = new Map() // `${clientPath}|${category}|${gender}|${pose}` → sorted id[]
+const epfCache = new Map() // `${clientPath}|${entryName}` → EpfFile
+const bitmapCache = new Map() // `${clientPath}|${entryName}|${frameIdx}` → ImageBitmap
+const availableIdsCache = new Map() // `${clientPath}|${category}|${gender}|${pose}` → sorted id[]
 
 const fallbackWarnedKeys = new Set()
 
@@ -139,7 +139,7 @@ async function resolvePose(clientPath, { category, gender, displaySprite, pose }
   const archiveName = khanArchiveName(category, gender)
   if (!archiveName) return null
   const archive = await loadArchive(clientPath, archiveName)
-  const tryPose = (p) => archive.has(entryName(category, gender, displaySprite, p)) ? p : null
+  const tryPose = (p) => (archive.has(entryName(category, gender, displaySprite, p)) ? p : null)
   // Try requested first, then anything else.
   const requested = tryPose(pose)
   if (requested) return requested
@@ -216,7 +216,9 @@ export async function getDisplaySpriteBitmap(clientPath, opts) {
   let palette = null
   try {
     palette = lookup.getPaletteForId(id)
-  } catch { /* fall through to fallback */ }
+  } catch {
+    /* fall through to fallback */
+  }
   if (!palette) {
     palette = lookup.palettes.get(0)
     if (!palette) {
@@ -227,7 +229,7 @@ export async function getDisplaySpriteBitmap(clientPath, opts) {
     const warnKey = `${category}|${id}`
     if (!fallbackWarnedKeys.has(warnKey)) {
       fallbackWarnedKeys.add(warnKey)
-      // eslint-disable-next-line no-console
+
       console.warn(`[khanData] no palette for category=${category} id=${id}; using fallback`)
     }
   }
@@ -278,7 +280,11 @@ export async function getAvailableDisplaySprites(clientPath, category, gender) {
 
 export function clearKhanCache() {
   for (const bitmap of bitmapCache.values()) {
-    try { bitmap.close?.() } catch { /* ignore */ }
+    try {
+      bitmap.close?.()
+    } catch {
+      /* ignore */
+    }
   }
   bitmapCache.clear()
   epfCache.clear()

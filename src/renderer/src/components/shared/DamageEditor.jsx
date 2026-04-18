@@ -1,14 +1,20 @@
-import React from 'react';
+import React from 'react'
 import {
-  Box, FormControl, InputLabel, Select, MenuItem, TextField,
-  Autocomplete, Chip,
-} from '@mui/material';
-import { ELEMENT_TYPES } from '../../data/itemConstants';
-import FormulaRow from './FormulaRow';
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Autocomplete,
+  Chip
+} from '@mui/material'
+import { ELEMENT_TYPES } from '../../data/itemConstants'
+import FormulaRow from './FormulaRow'
 
-const FORMULA_KINDS = ['Static', 'Variable', 'Formula'];
-const DAMAGE_TYPES  = ['Direct', 'Physical', 'Magical', 'Elemental'];
-const DAMAGE_FLAGS  = ['NoResistance', 'NoThreat', 'Nonlethal', 'NoDodge', 'NoCrit', 'NoElement'];
+const FORMULA_KINDS = ['Static', 'Variable', 'Formula']
+const DAMAGE_TYPES = ['Direct', 'Physical', 'Magical', 'Elemental']
+const DAMAGE_FLAGS = ['NoResistance', 'NoThreat', 'Nonlethal', 'NoDodge', 'NoCrit', 'NoElement']
 
 /**
  * Inline damage formula editor (Static / Variable / Formula).
@@ -20,8 +26,10 @@ const DAMAGE_FLAGS  = ['NoResistance', 'NoThreat', 'Nonlethal', 'NoDodge', 'NoCr
  *                 parent castable to inherit an element from.
  */
 function DamageEditor({ value, onChange, showElement = false }) {
-  const setNumeric = (field) => (e) => onChange({ ...value, [field]: e.target.value.replace(/\D/g, '') });
-  const changeKind = (kind) => onChange({ ...value, kind, value: '', min: '', max: '', formula: '', formulaName: '' });
+  const setNumeric = (field) => (e) =>
+    onChange({ ...value, [field]: e.target.value.replace(/\D/g, '') })
+  const changeKind = (kind) =>
+    onChange({ ...value, kind, value: '', min: '', max: '', formula: '', formulaName: '' })
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -30,26 +38,73 @@ function DamageEditor({ value, onChange, showElement = false }) {
         <FormControl size="small" sx={{ width: 120, flexShrink: 0 }}>
           <InputLabel>Type</InputLabel>
           <Select value={value.kind} label="Type" onChange={(e) => changeKind(e.target.value)}>
-            {FORMULA_KINDS.map((k) => <MenuItem key={k} value={k}>{k}</MenuItem>)}
+            {FORMULA_KINDS.map((k) => (
+              <MenuItem key={k} value={k}>
+                {k}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 140, flexShrink: 0 }}>
           <InputLabel>Damage Type</InputLabel>
-          <Select value={value.type} label="Damage Type" onChange={(e) => onChange({ ...value, type: e.target.value })}>
-            {DAMAGE_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+          <Select
+            value={value.type}
+            label="Damage Type"
+            onChange={(e) => onChange({ ...value, type: e.target.value })}
+          >
+            {DAMAGE_TYPES.map((t) => (
+              <MenuItem key={t} value={t}>
+                {t}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
         {showElement && (
           <FormControl size="small" sx={{ minWidth: 140, flexShrink: 0 }}>
             <InputLabel>Element</InputLabel>
-            <Select value={value.element ?? 'None'} label="Element" onChange={(e) => onChange({ ...value, element: e.target.value })}>
-              {ELEMENT_TYPES.map((el) => <MenuItem key={el} value={el}>{el}</MenuItem>)}
+            <Select
+              value={value.element ?? 'None'}
+              label="Element"
+              onChange={(e) => onChange({ ...value, element: e.target.value })}
+            >
+              {ELEMENT_TYPES.map((el) => (
+                <MenuItem key={el} value={el}>
+                  {el}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         )}
-        {value.kind === 'Static'   && <TextField label="Amount" size="small" sx={{ width: 120 }} value={value.value}   onChange={setNumeric('value')} inputProps={{ inputMode: 'numeric' }} />}
-        {value.kind === 'Variable' && <TextField label="Min"    size="small" sx={{ width: 100 }} value={value.min}     onChange={setNumeric('min')}   inputProps={{ inputMode: 'numeric' }} />}
-        {value.kind === 'Variable' && <TextField label="Max"    size="small" sx={{ width: 100 }} value={value.max}     onChange={setNumeric('max')}   inputProps={{ inputMode: 'numeric' }} />}
+        {value.kind === 'Static' && (
+          <TextField
+            label="Amount"
+            size="small"
+            sx={{ width: 120 }}
+            value={value.value}
+            onChange={setNumeric('value')}
+            inputProps={{ inputMode: 'numeric' }}
+          />
+        )}
+        {value.kind === 'Variable' && (
+          <TextField
+            label="Min"
+            size="small"
+            sx={{ width: 100 }}
+            value={value.min}
+            onChange={setNumeric('min')}
+            inputProps={{ inputMode: 'numeric' }}
+          />
+        )}
+        {value.kind === 'Variable' && (
+          <TextField
+            label="Max"
+            size="small"
+            sx={{ width: 100 }}
+            value={value.max}
+            onChange={setNumeric('max')}
+            inputProps={{ inputMode: 'numeric' }}
+          />
+        )}
         <Autocomplete
           multiple
           options={DAMAGE_FLAGS}
@@ -78,7 +133,7 @@ function DamageEditor({ value, onChange, showElement = false }) {
         />
       )}
     </Box>
-  );
+  )
 }
 
-export default DamageEditor;
+export default DamageEditor

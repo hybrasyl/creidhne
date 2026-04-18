@@ -1,29 +1,40 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { FixedSizeList } from 'react-window';
+import React, { useCallback, useRef, useState } from 'react'
+import { List as VirtualList } from 'react-window'
 import {
-  Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider,
-  Button, Tooltip, TextField, InputAdornment, IconButton, CircularProgress,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import ArchiveIcon from '@mui/icons-material/Archive';
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
+  Divider,
+  Button,
+  Tooltip,
+  TextField,
+  InputAdornment,
+  IconButton,
+  CircularProgress
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import SearchIcon from '@mui/icons-material/Search'
+import ArchiveIcon from '@mui/icons-material/Archive'
 
-const ITEM_HEIGHT = 52;
+const ITEM_HEIGHT = 52
 
 function stripXml(filename) {
-  return filename.replace(/\.xml$/i, '');
+  return filename.replace(/\.xml$/i, '')
 }
 
 function displayNameFor(file, namesByFilename) {
-  return namesByFilename?.[file.name] ?? stripXml(file.name);
+  return namesByFilename?.[file.name] ?? stripXml(file.name)
 }
 
 function matchesFilter(file, query, namesByFilename) {
-  if (!query) return true;
-  const q = query.toLowerCase();
-  if (stripXml(file.name).toLowerCase().includes(q)) return true;
-  const name = namesByFilename?.[file.name];
-  return !!(name && name.toLowerCase().includes(q));
+  if (!query) return true
+  const q = query.toLowerCase()
+  if (stripXml(file.name).toLowerCase().includes(q)) return true
+  const name = namesByFilename?.[file.name]
+  return !!(name && name.toLowerCase().includes(q))
 }
 
 // Measures the bounding rect of a box and re-measures on resize so the virtual
@@ -31,33 +42,32 @@ function matchesFilter(file, query, namesByFilename) {
 // Uses a callback ref so measurement kicks in whenever the element mounts —
 // including late mounts after a `loading` state flips the list area on.
 function useAutoSize() {
-  const observerRef = useRef(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const observerRef = useRef(null)
+  const [size, setSize] = useState({ width: 0, height: 0 })
   const refCallback = useCallback((el) => {
     if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
+      observerRef.current.disconnect()
+      observerRef.current = null
     }
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setSize({ width: rect.width, height: rect.height });
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    setSize({ width: rect.width, height: rect.height })
     const ro = new ResizeObserver(([entry]) => {
-      setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
-    });
-    ro.observe(el);
-    observerRef.current = ro;
-  }, []);
-  return [refCallback, size];
+      setSize({ width: entry.contentRect.width, height: entry.contentRect.height })
+    })
+    ro.observe(el)
+    observerRef.current = ro
+  }, [])
+  return [refCallback, size]
 }
 
 // Row renderer for react-window. Receives index + precomputed style (absolute
 // positioning from the virtual list) + itemData populated by the parent.
-function VirtualRow({ index, style, data }) {
-  const { items, selectedFile, onSelect, namesByFilename, archived } = data;
-  const file = items[index];
-  const displayName = displayNameFor(file, namesByFilename);
-  const filenameBare = stripXml(file.name);
-  const showSubtitle = displayName !== filenameBare;
+function VirtualRow({ index, style, items, selectedFile, onSelect, namesByFilename, archived }) {
+  const file = items[index]
+  const displayName = displayNameFor(file, namesByFilename)
+  const filenameBare = stripXml(file.name)
+  const showSubtitle = displayName !== filenameBare
   return (
     <ListItem key={file.path} disablePadding style={style}>
       <ListItemButton
@@ -68,12 +78,16 @@ function VirtualRow({ index, style, data }) {
         <ListItemText
           primary={displayName}
           secondary={showSubtitle ? filenameBare : null}
-          primaryTypographyProps={{ noWrap: true, variant: 'body2', color: archived ? 'text.secondary' : undefined }}
+          primaryTypographyProps={{
+            noWrap: true,
+            variant: 'body2',
+            color: archived ? 'text.secondary' : undefined
+          }}
           secondaryTypographyProps={{ noWrap: true, variant: 'caption' }}
         />
       </ListItemButton>
     </ListItem>
-  );
+  )
 }
 
 /**
@@ -97,21 +111,27 @@ export default function EditorFileListPanel({
   onToggleArchived,
   namesByFilename,
   loading = false,
-  width = 240,
+  width = 240
 }) {
-  const [search, setSearch] = useState('');
-  const [listRef, listSize] = useAutoSize();
+  const [search, setSearch] = useState('')
+  const [listRef, listSize] = useAutoSize()
 
-  const filteredActive   = files.filter((f) => matchesFilter(f, search, namesByFilename));
-  const filteredArchived = (archivedFiles || []).filter((f) => matchesFilter(f, search, namesByFilename));
+  const filteredActive = files.filter((f) => matchesFilter(f, search, namesByFilename))
+  const filteredArchived = (archivedFiles || []).filter((f) =>
+    matchesFilter(f, search, namesByFilename)
+  )
 
-  const noun       = (title || '').toLowerCase();
-  const newTooltip = `New ${entityLabel || title || 'file'}`;
+  const noun = (title || '').toLowerCase()
+  const newTooltip = `New ${entityLabel || title || 'file'}`
 
-  const showLoader       = loading && files.length === 0;
-  const showEmptyLibrary = !loading && files.length === 0 && !showArchived;
-  const showNoMatches    = !loading && filteredActive.length === 0 && (!showArchived || filteredArchived.length === 0) && files.length > 0;
-  const showLists        = !showLoader && !showEmptyLibrary && !showNoMatches;
+  const showLoader = loading && files.length === 0
+  const showEmptyLibrary = !loading && files.length === 0 && !showArchived
+  const showNoMatches =
+    !loading &&
+    filteredActive.length === 0 &&
+    (!showArchived || filteredArchived.length === 0) &&
+    files.length > 0
+  const showLists = !showLoader && !showEmptyLibrary && !showNoMatches
 
   return (
     <Box
@@ -122,14 +142,18 @@ export default function EditorFileListPanel({
         borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflow: 'hidden'
       }}
     >
       <Box sx={{ p: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="subtitle2">{title}</Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title={showArchived ? 'Hide Archived' : 'Show Archived'}>
-            <IconButton size="small" onClick={onToggleArchived} color={showArchived ? 'primary' : 'default'}>
+            <IconButton
+              size="small"
+              onClick={onToggleArchived}
+              color={showArchived ? 'primary' : 'default'}
+            >
               <ArchiveIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -152,7 +176,7 @@ export default function EditorFileListPanel({
               <InputAdornment position="start">
                 <SearchIcon fontSize="small" />
               </InputAdornment>
-            ),
+            )
           }}
         />
       </Box>
@@ -181,39 +205,53 @@ export default function EditorFileListPanel({
           <>
             <Box ref={listRef} sx={{ flex: 1, minHeight: 0 }}>
               {listSize.height > 0 && filteredActive.length > 0 && (
-                <FixedSizeList
-                  height={listSize.height}
-                  width={listSize.width || width}
-                  itemCount={filteredActive.length}
-                  itemSize={ITEM_HEIGHT}
-                  itemData={{
+                <VirtualList
+                  style={{ height: listSize.height, width: listSize.width || width }}
+                  rowCount={filteredActive.length}
+                  rowHeight={ITEM_HEIGHT}
+                  rowComponent={VirtualRow}
+                  rowProps={{
                     items: filteredActive,
                     selectedFile,
                     onSelect,
                     namesByFilename,
-                    archived: false,
+                    archived: false
                   }}
-                >
-                  {VirtualRow}
-                </FixedSizeList>
+                />
               )}
               {filteredActive.length === 0 && showArchived && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', px: 2, py: 1 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', px: 2, py: 1 }}
+                >
                   No active matches.
                 </Typography>
               )}
             </Box>
 
             {showArchived && filteredArchived.length > 0 && (
-              <Box sx={{ borderTop: 1, borderColor: 'divider', maxHeight: '40%', overflow: 'auto', flexShrink: 0 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, py: 0.5, display: 'block' }}>
+              <Box
+                sx={{
+                  borderTop: 1,
+                  borderColor: 'divider',
+                  maxHeight: '40%',
+                  overflow: 'auto',
+                  flexShrink: 0
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ px: 1.5, py: 0.5, display: 'block' }}
+                >
                   Archived
                 </Typography>
                 <List dense disablePadding>
                   {filteredArchived.map((file) => {
-                    const displayName = displayNameFor(file, namesByFilename);
-                    const filenameBare = stripXml(file.name);
-                    const showSubtitle = displayName !== filenameBare;
+                    const displayName = displayNameFor(file, namesByFilename)
+                    const filenameBare = stripXml(file.name)
+                    const showSubtitle = displayName !== filenameBare
                     return (
                       <ListItem key={file.path} disablePadding>
                         <ListItemButton
@@ -223,12 +261,16 @@ export default function EditorFileListPanel({
                           <ListItemText
                             primary={displayName}
                             secondary={showSubtitle ? filenameBare : null}
-                            primaryTypographyProps={{ noWrap: true, variant: 'body2', color: 'text.secondary' }}
+                            primaryTypographyProps={{
+                              noWrap: true,
+                              variant: 'body2',
+                              color: 'text.secondary'
+                            }}
                             secondaryTypographyProps={{ noWrap: true, variant: 'caption' }}
                           />
                         </ListItemButton>
                       </ListItem>
-                    );
+                    )
                   })}
                 </List>
               </Box>
@@ -237,5 +279,5 @@ export default function EditorFileListPanel({
         )}
       </Box>
     </Box>
-  );
+  )
 }

@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { join } from 'path'
 
 const mockFs = {
-  readdir:  vi.fn(),
-  readFile: vi.fn(),
+  readdir: vi.fn(),
+  readFile: vi.fn()
 }
 
 vi.mock('fs', () => ({ promises: mockFs }))
 
-const { loadReference, SUPPORTED_REFERENCE_TYPES, REFERENCE_TYPE_LABELS } = await import('../referenceLoader.js')
+const { loadReference, SUPPORTED_REFERENCE_TYPES, REFERENCE_TYPE_LABELS } =
+  await import('../referenceLoader.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -53,10 +54,10 @@ describe('loadReference: fallback scan', () => {
     mockFs.readFile.mockResolvedValueOnce(castableXml('Other Spell'))
     // Directory listing
     mockFs.readdir.mockResolvedValueOnce([
-      { isFile: () => true,  name: 'other.xml' },
-      { isFile: () => true,  name: 'wanted.xml' },
+      { isFile: () => true, name: 'other.xml' },
+      { isFile: () => true, name: 'wanted.xml' },
       { isFile: () => false, name: 'subdir' },
-      { isFile: () => true,  name: 'notes.txt' },
+      { isFile: () => true, name: 'notes.txt' }
     ])
     // Scan reads — first other.xml (non-match), then wanted.xml (match)
     mockFs.readFile
@@ -73,7 +74,7 @@ describe('loadReference: fallback scan', () => {
     mockFs.readFile.mockRejectedValueOnce(new Error('ENOENT')) // filename guess
     mockFs.readdir.mockResolvedValueOnce([
       { isFile: () => true, name: 'broken.xml' },
-      { isFile: () => true, name: 'good.xml' },
+      { isFile: () => true, name: 'good.xml' }
     ])
     mockFs.readFile
       .mockResolvedValueOnce('<not xml>>>>')
@@ -110,9 +111,7 @@ describe('loadReference: errors', () => {
 
   it('returns error when no matching entity is found', async () => {
     mockFs.readFile.mockRejectedValueOnce(new Error('ENOENT')) // filename guess
-    mockFs.readdir.mockResolvedValueOnce([
-      { isFile: () => true, name: 'a.xml' },
-    ])
+    mockFs.readdir.mockResolvedValueOnce([{ isFile: () => true, name: 'a.xml' }])
     mockFs.readFile.mockResolvedValueOnce(castableXml('Something Else'))
 
     const result = await loadReference('/world', 'castables', 'Missing')

@@ -313,13 +313,36 @@ describe('Output structure', () => {
         immunities: [{ type: 'Element', value: 'Water', messageType: 'Say', message: '' }],
         loot: [],
         coordinates: [{ x: '3', y: '7' }],
-        combat: { minDmg: '5', maxDmg: '15', offensiveElement: '', ac: '', mr: '', defensiveElement: '' },
+        combat: {
+          minDmg: '5',
+          maxDmg: '15',
+          offensiveElement: '',
+          ac: '',
+          mr: '',
+          defensiveElement: ''
+        },
         base: { level: '5', weakChance: '', strongChance: '', behaviorSet: '' },
-        spec: { disabled: false, minCount: '2', maxCount: '4', maxPerInterval: '', interval: '60', limit: '', percentage: '', when: '' },
-        hostility: { players: true, playerExceptCookie: '', playerOnlyCookie: '', monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '' },
-        cookies: [],
-      },
-    ],
+        spec: {
+          disabled: false,
+          minCount: '2',
+          maxCount: '4',
+          maxPerInterval: '',
+          interval: '60',
+          limit: '',
+          percentage: '',
+          when: ''
+        },
+        hostility: {
+          players: true,
+          playerExceptCookie: '',
+          playerOnlyCookie: '',
+          monsters: false,
+          monsterExceptCookie: '',
+          monsterOnlyCookie: ''
+        },
+        cookies: []
+      }
+    ]
   }
 
   it('root element is SpawnGroup', async () => {

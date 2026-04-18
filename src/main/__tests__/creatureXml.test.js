@@ -209,8 +209,12 @@ describe('Field coverage — minimal', () => {
   it('defaults hostility to all-false', async () => {
     const c = await parseCreatureXml(MINIMAL_XML)
     expect(c.hostility).toEqual({
-      players: false, playerExceptCookie: '', playerOnlyCookie: '',
-      monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '',
+      players: false,
+      playerExceptCookie: '',
+      playerOnlyCookie: '',
+      monsters: false,
+      monsterExceptCookie: '',
+      monsterOnlyCookie: ''
     })
   })
 
@@ -275,8 +279,12 @@ describe('Output structure', () => {
     description: 'A wolf for schema testing',
     loot: [{ name: 'wolf-loot', rolls: '1', chance: '80' }],
     hostility: {
-      monsters: true, monsterExceptCookie: 'truce', monsterOnlyCookie: '',
-      players: false, playerExceptCookie: '', playerOnlyCookie: '',
+      monsters: true,
+      monsterExceptCookie: 'truce',
+      monsterOnlyCookie: '',
+      players: false,
+      playerExceptCookie: '',
+      playerOnlyCookie: ''
     },
     cookies: [{ name: 'seen', value: '' }],
     subtypes: [
@@ -289,10 +297,17 @@ describe('Output structure', () => {
         assailSound: '',
         description: '',
         loot: [],
-        hostility: { monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '', players: false, playerExceptCookie: '', playerOnlyCookie: '' },
-        cookies: [],
-      },
-    ],
+        hostility: {
+          monsters: false,
+          monsterExceptCookie: '',
+          monsterOnlyCookie: '',
+          players: false,
+          playerExceptCookie: '',
+          playerOnlyCookie: ''
+        },
+        cookies: []
+      }
+    ]
   }
 
   it('serializes valid XML that re-parses without error', async () => {
@@ -349,7 +364,14 @@ describe('Output structure', () => {
   it('omits Hostility element when both monsters and players are false', async () => {
     const noHostility = {
       ...creature,
-      hostility: { monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '', players: false, playerExceptCookie: '', playerOnlyCookie: '' },
+      hostility: {
+        monsters: false,
+        monsterExceptCookie: '',
+        monsterOnlyCookie: '',
+        players: false,
+        playerExceptCookie: '',
+        playerOnlyCookie: ''
+      }
     }
     const xml = serializeCreatureXml(noHostility)
     const parsed = await parseRaw(xml)

@@ -209,7 +209,10 @@ describe('Field coverage — all fields', () => {
 
   it('parses metricsEndpoint url and apiKey', async () => {
     const c = await parseServerConfigXml(FULL_XML)
-    expect(c.apiEndpoints.metricsEndpoint).toEqual({ url: 'https://met.example.com', apiKey: 'abc123' })
+    expect(c.apiEndpoints.metricsEndpoint).toEqual({
+      url: 'https://met.example.com',
+      apiKey: 'abc123'
+    })
   })
 
   it('parses access privileged and reserved', async () => {
@@ -236,7 +239,12 @@ describe('Field coverage — all fields', () => {
   it('parses time age', async () => {
     const c = await parseServerConfigXml(FULL_XML)
     expect(c.time.ages).toHaveLength(1)
-    expect(c.time.ages[0]).toEqual({ name: 'Danaan', startDate: '1970-01-01', endDate: '', startYear: '1' })
+    expect(c.time.ages[0]).toEqual({
+      name: 'Danaan',
+      startDate: '1970-01-01',
+      endDate: '',
+      startYear: '1'
+    })
   })
 
   it('parses serverStart value and attributes', async () => {
@@ -281,7 +289,12 @@ describe('Field coverage — all fields', () => {
   it('parses client settings', async () => {
     const c = await parseServerConfigXml(FULL_XML)
     expect(c.clientSettings).toHaveLength(1)
-    expect(c.clientSettings[0]).toEqual({ number: '1', key: 'AutoSort', default: true, value: 'Sort inventory automatically' })
+    expect(c.clientSettings[0]).toEqual({
+      number: '1',
+      key: 'AutoSort',
+      default: true,
+      value: 'Sort inventory automatically'
+    })
   })
 
   it('parses constants by key', async () => {
@@ -408,16 +421,30 @@ describe('Output structure', () => {
       singleStreamEnabled: true,
       jsonOutputEnabled: false,
       minimumLevel: 'Warn',
-      logs: [{ type: 'File', destination: '/var/log/server.log', level: 'Warn' }],
+      logs: [{ type: 'File', destination: '/var/log/server.log', level: 'Warn' }]
     },
-    dataStore: { type: 'redis', host: '127.0.0.1', port: '6379', database: '', username: '', password: '', hasCredentials: true },
+    dataStore: {
+      type: 'redis',
+      host: '127.0.0.1',
+      port: '6379',
+      database: '',
+      username: '',
+      password: '',
+      hasCredentials: true
+    },
     network: {
       lobby: { bindAddress: '', externalAddress: '', port: '2610' },
       login: null,
       world: null,
-      grpc: null,
+      grpc: null
     },
-    apiEndpoints: { sentry: '', encryptionEndpoint: 'https://enc.test', validationEndpoint: '', telemetryEndpoint: '', metricsEndpoint: null },
+    apiEndpoints: {
+      sentry: '',
+      encryptionEndpoint: 'https://enc.test',
+      validationEndpoint: '',
+      telemetryEndpoint: '',
+      metricsEndpoint: null
+    },
     access: { privileged: 'admin', reserved: '' },
     boards: [],
     time: { ages: [], serverStart: { value: '', defaultAge: '', defaultYear: '' } },
@@ -425,7 +452,7 @@ describe('Output structure', () => {
     plugins: { message: [] },
     clientSettings: [],
     constants: { PlayerMaxLevel: '99', ClassName0: '' },
-    formulas: { XpToNextLevel: 'level * 500' },
+    formulas: { XpToNextLevel: 'level * 500' }
   }
 
   it('root element is ServerConfig', async () => {
@@ -482,7 +509,9 @@ describe('Output structure', () => {
 
   it('ApiEndpoints/EncryptionEndpoint has Url attribute', async () => {
     const parsed = await parseRaw(serializeServerConfigXml(cfg))
-    expect(parsed.ServerConfig.ApiEndpoints?.[0]?.EncryptionEndpoint?.[0]?.$?.Url).toBe('https://enc.test')
+    expect(parsed.ServerConfig.ApiEndpoints?.[0]?.EncryptionEndpoint?.[0]?.$?.Url).toBe(
+      'https://enc.test'
+    )
   })
 
   it('empty Boards element is present when boards is []', async () => {

@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { Box, TextField, IconButton, Tooltip } from '@mui/material';
-import GridViewIcon from '@mui/icons-material/GridView';
-import HelpIcon from '@mui/icons-material/Help';
-import { useRecoilValue } from 'recoil';
-import { clientPathState } from '../../recoil/atoms';
-import EffectPreview from './EffectPreview';
-import EffectPickerDialog from './EffectPickerDialog';
+import React, { useState } from 'react'
+import { Box, TextField, IconButton, Tooltip } from '@mui/material'
+import GridViewIcon from '@mui/icons-material/GridView'
+import HelpIcon from '@mui/icons-material/Help'
+import { useRecoilValue } from 'recoil'
+import { clientPathState } from '../../recoil/atoms'
+import EffectPreview from './EffectPreview'
+import EffectPickerDialog from './EffectPickerDialog'
 
-const PREVIEW_SIZE = 48;
+const PREVIEW_SIZE = 48
 
 /**
  * Combined effect picker — one component bundles the effect id, speed, and
@@ -31,24 +31,26 @@ export default function EffectPicker({
   helpTooltip,
   showSpeed = true,
   idWidth = 110,
-  speedWidth = 90,
+  speedWidth = 90
 }) {
-  const [open, setOpen] = useState(false);
-  const clientPath = useRecoilValue(clientPathState);
+  const [open, setOpen] = useState(false)
+  const clientPath = useRecoilValue(clientPathState)
 
-  const numericId = Number(effectId);
-  const isValid = Number.isFinite(numericId) && numericId >= 1;
+  const numericId = Number(effectId)
+  const isValid = Number.isFinite(numericId) && numericId >= 1
 
   const handleSelect = (id) => {
-    onEffectIdChange(String(id));
-    setOpen(false);
-  };
+    onEffectIdChange(String(id))
+    setOpen(false)
+  }
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <EffectPreview effectId={effectId} speed={speed} size={PREVIEW_SIZE} playing={isValid} />
       <TextField
-        label={label} size="small" type="number"
+        label={label}
+        size="small"
+        type="number"
         value={effectId ?? ''}
         onChange={(e) => onEffectIdChange(String(e.target.value).replace(/\D/g, ''))}
         inputProps={{ min: 0 }}
@@ -56,14 +58,20 @@ export default function EffectPicker({
       />
       {showSpeed && (
         <TextField
-          label={speedLabel} size="small" type="number"
+          label={speedLabel}
+          size="small"
+          type="number"
           value={speed ?? ''}
           onChange={(e) => onSpeedChange(String(e.target.value).replace(/\D/g, ''))}
           inputProps={{ min: 0 }}
           sx={{ width: speedWidth }}
         />
       )}
-      <Tooltip title={clientPath ? 'Browse effects' : 'Set Dark Ages client path in Settings to browse effects'}>
+      <Tooltip
+        title={
+          clientPath ? 'Browse effects' : 'Set Dark Ages client path in Settings to browse effects'
+        }
+      >
         <span>
           <IconButton size="small" onClick={() => setOpen(true)} disabled={!clientPath}>
             <GridViewIcon fontSize="small" />
@@ -85,5 +93,5 @@ export default function EffectPicker({
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

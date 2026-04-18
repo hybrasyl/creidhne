@@ -184,10 +184,23 @@ describe('Field coverage — all fields', () => {
 
   it('class="All" (editor shorthand) serializes as the canonical full class list in XML', async () => {
     const vg = await parseVariantXml(FULL_XML)
-    const withAll = { ...vg, variants: [{ ...vg.variants[0], properties: { ...vg.variants[0].properties, restrictions: { ...vg.variants[0].properties.restrictions, class: 'All' } } }] }
+    const withAll = {
+      ...vg,
+      variants: [
+        {
+          ...vg.variants[0],
+          properties: {
+            ...vg.variants[0].properties,
+            restrictions: { ...vg.variants[0].properties.restrictions, class: 'All' }
+          }
+        }
+      ]
+    }
     const xml = serializeVariantXml(withAll)
     const reparsed = await parseVariantXml(xml)
-    expect(reparsed.variants[0].properties.restrictions.class).toBe('Peasant Wizard Rogue Monk Warrior Priest')
+    expect(reparsed.variants[0].properties.restrictions.class).toBe(
+      'Peasant Wizard Rogue Monk Warrior Priest'
+    )
   })
 })
 
@@ -233,14 +246,28 @@ describe('Output structure', () => {
           tags: ['armor'],
           script: '',
           stackable: { max: '' },
-          appearance: { sprite: '50', equipSprite: '', displaySprite: '', bodyStyle: '', color: '', hideBoots: false },
+          appearance: {
+            sprite: '50',
+            equipSprite: '',
+            displaySprite: '',
+            bodyStyle: '',
+            color: '',
+            hideBoots: false
+          },
           flags: [],
           physical: { value: '200', weight: '5', durability: '' },
-          restrictions: { level: { min: '', max: '' }, ab: null, class: 'Warrior', gender: 'Neutral', castables: [], slotRestrictions: [] },
-          statModifiers: { rows: [{ key: 'BonusAc', value: '2' }], elementalModifiers: [] },
-        },
-      },
-    ],
+          restrictions: {
+            level: { min: '', max: '' },
+            ab: null,
+            class: 'Warrior',
+            gender: 'Neutral',
+            castables: [],
+            slotRestrictions: []
+          },
+          statModifiers: { rows: [{ key: 'BonusAc', value: '2' }], elementalModifiers: [] }
+        }
+      }
+    ]
   }
 
   it('root element is VariantGroup', async () => {

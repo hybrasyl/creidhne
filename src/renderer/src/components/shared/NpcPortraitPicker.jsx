@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { Box, TextField, IconButton, Tooltip } from '@mui/material';
-import GridViewIcon from '@mui/icons-material/GridView';
-import HelpIcon from '@mui/icons-material/Help';
-import { useRecoilValue } from 'recoil';
-import { clientPathState } from '../../recoil/atoms';
-import NpcPortraitCanvas from './NpcPortraitCanvas';
-import NpcPortraitPickerDialog from './NpcPortraitPickerDialog';
+import React, { useState } from 'react'
+import { Box, TextField, IconButton, Tooltip } from '@mui/material'
+import GridViewIcon from '@mui/icons-material/GridView'
+import HelpIcon from '@mui/icons-material/Help'
+import { useRecoilValue } from 'recoil'
+import { clientPathState } from '../../recoil/atoms'
+import NpcPortraitCanvas from './NpcPortraitCanvas'
+import NpcPortraitPickerDialog from './NpcPortraitPickerDialog'
 
-const PREVIEW_SIZE = 72;
+const PREVIEW_SIZE = 72
 
 /**
  * Picker for NPC portrait SPF filenames.
@@ -18,31 +18,33 @@ const PREVIEW_SIZE = 72;
  *   label       — TextField label (default "Portrait")
  *   helpTooltip — optional help icon
  */
-export default function NpcPortraitPicker({
-  value,
-  onChange,
-  label = 'Portrait',
-  helpTooltip,
-}) {
-  const [open, setOpen] = useState(false);
-  const clientPath = useRecoilValue(clientPathState);
+export default function NpcPortraitPicker({ value, onChange, label = 'Portrait', helpTooltip }) {
+  const [open, setOpen] = useState(false)
+  const clientPath = useRecoilValue(clientPathState)
 
   const handleSelect = (filename) => {
-    onChange(filename);
-    setOpen(false);
-  };
+    onChange(filename)
+    setOpen(false)
+  }
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <NpcPortraitCanvas filename={value} size={PREVIEW_SIZE} />
       <TextField
-        label={label} size="small"
+        label={label}
+        size="small"
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         inputProps={{ maxLength: 255 }}
         sx={{ width: 180 }}
       />
-      <Tooltip title={clientPath ? 'Browse NPC portraits' : 'Set Dark Ages client path in Settings to browse portraits'}>
+      <Tooltip
+        title={
+          clientPath
+            ? 'Browse NPC portraits'
+            : 'Set Dark Ages client path in Settings to browse portraits'
+        }
+      >
         <span>
           <IconButton size="small" onClick={() => setOpen(true)} disabled={!clientPath}>
             <GridViewIcon fontSize="small" />
@@ -63,5 +65,5 @@ export default function NpcPortraitPicker({
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

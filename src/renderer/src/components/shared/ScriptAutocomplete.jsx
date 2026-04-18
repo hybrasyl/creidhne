@@ -1,11 +1,11 @@
-import React from 'react';
-import { Autocomplete, TextField, IconButton, Tooltip, InputAdornment } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { useRecoilValue } from 'recoil';
-import { libraryIndexState, activeLibraryState } from '../../recoil/atoms';
+import React from 'react'
+import { Autocomplete, TextField, IconButton, Tooltip, InputAdornment } from '@mui/material'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import { useRecoilValue } from 'recoil'
+import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
 
 function stripPath(s) {
-  return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '');
+  return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '')
 }
 
 /**
@@ -19,22 +19,35 @@ function stripPath(s) {
  * the script in the OS default editor for .lua (usually VS Code).
  */
 function ScriptAutocomplete({
-  label, value, onChange, freeSolo = false, sx, fullWidth, size = 'small', subfolder,
+  label,
+  value,
+  onChange,
+  freeSolo = false,
+  sx,
+  fullWidth,
+  size = 'small',
+  subfolder
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState);
-  const activeLibrary = useRecoilValue(activeLibraryState);
-  const options = (libraryIndex.scripts || []).map(stripPath);
-  const isUnknown = freeSolo && !!value && !options.includes(value);
+  const libraryIndex = useRecoilValue(libraryIndexState)
+  const activeLibrary = useRecoilValue(activeLibraryState)
+  const options = (libraryIndex.scripts || []).map(stripPath)
+  const isUnknown = freeSolo && !!value && !options.includes(value)
 
-  const canOpen = !!(subfolder && value && activeLibrary);
+  const canOpen = !!(subfolder && value && activeLibrary)
   const handleOpen = async () => {
-    if (!canOpen) return;
-    await window.electronAPI.openScript(activeLibrary, `${subfolder}/${value}`);
-  };
+    if (!canOpen) return
+    await window.electronAPI.openScript(activeLibrary, `${subfolder}/${value}`)
+  }
 
   const endAdornment = subfolder ? (
     <InputAdornment position="end">
-      <Tooltip title={canOpen ? `Open ${subfolder}/${value}.lua in default editor` : 'Pick a script + active library to enable'}>
+      <Tooltip
+        title={
+          canOpen
+            ? `Open ${subfolder}/${value}.lua in default editor`
+            : 'Pick a script + active library to enable'
+        }
+      >
         <span>
           <IconButton size="small" onClick={handleOpen} disabled={!canOpen} edge="end">
             <OpenInNewIcon fontSize="small" />
@@ -42,14 +55,20 @@ function ScriptAutocomplete({
         </span>
       </Tooltip>
     </InputAdornment>
-  ) : null;
+  ) : null
 
   return (
     <Autocomplete
       freeSolo={freeSolo}
       options={options}
-      value={freeSolo ? (value || '') : (value || null)}
-      onInputChange={freeSolo ? ((_, val, reason) => { if (reason === 'input') onChange(val); }) : undefined}
+      value={freeSolo ? value || '' : value || null}
+      onInputChange={
+        freeSolo
+          ? (_, val, reason) => {
+              if (reason === 'input') onChange(val)
+            }
+          : undefined
+      }
       onChange={(_, val) => onChange(val ?? '')}
       size={size}
       sx={sx}
@@ -72,7 +91,7 @@ function ScriptAutocomplete({
         />
       )}
     />
-  );
+  )
 }
 
-export default ScriptAutocomplete;
+export default ScriptAutocomplete

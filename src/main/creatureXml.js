@@ -1,29 +1,34 @@
-import xml2js from 'xml2js';
-import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js';
+import xml2js from 'xml2js'
+import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js'
 
 // Design note: LootList intentionally only supports <Set> (named loot-set imports).
 // The XSD also defines <Table> (inline loot tables), <Gold>, and an Xp attribute,
 // but by design all creature loot is managed centrally through named LootSets.
 // Inline tables and gold/xp overrides on individual creatures are not supported.
 
-const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02';
+const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
-const CREATURE_META_DEFAULTS = { family: '' };
+const CREATURE_META_DEFAULTS = { family: '' }
 
 function extractCreatureMeta(xmlString) {
-  const raw = extractMeta(xmlString);
-  return { family: raw.family || '' };
+  const raw = extractMeta(xmlString)
+  return { family: raw.family || '' }
 }
 
 function injectCreatureMeta(xml, meta) {
-  if (!meta?.family) return xml;
-  return xml.replace(/(<Creature[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify({ family: meta.family })} -->`);
+  if (!meta?.family) return xml
+  return xml.replace(
+    /(<Creature[^>]*>)/,
+    `$1\n  <!-- creidhne:meta ${JSON.stringify({ family: meta.family })} -->`
+  )
 }
 
-const first = (arr, def = undefined) => Array.isArray(arr) && arr.length ? arr[0] : def;
-const a = (node, key, def = '') => node?.$?.[key] ?? def;
+const first = (arr, def = undefined) => (Array.isArray(arr) && arr.length ? arr[0] : def)
+const a = (node, key, def = '') => node?.$?.[key] ?? def
 const omitEmpty = (obj) =>
-  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== '' && v !== null && v !== undefined));
+  Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+  )
 
 // =============================================================================
 // PARSER
@@ -31,53 +36,60 @@ const omitEmpty = (obj) =>
 
 export function parseCreatureXml(xmlString) {
   return new Promise((resolve, reject) => {
-    const comment = extractComment(xmlString);
-    const meta = extractCreatureMeta(xmlString);
+    const comment = extractComment(xmlString)
+    const meta = extractCreatureMeta(xmlString)
 
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
-      if (err) return reject(err);
-      try { resolve(mapXmlToCreature(result, comment, meta)); }
-      catch (e) { reject(e); }
-    });
-  });
+      if (err) return reject(err)
+      try {
+        resolve(mapXmlToCreature(result, comment, meta))
+      } catch (e) {
+        reject(e)
+      }
+    })
+  })
 }
 
 function mapLoot(lootNode) {
-  if (!lootNode) return [];
+  if (!lootNode) return []
   return (lootNode.Set || []).map((s) => ({
     name: a(s, 'Name', ''),
     rolls: a(s, 'Rolls', ''),
-    chance: a(s, 'Chance', ''),
-  }));
+    chance: a(s, 'Chance', '')
+  }))
 }
 
 function mapHostility(hosNode) {
   if (!hosNode) {
     return {
-      players: false, playerExceptCookie: '', playerOnlyCookie: '',
-      monsters: false, monsterExceptCookie: '', monsterOnlyCookie: '',
-    };
+      players: false,
+      playerExceptCookie: '',
+      playerOnlyCookie: '',
+      monsters: false,
+      monsterExceptCookie: '',
+      monsterOnlyCookie: ''
+    }
   }
-  const hasPlayers = Array.isArray(hosNode.Players) && hosNode.Players.length > 0;
-  const hasMonsters = Array.isArray(hosNode.Monsters) && hosNode.Monsters.length > 0;
-  const players = hasPlayers ? hosNode.Players[0] : null;
-  const monsters = hasMonsters ? hosNode.Monsters[0] : null;
+  const hasPlayers = Array.isArray(hosNode.Players) && hosNode.Players.length > 0
+  const hasMonsters = Array.isArray(hosNode.Monsters) && hosNode.Monsters.length > 0
+  const players = hasPlayers ? hosNode.Players[0] : null
+  const monsters = hasMonsters ? hosNode.Monsters[0] : null
   return {
     players: hasPlayers,
     playerExceptCookie: players ? a(players, 'ExceptCookie', '') : '',
     playerOnlyCookie: players ? a(players, 'OnlyCookie', '') : '',
     monsters: hasMonsters,
     monsterExceptCookie: monsters ? a(monsters, 'ExceptCookie', '') : '',
-    monsterOnlyCookie: monsters ? a(monsters, 'OnlyCookie', '') : '',
-  };
+    monsterOnlyCookie: monsters ? a(monsters, 'OnlyCookie', '') : ''
+  }
 }
 
 function mapCookies(cookiesNode) {
-  if (!cookiesNode) return [];
+  if (!cookiesNode) return []
   return (cookiesNode.Cookie || []).map((c) => ({
     name: a(c, 'Name', ''),
-    value: a(c, 'Value', ''),
-  }));
+    value: a(c, 'Value', '')
+  }))
 }
 
 function mapSubtype(typeNode) {
@@ -91,12 +103,12 @@ function mapSubtype(typeNode) {
     description: first(typeNode.Description, ''),
     loot: mapLoot(first(typeNode.Loot)),
     hostility: mapHostility(first(typeNode.Hostility)),
-    cookies: mapCookies(first(typeNode.SetCookies)),
-  };
+    cookies: mapCookies(first(typeNode.SetCookies))
+  }
 }
 
 function mapXmlToCreature(result, comment, meta) {
-  const root = result.Creature;
+  const root = result.Creature
   return {
     name: a(root, 'Name', ''),
     sprite: a(root, 'Sprite', ''),
@@ -110,8 +122,8 @@ function mapXmlToCreature(result, comment, meta) {
     loot: mapLoot(first(root.Loot)),
     hostility: mapHostility(first(root.Hostility)),
     cookies: mapCookies(first(root.SetCookies)),
-    subtypes: (root.Types?.[0]?.Type || []).map(mapSubtype),
-  };
+    subtypes: (root.Types?.[0]?.Type || []).map(mapSubtype)
+  }
 }
 
 // =============================================================================
@@ -121,82 +133,102 @@ function mapXmlToCreature(result, comment, meta) {
 export function serializeCreatureXml(creature) {
   const builder = new xml2js.Builder({
     xmldec: { version: '1.0' },
-    renderOpts: { pretty: true, indent: '  ', newline: '\n' },
-  });
+    renderOpts: { pretty: true, indent: '  ', newline: '\n' }
+  })
 
-  let xml = builder.buildObject(buildXmlObject(creature));
-  xml = injectComment(xml, creature.comment, 'Creature');
-  xml = injectCreatureMeta(xml, creature.meta);
+  let xml = builder.buildObject(buildXmlObject(creature))
+  xml = injectComment(xml, creature.comment, 'Creature')
+  xml = injectCreatureMeta(xml, creature.meta)
 
-  return xml + '\n';
+  return xml + '\n'
 }
 
 function buildLoot(lootArr) {
-  if (!lootArr?.length) return undefined;
-  return [{
-    Set: lootArr.map((s) => ({ $: omitEmpty({ Name: s.name, Rolls: s.rolls, Chance: s.chance }) })),
-  }];
+  if (!lootArr?.length) return undefined
+  return [
+    {
+      Set: lootArr.map((s) => ({
+        $: omitEmpty({ Name: s.name, Rolls: s.rolls, Chance: s.chance })
+      }))
+    }
+  ]
 }
 
 function buildHostility(hos) {
-  const hasMonsters = hos?.monsters;
-  const hasPlayers = hos?.players;
-  if (!hasMonsters && !hasPlayers) return undefined;
+  const hasMonsters = hos?.monsters
+  const hasPlayers = hos?.players
+  if (!hasMonsters && !hasPlayers) return undefined
 
-  const node = {};
+  const node = {}
   if (hasMonsters) {
-    node.Monsters = [{ $: omitEmpty({ ExceptCookie: hos.monsterExceptCookie, OnlyCookie: hos.monsterOnlyCookie }) }];
+    node.Monsters = [
+      { $: omitEmpty({ ExceptCookie: hos.monsterExceptCookie, OnlyCookie: hos.monsterOnlyCookie }) }
+    ]
   }
   if (hasPlayers) {
-    node.Players = [{ $: omitEmpty({ ExceptCookie: hos.playerExceptCookie, OnlyCookie: hos.playerOnlyCookie }) }];
+    node.Players = [
+      { $: omitEmpty({ ExceptCookie: hos.playerExceptCookie, OnlyCookie: hos.playerOnlyCookie }) }
+    ]
   }
-  return [node];
+  return [node]
 }
 
 function buildCookies(cookies) {
-  if (!cookies?.length) return undefined;
-  return [{ Cookie: cookies.map((c) => ({ $: omitEmpty({ Name: c.name, Value: c.value }) })) }];
+  if (!cookies?.length) return undefined
+  return [{ Cookie: cookies.map((c) => ({ $: omitEmpty({ Name: c.name, Value: c.value }) })) }]
 }
 
 function buildSubtype(sub) {
   const node = {
     $: Object.assign(
       { Name: sub.name },
-      omitEmpty({ Sprite: sub.sprite, BehaviorSet: sub.behaviorSet, MinDmg: sub.minDmg, MaxDmg: sub.maxDmg, AssailSound: sub.assailSound }),
-    ),
-  };
-  if (sub.description) node.Description = [sub.description];
-  const loot = buildLoot(sub.loot);
-  if (loot) node.Loot = loot;
-  const hos = buildHostility(sub.hostility);
-  if (hos) node.Hostility = hos;
-  const cookies = buildCookies(sub.cookies);
-  if (cookies) node.SetCookies = cookies;
-  return node;
+      omitEmpty({
+        Sprite: sub.sprite,
+        BehaviorSet: sub.behaviorSet,
+        MinDmg: sub.minDmg,
+        MaxDmg: sub.maxDmg,
+        AssailSound: sub.assailSound
+      })
+    )
+  }
+  if (sub.description) node.Description = [sub.description]
+  const loot = buildLoot(sub.loot)
+  if (loot) node.Loot = loot
+  const hos = buildHostility(sub.hostility)
+  if (hos) node.Hostility = hos
+  const cookies = buildCookies(sub.cookies)
+  if (cookies) node.SetCookies = cookies
+  return node
 }
 
 function buildXmlObject(creature) {
   const root = {
     $: Object.assign(
       { xmlns: XMLNS, Name: creature.name },
-      omitEmpty({ Sprite: creature.sprite, BehaviorSet: creature.behaviorSet, MinDmg: creature.minDmg, MaxDmg: creature.maxDmg, AssailSound: creature.assailSound }),
-    ),
-  };
-
-  if (creature.description) root.Description = [creature.description];
-
-  const loot = buildLoot(creature.loot);
-  if (loot) root.Loot = loot;
-
-  const hos = buildHostility(creature.hostility);
-  if (hos) root.Hostility = hos;
-
-  const cookies = buildCookies(creature.cookies);
-  if (cookies) root.SetCookies = cookies;
-
-  if (creature.subtypes?.length) {
-    root.Types = [{ Type: creature.subtypes.map(buildSubtype) }];
+      omitEmpty({
+        Sprite: creature.sprite,
+        BehaviorSet: creature.behaviorSet,
+        MinDmg: creature.minDmg,
+        MaxDmg: creature.maxDmg,
+        AssailSound: creature.assailSound
+      })
+    )
   }
 
-  return { Creature: root };
+  if (creature.description) root.Description = [creature.description]
+
+  const loot = buildLoot(creature.loot)
+  if (loot) root.Loot = loot
+
+  const hos = buildHostility(creature.hostility)
+  if (hos) root.Hostility = hos
+
+  const cookies = buildCookies(creature.cookies)
+  if (cookies) root.SetCookies = cookies
+
+  if (creature.subtypes?.length) {
+    root.Types = [{ Type: creature.subtypes.map(buildSubtype) }]
+  }
+
+  return { Creature: root }
 }

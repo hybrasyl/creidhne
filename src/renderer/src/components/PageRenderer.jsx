@@ -1,44 +1,44 @@
-import React from 'react';
-import { useRecoilValue } from 'recoil';
-import { currentPageState } from '../recoil/atoms';
-import DashboardPage from '../pages/DashboardPage';
-import CastablesPage from '../pages/CastablesPage';
-import VariantsPage from '../pages/VariantsPage';
-import StringsPage from '../pages/StringsPage';
-import StatusesPage from '../pages/StatusesPage';
-import SpawngroupsPage from '../pages/SpawngroupsPage';
-import SettingsPage from '../pages/SettingsPage';
-import RecipesPage from '../pages/RecipesPage';
-import NPCsPage from '../pages/NPCsPage';
-import NationsPage from '../pages/NationsPage';
-import LootPage from '../pages/LootPage';
-import ItemsPage from '../pages/ItemsPage';
-import HelpersPage from '../pages/HelpersPage';
-import FormulasPage from '../pages/FormulasPage';
-import ElementsPage from '../pages/ElementsPage';
-import CreaturesPage from '../pages/CreaturesPage';
-import BehaviorsPage from '../pages/BehaviorsPage';
-import ConstantsPage from '../pages/ConstantsPage';
-import ServerConfigPage from '../pages/ServerConfigPage';
-import ExportsPage from '../pages/ExportsPage';
-import DamageCalculatorPage from '../pages/DamageCalculatorPage';
+import React from 'react'
+import { useRecoilValue } from 'recoil'
+import { currentPageState } from '../recoil/atoms'
+import DashboardPage from '../pages/DashboardPage'
+import CastablesPage from '../pages/CastablesPage'
+import VariantsPage from '../pages/VariantsPage'
+import StringsPage from '../pages/StringsPage'
+import StatusesPage from '../pages/StatusesPage'
+import SpawngroupsPage from '../pages/SpawngroupsPage'
+import SettingsPage from '../pages/SettingsPage'
+import RecipesPage from '../pages/RecipesPage'
+import NPCsPage from '../pages/NPCsPage'
+import NationsPage from '../pages/NationsPage'
+import LootPage from '../pages/LootPage'
+import ItemsPage from '../pages/ItemsPage'
+import HelpersPage from '../pages/HelpersPage'
+import FormulasPage from '../pages/FormulasPage'
+import ElementsPage from '../pages/ElementsPage'
+import CreaturesPage from '../pages/CreaturesPage'
+import BehaviorsPage from '../pages/BehaviorsPage'
+import ConstantsPage from '../pages/ConstantsPage'
+import ServerConfigPage from '../pages/ServerConfigPage'
+import ExportsPage from '../pages/ExportsPage'
+import DamageCalculatorPage from '../pages/DamageCalculatorPage'
 
 const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
-  const currentPage = useRecoilValue(currentPageState);
+  const currentPage = useRecoilValue(currentPageState)
 
   switch (currentPage) {
     case 'dashboard':
-      return <DashboardPage />;
+      return <DashboardPage />
     case 'castables':
-      return <CastablesPage />;
+      return <CastablesPage />
     case 'variants':
-      return <VariantsPage />;
+      return <VariantsPage />
     case 'strings':
-      return <StringsPage />;
+      return <StringsPage />
     case 'statuses':
-      return <StatusesPage />;
+      return <StatusesPage />
     case 'spawngroups':
-      return <SpawngroupsPage />;
+      return <SpawngroupsPage />
     case 'settings':
       return (
         <SettingsPage
@@ -46,38 +46,38 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           onAddLibrary={onAddLibrary}
           onRemoveLibrary={onRemoveLibrary}
         />
-      );
+      )
     case 'recipes':
-      return <RecipesPage />;
+      return <RecipesPage />
     case 'npcs':
-      return <NPCsPage />;
+      return <NPCsPage />
     case 'nations':
-      return <NationsPage />;
+      return <NationsPage />
     case 'loot':
-      return <LootPage />;
+      return <LootPage />
     case 'items':
-      return <ItemsPage />;
+      return <ItemsPage />
     case 'helpers':
-      return <HelpersPage />;
+      return <HelpersPage />
     case 'formulas':
-      return <FormulasPage />;
+      return <FormulasPage />
     case 'elements':
-      return <ElementsPage />;
+      return <ElementsPage />
     case 'creatures':
-      return <CreaturesPage />;
+      return <CreaturesPage />
     case 'behaviors':
-      return <BehaviorsPage />;
+      return <BehaviorsPage />
     case 'constants':
-      return <ConstantsPage />;
+      return <ConstantsPage />
     case 'serverconfig':
-      return <ServerConfigPage />;
+      return <ServerConfigPage />
     case 'exports':
-      return <ExportsPage />;
+      return <ExportsPage />
     case 'damage-calculator':
-      return <DamageCalculatorPage />;
+      return <DamageCalculatorPage />
     default:
-      return <DashboardPage />;
+      return <DashboardPage />
   }
-};
+}
 
-export default PageRenderer;
+export default PageRenderer
