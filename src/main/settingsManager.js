@@ -5,8 +5,12 @@ const DEFAULTS = {
   libraries: [],
   activeLibrary: null,
   theme: 'light',
-  clientPath: null
+  clientPath: null,
+  iconPickerMode: 'vanilla',
+  nationCrestPickerMode: 'vanilla'
 }
+
+const PICKER_MODES = new Set(['vanilla', 'hybrasyl'])
 
 function validate(data) {
   if (!data || typeof data !== 'object') return false
@@ -19,7 +23,13 @@ function withDefaults(data) {
     libraries: Array.isArray(data?.libraries) ? data.libraries : DEFAULTS.libraries,
     activeLibrary: data?.activeLibrary ?? DEFAULTS.activeLibrary,
     theme: typeof data?.theme === 'string' ? data.theme : DEFAULTS.theme,
-    clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath
+    clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath,
+    iconPickerMode: PICKER_MODES.has(data?.iconPickerMode)
+      ? data.iconPickerMode
+      : DEFAULTS.iconPickerMode,
+    nationCrestPickerMode: PICKER_MODES.has(data?.nationCrestPickerMode)
+      ? data.nationCrestPickerMode
+      : DEFAULTS.nationCrestPickerMode
   }
 }
 

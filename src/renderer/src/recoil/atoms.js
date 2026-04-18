@@ -62,3 +62,32 @@ export const referenceSelectionState = atom({
   key: 'referenceSelectionState',
   default: null // null | { type: 'castable'|'status'|'item'|'creature', name: string }
 })
+
+// Hybrasyl .datf asset pack state. Loaded from main at app start and whenever
+// clientPath changes. Shape matches listActivePacks()'s IPC return.
+// [{ fileName, manifest, coveredSubtypes: string[] }, ...]
+export const activePacksState = atom({
+  key: 'activePacksState',
+  default: []
+})
+
+// Per-subtype covered-id set, derived from activePacks. Populated by App
+// whenever activePacks changes. Example: { skill: Set<number>, spell: Set<number>, nation: Set<number> }.
+// Consumed by DualIconView / picker dialogs to answer "does Hybrasyl cover id X?"
+// in O(1).
+export const packCoverageState = atom({
+  key: 'packCoverageState',
+  default: {}
+})
+
+// 'vanilla' | 'hybrasyl'. Synced to settings on change so selection persists
+// across sessions. See the useSyncPickerMode hook in hooks/usePickerMode.js.
+export const iconPickerModeState = atom({
+  key: 'iconPickerModeState',
+  default: 'vanilla'
+})
+
+export const nationCrestPickerModeState = atom({
+  key: 'nationCrestPickerModeState',
+  default: 'vanilla'
+})

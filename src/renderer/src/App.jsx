@@ -9,7 +9,11 @@ import {
   libraryIndexState,
   dirtyEditorState,
   recentPagesState,
-  clientPathState
+  clientPathState,
+  activePacksState,
+  packCoverageState,
+  iconPickerModeState,
+  nationCrestPickerModeState
 } from './recoil/atoms' // Import Recoil atoms
 import hybrasylTheme from './themes/hybrasyl'
 import chadulTheme from './themes/chadul'
@@ -38,12 +42,23 @@ function App() {
   const [clientPath, setClientPath] = useRecoilState(clientPathState)
   const [, setLibraryIndex] = useRecoilState(libraryIndexState)
   const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState)
+  const [, setActivePacks] = useRecoilState(activePacksState)
+  const [, setPackCoverage] = useRecoilState(packCoverageState)
+  const [iconPickerMode, setIconPickerMode] = useRecoilState(iconPickerModeState)
+  const [nationCrestPickerMode, setNationCrestPickerMode] = useRecoilState(
+    nationCrestPickerModeState
+  )
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const dirtyEditorRef = useRef(dirtyEditor)
 
-  // Load settings on mount
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+
+  // Load settings on mount. Gates the save effect below — we don't want the
+  // save effect to fire with default atom values (clientPath=null, libraries=[])
+  // before fetchSettings has populated real state, because that clobbers the
+  // settings file and, post-pack-loader, triggers a main-side pack wipe.
   useEffect(() => {
     async function fetchSettings() {
       const settings = await window.electronAPI.loadSettings() // Use IPC call to load settings
@@ -51,10 +66,54 @@ function App() {
       setLibraries(settings.libraries || [])
       setActiveLibrary(settings.activeLibrary || null)
       setClientPath(settings.clientPath || null)
+      setIconPickerMode(settings.iconPickerMode || 'vanilla')
+      setNationCrestPickerMode(settings.nationCrestPickerMode || 'vanilla')
+      setSettingsLoaded(true)
     }
 
     fetchSettings()
-  }, [setTheme, setLibraries, setActiveLibrary, setClientPath])
+  }, [
+    setTheme,
+    setLibraries,
+    setActiveLibrary,
+    setClientPath,
+    setIconPickerMode,
+    setNationCrestPickerMode
+  ])
+
+  // Refresh active asset packs whenever clientPath changes — main reloads the
+  // .datf bundles on its side; we sync the renderer's view of what's present.
+  // Also pre-fetches per-subtype covered-id sets so DualIconView can do O(1)
+  // membership checks without per-render IPC.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const packs = await window.electronAPI.listActivePacks()
+        if (cancelled) return
+        const packList = Array.isArray(packs) ? packs : []
+        setActivePacks(packList)
+
+        const subtypes = new Set()
+        for (const p of packList)
+          for (const s of p.coveredSubtypes || []) subtypes.add(s)
+        const coverage = {}
+        for (const s of subtypes) {
+          const ids = await window.electronAPI.listPackCoveredIds(s)
+          coverage[s] = Array.isArray(ids) ? ids : []
+        }
+        if (!cancelled) setPackCoverage(coverage)
+      } catch {
+        if (!cancelled) {
+          setActivePacks([])
+          setPackCoverage({})
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [clientPath, setActivePacks, setPackCoverage])
 
   // Load persisted index from disk whenever active library changes
   useEffect(() => {
@@ -83,15 +142,28 @@ function App() {
     })
   }, [activeLibrary, setLibraryIndex])
 
-  // Save settings whenever theme or libraries change
+  // Save settings whenever theme or libraries change. Skip until fetchSettings
+  // has populated state, otherwise we'd overwrite the on-disk settings with
+  // the default atom values on every mount.
   useEffect(() => {
+    if (!settingsLoaded) return
     window.electronAPI.saveSettings({
       libraries,
-      activeLibrary, // Save the active library
+      activeLibrary,
       theme,
-      clientPath
+      clientPath,
+      iconPickerMode,
+      nationCrestPickerMode
     })
-  }, [theme, libraries, activeLibrary, clientPath])
+  }, [
+    settingsLoaded,
+    theme,
+    libraries,
+    activeLibrary,
+    clientPath,
+    iconPickerMode,
+    nationCrestPickerMode
+  ])
 
   // Stop any sound preview on page navigation — keeps playback from bleeding
   // across editors.

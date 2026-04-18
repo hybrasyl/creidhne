@@ -12,13 +12,19 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useRecoilValue, useRecoilState } from 'recoil'
+import {
+  clientPathState,
+  packCoverageState,
+  nationCrestPickerModeState
+} from '../../recoil/atoms'
 import {
   useNationCrestIndex,
   getAvailableCrestPalettes,
@@ -31,7 +37,16 @@ const CELL_SIZE = 136
 const IMAGE_SIZE = 112
 const GRID_H = 520
 
-function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, paletteOverride }) {
+function Cell({
+  columnIndex,
+  rowIndex,
+  style,
+  ids,
+  selectedId,
+  onSelect,
+  paletteOverride,
+  preferPack
+}) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
@@ -56,7 +71,12 @@ function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, palette
           '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <NationCrestCanvas flagNum={id} size={IMAGE_SIZE} paletteOverride={paletteOverride} />
+        <NationCrestCanvas
+          flagNum={id}
+          size={IMAGE_SIZE}
+          paletteOverride={paletteOverride}
+          preferPack={preferPack}
+        />
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', lineHeight: 1 }}>
           {id}
         </Typography>
@@ -68,10 +88,16 @@ function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, palette
 export default function NationCrestPickerDialog({ open, value, onClose, onChange }) {
   const clientPath = useRecoilValue(clientPathState)
   const index = useNationCrestIndex()
+  const packCoverage = useRecoilValue(packCoverageState)
+  const [mode, setMode] = useRecoilState(nationCrestPickerModeState)
   const [search, setSearch] = useState('')
   const [palettes, setPalettes] = useState(null)
   const [paletteKey, setPaletteKey] = useState(null) // 'pattern|number' string
   const gridRef = useRef(null)
+
+  const packHasType = (packCoverage.nation?.length ?? 0) > 0
+  const effectiveMode = packHasType ? mode : 'vanilla'
+  const preferPack = effectiveMode === 'hybrasyl'
 
   useEffect(() => {
     if (!open || !clientPath) return undefined
@@ -105,10 +131,16 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
 
   const filteredIds = useMemo(() => {
     if (!index) return []
+    let baseIds = index.visibleIds
+    if (preferPack && packHasType) {
+      const merged = new Set(index.visibleIds)
+      for (const id of packCoverage.nation || []) merged.add(id)
+      baseIds = Array.from(merged).sort((a, b) => a - b)
+    }
     const q = search.trim()
-    if (!q) return index.visibleIds
-    return index.visibleIds.filter((id) => String(id).includes(q))
-  }, [index, search])
+    if (!q) return baseIds
+    return baseIds.filter((id) => String(id).includes(q))
+  }, [index, search, preferPack, packHasType, packCoverage])
 
   const selectedId = useMemo(() => {
     const n = Number(value)
@@ -128,8 +160,8 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
   }, [open, selectedId, filteredIds])
 
   const cellData = useMemo(
-    () => ({ ids: filteredIds, selectedId, onSelect: onChange, paletteOverride }),
-    [filteredIds, selectedId, onChange, paletteOverride]
+    () => ({ ids: filteredIds, selectedId, onSelect: onChange, paletteOverride, preferPack }),
+    [filteredIds, selectedId, onChange, paletteOverride, preferPack]
   )
   const rowCount = Math.ceil(filteredIds.length / COLS)
 
@@ -146,8 +178,20 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
         Nation Flags
         {index && (
           <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-            ({index.visibleIds.length} of {index.total} frames)
+            ({filteredIds.length} of {index.total} frames)
           </Typography>
+        )}
+        {packHasType && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={{ ml: 2 }}
+          >
+            <ToggleButton value="vanilla">Vanilla</ToggleButton>
+            <ToggleButton value="hybrasyl">Hybrasyl</ToggleButton>
+          </ToggleButtonGroup>
         )}
         {palettes && palettes.length > 0 && (
           <FormControl size="small" sx={{ ml: 2, minWidth: 140 }}>

@@ -12,13 +12,19 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useRecoilValue, useRecoilState } from 'recoil'
+import {
+  clientPathState,
+  packCoverageState,
+  iconPickerModeState
+} from '../../recoil/atoms'
 import {
   useIconIndex,
   getAvailableIconPaletteNumbers,
@@ -31,7 +37,17 @@ const CELL_SIZE = 64
 const IMAGE_SIZE = 40 // icons are 31×31 native; 40 gives a little padding
 const GRID_H = 520
 
-function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, type, paletteNumber }) {
+function Cell({
+  columnIndex,
+  rowIndex,
+  style,
+  ids,
+  selectedId,
+  onSelect,
+  type,
+  paletteNumber,
+  preferPack
+}) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
@@ -56,7 +72,13 @@ function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, type, p
           '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <IconCanvas type={type} id={id} size={IMAGE_SIZE} paletteNumber={paletteNumber} />
+        <IconCanvas
+          type={type}
+          id={id}
+          size={IMAGE_SIZE}
+          paletteNumber={paletteNumber}
+          preferPack={preferPack}
+        />
         <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', lineHeight: 1 }}>
           {id}
         </Typography>
@@ -68,10 +90,18 @@ function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, type, p
 export default function IconPickerDialog({ open, type, value, onClose, onChange }) {
   const index = useIconIndex(type)
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
+  const [mode, setMode] = useRecoilState(iconPickerModeState)
   const [search, setSearch] = useState('')
   const [paletteNumbers, setPaletteNumbers] = useState(null)
   const [paletteNumber, setPaletteNumber] = useState(null) // null = use module default
   const gridRef = useRef(null)
+
+  // Hybrasyl toggle only appears when a pack actually covers this icon type.
+  // When no pack is installed the whole picker reads like it used to.
+  const packHasType = (packCoverage[type]?.length ?? 0) > 0
+  const effectiveMode = packHasType ? mode : 'vanilla'
+  const preferPack = effectiveMode === 'hybrasyl'
 
   // Load available palette numbers for the picker once the dialog opens.
   useEffect(() => {
@@ -96,10 +126,18 @@ export default function IconPickerDialog({ open, type, value, onClose, onChange 
 
   const filteredIds = useMemo(() => {
     if (!index) return []
+    // Vanilla mode: only vanilla-available ids. Hybrasyl mode: union of vanilla
+    // + pack-covered ids (so pack-only ids like spell0300 are pickable).
+    let baseIds = index.visibleIds
+    if (preferPack && packHasType) {
+      const merged = new Set(index.visibleIds)
+      for (const id of packCoverage[type] || []) merged.add(id)
+      baseIds = Array.from(merged).sort((a, b) => a - b)
+    }
     const q = search.trim()
-    if (!q) return index.visibleIds
-    return index.visibleIds.filter((id) => String(id).includes(q))
-  }, [index, search])
+    if (!q) return baseIds
+    return baseIds.filter((id) => String(id).includes(q))
+  }, [index, search, preferPack, packHasType, packCoverage, type])
 
   const selectedId = useMemo(() => {
     const n = Number(value)
@@ -119,8 +157,8 @@ export default function IconPickerDialog({ open, type, value, onClose, onChange 
   }, [open, selectedId, filteredIds])
 
   const cellData = useMemo(
-    () => ({ ids: filteredIds, selectedId, onSelect: onChange, type, paletteNumber }),
-    [filteredIds, selectedId, onChange, type, paletteNumber]
+    () => ({ ids: filteredIds, selectedId, onSelect: onChange, type, paletteNumber, preferPack }),
+    [filteredIds, selectedId, onChange, type, paletteNumber, preferPack]
   )
   const rowCount = Math.ceil(filteredIds.length / COLS)
 
@@ -137,8 +175,20 @@ export default function IconPickerDialog({ open, type, value, onClose, onChange 
         {type === 'spell' ? 'Spell Icons' : 'Skill Icons'}
         {index && (
           <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-            ({index.visibleIds.length.toLocaleString()} shown, {index.total.toLocaleString()} total)
+            ({filteredIds.length.toLocaleString()} shown, {index.total.toLocaleString()} total)
           </Typography>
+        )}
+        {packHasType && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={{ ml: 2 }}
+          >
+            <ToggleButton value="vanilla">Vanilla</ToggleButton>
+            <ToggleButton value="hybrasyl">Hybrasyl</ToggleButton>
+          </ToggleButtonGroup>
         )}
         {paletteNumbers && paletteNumbers.length > 0 && (
           <FormControl size="small" sx={{ ml: 2, minWidth: 110 }}>

@@ -99,7 +99,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('index:build-progress', listener)
   },
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
-  confirmClose: () => ipcRenderer.send('app:confirm-close')
+  confirmClose: () => ipcRenderer.send('app:confirm-close'),
+  // Hybrasyl asset packs (*.datf in the DA client dir)
+  listActivePacks: () => ipcRenderer.invoke('pack:listActive'),
+  listPackCoveredIds: (subtype) => ipcRenderer.invoke('pack:listCoveredIds', subtype),
+  resolvePackAsset: (subtype, id) => ipcRenderer.invoke('pack:resolveAsset', subtype, id)
 })
 
 // If context isolation is disabled, add to the DOM global directly

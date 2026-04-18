@@ -41,6 +41,12 @@ import {
   deleteIndex
 } from './indexService.js'
 import { saveSection } from '@eriscorp/hybindex-ts'
+import {
+  loadPacksForClientPath,
+  listActivePacks,
+  listCoveredIds,
+  resolveAsset
+} from './assetPackLoader'
 
 // Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
 const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne')
@@ -288,7 +294,28 @@ app.whenReady().then(() => {
   // Handling settings load and save
   ipcMain.handle('settings:load', () => settingsManager.load())
 
-  ipcMain.handle('settings:save', (_, data) => settingsManager.save(data))
+  ipcMain.handle('settings:save', async (_, data) => {
+    const before = await settingsManager.load()
+    await settingsManager.save(data)
+    if (before?.clientPath !== data?.clientPath) {
+      await loadPacksForClientPath(data?.clientPath || null)
+    }
+  })
+
+  // Hybrasyl asset packs (*.datf bundles in the DA client dir)
+  ipcMain.handle('pack:listActive', () => listActivePacks())
+  ipcMain.handle('pack:listCoveredIds', (_, subtype) => listCoveredIds(subtype))
+  ipcMain.handle('pack:resolveAsset', async (_, subtype, id) => {
+    const buf = await resolveAsset(subtype, id)
+    if (!buf) return null
+    return `data:image/png;base64,${buf.toString('base64')}`
+  })
+
+  // Initial pack load from saved clientPath, if any.
+  settingsManager
+    .load()
+    .then((s) => loadPacksForClientPath(s?.clientPath || null))
+    .catch(() => {})
 
   ipcMain.handle('get-user-data-path', async () => {
     return settingsPath

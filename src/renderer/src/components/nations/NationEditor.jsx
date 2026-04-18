@@ -25,7 +25,7 @@ import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
-import NationCrestCanvas from '../shared/NationCrestCanvas'
+import { DualNationCrestView } from '../shared/DualIconView'
 import NationCrestPickerDialog from '../shared/NationCrestPickerDialog'
 
 const FLAG_PREVIEW = 80
@@ -266,7 +266,7 @@ function NationEditor({
                 gap: 0.8
               }}
             >
-              <NationCrestCanvas flagNum={data.flag} size={FLAG_PREVIEW} />
+              <DualNationCrestView flagNum={data.flag} size={FLAG_PREVIEW} />
               <Button
                 size="small"
                 startIcon={<GridViewIcon />}

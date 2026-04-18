@@ -9,11 +9,18 @@ import { getNationCrestBitmap } from '../../data/nationCrestData'
  * scale-to-fit while preserving aspect ratio.
  *
  * Props:
- *   flagNum        — 1-based flag number (string or number)
- *   size           — canvas edge in CSS px (default 80)
+ *   flagNum         — 1-based flag number (string or number)
+ *   size            — canvas edge in CSS px (default 80)
  *   paletteOverride — optional { pattern, number } passed from the palette picker
+ *   preferPack      — when true, try a Hybrasyl .datf pack override first; fall
+ *                     back to the vanilla EPF bitmap if no pack covers this id.
  */
-export default function NationCrestCanvas({ flagNum, size = 80, paletteOverride }) {
+export default function NationCrestCanvas({
+  flagNum,
+  size = 80,
+  paletteOverride,
+  preferPack = false
+}) {
   const clientPath = useRecoilValue(clientPathState)
   const canvasRef = useRef(null)
 
@@ -25,24 +32,49 @@ export default function NationCrestCanvas({ flagNum, size = 80, paletteOverride 
     ctx.clearRect(0, 0, size, size)
     if (!clientPath || flagNum == null || String(flagNum) === '' || Number(flagNum) < 1)
       return undefined
-    getNationCrestBitmap(clientPath, Number(flagNum), paletteOverride)
-      .then((bmp) => {
-        if (cancelled || !bmp) return
-        const scale = Math.min(size / bmp.width, size / bmp.height, 1)
-        const w = Math.round(bmp.width * scale)
-        const h = Math.round(bmp.height * scale)
-        const dx = Math.floor((size - w) / 2)
-        const dy = Math.floor((size - h) / 2)
-        ctx.imageSmoothingEnabled = false
-        ctx.drawImage(bmp, dx, dy, w, h)
-      })
-      .catch(() => {
-        /* blank */
-      })
+
+    const drawScaled = (source) => {
+      const scale = Math.min(size / source.width, size / source.height, 1)
+      const w = Math.round(source.width * scale)
+      const h = Math.round(source.height * scale)
+      const dx = Math.floor((size - w) / 2)
+      const dy = Math.floor((size - h) / 2)
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(source, dx, dy, w, h)
+    }
+
+    const drawVanilla = () =>
+      getNationCrestBitmap(clientPath, Number(flagNum), paletteOverride)
+        .then((bmp) => {
+          if (cancelled || !bmp) return
+          drawScaled(bmp)
+        })
+        .catch(() => {
+          /* blank */
+        })
+
+    if (preferPack) {
+      window.electronAPI
+        .resolvePackAsset('nation', Number(flagNum))
+        .then((dataUrl) => {
+          if (cancelled) return
+          if (!dataUrl) return drawVanilla()
+          const img = new Image()
+          img.onload = () => {
+            if (cancelled) return
+            drawScaled(img)
+          }
+          img.src = dataUrl
+        })
+        .catch(drawVanilla)
+    } else {
+      drawVanilla()
+    }
+
     return () => {
       cancelled = true
     }
-  }, [clientPath, flagNum, size, paletteOverride])
+  }, [clientPath, flagNum, size, paletteOverride, preferPack])
 
   return (
     <Box

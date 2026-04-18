@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Typography, Chip, Stack } from '@mui/material'
-import IconCanvas from '../shared/IconCanvas'
+import { DualIconView } from '../shared/DualIconView'
 import { typeFromBook } from '../../data/iconData'
 
 function Row({ label, children }) {
@@ -67,7 +67,7 @@ export function CastableReferenceView({ data }) {
   return (
     <Box>
       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
-        {data.icon ? <IconCanvas type={iconType} id={data.icon} size={48} /> : null}
+        {data.icon ? <DualIconView type={iconType} id={data.icon} size={48} /> : null}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="h6" noWrap>
             {data.name}
