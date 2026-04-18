@@ -3,7 +3,7 @@ import { Box, Typography, Button, Tooltip, IconButton, Paper, Stack } from '@mui
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import ClearIcon from '@mui/icons-material/Clear'
 import HelpIcon from '@mui/icons-material/Help'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
 import HighlightOffIcon from '@mui/icons-material/HighlightOff'
 import { useRecoilState } from 'recoil'
 import { clientPathState } from '../recoil/atoms'
