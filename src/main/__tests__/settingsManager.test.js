@@ -23,6 +23,7 @@ const VALID = {
   activeLibrary: '/lib1',
   theme: 'hybrasyl',
   clientPath: null,
+  taliesinPath: null,
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla'
 }
@@ -32,6 +33,7 @@ const DEFAULTS = {
   activeLibrary: null,
   theme: 'light',
   clientPath: null,
+  taliesinPath: null,
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla'
 }

@@ -24,7 +24,8 @@ import {
   activeLibraryState,
   libraryIndexState,
   currentPageState,
-  recentPagesState
+  recentPagesState,
+  taliesinPathState
 } from '../recoil/atoms'
 
 const INDEX_TYPES = [
@@ -43,8 +44,8 @@ const INDEX_TYPES = [
   { key: 'localizations', label: 'Localizations', page: 'strings' },
   { key: 'serverconfigs', label: 'Server Configs', page: 'serverconfig' },
   { key: 'scripts', label: 'Scripts', page: null, tooltip: 'Coming Soon!' },
-  { key: 'maps', label: 'Maps', page: null, tooltip: 'Managed by Taliesin' },
-  { key: 'worldmaps', label: 'World Maps', page: null, tooltip: 'Managed by Taliesin' }
+  { key: 'maps', label: 'Maps', page: null, launch: 'taliesin' },
+  { key: 'worldmaps', label: 'World Maps', page: null, launch: 'taliesin' }
 ]
 
 const PAGE_LABELS = {
@@ -77,10 +78,11 @@ function getFolderName(fullPath) {
   return parts.pop() ?? fullPath
 }
 
-function StatCard({ label, count, page, tooltip, onNavigate }) {
+function StatCard({ label, count, page, tooltip, onNavigate, onLaunch }) {
+  const interactive = !!page || !!onLaunch
   const content = (
     <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-      <Typography variant="h5" color={page ? 'primary.light' : 'text.primary'} sx={{
+      <Typography variant="h5" color={interactive ? 'primary.light' : 'text.primary'} sx={{
         fontWeight: "bold"
       }}>
         {count.toLocaleString()}
@@ -97,6 +99,10 @@ function StatCard({ label, count, page, tooltip, onNavigate }) {
     <Card variant="outlined" sx={{ height: '100%' }}>
       {page ? (
         <CardActionArea onClick={() => onNavigate(page)} sx={{ height: '100%' }}>
+          {content}
+        </CardActionArea>
+      ) : onLaunch ? (
+        <CardActionArea onClick={onLaunch} sx={{ height: '100%' }}>
           {content}
         </CardActionArea>
       ) : (
@@ -119,6 +125,7 @@ function DashboardPage() {
   const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
   const [, setCurrentPage] = useRecoilState(currentPageState)
   const recentPages = useRecoilValue(recentPagesState)
+  const taliesinPath = useRecoilValue(taliesinPathState)
   const [rebuilding, setRebuilding] = useState(false)
 
   const hasIndex = !!libraryIndex.builtAt
@@ -134,6 +141,11 @@ function DashboardPage() {
     } finally {
       setRebuilding(false)
     }
+  }
+
+  const handleLaunchTaliesin = async () => {
+    if (!taliesinPath) return
+    await window.electronAPI.launchCompanion(taliesinPath)
   }
 
   return (
@@ -241,17 +253,28 @@ function DashboardPage() {
           </Box>
 
           <Grid container spacing={1.5} sx={{ mb: 3 }}>
-            {INDEX_TYPES.map(({ key, label, page, tooltip }) => {
+            {INDEX_TYPES.map(({ key, label, page, tooltip, launch }) => {
               const arr = libraryIndex[key]
               if (!arr) return null
+              let cardTooltip = tooltip
+              let onLaunch
+              if (launch === 'taliesin') {
+                if (taliesinPath) {
+                  onLaunch = handleLaunchTaliesin
+                  cardTooltip = 'Open in Taliesin'
+                } else {
+                  cardTooltip = 'Set Taliesin path in Settings to enable'
+                }
+              }
               return (
                 <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={key}>
                   <StatCard
                     label={label}
                     count={arr.length}
                     page={page}
-                    tooltip={tooltip}
+                    tooltip={cardTooltip}
                     onNavigate={setCurrentPage}
+                    onLaunch={onLaunch}
                   />
                 </Grid>
               )

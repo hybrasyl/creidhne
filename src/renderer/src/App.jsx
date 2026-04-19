@@ -10,6 +10,7 @@ import {
   dirtyEditorState,
   recentPagesState,
   clientPathState,
+  taliesinPathState,
   activePacksState,
   packCoverageState,
   iconPickerModeState,
@@ -40,6 +41,7 @@ function App() {
   const [, setRecentPages] = useRecoilState(recentPagesState)
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
   const [clientPath, setClientPath] = useRecoilState(clientPathState)
+  const [taliesinPath, setTaliesinPath] = useRecoilState(taliesinPathState)
   const [, setLibraryIndex] = useRecoilState(libraryIndexState)
   const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState)
   const [, setActivePacks] = useRecoilState(activePacksState)
@@ -66,6 +68,7 @@ function App() {
       setLibraries(settings.libraries || [])
       setActiveLibrary(settings.activeLibrary || null)
       setClientPath(settings.clientPath || null)
+      setTaliesinPath(settings.taliesinPath || null)
       setIconPickerMode(settings.iconPickerMode || 'vanilla')
       setNationCrestPickerMode(settings.nationCrestPickerMode || 'vanilla')
       setSettingsLoaded(true)
@@ -77,6 +80,7 @@ function App() {
     setLibraries,
     setActiveLibrary,
     setClientPath,
+    setTaliesinPath,
     setIconPickerMode,
     setNationCrestPickerMode
   ])
@@ -152,6 +156,7 @@ function App() {
       activeLibrary,
       theme,
       clientPath,
+      taliesinPath,
       iconPickerMode,
       nationCrestPickerMode
     })
@@ -161,6 +166,7 @@ function App() {
     libraries,
     activeLibrary,
     clientPath,
+    taliesinPath,
     iconPickerMode,
     nationCrestPickerMode
   ])

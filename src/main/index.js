@@ -1,4 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { spawn } from 'child_process'
 import { join } from 'path'
 import { promises as fs } from 'fs'
 import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
@@ -135,7 +136,18 @@ app.whenReady().then(() => {
     }
   })
   ipcMain.handle('dialog:openFile', handleFileOpen)
+  ipcMain.handle('dialog:openExeFile', handleExeFileOpen)
   ipcMain.handle('open-directory', handleDirectoryOpen)
+  ipcMain.handle('app:launchCompanion', async (_, exePath) => {
+    if (!exePath) return false
+    try {
+      await fs.access(exePath)
+      spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
+      return true
+    } catch {
+      return false
+    }
+  })
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
@@ -971,6 +983,19 @@ app.on('window-all-closed', () => {
 // File handling functions
 async function handleFileOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({})
+  if (!canceled) {
+    return filePaths[0]
+  }
+}
+
+async function handleExeFileOpen() {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: 'Executable', extensions: ['exe'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  })
   if (!canceled) {
     return filePaths[0]
   }

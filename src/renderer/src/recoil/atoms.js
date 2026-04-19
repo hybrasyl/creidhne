@@ -27,6 +27,11 @@ export const clientPathState = atom({
   default: null // Path to Dark Ages client install directory
 })
 
+export const taliesinPathState = atom({
+  key: 'taliesinPathState',
+  default: null // Path to companion app (Taliesin.exe)
+})
+
 export const librariesState = atom({
   key: 'librariesState',
   default: []

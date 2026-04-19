@@ -6,6 +6,7 @@ const DEFAULTS = {
   activeLibrary: null,
   theme: 'light',
   clientPath: null,
+  taliesinPath: null,
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla'
 }
@@ -24,6 +25,8 @@ function withDefaults(data) {
     activeLibrary: data?.activeLibrary ?? DEFAULTS.activeLibrary,
     theme: typeof data?.theme === 'string' ? data.theme : DEFAULTS.theme,
     clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath,
+    taliesinPath:
+      typeof data?.taliesinPath === 'string' ? data.taliesinPath : DEFAULTS.taliesinPath,
     iconPickerMode: PICKER_MODES.has(data?.iconPickerMode)
       ? data.iconPickerMode
       : DEFAULTS.iconPickerMode,

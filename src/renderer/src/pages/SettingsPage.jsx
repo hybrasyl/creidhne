@@ -15,7 +15,7 @@ import { useRecoilState } from 'recoil'
 import { themeState } from '../recoil/atoms'
 import ManageLibraries from '../components/ManageLibraries'
 import DAClientPathSection from '../components/DAClientPathSection'
-import AboutDialog from '../components/AboutDialog'
+import TaliesinPathSection from '../components/TaliesinPathSection'
 
 const THEMES = [
   { value: 'hybrasyl', label: 'Hybrasyl' },
@@ -26,7 +26,6 @@ const THEMES = [
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [theme, setTheme] = useRecoilState(themeState)
-  const [aboutOpen, setAboutOpen] = useState(false)
   const [updateChecking, setUpdateChecking] = useState(false)
   const [updateResult, setUpdateResult] = useState(null)
 
@@ -64,10 +63,8 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         onRemoveLibrary={onRemoveLibrary}
       />
       <DAClientPathSection />
+      <TaliesinPathSection />
       <Box sx={{ mt: 4, display: 'flex', gap: 1, alignItems: 'center' }}>
-        <Button variant="outlined" size="small" onClick={() => setAboutOpen(true)}>
-          About Creidhne
-        </Button>
         <Button
           variant="outlined"
           size="small"
@@ -103,7 +100,6 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           )}
         </Box>
       )}
-      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </Box>
   )
 }

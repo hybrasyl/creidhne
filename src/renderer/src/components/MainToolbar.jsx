@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import creidhneLogo from '../assets/creidhne.svg'
 import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   GiRadialBalance,
   GiMagicSwirl,
@@ -23,10 +24,14 @@ import {
   GiBootKick,
   GiDoubleDiaphragm,
   GiSettingsKnobs,
+  GiAnvil,
   GiContract,
   GiExpand,
   GiDeathSkull
 } from 'react-icons/gi'
+import { useRecoilValue } from 'recoil'
+import { taliesinPathState } from '../recoil/atoms'
+import AboutDialog from './AboutDialog'
 
 const iconSx = {
   '& svg': {
@@ -60,6 +65,14 @@ const winBtnSx = {
 }
 
 const MainToolbar = ({ navigate }) => {
+  const [aboutOpen, setAboutOpen] = useState(false)
+  const taliesinPath = useRecoilValue(taliesinPathState)
+
+  const handleLaunchTaliesin = async () => {
+    if (!taliesinPath) return
+    await window.electronAPI.launchCompanion(taliesinPath)
+  }
+
   const handleMinimize = () => {
     window.electronAPI.minimizeWindow()
   }
@@ -110,7 +123,7 @@ const MainToolbar = ({ navigate }) => {
 
       {/* Nav Toolbar */}
       <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 40, opacity: 0.85 }}>
-        {/* Left spacer — centers the editor group */}
+        {/* Left spacer — centers the editor + tools group */}
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Editor buttons */}
@@ -190,11 +203,9 @@ const MainToolbar = ({ navigate }) => {
           </IconButton>
         </Tooltip>
 
-        {/* Right spacer — mirrors left spacer to keep editors centered */}
-        <Box sx={{ flexGrow: 1 }} />
-
-        {/* Right-aligned tools */}
         <Divider orientation="vertical" flexItem sx={dividerSx} />
+
+        {/* Tools group — centered alongside the editors */}
         <Tooltip title="Formulas">
           <IconButton onClick={() => navigate('formulas')} sx={btnSx}>
             <GiPotionBall />
@@ -220,12 +231,33 @@ const MainToolbar = ({ navigate }) => {
             <GiDoubleDiaphragm />
           </IconButton>
         </Tooltip>
+
+        {/* Right spacer — mirrors left spacer to keep editor+tools group centered */}
+        <Box sx={{ flexGrow: 1 }} />
+
+        <Divider orientation="vertical" flexItem sx={dividerSx} />
+
+        {/* Right-aligned: settings, launch taliesin, about */}
         <Tooltip title="Settings">
           <IconButton onClick={() => navigate('settings')} sx={btnSx}>
             <GiSettingsKnobs />
           </IconButton>
         </Tooltip>
+        <Tooltip title={taliesinPath ? 'Launch Taliesin' : 'Set Taliesin path in Settings'}>
+          <span>
+            <IconButton onClick={handleLaunchTaliesin} disabled={!taliesinPath} sx={btnSx}>
+              <GiAnvil />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="About Creidhne">
+          <IconButton onClick={() => setAboutOpen(true)} sx={btnSx}>
+            <InfoOutlinedIcon />
+          </IconButton>
+        </Tooltip>
       </Toolbar>
+
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </>
   )
 }

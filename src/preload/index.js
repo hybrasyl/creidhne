@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('electron', electronAPI)
 contextBridge.exposeInMainWorld('api', api)
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  openExeFile: () => ipcRenderer.invoke('dialog:openExeFile'),
+  launchCompanion: (exePath) => ipcRenderer.invoke('app:launchCompanion', exePath),
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   openDirectory: () => ipcRenderer.invoke('open-directory'),
