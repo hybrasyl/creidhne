@@ -35,3 +35,14 @@ jobs:
         with:
           files: dist/*-portable.exe
           generate_release_notes: true
+
+      - name: Notify Discord
+        if: success()
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $repo = "${{ github.repository }}"
+          $releaseUrl = "https://github.com/$repo/releases/tag/$tag"
+          $body = @{
+            content = "**Creidhne $tag** is now available!`n$releaseUrl"
+          } | ConvertTo-Json
+          Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $body
