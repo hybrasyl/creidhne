@@ -136,7 +136,8 @@ function App() {
           index?.cookieNames,
           (constants?.cookies || []).map((c) => c.name)
         ),
-        motions: constants?.motions || []
+        motions: constants?.motions || [],
+        weapons: constants?.weapons || []
       })
     })
   }, [activeLibrary, setLibraryIndex])
