@@ -138,4 +138,42 @@ describe('settingsManager', () => {
       expect(mockFs.mkdir).toHaveBeenCalledWith(USER_DATA, { recursive: true })
     })
   })
+
+  // ─── round-trip tripwire ─────────────────────────────────────────────────────
+  // Tripwire for the withDefaults allowlist trap: if a new settings field is
+  // added to DEFAULTS but withDefaults forgets to wire it through (or vice
+  // versa), this test will fail. Update SAMPLE whenever the Settings shape
+  // changes — every field must be set to a non-default value.
+
+  describe('round-trip', () => {
+    const SAMPLE = {
+      libraries: ['/lib-a', '/lib-b'],
+      activeLibrary: '/lib-a',
+      theme: 'hybrasyl',
+      clientPath: '/client',
+      taliesinPath: '/taliesin/Taliesin.exe',
+      iconPickerMode: 'hybrasyl',
+      nationCrestPickerMode: 'hybrasyl'
+    }
+
+    it('preserves every field through save → load', async () => {
+      let written
+      mockFs.writeFile.mockImplementation(async (_path, content) => {
+        written = content
+      })
+      await manager.save(SAMPLE)
+      expect(written).toBeDefined()
+
+      mockFs.readFile.mockResolvedValueOnce(written)
+      const loaded = await manager.load()
+      expect(loaded).toEqual(SAMPLE)
+    })
+
+    it('SAMPLE differs from DEFAULTS on every field', () => {
+      for (const key of Object.keys(DEFAULTS)) {
+        expect(SAMPLE[key]).not.toEqual(DEFAULTS[key])
+      }
+      expect(Object.keys(SAMPLE).sort()).toEqual(Object.keys(DEFAULTS).sort())
+    })
+  })
 })
