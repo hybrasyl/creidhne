@@ -85,21 +85,24 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
             htmlInput: { inputMode: 'numeric' }
           }}
         />
-        <TextField
-          label="Uses"
-          size="small"
-          sx={{ width: 80 }}
-          value={reactor.uses}
-          onChange={setNumeric('uses')}
-          slotProps={{
-            htmlInput: { inputMode: 'numeric' }
-          }}
-        />
         <IconButton size="small" color="error" onClick={onRemove} sx={{ mt: 0.5 }}>
           <DeleteIcon fontSize="small" />
         </IconButton>
       </Box>
-      {/* Line 2: display / visibility fields */}
+      {/* Line 2: Uses — a literal count or a formula like LVL * 2 + 1, so
+       * no numeric strip and full-width input. */}
+      <Box sx={{ display: 'flex', mb: 1 }}>
+        <TextField
+          label="Uses"
+          size="small"
+          fullWidth
+          placeholder="1 or formula"
+          value={reactor.uses}
+          onChange={(e) => set('uses', e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </Box>
+      {/* Line 3: display / visibility fields */}
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', pl: 1 }}>
         <FormControlLabel
           control={
