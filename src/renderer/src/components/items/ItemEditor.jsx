@@ -47,6 +47,7 @@ import {
   WEAPON_TYPES,
   ITEM_FLAGS
 } from '../../data/itemConstants'
+import { categoriesFor } from '../../data/khanData'
 
 const DEFAULT_EQUIPMENT = { slot: 'None', weaponType: 'None' }
 const DEFAULT_DAMAGE = { smallMin: '0', smallMax: '0', largeMin: '0', largeMax: '0' }
@@ -66,6 +67,19 @@ const DEFAULT_CAST_MODIFIER = {
   replace: []
 }
 const DEFAULT_OP = { match: '', amount: '0', min: '', max: '' }
+
+// Five flags whose primary toggle lives in another section (Use Effect or
+// Variants). They still appear in the Flags grid for visibility but are
+// rendered read-only there with a tooltip pointing to the real toggle.
+const LINKED_FLAGS = new Set(['Consumable', 'Tailorable', 'Smithable', 'Enchantable', 'Consecratable'])
+const LINKED_FLAG_HINT = {
+  Consumable: 'Toggle in the Use Effect section',
+  Tailorable: 'Toggle in the Variants section',
+  Smithable: 'Toggle in the Variants section',
+  Enchantable: 'Toggle in the Variants section',
+  Consecratable: 'Toggle in the Variants section'
+}
+const VARIANT_FLAGS = ['Tailorable', 'Smithable', 'Enchantable', 'Consecratable']
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
 function Section({ title, open, onToggle, enabled, onEnable, children }) {
@@ -147,6 +161,7 @@ function ItemEditor({
   const [openPhysical, setOpenPhysical] = useState(true)
   const [openRestrictions, setOpenRestrictions] = useState(true)
   const [openUse, setOpenUse] = useState(item.properties.use !== null)
+  const [openVariants, setOpenVariants] = useState(true)
   const [openVendor, setOpenVendor] = useState(true)
 
   const isDirtyRef = useRef(false)
@@ -218,8 +233,25 @@ function ItemEditor({
 
   if (saveRef) saveRef.current = () => onSave(data, fileName)
 
-  const enableEquipment = (checked) =>
-    updateProperties({ equipment: checked ? { ...DEFAULT_EQUIPMENT } : null })
+  // Slot drives the existence of the equipment block. "None" → no equipment
+  // in XML; anything else creates / updates the block. Replaces the explicit
+  // Equipment toggle Switch — the dropdown's None option carries the same
+  // semantic, so the toggle was redundant.
+  const handleSlotChange = (e) => {
+    const newSlot = e.target.value
+    if (newSlot === 'None') {
+      updateProperties({ equipment: null })
+    } else {
+      updateProperties({
+        equipment: { ...DEFAULT_EQUIPMENT, ...(p.equipment || {}), slot: newSlot }
+      })
+    }
+  }
+
+  const handleWeaponTypeChange = (e) => {
+    if (!p.equipment) return
+    updateProperties({ equipment: { ...p.equipment, weaponType: e.target.value } })
+  }
 
   const enableDamage = (checked) =>
     updateProperties({ damage: checked ? { ...DEFAULT_DAMAGE } : null })
@@ -424,7 +456,7 @@ function ItemEditor({
         {/* ── Flags ── */}
         <Section title="Flags" open={openFlags} onToggle={() => setOpenFlags((v) => !v)}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-            {ITEM_FLAGS.map((flag) => (
+            {ITEM_FLAGS.filter((f) => !LINKED_FLAGS.has(f)).map((flag) => (
               <FormControlLabel
                 key={flag}
                 control={
@@ -437,6 +469,24 @@ function ItemEditor({
                 label={<Typography variant="body2">{flag}</Typography>}
                 sx={{ width: '33%', m: 0 }}
               />
+            ))}
+          </Box>
+          <Divider sx={{ my: 1 }} />
+          {/* Linked flags — read-only mirrors of toggles in other sections. */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+            {ITEM_FLAGS.filter((f) => LINKED_FLAGS.has(f)).map((flag) => (
+              <Box key={flag} sx={{ width: '33%' }}>
+                <Tooltip title={LINKED_FLAG_HINT[flag]} placement="top">
+                  <span>
+                    <FormControlLabel
+                      disabled
+                      control={<Checkbox checked={p.flags.includes(flag)} size="small" />}
+                      label={<Typography variant="body2">{flag}</Typography>}
+                      sx={{ m: 0 }}
+                    />
+                  </span>
+                </Tooltip>
+              </Box>
             ))}
           </Box>
         </Section>
@@ -473,88 +523,122 @@ function ItemEditor({
           open={openAppearance}
           onToggle={() => setOpenAppearance((v) => !v)}
         >
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <ItemSpritePicker
-              value={p.appearance.sprite}
-              onChange={(val) => setPropField('appearance', 'sprite')({ target: { value: val } })}
-              required
-              helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
-            />
-            <ItemSpritePicker
-              label="Equip Sprite"
-              value={p.appearance.equipSprite}
-              onChange={(val) =>
-                setPropField('appearance', 'equipSprite')({ target: { value: val } })
-              }
-              helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
-            />
-            <DisplaySpritePicker
-              slot={p.equipment?.slot}
-              value={p.appearance.displaySprite}
-              onChange={(val) =>
-                setPropField('appearance', 'displaySprite')({ target: { value: val } })
-              }
-              helpTooltip="Overlay applied to the character model. Only used for Weapon, Armor, Shield, Helmet, Foot, Trousers, Coat, SecondAcc, and ThirdAcc slots."
-            />
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>Body Style</InputLabel>
-              <Select
-                value={p.appearance.bodyStyle}
-                label="Body Style"
-                onChange={setPropField('appearance', 'bodyStyle')}
-              >
-                {ITEM_BODY_STYLES.map((s) => (
-                  <MenuItem key={s || '__blank'} value={s}>
-                    {s || '(none)'}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Color</InputLabel>
-              <Select
-                value={p.appearance.color}
-                label="Color"
-                onChange={setPropField('appearance', 'color')}
-                renderValue={(val) => (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{val || '(none)'}</span>
-                    {colorSwatches && val && <ColorSwatch colors={colorSwatches.get(val)} />}
-                  </Box>
-                )}
-              >
-                {ITEM_COLORS.map((c) => (
-                  <MenuItem key={c || '__blank'} value={c}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-                      <span>{c || '(none)'}</span>
-                      {colorSwatches && c && (
-                        <Box sx={{ ml: 'auto' }}>
-                          <ColorSwatch colors={colorSwatches.get(c)} />
-                        </Box>
-                      )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Row 1 — sprites + cosmetic options */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <ItemSpritePicker
+                value={p.appearance.sprite}
+                onChange={(val) => setPropField('appearance', 'sprite')({ target: { value: val } })}
+                required
+                helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
+              />
+              <ItemSpritePicker
+                label="Equip Sprite"
+                value={p.appearance.equipSprite}
+                onChange={(val) =>
+                  setPropField('appearance', 'equipSprite')({ target: { value: val } })
+                }
+                helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
+              />
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Body Style</InputLabel>
+                <Select
+                  value={p.appearance.bodyStyle}
+                  label="Body Style"
+                  onChange={setPropField('appearance', 'bodyStyle')}
+                >
+                  {ITEM_BODY_STYLES.map((s) => (
+                    <MenuItem key={s || '__blank'} value={s}>
+                      {s || '(none)'}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Color</InputLabel>
+                <Select
+                  value={p.appearance.color}
+                  label="Color"
+                  onChange={setPropField('appearance', 'color')}
+                  renderValue={(val) => (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span>{val || '(none)'}</span>
+                      {colorSwatches && val && <ColorSwatch colors={colorSwatches.get(val)} />}
                     </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={p.appearance.hideBoots}
-                  onChange={(e) =>
-                    updateData((d) => ({
-                      ...d,
-                      properties: {
-                        ...d.properties,
-                        appearance: { ...d.properties.appearance, hideBoots: e.target.checked }
-                      }
-                    }))
+                  )}
+                >
+                  {ITEM_COLORS.map((c) => (
+                    <MenuItem key={c || '__blank'} value={c}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                        <span>{c || '(none)'}</span>
+                        {colorSwatches && c && (
+                          <Box sx={{ ml: 'auto' }}>
+                            <ColorSwatch colors={colorSwatches.get(c)} />
+                          </Box>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={p.appearance.hideBoots}
+                    onChange={(e) =>
+                      updateData((d) => ({
+                        ...d,
+                        properties: {
+                          ...d.properties,
+                          appearance: { ...d.properties.appearance, hideBoots: e.target.checked }
+                        }
+                      }))
+                    }
+                  />
+                }
+                label="Hide Boots"
+              />
+            </Box>
+            {/* Row 2 — equipment slot + slot-dependent fields */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Slot</InputLabel>
+                <Select value={p.equipment?.slot ?? 'None'} label="Slot" onChange={handleSlotChange}>
+                  {EQUIPMENT_SLOTS.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {p.equipment?.slot === 'Weapon' && (
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Weapon Type</InputLabel>
+                  <Select
+                    value={p.equipment.weaponType}
+                    label="Weapon Type"
+                    onChange={handleWeaponTypeChange}
+                  >
+                    {WEAPON_TYPES.map((t) => (
+                      <MenuItem key={t} value={t}>
+                        {t}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              {categoriesFor(p.equipment?.slot).length > 0 && (
+                <DisplaySpritePicker
+                  slot={p.equipment.slot}
+                  value={p.appearance.displaySprite}
+                  onChange={(val) =>
+                    setPropField('appearance', 'displaySprite')({ target: { value: val } })
                   }
+                  helpTooltip="Overlay applied to the character model on equip."
                 />
-              }
-              label="Hide Boots"
-            />
+              )}
+            </Box>
           </Box>
         </Section>
 
@@ -615,54 +699,6 @@ function ItemEditor({
                 Suggested sell price: {Math.round(Number(p.physical.value) / 5)} gold
               </Typography>
             ) : null}
-
-            {/* Equipment sub-paper */}
-            <Paper variant="outlined" sx={{ p: 1.5 }}>
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', mb: p.equipment !== null ? 1.5 : 0 }}
-              >
-                <Typography variant="body2" sx={{ flex: 1 }}>
-                  Equipment
-                </Typography>
-                <Switch
-                  size="small"
-                  checked={p.equipment !== null}
-                  onChange={(e) => enableEquipment(e.target.checked)}
-                />
-              </Box>
-              {p.equipment !== null && (
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <FormControl size="small" sx={{ minWidth: 160 }}>
-                    <InputLabel>Slot</InputLabel>
-                    <Select
-                      value={p.equipment.slot}
-                      label="Slot"
-                      onChange={setPropField('equipment', 'slot')}
-                    >
-                      {EQUIPMENT_SLOTS.map((s) => (
-                        <MenuItem key={s} value={s}>
-                          {s}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <InputLabel>Weapon Type</InputLabel>
-                    <Select
-                      value={p.equipment.weaponType}
-                      label="Weapon Type"
-                      onChange={setPropField('equipment', 'weaponType')}
-                    >
-                      {WEAPON_TYPES.map((t) => (
-                        <MenuItem key={t} value={t}>
-                          {t}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
-            </Paper>
 
             {/* Stat Modifiers — only when equipment enabled and slot != None */}
             {p.equipment !== null && p.equipment.slot !== 'None' && (
@@ -925,10 +961,70 @@ function ItemEditor({
           enabled={p.use !== null}
           onEnable={enableUse}
         >
+          {/* Consumable lives here so the read-only mirror in Flags has an
+           * obvious source. Independent of the Use Effect enable switch —
+           * a stackable can be flagged Consumable without scripting. */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={p.flags.includes('Consumable')}
+                onChange={() => toggleFlag('Consumable')}
+              />
+            }
+            label="Consumable"
+            sx={{ mb: 1 }}
+          />
           <UseTab
             data={{ use: p.use, motions: p.motions, procs: p.procs }}
             onChange={(updated) => updateProperties(updated)}
           />
+        </Section>
+
+        {/* ── Variants ── */}
+        <Section
+          title="Variants"
+          open={openVariants}
+          onToggle={() => setOpenVariants((v) => !v)}
+        >
+          {/* Linked flag toggles — read-only mirrors live in Flags section. */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 2 }}>
+            {VARIANT_FLAGS.map((flag) => (
+              <FormControlLabel
+                key={flag}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={p.flags.includes(flag)}
+                    onChange={() => toggleFlag(flag)}
+                  />
+                }
+                label={<Typography variant="body2">{flag}</Typography>}
+                sx={{ width: '25%', m: 0 }}
+              />
+            ))}
+          </Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Variant Groups
+          </Typography>
+          {p.variants.groups.map((group, index) => (
+            <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+              <Autocomplete
+                options={variantGroupNames}
+                value={group || null}
+                onChange={(_, val) => setVariantGroup(index, val || '')}
+                size="small"
+                sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} label="Group Name" />}
+              />
+              <IconButton size="small" color="error" onClick={() => removeVariantGroup(index)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          <Button startIcon={<AddIcon />} size="small" onClick={addVariantGroup}>
+            Add Variant Group
+          </Button>
         </Section>
 
         {/* ── Vendor ── */}
@@ -962,31 +1058,6 @@ function ItemEditor({
                 htmlInput: { maxLength: 255 }
               }}
             />
-
-            {/* Variant Groups */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Variant Groups
-              </Typography>
-              {p.variants.groups.map((group, index) => (
-                <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                  <Autocomplete
-                    options={variantGroupNames}
-                    value={group || null}
-                    onChange={(_, val) => setVariantGroup(index, val || '')}
-                    size="small"
-                    sx={{ flex: 1 }}
-                    renderInput={(params) => <TextField {...params} label="Group Name" />}
-                  />
-                  <IconButton size="small" color="error" onClick={() => removeVariantGroup(index)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              ))}
-              <Button startIcon={<AddIcon />} size="small" onClick={addVariantGroup}>
-                Add Variant Group
-              </Button>
-            </Box>
           </Box>
         </Section>
 

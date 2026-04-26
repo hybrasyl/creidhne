@@ -9,8 +9,7 @@ import {
   IconButton,
   Button,
   Autocomplete,
-  Divider,
-  Chip
+  Divider
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
@@ -23,7 +22,17 @@ import {
 } from '../../data/itemConstants'
 import { libraryIndexState } from '../../recoil/atoms'
 
-const ALL_CLASS_OPTIONS = CLASS_TYPES.filter((c) => c !== 'All')
+const CLASS_OPTIONS = CLASS_TYPES.filter((c) => c !== 'All')
+
+// Existing items may have multi-class (`"Wizard Priest"`) or legacy `"All"`
+// strings — read out the first valid class for single-select display. Blank
+// when no class matches (e.g. legacy "All"). Saves write only the displayed
+// single class; accepted data loss when migrating off multi-select.
+function firstValidClass(value) {
+  if (!value) return null
+  const tokens = String(value).split(/\s+/).filter(Boolean)
+  return tokens.find((t) => CLASS_OPTIONS.includes(t)) ?? null
+}
 
 function RestrictionsTab({ data, onChange }) {
   const libraryIndex = useRecoilValue(libraryIndexState)
@@ -48,23 +57,11 @@ function RestrictionsTab({ data, onChange }) {
       restrictions: { ...r, [parent]: { ...r[parent], [field]: e.target.value } }
     })
 
-  // ── Class multi-select ─────────────────────────────────────────────────────
-  const selectedClasses =
-    r.class === 'All'
-      ? [...ALL_CLASS_OPTIONS] // backward-compat with existing data
-      : (r.class || '').split(' ').filter(Boolean)
+  // ── Class single-select ────────────────────────────────────────────────────
+  const selectedClass = firstValidClass(r.class)
 
   const handleClassChange = (_, newVal) => {
-    if (newVal.includes('All')) {
-      // Toggle: if all are currently selected, deselect all; otherwise select all
-      const allSelected = ALL_CLASS_OPTIONS.every((c) => selectedClasses.includes(c))
-      onChange({
-        ...data,
-        restrictions: { ...r, class: allSelected ? '' : ALL_CLASS_OPTIONS.join(' ') }
-      })
-      return
-    }
-    onChange({ ...data, restrictions: { ...r, class: newVal.join(' ') } })
+    onChange({ ...data, restrictions: { ...r, class: newVal || '' } })
   }
 
   // ── AB ────────────────────────────────────────────────────────────────────
@@ -118,8 +115,9 @@ function RestrictionsTab({ data, onChange }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* Level, AB, Gender on one line */}
-      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      {/* Level, AB, Gender, Class on one line. Blanks throughout = no XML
+       * element generated for that field. */}
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         <TextField
           label="Level Min"
           type="number"
@@ -129,7 +127,8 @@ function RestrictionsTab({ data, onChange }) {
           sx={{ width: 110 }}
           onChange={setSubField('level', 'min')}
           slotProps={{
-            htmlInput: { min: 1, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <TextField
@@ -141,29 +140,34 @@ function RestrictionsTab({ data, onChange }) {
           sx={{ width: 110 }}
           onChange={setSubField('level', 'max')}
           slotProps={{
-            htmlInput: { min: 1, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <TextField
           label="AB Min"
           type="number"
           value={r.ab?.min ?? ''}
+          placeholder="1"
           size="small"
           sx={{ width: 100 }}
           onChange={setAbField('min')}
           slotProps={{
-            htmlInput: { min: 0, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <TextField
           label="AB Max"
           type="number"
           value={r.ab?.max ?? ''}
+          placeholder="99"
           size="small"
           sx={{ width: 100 }}
           onChange={setAbField('max')}
           slotProps={{
-            htmlInput: { min: 0, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -176,23 +180,15 @@ function RestrictionsTab({ data, onChange }) {
             ))}
           </Select>
         </FormControl>
+        <Autocomplete
+          options={CLASS_OPTIONS}
+          value={selectedClass}
+          onChange={handleClassChange}
+          size="small"
+          sx={{ minWidth: 180, flex: 1 }}
+          renderInput={(params) => <TextField {...params} label="Class" />}
+        />
       </Box>
-      {/* Class picker — blank = no restriction; "All" = select/deselect all */}
-      <Autocomplete
-        multiple
-        options={['All', ...ALL_CLASS_OPTIONS]}
-        value={selectedClasses}
-        onChange={handleClassChange}
-        disableCloseOnSelect
-        renderValue={(value, getItemProps) =>
-          value.map((option, index) => (
-            <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
-          ))
-        }
-        renderInput={(params) => (
-          <TextField {...params} size="small" label="Classes (blank = no restriction)" />
-        )}
-      />
       <Divider />
       <Typography variant="subtitle2">Required Castables</Typography>
       {r.castables.map((castable, index) => (
