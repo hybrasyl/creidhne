@@ -23,6 +23,8 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
+import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
+import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import {
   listDir,
   readFile,
@@ -55,6 +57,13 @@ const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne')
 app.setPath('userData', cachePath)
 
 const settingsManager = createSettingsManager(settingsPath)
+
+// Gate every renderer-supplied path through the session's allowed roots
+// (libraries + clientPath from settings, plus anything the user picked
+// through a dialog this session). Throws on any path that isn't inside
+// one of those roots — defence in depth against a renderer compromise
+// addressing arbitrary disk locations.
+const validatePath = (p) => assertInsideAnyRoot(allRoots(), p)
 
 let closeConfirmed = false
 
@@ -101,11 +110,20 @@ function createWindow() {
   return mainWindow
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.electron')
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  // Populate the path-safety roots before any IPC handler can fire so
+  // settings-derived paths are accepted from the first request. Tolerates
+  // a fresh install with no saved settings (applySettingsRoots no-ops).
+  try {
+    applySettingsRoots(await settingsManager.load())
+  } catch {
+    /* missing/corrupt settings — start with empty roots until first save */
+  }
 
   ipcMain.on('minimize-window', () => {
     const window = BrowserWindow.getFocusedWindow()
@@ -151,157 +169,173 @@ app.whenReady().then(() => {
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
-    loadReference(libraryPath, type, name)
+    loadReference(validatePath(libraryPath), type, name)
   )
 
-  ipcMain.handle('fs:listDir', (_, dirPath) => listDir(dirPath))
-  ipcMain.handle('fs:readFile', (_, filePath) => readFile(filePath))
-  ipcMain.handle('fs:writeFile', (_, filePath, content) => writeFile(filePath, content))
-  ipcMain.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(filePath))
-  ipcMain.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(clientPath))
+  // Scan-style handler: swallow path-rejection into [] so the renderer sees
+  // the same empty-state UX as a missing directory (doc §10 Gotcha #2).
+  ipcMain.handle('fs:listDir', async (_, dirPath) => {
+    try {
+      return await listDir(validatePath(dirPath))
+    } catch {
+      return []
+    }
+  })
+  ipcMain.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
+  ipcMain.handle('fs:writeFile', (_, filePath, content) =>
+    writeFile(validatePath(filePath), content)
+  )
+  ipcMain.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
+  ipcMain.handle('fs:checkClientPath', (_, clientPath) =>
+    checkClientPath(validatePath(clientPath))
+  )
 
   ipcMain.handle('xml:loadItem', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseItemXml(xml)
   })
 
   ipcMain.handle('xml:saveItem', async (_, filePath, itemData) => {
     const xml = serializeItemXml(itemData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadRecipe', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseRecipeXml(xml)
   })
 
   ipcMain.handle('xml:saveRecipe', async (_, filePath, recipeData) => {
     const xml = serializeRecipeXml(recipeData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadNpc', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseNpcXml(xml)
   })
 
   ipcMain.handle('xml:saveNpc', async (_, filePath, npcData) => {
     const xml = serializeNpcXml(npcData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadNation', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseNationXml(xml)
   })
 
   ipcMain.handle('xml:saveNation', async (_, filePath, nationData) => {
     const xml = serializeNationXml(nationData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadLoot', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseLootXml(xml)
   })
 
   ipcMain.handle('xml:saveLoot', async (_, filePath, lootData) => {
     const xml = serializeLootXml(lootData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadVariantGroup', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseVariantXml(xml)
   })
 
   ipcMain.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
     const xml = serializeVariantXml(variantGroupData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadLocalization', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseLocalizationXml(xml)
   })
 
   ipcMain.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
     const xml = serializeLocalizationXml(localizationData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadCreature', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseCreatureXml(xml)
   })
 
   ipcMain.handle('xml:saveCreature', async (_, filePath, creatureData) => {
     const xml = serializeCreatureXml(creatureData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadElementTable', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseElementTableXml(xml)
   })
 
   ipcMain.handle('xml:saveElementTable', async (_, filePath, tableData) => {
     const xml = serializeElementTableXml(tableData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadStatus', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseStatusXml(xml)
   })
 
   ipcMain.handle('xml:saveStatus', async (_, filePath, statusData) => {
     const xml = serializeStatusXml(statusData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadCastable', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseCastableXml(xml)
   })
 
   ipcMain.handle('xml:saveCastable', async (_, filePath, castableData) => {
     const xml = serializeCastableXml(castableData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadBehaviorSet', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseBehaviorSetXml(xml)
   })
 
   ipcMain.handle('xml:saveBehaviorSet', async (_, filePath, bvsData) => {
     const xml = serializeBehaviorSetXml(bvsData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadSpawngroup', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseSpawngroupXml(xml)
   })
 
   ipcMain.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
     const xml = serializeSpawngroupXml(sgData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
   ipcMain.handle('xml:loadServerConfig', async (_, filePath) => {
-    const xml = await fs.readFile(filePath, 'utf-8')
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseServerConfigXml(xml)
   })
 
   ipcMain.handle('xml:saveServerConfig', async (_, filePath, cfgData) => {
     const xml = serializeServerConfigXml(cfgData)
-    await fs.writeFile(filePath, xml, 'utf-8')
+    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
-  ipcMain.handle('fs:moveFile', (_, src, dest) => moveFile(src, dest))
-  ipcMain.handle('fs:archiveFile', (_, src, archiveDir) => archiveFile(src, archiveDir))
+  ipcMain.handle('fs:moveFile', (_, src, dest) =>
+    moveFile(validatePath(src), validatePath(dest))
+  )
+  ipcMain.handle('fs:archiveFile', (_, src, archiveDir) =>
+    archiveFile(validatePath(src), validatePath(archiveDir))
+  )
 
   // Handling settings load and save
   ipcMain.handle('settings:load', () => settingsManager.load())
@@ -309,6 +343,9 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:save', async (_, data) => {
     const before = await settingsManager.load()
     await settingsManager.save(data)
+    // Refresh path-safety roots in lockstep with the persisted settings so a
+    // newly-added library or clientPath becomes immediately valid.
+    applySettingsRoots(data)
     if (before?.clientPath !== data?.clientPath) {
       await loadPacksForClientPath(data?.clientPath || null)
     }
@@ -336,17 +373,17 @@ app.whenReady().then(() => {
   // --- Library index (via @eriscorp/hybindex-ts utilityProcess worker) ---
 
   ipcMain.handle('index:build', async (_, libraryPath) => {
-    const index = await buildIndexInWorker(libraryPath)
+    const index = await buildIndexInWorker(validatePath(libraryPath))
     return { success: true, builtAt: index.builtAt }
   })
 
   ipcMain.handle('index:buildSection', (_, libraryPath, section) =>
-    buildSectionInWorker(libraryPath, section)
+    buildSectionInWorker(validatePath(libraryPath), section)
   )
 
-  ipcMain.handle('index:load', (_, libraryPath) => loadIndex(libraryPath))
-  ipcMain.handle('index:status', (_, libraryPath) => getIndexStatus(libraryPath))
-  ipcMain.handle('index:delete', (_, libraryPath) => deleteIndex(libraryPath))
+  ipcMain.handle('index:load', (_, libraryPath) => loadIndex(validatePath(libraryPath)))
+  ipcMain.handle('index:status', (_, libraryPath) => getIndexStatus(validatePath(libraryPath)))
+  ipcMain.handle('index:delete', (_, libraryPath) => deleteIndex(validatePath(libraryPath)))
 
   // Bulk-add a category to each of the given castables (by display Name).
   // Used by the Spell Books tab in Constants: after persisting the spellbook
@@ -359,6 +396,7 @@ app.whenReady().then(() => {
   ipcMain.handle('lua:setupEnvironment', async (_, libraryPath) => {
     if (!libraryPath) return { ok: false, error: 'No active library' }
     try {
+      validatePath(libraryPath)
       const scriptsDir = join(libraryPath, '..', 'scripts')
       const typesDir = join(scriptsDir, '.hybrasyl-types')
       const luarcDest = join(scriptsDir, '.luarc.json')
@@ -393,7 +431,20 @@ app.whenReady().then(() => {
     if (!libraryPath || !relativePath) {
       return { ok: false, error: 'Missing libraryPath or relativePath' }
     }
-    const scriptPath = join(libraryPath, '..', 'scripts', `${relativePath}.lua`)
+    try {
+      validatePath(libraryPath)
+    } catch (err) {
+      return { ok: false, error: err.message }
+    }
+    const scriptsDir = join(libraryPath, '..', 'scripts')
+    let scriptPath
+    try {
+      // Category-B guard: relativePath is renderer-supplied; assertInside
+      // catches `../escape.lua` style attempts to read outside scripts/.
+      scriptPath = assertInside(scriptsDir, `${relativePath}.lua`)
+    } catch (err) {
+      return { ok: false, error: err.message }
+    }
     try {
       await fs.access(scriptPath)
     } catch {
@@ -403,7 +454,6 @@ app.whenReady().then(() => {
     // sumneko finds .luarc.json at the workspace root (which lives at
     // world/scripts/.luarc.json). If a window for this folder already exists,
     // VS Code reuses it; otherwise a new window opens.
-    const scriptsDir = join(libraryPath, '..', 'scripts')
     try {
       const { spawn } = require('child_process')
       // Use shell: true so Windows resolves code.cmd (batch wrapper).
@@ -436,6 +486,15 @@ app.whenReady().then(() => {
           ]
         }
       }
+      try {
+        validatePath(libraryPath)
+      } catch (err) {
+        return {
+          updated: [],
+          unchanged: [],
+          failed: [{ name: '(invalid path)', error: err.message }]
+        }
+      }
       const index = await loadIndex(libraryPath)
       const filenames = index?.castableFilenames || {}
       const updated = []
@@ -449,7 +508,7 @@ app.whenReady().then(() => {
         }
         const filePath = join(libraryPath, 'castables', filename)
         try {
-          const xml = await fs.readFile(filePath, 'utf-8')
+          const xml = await fs.readFile(validatePath(filePath), 'utf-8')
           const castable = await parseCastableXml(xml)
           const categories = Array.isArray(castable.categories) ? [...castable.categories] : []
           if (categories.includes(categoryName)) {
@@ -507,6 +566,7 @@ app.whenReady().then(() => {
   }
 
   ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
+    validatePath(libraryPath)
     const result = { items: [], castables: [], statuses: [] }
     const scanDir = async (dir, target) => {
       const catMap = {}
@@ -566,6 +626,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:scanVendorTabs', async (_, libraryPath) => {
+    validatePath(libraryPath)
     const tabMap = {}
     try {
       const itemsDir = join(libraryPath, 'items')
@@ -602,6 +663,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:scanNpcJobs', async (_, libraryPath) => {
+    validatePath(libraryPath)
     const jobMap = {}
     try {
       const npcsDir = join(libraryPath, 'npcs')
@@ -637,6 +699,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:scanCreatureFamilies', async (_, libraryPath) => {
+    validatePath(libraryPath)
     const familyMap = {}
     try {
       const creaturesDir = join(libraryPath, 'creatures')
@@ -676,6 +739,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('constants:scanCookies', async (_, libraryPath) => {
+    validatePath(libraryPath)
     const scriptsDir = join(libraryPath, '..', 'scripts')
     const cookies = []
     const cookieRegex = /\w+\.setcookie\s*\(\s*"([^"]+)"/gi
@@ -716,6 +780,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('constants:addValue', async (_, libraryPath, type, value) => {
     if (!libraryPath || !type || !value) return null
+    validatePath(libraryPath)
     try {
       const constants = await loadConstants(libraryPath)
       const existing = constants[type] || []
@@ -741,28 +806,29 @@ app.whenReady().then(() => {
         npcJobs: [],
         creatureFamilies: []
       }
-    return loadConstants(libraryPath)
+    return loadConstants(validatePath(libraryPath))
   })
 
   ipcMain.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
     if (!libraryPath) return
-    await saveConstants(libraryPath, data)
+    await saveConstants(validatePath(libraryPath), data)
   })
 
   // --- Formulas ---
 
   ipcMain.handle('formulas:load', async (_, libraryPath) => {
     if (!libraryPath) return { settings: {}, patterns: [], formulas: [] }
-    return loadFormulas(libraryPath)
+    return loadFormulas(validatePath(libraryPath))
   })
 
   ipcMain.handle('formulas:save', async (_, libraryPath, data) => {
     if (!libraryPath) return
-    await saveFormulas(libraryPath, data)
+    await saveFormulas(validatePath(libraryPath), data)
   })
 
   ipcMain.handle('formulas:import', async (_, libraryPath) => {
     if (!libraryPath) return null
+    validatePath(libraryPath)
     const window = BrowserWindow.getFocusedWindow()
     const { canceled, filePaths } = await dialog.showOpenDialog(window, {
       title: 'Import Formula Library',
@@ -770,12 +836,15 @@ app.whenReady().then(() => {
       properties: ['openFile']
     })
     if (canceled || !filePaths[0]) return null
+    // Auto-bless the just-picked file so any subsequent reads of it pass.
+    bless(filePaths[0])
     const existing = await loadFormulas(libraryPath)
     return importFormulas(filePaths[0], existing)
   })
 
   ipcMain.handle('formulas:castableInfo', async (_, libraryPath, castableName) => {
     if (!libraryPath || !castableName) return null
+    validatePath(libraryPath)
     try {
       // Try the index filename map first
       let filename = null
@@ -803,7 +872,7 @@ app.whenReady().then(() => {
 
       if (!filename) return null
       const filePath = join(libraryPath, 'castables', filename)
-      const xml = await fs.readFile(filePath, 'utf-8')
+      const xml = await fs.readFile(validatePath(filePath), 'utf-8')
       const castable = await parseCastableXml(xml)
       return {
         lines: castable.lines ? Number(castable.lines) : null,
@@ -822,11 +891,15 @@ app.whenReady().then(() => {
       filters: [{ name: 'CSV Files', extensions: ['csv'] }]
     })
     if (canceled || !filePath) return { canceled: true }
+    // The user just picked this path — bless its parent so the write succeeds
+    // and any follow-up read goes through validation cleanly.
+    bless(filePath)
     await fs.writeFile(filePath, content, 'utf-8')
     return { canceled: false, filePath }
   })
 
   ipcMain.handle('export:castablesCSV', async (_, libraryPath) => {
+    validatePath(libraryPath)
     const castDir = join(libraryPath, 'castables')
 
     let castableTrainers = {}
@@ -962,7 +1035,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('export:castablesJSON', async (_, libraryPath) => {
-    return exportCastablesExcelCSV(libraryPath)
+    return exportCastablesExcelCSV(validatePath(libraryPath))
   })
 
   createWindow()
@@ -980,10 +1053,14 @@ app.on('window-all-closed', () => {
   }
 })
 
-// File handling functions
+// File handling functions. Each picker auto-blesses the path the user picked
+// so any subsequent fs:* / xml:* handler can read or write that location
+// without a separate "set active" round-trip — matches the user's mental
+// model ("I picked it, of course I can read it").
 async function handleFileOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({})
   if (!canceled) {
+    bless(filePaths[0])
     return filePaths[0]
   }
 }
@@ -997,6 +1074,7 @@ async function handleExeFileOpen() {
     ]
   })
   if (!canceled) {
+    bless(filePaths[0])
     return filePaths[0]
   }
 }
@@ -1004,6 +1082,7 @@ async function handleExeFileOpen() {
 async function handleDirectoryOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] })
   if (!canceled) {
+    bless(filePaths[0])
     return filePaths[0]
   }
 }
