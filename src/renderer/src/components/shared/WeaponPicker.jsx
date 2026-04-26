@@ -53,7 +53,7 @@ export default function WeaponPicker({
     [itemWeaponDamage]
   )
 
-  const options = useMemo(() => [...weapons, CUSTOM_OPTION], [weapons])
+  const options = useMemo(() => [CUSTOM_OPTION, ...weapons], [weapons])
 
   const selected = useMemo(() => {
     if (weaponName) {
