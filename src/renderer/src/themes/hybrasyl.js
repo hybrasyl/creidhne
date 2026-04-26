@@ -179,6 +179,12 @@ const hybrasylTheme = responsiveFontSizes(
           }
         }
       },
+      MuiSlider: {
+        defaultProps: { color: 'secondary' },
+        styleOverrides: {
+          rail: { backgroundColor: 'rgba(240,230,204,0.25)', opacity: 1 }
+        }
+      },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
