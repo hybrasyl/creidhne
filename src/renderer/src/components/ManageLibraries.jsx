@@ -23,6 +23,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useRecoilState } from 'recoil'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import { useLibraryIndexHydration } from '../hooks/useLibraryIndexHydration'
 
 function IndexStatus({ status, building, onBuild }) {
   if (building) {
@@ -75,6 +76,7 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [, setLibraryIndex] = useRecoilState(libraryIndexState)
   const [indexStatuses, setIndexStatuses] = useState({})
   const [building, setBuilding] = useState({})
+  const hydrateLibraryIndex = useLibraryIndexHydration()
 
   const loadStatuses = useCallback(async () => {
     const statuses = {}
@@ -97,11 +99,7 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         [library]: { exists: true, builtAt: result.builtAt }
       }))
       if (library === activeLibrary) {
-        const index = await window.electronAPI.loadIndex(library)
-        // Merge over previous state — constants-derived fields (weapons,
-        // motions, etc.) live on libraryIndex but aren't in the rebuilt
-        // index payload.
-        setLibraryIndex((prev) => ({ ...prev, ...(index || {}) }))
+        await hydrateLibraryIndex(library)
       }
     } finally {
       setBuilding((prev) => ({ ...prev, [library]: false }))
