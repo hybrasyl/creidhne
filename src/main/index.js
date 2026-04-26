@@ -23,6 +23,13 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
+import { parseOrLog } from './schemaLog.js'
+import {
+  settingsSchema,
+  constantsSchema,
+  constantsAddValueSchema,
+  formulasSchema
+} from './schemas/index.js'
 import {
   listDir,
   readFile,
@@ -55,6 +62,10 @@ const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne')
 app.setPath('userData', cachePath)
 
 const settingsManager = createSettingsManager(settingsPath)
+
+// Context passed to parseOrLog so breadcrumb failures land in
+// <settingsPath>/ipc-validation.log alongside settings.json itself.
+const schemaCtx = { settingsPath }
 
 let closeConfirmed = false
 
@@ -307,10 +318,11 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:load', () => settingsManager.load())
 
   ipcMain.handle('settings:save', async (_, data) => {
+    const parsed = parseOrLog(schemaCtx, 'settings:save', settingsSchema, data)
     const before = await settingsManager.load()
-    await settingsManager.save(data)
-    if (before?.clientPath !== data?.clientPath) {
-      await loadPacksForClientPath(data?.clientPath || null)
+    await settingsManager.save(parsed)
+    if (before?.clientPath !== parsed?.clientPath) {
+      await loadPacksForClientPath(parsed?.clientPath || null)
     }
   })
 
@@ -716,11 +728,15 @@ app.whenReady().then(() => {
 
   ipcMain.handle('constants:addValue', async (_, libraryPath, type, value) => {
     if (!libraryPath || !type || !value) return null
+    const parsed = parseOrLog(schemaCtx, 'constants:addValue', constantsAddValueSchema, {
+      type,
+      value
+    })
     try {
       const constants = await loadConstants(libraryPath)
-      const existing = constants[type] || []
-      if (!existing.includes(value)) {
-        constants[type] = [...existing, value].sort()
+      const existing = constants[parsed.type] || []
+      if (!existing.includes(parsed.value)) {
+        constants[parsed.type] = [...existing, parsed.value].sort()
         await saveConstants(libraryPath, constants)
       }
       return constants
@@ -746,7 +762,8 @@ app.whenReady().then(() => {
 
   ipcMain.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
     if (!libraryPath) return
-    await saveConstants(libraryPath, data)
+    const parsed = parseOrLog(schemaCtx, 'constants:saveUserConstants', constantsSchema, data)
+    await saveConstants(libraryPath, parsed)
   })
 
   // --- Formulas ---
@@ -758,7 +775,8 @@ app.whenReady().then(() => {
 
   ipcMain.handle('formulas:save', async (_, libraryPath, data) => {
     if (!libraryPath) return
-    await saveFormulas(libraryPath, data)
+    const parsed = parseOrLog(schemaCtx, 'formulas:save', formulasSchema, data)
+    await saveFormulas(libraryPath, parsed)
   })
 
   ipcMain.handle('formulas:import', async (_, libraryPath) => {
