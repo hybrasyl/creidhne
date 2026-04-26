@@ -8,7 +8,6 @@ import {
   activeLibraryState,
   libraryIndexState,
   dirtyEditorState,
-  recentPagesState,
   clientPathState,
   taliesinPathState,
   activePacksState,
@@ -16,10 +15,7 @@ import {
   iconPickerModeState,
   nationCrestPickerModeState
 } from './recoil/atoms' // Import Recoil atoms
-import hybrasylTheme from './themes/hybrasyl'
-import chadulTheme from './themes/chadul'
-import danaanTheme from './themes/danaan'
-import grinnealTheme from './themes/grinneal'
+import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
 
 const themes = {
   hybrasyl: hybrasylTheme,
@@ -38,7 +34,6 @@ function App() {
   const [theme, setTheme] = useRecoilState(themeState)
   const [libraries, setLibraries] = useRecoilState(librariesState)
   const [currentPage, setCurrentPage] = useRecoilState(currentPageState) // Manage current page with Recoil
-  const [, setRecentPages] = useRecoilState(recentPagesState)
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
   const [clientPath, setClientPath] = useRecoilState(clientPathState)
   const [taliesinPath, setTaliesinPath] = useRecoilState(taliesinPathState)
@@ -177,29 +172,16 @@ function App() {
     stopSound()
   }, [currentPage])
 
-  const pushRecentPage = useCallback(
-    (page) => {
-      if (page === 'dashboard') return
-      setRecentPages((prev) => {
-        const updated = [page, ...prev.filter((p) => p !== page)].slice(0, 5)
-        localStorage.setItem('recentPages', JSON.stringify(updated))
-        return updated
-      })
-    },
-    [setRecentPages]
-  )
-
   const handleNavigate = useCallback(
     (page) => {
       if (dirtyEditor) {
         setPendingNav(page)
         setNavDialogOpen(true)
       } else {
-        pushRecentPage(page)
         setCurrentPage(page)
       }
     },
-    [dirtyEditor, setCurrentPage, pushRecentPage]
+    [dirtyEditor, setCurrentPage]
   )
 
   const handleNavSave = useCallback(async () => {
@@ -209,21 +191,19 @@ function App() {
     try {
       await dirtyEditor?.onSave()
       // markClean is called inside the editor's save handler; navigate after
-      pushRecentPage(page)
       setCurrentPage(page)
     } catch {
       // save failed — stay on current page
     }
-  }, [pendingNav, dirtyEditor, setCurrentPage, pushRecentPage])
+  }, [pendingNav, dirtyEditor, setCurrentPage])
 
   const handleNavDiscard = useCallback(() => {
     const page = pendingNav
     setNavDialogOpen(false)
     setPendingNav(null)
     setDirtyEditor(null)
-    pushRecentPage(page)
     setCurrentPage(page)
-  }, [pendingNav, setCurrentPage, setDirtyEditor, pushRecentPage])
+  }, [pendingNav, setCurrentPage, setDirtyEditor])
 
   const handleNavCancel = useCallback(() => {
     setNavDialogOpen(false)

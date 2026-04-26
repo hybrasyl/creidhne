@@ -30,7 +30,7 @@ import {
   GiDeathSkull
 } from 'react-icons/gi'
 import { useRecoilValue } from 'recoil'
-import { taliesinPathState } from '../recoil/atoms'
+import { taliesinPathState, currentPageState } from '../recoil/atoms'
 import AboutDialog from './AboutDialog'
 
 const iconSx = {
@@ -52,6 +52,14 @@ const btnSx = {
   }
 }
 
+// Highlight the IconButton for whichever page the user is currently viewing.
+// Mirrors taliesin's NavToolbar pattern.
+const activeBtnSx = {
+  ...btnSx,
+  color: 'secondary.dark',
+  backgroundColor: 'rgba(255,255,255,0.08)'
+}
+
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
 const winBtnSx = {
@@ -67,6 +75,8 @@ const winBtnSx = {
 const MainToolbar = ({ navigate }) => {
   const [aboutOpen, setAboutOpen] = useState(false)
   const taliesinPath = useRecoilValue(taliesinPathState)
+  const currentPage = useRecoilValue(currentPageState)
+  const pageSx = (page) => (currentPage === page ? activeBtnSx : btnSx)
 
   const handleLaunchTaliesin = async () => {
     if (!taliesinPath) return
@@ -95,7 +105,7 @@ const MainToolbar = ({ navigate }) => {
           sx={{ fontWeight: 'bold', flexGrow: 0 }}
           style={{ fontSize: '1.5rem' }}
         >
-          Creidhne: XML Forge
+          Creidhne
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
         <Tooltip title="Minimize">
@@ -122,83 +132,83 @@ const MainToolbar = ({ navigate }) => {
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
 
       {/* Nav Toolbar */}
-      <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 40, opacity: 0.85 }}>
+      <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 40, opacity: 0.9 }}>
         {/* Left spacer — centers the editor + tools group */}
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Editor buttons */}
         <Tooltip title="Dashboard">
-          <IconButton onClick={() => navigate('dashboard')} sx={btnSx}>
+          <IconButton onClick={() => navigate('dashboard')} sx={pageSx('dashboard')}>
             <GiRadialBalance />
           </IconButton>
         </Tooltip>
         <Tooltip title="Castables">
-          <IconButton onClick={() => navigate('castables')} sx={btnSx}>
+          <IconButton onClick={() => navigate('castables')} sx={pageSx('castables')}>
             <GiMagicSwirl />
           </IconButton>
         </Tooltip>
         <Tooltip title="Items">
-          <IconButton onClick={() => navigate('items')} sx={btnSx}>
+          <IconButton onClick={() => navigate('items')} sx={pageSx('items')}>
             <GiDervishSwords />
           </IconButton>
         </Tooltip>
         <Tooltip title="Statuses">
-          <IconButton onClick={() => navigate('statuses')} sx={btnSx}>
+          <IconButton onClick={() => navigate('statuses')} sx={pageSx('statuses')}>
             <GiPoisonBottle />
           </IconButton>
         </Tooltip>
         <Tooltip title="NPCs">
-          <IconButton onClick={() => navigate('npcs')} sx={btnSx}>
+          <IconButton onClick={() => navigate('npcs')} sx={pageSx('npcs')}>
             <GiFaceToFace />
           </IconButton>
         </Tooltip>
         <Tooltip title="Creatures">
-          <IconButton onClick={() => navigate('creatures')} sx={btnSx}>
+          <IconButton onClick={() => navigate('creatures')} sx={pageSx('creatures')}>
             <GiSpiderFace />
           </IconButton>
         </Tooltip>
         <Tooltip title="Behavior Sets">
-          <IconButton onClick={() => navigate('behaviors')} sx={btnSx}>
+          <IconButton onClick={() => navigate('behaviors')} sx={pageSx('behaviors')}>
             <GiBrainTentacle />
           </IconButton>
         </Tooltip>
         <Tooltip title="Nations">
-          <IconButton onClick={() => navigate('nations')} sx={btnSx}>
+          <IconButton onClick={() => navigate('nations')} sx={pageSx('nations')}>
             <GiCastle />
           </IconButton>
         </Tooltip>
         <Tooltip title="Spawngroups">
-          <IconButton onClick={() => navigate('spawngroups')} sx={btnSx}>
+          <IconButton onClick={() => navigate('spawngroups')} sx={pageSx('spawngroups')}>
             <GiHiveMind />
           </IconButton>
         </Tooltip>
         <Tooltip title="Loot Sets">
-          <IconButton onClick={() => navigate('loot')} sx={btnSx}>
+          <IconButton onClick={() => navigate('loot')} sx={pageSx('loot')}>
             <GiGoldStack />
           </IconButton>
         </Tooltip>
         <Tooltip title="Variants">
-          <IconButton onClick={() => navigate('variants')} sx={btnSx}>
+          <IconButton onClick={() => navigate('variants')} sx={pageSx('variants')}>
             <GiMirrorMirror />
           </IconButton>
         </Tooltip>
         <Tooltip title="Elements">
-          <IconButton onClick={() => navigate('elements')} sx={btnSx}>
+          <IconButton onClick={() => navigate('elements')} sx={pageSx('elements')}>
             <GiWindHole />
           </IconButton>
         </Tooltip>
         <Tooltip title="Recipes">
-          <IconButton onClick={() => navigate('recipes')} sx={btnSx}>
+          <IconButton onClick={() => navigate('recipes')} sx={pageSx('recipes')}>
             <GiWok />
           </IconButton>
         </Tooltip>
         <Tooltip title="Strings">
-          <IconButton onClick={() => navigate('strings')} sx={btnSx}>
+          <IconButton onClick={() => navigate('strings')} sx={pageSx('strings')}>
             <GiTalk />
           </IconButton>
         </Tooltip>
         <Tooltip title="Server Config">
-          <IconButton onClick={() => navigate('serverconfig')} sx={btnSx}>
+          <IconButton onClick={() => navigate('serverconfig')} sx={pageSx('serverconfig')}>
             <GiMagickTrick />
           </IconButton>
         </Tooltip>
@@ -207,27 +217,27 @@ const MainToolbar = ({ navigate }) => {
 
         {/* Tools group — centered alongside the editors */}
         <Tooltip title="Formulas">
-          <IconButton onClick={() => navigate('formulas')} sx={btnSx}>
+          <IconButton onClick={() => navigate('formulas')} sx={pageSx('formulas')}>
             <GiPotionBall />
           </IconButton>
         </Tooltip>
         <Tooltip title="Damage Calculator">
-          <IconButton onClick={() => navigate('damage-calculator')} sx={btnSx}>
+          <IconButton onClick={() => navigate('damage-calculator')} sx={pageSx('damage-calculator')}>
             <GiCalculator />
           </IconButton>
         </Tooltip>
         <Tooltip title="Lua Helpers">
-          <IconButton onClick={() => navigate('helpers')} sx={btnSx}>
+          <IconButton onClick={() => navigate('helpers')} sx={pageSx('helpers')}>
             <GiPull />
           </IconButton>
         </Tooltip>
         <Tooltip title="Exports">
-          <IconButton onClick={() => navigate('exports')} sx={btnSx}>
+          <IconButton onClick={() => navigate('exports')} sx={pageSx('exports')}>
             <GiBootKick />
           </IconButton>
         </Tooltip>
         <Tooltip title="Constants">
-          <IconButton onClick={() => navigate('constants')} sx={btnSx}>
+          <IconButton onClick={() => navigate('constants')} sx={pageSx('constants')}>
             <GiDoubleDiaphragm />
           </IconButton>
         </Tooltip>
@@ -239,7 +249,7 @@ const MainToolbar = ({ navigate }) => {
 
         {/* Right-aligned: settings, launch taliesin, about */}
         <Tooltip title="Settings">
-          <IconButton onClick={() => navigate('settings')} sx={btnSx}>
+          <IconButton onClick={() => navigate('settings')} sx={pageSx('settings')}>
             <GiSettingsKnobs />
           </IconButton>
         </Tooltip>
