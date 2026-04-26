@@ -456,8 +456,11 @@ function buildXmlObject(cfg) {
     })
   }
 
-  if (cfg.motd) root.Motd = [cfg.motd]
-  if (cfg.worldDataDir) root.WorldDataDir = [cfg.worldDataDir]
+  // Element order below follows the XSD's <xs:sequence> for ServerConfig:
+  // Logging → [WorldDataDir, creidhne-ahead-of-XSD] → DataStore → Network →
+  // ApiEndpoints → Access → Boards → Time → Handlers → Motd → Plugins →
+  // ClientSettings → Constants → Formulas. xml2js's Builder writes keys in
+  // insertion order, so the assignment order below IS the output order.
 
   // Logging
   if (cfg.logging?.logs?.length) {
@@ -474,6 +477,10 @@ function buildXmlObject(cfg) {
     if (Object.keys(loggingAttrs).length) loggingNode.$ = loggingAttrs
     root.Logging = [loggingNode]
   }
+
+  // WorldDataDir (creidhne-ahead-of-XSD; real fixtures place it between
+  // Logging and DataStore — see test README "creidhne is ahead of the XSD").
+  if (cfg.worldDataDir) root.WorldDataDir = [cfg.worldDataDir]
 
   // DataStore
   const ds = cfg.dataStore
@@ -637,6 +644,9 @@ function buildXmlObject(cfg) {
     }
     if (Object.keys(hNode).length) root.Handlers = [hNode]
   }
+
+  // Motd (per XSD sequence, sits between Handlers and Plugins)
+  if (cfg.motd) root.Motd = [cfg.motd]
 
   // Plugins
   if (cfg.plugins?.message?.length) {
