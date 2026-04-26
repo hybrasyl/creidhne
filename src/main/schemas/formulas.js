@@ -4,12 +4,18 @@ import { z } from 'zod'
 // strict (settings + patterns + formulas, in those positions); inner
 // fields are permissive enough to evolve without churning this schema.
 
-const Formula = z.object({
-  id: z.string(),
-  name: z.string(),
-  formula: z.string()
-  // description / category and any other fields pass through.
-})
+// Required: id / name / formula. Optional: isArchived (drives the panel's
+// active/archived split). Other fields (description, category, patternId,
+// per-formula coefficient overrides, etc.) `.passthrough()` so the
+// renderer can evolve without churning this schema.
+const Formula = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    formula: z.string(),
+    isArchived: z.boolean().optional()
+  })
+  .passthrough()
 
 const BudgetSection = z.object({
   baseline: z.number(),

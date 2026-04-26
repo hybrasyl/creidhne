@@ -46,13 +46,21 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
     formulasLoaded && formulaName ? formulas.find((f) => f.name === formulaName) : null
   const isCustom = formulasLoaded && !formulaName && !!formula
   const notInIndex = formulasLoaded && !!formulaName && !matched
-  const hasIssue = isCustom || notInIndex
+  // Library has the formula but it's been archived — distinct, more severe
+  // case than not-in-library since the user explicitly retired it.
+  const referencesArchived = !!(matched && matched.isArchived)
+  const hasWarning = isCustom || notInIndex
+  const hasIssue = hasWarning || referencesArchived
+
+  // Archive case is rendered in error red; warning cases stay orange.
+  const issueColor = referencesArchived ? 'error.main' : 'warning.main'
+  const issueButtonColor = referencesArchived ? 'error' : 'warning'
 
   const displayName = formulaName || (formula ? 'custom' : '')
   const warnSx = hasIssue
     ? {
-        '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-        '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' }
+        '& .MuiOutlinedInput-root fieldset': { borderColor: issueColor },
+        '& .MuiInputLabel-root:not(.Mui-focused)': { color: issueColor }
       }
     : {}
 
@@ -126,23 +134,30 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
       {/* Issue actions */}
       {hasIssue && !addingToIndex && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <Button
-            size="small"
-            color="warning"
-            onClick={() => {
-              setAddingToIndex(true)
-              setNewName(formulaName || '')
-            }}
-          >
-            + Add to index
-          </Button>
-          <Button size="small" color="warning" onClick={() => setPickerOpen(true)}>
+          {/* "Add to index" only makes sense for the orange/warning case.
+              For an archived reference the formula already exists — the
+              fix is to swap to a live one (or unarchive in the panel). */}
+          {hasWarning && (
+            <Button
+              size="small"
+              color={issueButtonColor}
+              onClick={() => {
+                setAddingToIndex(true)
+                setNewName(formulaName || '')
+              }}
+            >
+              + Add to index
+            </Button>
+          )}
+          <Button size="small" color={issueButtonColor} onClick={() => setPickerOpen(true)}>
             Replace from index
           </Button>
-          <Typography variant="caption" sx={{
-            color: "warning.main"
-          }}>
-            {notInIndex ? 'Not in library' : 'No library entry'}
+          <Typography variant="caption" sx={{ color: issueColor }}>
+            {referencesArchived
+              ? 'Archived formula — replace before saving'
+              : notInIndex
+                ? 'Not in library'
+                : 'No library entry'}
           </Typography>
         </Box>
       )}

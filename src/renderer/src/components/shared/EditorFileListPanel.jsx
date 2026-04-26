@@ -155,7 +155,10 @@ export default function EditorFileListPanel({
   onDuplicate,
   // Fires whenever the multiselect set changes — pages render the editor-pane
   // dim/blur overlay based on this count.
-  onSelectionChange
+  onSelectionChange,
+  // Page-specific extra IconButton entries rendered before the New button.
+  // Shape: [{ icon: ReactNode, tooltip: string, onClick: () => void, disabled?: boolean }]
+  extraActions
 }) {
   const [search, setSearch] = useState('')
   const [listRef, listSize] = useAutoSize()
@@ -447,7 +450,20 @@ export default function EditorFileListPanel({
           )}
         </Box>
 
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', gap: 0.25 }}>
+          {(extraActions || []).map((action, idx) => (
+            <Tooltip key={idx} title={action.tooltip || ''}>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={action.onClick}
+                  disabled={!!action.disabled}
+                >
+                  {action.icon}
+                </IconButton>
+              </span>
+            </Tooltip>
+          ))}
           <Tooltip title={newTooltip}>
             <span>
               <IconButton size="small" onClick={onNew}>

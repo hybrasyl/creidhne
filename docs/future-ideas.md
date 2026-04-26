@@ -38,40 +38,6 @@ Already in place:
   regardless of source — switching the picker's data source later
   doesn't break round-trip.
 
-## FormulasPage adopts the shared EditorFileListPanel
-
-After Release 1.4 ships the bulk-ops upgrades to `EditorFileListPanel`,
-`FormulasPage.jsx` should migrate to use the same shared control as the
-14 XML editors. Wins:
-
-- Free multiselect + bulk delete (formulas don't currently archive — they
-  live as JSON entries inside `world/.creidhne/formulas.json` — but bulk
-  delete still applies via a per-entry-aware path).
-- Right-click context menu and overlay UX consistency across the app.
-- Filter input parity (currently FormulasPage's left list has its own
-  bespoke filter).
-
-**Two extra buttons on top of the standard panel actions:** Import (from
-Lua, existing IPC) and Export. The panel can take an optional `extraActions`
-prop — an array of `{ icon, tooltip, onClick }` — that renders alongside
-the New / Archive / Delete / Duplicate cluster.
-
-**Wrinkles:**
-
-- Formulas live in a single JSON file, not per-formula files. The bulk
-  IPC handlers (`fs:archiveFiles`, `fs:trashFiles`) operate on real file
-  paths, so they don't apply directly. Either: (a) wrap the panel's
-  callbacks with formula-specific handlers (delete = remove from JSON
-  array + save), or (b) surface a `mode: 'records'` panel variant that
-  treats `files` as logical entries rather than disk files. (a) is
-  smaller; (b) is cleaner if more record-style editors come later.
-- "Filename" in the panel needs to map to formula `id` or `name` — pass
-  the records as `[{ name: id, path: id }]`-shaped pseudo-files and let
-  the panel's existing `namesByFilename` map handle display.
-- Archive doesn't apply for formulas; the eye toggle and archive button
-  hide naturally when `archivedFiles` is omitted and `onArchive` isn't
-  passed.
-
 ## Spawngroups: spellbook constants support
 
 Spell Books (defined in **Constants → Spell Books**) are named bundles

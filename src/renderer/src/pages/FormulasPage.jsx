@@ -1,43 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRecoilValue } from 'recoil'
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress,
-  Chip
-} from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
-import SearchIcon from '@mui/icons-material/Search'
-import DeleteIcon from '@mui/icons-material/Delete'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { activeLibraryState } from '../recoil/atoms'
 import FormulaEditor from '../components/formulas/FormulaEditor'
 import FormulaSettingsDialog from '../components/formulas/FormulaSettingsDialog'
+import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-
-const CATEGORY_COLORS = {
-  damage: 'error',
-  heal: 'success',
-  conversion: 'secondary',
-  shield: 'primary',
-  stat: 'info',
-  cast_cost: 'warning',
-  general: 'default'
-}
 
 const DEFAULT_FORMULA = {
   id: null,
@@ -45,144 +17,27 @@ const DEFAULT_FORMULA = {
   description: '',
   category: 'damage',
   formula: '',
-  patternId: null
+  patternId: null,
+  isArchived: false
 }
 
-// ── List panel ────────────────────────────────────────────────────────────────
-function FormulaListPanel({
-  formulas,
-  selectedId,
-  onSelect,
-  onNew,
-  onImport,
-  onDelete,
-  onSettings
-}) {
-  const [search, setSearch] = React.useState('')
-  const filtered = search.trim()
-    ? formulas.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
-    : formulas
-
-  return (
-    <Box
-      sx={{
-        width: 240,
-        flexShrink: 0,
-        borderRight: 1,
-        borderColor: 'divider',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}
-    >
-      <Box sx={{ p: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2">Formulas</Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Formula Settings">
-            <IconButton size="small" onClick={onSettings}>
-              <SettingsIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Import from Lua">
-            <IconButton size="small" onClick={onImport}>
-              <FileUploadIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="New Formula">
-            <Button size="small" startIcon={<AddIcon />} onClick={onNew}>
-              New
-            </Button>
-          </Tooltip>
-        </Box>
-      </Box>
-      <Box sx={{ px: 1, pb: 1 }}>
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="Filter..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              )
-            }
-          }}
-        />
-      </Box>
-      <Divider />
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {formulas.length === 0 ? (
-          <Typography
-            variant="body2"
-            sx={{
-              color: "text.secondary",
-              p: 2
-            }}>
-            No formulas. Import a Lua file or create one manually.
-          </Typography>
-        ) : filtered.length === 0 ? (
-          <Typography
-            variant="body2"
-            sx={{
-              color: "text.secondary",
-              p: 2
-            }}>
-            No matches.
-          </Typography>
-        ) : (
-          <List dense disablePadding>
-            {filtered.map((f) => (
-              <ListItem
-                key={f.id}
-                disablePadding
-                secondaryAction={
-                  selectedId === f.id ? (
-                    <Tooltip title="Delete">
-                      <IconButton size="small" edge="end" onClick={() => onDelete(f.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : null
-                }
-              >
-                <ListItemButton selected={selectedId === f.id} onClick={() => onSelect(f.id)}>
-                  <ListItemText
-                    primary={f.name}
-                    secondary={
-                      <Chip
-                        label={f.category || 'damage'}
-                        size="small"
-                        color={CATEGORY_COLORS[f.category] || 'default'}
-                        sx={{ height: 16, fontSize: '0.65rem', mt: 0.25 }}
-                      />
-                    }
-                    slotProps={{
-                      primary: { noWrap: true, variant: 'body2' }
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </Box>
-    </Box>
-  );
+// Maps a formula record onto the shape the shared panel expects: `name` is
+// the display text and `path` is the stable identity key (we use the formula
+// id so renames don't break the selection).
+function toPseudoFile(formula, archived = false) {
+  return { name: formula.name || '(unnamed)', path: formula.id, archived }
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 function FormulasPage() {
   const activeLibrary = useRecoilValue(activeLibraryState)
   const [formulasData, setFormulasData] = useState({ settings: {}, patterns: [], formulas: [] })
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
   const [editingFormula, setEditingFormula] = useState(null)
   const [loading, setLoading] = useState(false)
   const [snackbar, setSnackbar] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const [selectionCount, setSelectionCount] = useState(0)
 
   const {
     markDirty,
@@ -210,13 +65,34 @@ function FormulasPage() {
   }
 
   useEffect(() => {
-    setSelectedId(null)
+    setSelectedFile(null)
     setEditingFormula(null)
     loadData(activeLibrary)
   }, [activeLibrary]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Active = !isArchived; Archived = isArchived. Sort each by name asc so the
+  // panel's virtualized active list and native archived list are stable.
+  const { activeFiles, archivedFiles } = useMemo(() => {
+    const active = []
+    const archived = []
+    for (const f of formulasData.formulas) {
+      if (f.isArchived) archived.push(toPseudoFile(f, true))
+      else active.push(toPseudoFile(f, false))
+    }
+    const byName = (a, b) => a.name.localeCompare(b.name)
+    active.sort(byName)
+    archived.sort(byName)
+    return { activeFiles: active, archivedFiles: archived }
+  }, [formulasData.formulas])
+
+  const findById = useCallback(
+    (id) => formulasData.formulas.find((f) => f.id === id),
+    [formulasData.formulas]
+  )
+
+  // ── Selection / new / save ──────────────────────────────────────────────────
   const doNew = () => {
-    setSelectedId(null)
+    setSelectedFile(null)
     setEditingFormula({
       ...DEFAULT_FORMULA,
       id: crypto.randomUUID(),
@@ -225,29 +101,13 @@ function FormulasPage() {
   }
   const handleNew = () => guard(doNew)
 
-  const doSelect = (id) => {
-    const f = formulasData.formulas.find((f) => f.id === id)
+  const doSelect = (file) => {
+    const f = findById(file.path)
     if (!f) return
-    setSelectedId(id)
+    setSelectedFile(file)
     setEditingFormula({ ...f })
   }
-  const handleSelect = (id) => guard(() => doSelect(id))
-
-  const handleDelete = (id) => {
-    guard(() => {
-      const next = { ...formulasData, formulas: formulasData.formulas.filter((f) => f.id !== id) }
-      setFormulasData(next)
-      setSelectedId(null)
-      setEditingFormula(null)
-      markClean()
-      window.electronAPI.saveFormulas(activeLibrary, next).catch((err) => {
-        setSnackbar({
-          message: `Failed to delete: ${err?.message ?? 'Unknown error'}`,
-          severity: 'error'
-        })
-      })
-    })
-  }
+  const handleSelect = (file) => guard(() => doSelect(file))
 
   const handleSave = async (data) => {
     try {
@@ -259,7 +119,7 @@ function FormulasPage() {
       await window.electronAPI.saveFormulas(activeLibrary, next)
       setFormulasData(next)
       setEditingFormula(data)
-      setSelectedId(data.id)
+      setSelectedFile(toPseudoFile(data, !!data.isArchived))
       markClean()
       setSnackbar({ message: 'Saved.', severity: 'success' })
     } catch (err) {
@@ -270,6 +130,111 @@ function FormulasPage() {
     }
   }
 
+  // ── Bulk panel callbacks ────────────────────────────────────────────────────
+  // Archive/unarchive/delete operate on the formulas array directly since
+  // there's no on-disk move to perform — flip isArchived (or splice) and
+  // persist the whole formulas.json in one save.
+  const persistFormulas = useCallback(
+    async (nextFormulas, touchedIds) => {
+      const next = { ...formulasData, formulas: nextFormulas }
+      try {
+        await window.electronAPI.saveFormulas(activeLibrary, next)
+        setFormulasData(next)
+        if (selectedFile && touchedIds.includes(selectedFile.path)) {
+          setSelectedFile(null)
+          setEditingFormula(null)
+          markClean()
+        }
+      } catch (err) {
+        setSnackbar({
+          message: `Save failed: ${err?.message ?? 'Unknown error'}`,
+          severity: 'error'
+        })
+        throw err
+      }
+    },
+    [activeLibrary, formulasData, selectedFile, markClean]
+  )
+
+  const handleBulkArchive = useCallback(
+    async (files) => {
+      if (!activeLibrary || files.length === 0) return
+      const ids = files.map((f) => f.path)
+      const next = formulasData.formulas.map((f) =>
+        ids.includes(f.id) ? { ...f, isArchived: true } : f
+      )
+      await persistFormulas(next, ids)
+      setSnackbar({
+        message: `Archived ${ids.length} formula${ids.length === 1 ? '' : 's'}.`,
+        severity: 'success'
+      })
+    },
+    [activeLibrary, formulasData.formulas, persistFormulas]
+  )
+
+  const handleBulkUnarchive = useCallback(
+    async (files) => {
+      if (!activeLibrary || files.length === 0) return
+      const ids = files.map((f) => f.path)
+      const next = formulasData.formulas.map((f) =>
+        ids.includes(f.id) ? { ...f, isArchived: false } : f
+      )
+      await persistFormulas(next, ids)
+      setSnackbar({
+        message: `Unarchived ${ids.length} formula${ids.length === 1 ? '' : 's'}.`,
+        severity: 'success'
+      })
+    },
+    [activeLibrary, formulasData.formulas, persistFormulas]
+  )
+
+  const handleBulkDelete = useCallback(
+    async (files) => {
+      if (!activeLibrary || files.length === 0) return
+      const ids = files.map((f) => f.path)
+      const next = formulasData.formulas.filter((f) => !ids.includes(f.id))
+      await persistFormulas(next, ids)
+      setSnackbar({
+        message: `Deleted ${ids.length} formula${ids.length === 1 ? '' : 's'}.`,
+        severity: 'success'
+      })
+    },
+    [activeLibrary, formulasData.formulas, persistFormulas]
+  )
+
+  // Single-only: copy with a new id and " (Copy)" / " (Copy 2)" name suffix.
+  const handleDuplicate = useCallback(
+    async (file) => {
+      if (!activeLibrary || !file) return
+      const src = findById(file.path)
+      if (!src) return
+      const usedNames = new Set(formulasData.formulas.map((f) => f.name))
+      let candidate = `${src.name} (Copy)`
+      let counter = 2
+      while (usedNames.has(candidate)) {
+        candidate = `${src.name} (Copy ${counter})`
+        counter++
+      }
+      const dup = { ...src, id: crypto.randomUUID(), name: candidate }
+      const next = [...formulasData.formulas, dup]
+      try {
+        await window.electronAPI.saveFormulas(activeLibrary, { ...formulasData, formulas: next })
+        setFormulasData((prev) => ({ ...prev, formulas: next }))
+        setSnackbar({ message: `Duplicated as "${candidate}".`, severity: 'success' })
+      } catch (err) {
+        setSnackbar({
+          message: `Duplicate failed: ${err?.message ?? 'Unknown error'}`,
+          severity: 'error'
+        })
+      }
+    },
+    [activeLibrary, formulasData, findById]
+  )
+
+  const handleToggleArchived = () => setShowArchived((v) => !v)
+  const onSelectionChange = useCallback((set) => setSelectionCount(set.size), [])
+
+  // ── Import / settings ───────────────────────────────────────────────────────
   const doImport = async () => {
     if (!activeLibrary) {
       setSnackbar({
@@ -283,7 +248,7 @@ function FormulasPage() {
       if (!result) return // user cancelled
       await window.electronAPI.saveFormulas(activeLibrary, result.data)
       setFormulasData(result.data)
-      setSelectedId(null)
+      setSelectedFile(null)
       setEditingFormula(null)
       markClean()
       const parts = []
@@ -325,18 +290,51 @@ function FormulasPage() {
     [markDirty, markClean]
   )
 
+  const extraActions = useMemo(
+    () => [
+      {
+        icon: <FileUploadIcon fontSize="small" />,
+        tooltip: 'Import from Lua',
+        onClick: handleImport
+      },
+      {
+        icon: <SettingsIcon fontSize="small" />,
+        tooltip: 'Formula Settings',
+        onClick: () => setSettingsOpen(true)
+      }
+    ],
+    [handleImport]
+  )
+
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      <FormulaListPanel
-        formulas={formulasData.formulas}
-        selectedId={selectedId}
+      <EditorFileListPanel
+        title="Formulas"
+        entityLabel="Formula"
+        files={activeFiles}
+        archivedFiles={archivedFiles}
+        selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        onImport={handleImport}
-        onDelete={handleDelete}
-        onSettings={() => setSettingsOpen(true)}
+        showArchived={showArchived}
+        onToggleArchived={handleToggleArchived}
+        loading={loading}
+        onArchive={handleBulkArchive}
+        onUnarchive={handleBulkUnarchive}
+        onDelete={handleBulkDelete}
+        onDuplicate={handleDuplicate}
+        onSelectionChange={onSelectionChange}
+        extraActions={extraActions}
       />
-      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
         {loading ? (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
@@ -357,13 +355,12 @@ function FormulasPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
               Select a formula or create a new one.
             </Typography>
           </Box>
         )}
+        <MultiSelectOverlay count={selectionCount} />
       </Box>
       <FormulaSettingsDialog
         open={settingsOpen}
@@ -393,7 +390,7 @@ function FormulasPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default FormulasPage

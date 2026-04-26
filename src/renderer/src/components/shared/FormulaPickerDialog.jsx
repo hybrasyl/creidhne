@@ -13,7 +13,9 @@ import {
   Typography,
   Box,
   Chip,
-  CircularProgress
+  CircularProgress,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import { useRecoilValue } from 'recoil'
@@ -45,6 +47,7 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [catFilter, setCatFilter] = useState(category || '')
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     if (!open || !activeLibrary) return
@@ -52,6 +55,7 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
     setSearch('')
     setSelected(null)
     setCatFilter(category || '')
+    setShowArchived(false)
     window.electronAPI
       .loadFormulas(activeLibrary)
       .then((data) => setFormulas(data.formulas || []))
@@ -59,10 +63,15 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
   }, [open, activeLibrary, category])
 
   const filtered = formulas.filter((f) => {
+    if (f.isArchived && !showArchived) return false
     const matchCat = !catFilter || f.category === catFilter
     const matchSearch = !search.trim() || f.name.toLowerCase().includes(search.toLowerCase())
     return matchCat && matchSearch
   })
+
+  // Only surface the toggle when there's actually something to reveal —
+  // keeps the dialog uncluttered for libraries with no archived entries.
+  const hasArchived = formulas.some((f) => f.isArchived)
 
   const handleConfirm = () => {
     if (selected) onSelect(selected)
@@ -112,6 +121,22 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
             ))}
           </TextField>
         </Box>
+        {hasArchived && (
+          <FormControlLabel
+            sx={{ ml: 0.5 }}
+            control={
+              <Checkbox
+                size="small"
+                checked={showArchived}
+                onChange={(e) => {
+                  setShowArchived(e.target.checked)
+                  setSelected(null)
+                }}
+              />
+            }
+            label={<Typography variant="caption">Show archived</Typography>}
+          />
+        )}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={32} />
@@ -141,13 +166,27 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2">{f.name}</Typography>
+                      <Typography
+                        variant="body2"
+                        sx={f.isArchived ? { color: 'text.secondary', fontStyle: 'italic' } : {}}
+                      >
+                        {f.name}
+                      </Typography>
                       <Chip
                         label={f.category || 'damage'}
                         size="small"
                         color={CATEGORY_COLORS[f.category] || 'default'}
                         sx={{ height: 16, fontSize: '0.65rem' }}
                       />
+                      {f.isArchived && (
+                        <Chip
+                          label="archived"
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          sx={{ height: 16, fontSize: '0.65rem' }}
+                        />
+                      )}
                     </Box>
                   }
                   secondary={
