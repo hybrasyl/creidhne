@@ -56,7 +56,8 @@ const makeDefaultSubtype = () => ({
   description: '',
   loot: [],
   hostility: { ...DEFAULT_HOSTILITY },
-  cookies: []
+  cookies: [],
+  meta: { weapon: '' }
 })
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
@@ -452,8 +453,12 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     onChange={(val) => set('assailSound', val)}
                   />
                   <WeaponPicker
+                    weaponName={data.meta?.weapon || ''}
                     minDmg={data.minDmg}
                     maxDmg={data.maxDmg}
+                    onWeaponNameChange={(name) =>
+                      set('meta', { ...(data.meta || {}), weapon: name })
+                    }
                     onMinDmgChange={(v) => set('minDmg', v)}
                     onMaxDmgChange={(v) => set('maxDmg', v)}
                   />
