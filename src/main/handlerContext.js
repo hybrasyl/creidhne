@@ -1,4 +1,4 @@
-import { normalize } from 'path'
+import { dirname, normalize } from 'path'
 
 // Two root sets gate every Category-A handler (paths the renderer supplies
 // as full absolute paths, no implicit parent). The split lets settings
@@ -18,6 +18,21 @@ export function applySettingsRoots(settings) {
   if (Array.isArray(settings?.libraries)) {
     for (const lib of settings.libraries) {
       if (typeof lib === 'string' && lib) settingsRoots.add(normalize(lib))
+    }
+  }
+  // libraryPath is conventionally <world>/xml; .creidhne/, scripts/,
+  // localizations/, and friends live as siblings of the library at <world>/*.
+  // Bless the world parent of every configured library so renderer-supplied
+  // sibling paths resolve. Skip when dirname returns the same path
+  // (a drive root, e.g. C:\) — we never want to bless an entire drive.
+  if (Array.isArray(settings?.libraries)) {
+    for (const lib of settings.libraries) {
+      if (typeof lib !== 'string' || !lib) continue
+      const normalized = normalize(lib)
+      const worldRoot = dirname(normalized)
+      if (worldRoot && worldRoot !== normalized) {
+        settingsRoots.add(worldRoot)
+      }
     }
   }
   if (typeof settings?.clientPath === 'string' && settings.clientPath) {
