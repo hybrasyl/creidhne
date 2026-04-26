@@ -771,8 +771,12 @@ function CreatureEditor({
                     onChange={(val) => set('assailSound')({ target: { value: val } })}
                   />
                   <WeaponPicker
+                    weaponName={data.meta?.weapon || ''}
                     minDmg={data.minDmg}
                     maxDmg={data.maxDmg}
+                    onWeaponNameChange={(name) =>
+                      updateData((d) => ({ ...d, meta: { ...d.meta, weapon: name } }))
+                    }
                     onMinDmgChange={(v) => updateData((d) => ({ ...d, minDmg: v }))}
                     onMaxDmgChange={(v) => updateData((d) => ({ ...d, maxDmg: v }))}
                   />

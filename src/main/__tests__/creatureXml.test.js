@@ -168,7 +168,7 @@ describe('Field coverage — all fields', () => {
 
   it('defaults meta.family to empty string when no annotation present', async () => {
     const c = await parseCreatureXml(FULL_XML)
-    expect(c.meta).toEqual({ family: '' })
+    expect(c.meta).toEqual({ family: '', weapon: '' })
   })
 })
 
@@ -230,7 +230,7 @@ describe('Field coverage — minimal', () => {
 
   it('defaults meta.family to empty string', async () => {
     const c = await parseCreatureXml(MINIMAL_XML)
-    expect(c.meta).toEqual({ family: '' })
+    expect(c.meta).toEqual({ family: '', weapon: '' })
   })
 })
 

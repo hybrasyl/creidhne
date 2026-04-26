@@ -3,43 +3,71 @@ import { Autocomplete, TextField, Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 
-// Sentinel option: lets the user explicitly acknowledge they're going custom
-// (vs. just leaving the dropdown blank). Picking it is a no-op on min/max.
+// Sentinel: lets the user explicitly acknowledge "Custom" mode (vs. just
+// leaving the dropdown blank). Picking it is a no-op on min/max.
 const CUSTOM_OPTION = { name: 'Custom', minDmg: '', maxDmg: '', __custom: true }
 
 /**
  * Composite picker over a min/max damage pair, with optional preset selection
  * from the user's `weapons` constants list.
  *
- * The dropdown is a UI hint only — only `minDmg` and `maxDmg` get persisted.
- * Selecting a weapon prepopulates min/max; editing min/max directly causes
- * the dropdown to fall back to 'Custom' (no match in the list).
+ * Min/max damage are the only values serialized to XML — `weaponName` is
+ * a UI hint persisted separately (e.g. as a `<!-- creidhne:meta -->`
+ * comment) so the editor remembers which preset was chosen across reloads.
+ *
+ * Display rule:
+ *   - If weaponName matches a list weapon AND the weapon's min/max equal
+ *     the current min/max → show that weapon
+ *   - If weaponName matches but min/max have diverged (user hand-edited
+ *     after picking) → show 'Custom'
+ *   - If weaponName === 'Custom' or is set but unmatched → show 'Custom'
+ *   - If weaponName is empty → derive from min/max match against the list
  */
-export default function WeaponPicker({ minDmg, maxDmg, onMinDmgChange, onMaxDmgChange }) {
+export default function WeaponPicker({
+  weaponName = '',
+  minDmg,
+  maxDmg,
+  onWeaponNameChange,
+  onMinDmgChange,
+  onMaxDmgChange
+}) {
   const libraryIndex = useRecoilValue(libraryIndexState)
   const weapons = libraryIndex.weapons || []
 
   const options = useMemo(() => [...weapons, CUSTOM_OPTION], [weapons])
 
-  // Derive selection from the current damage pair: match a weapon entry
-  // exactly, else 'Custom' once anything's been entered, else nothing.
   const selected = useMemo(() => {
+    if (weaponName) {
+      const byName = weapons.find((w) => w.name === weaponName)
+      if (byName) {
+        const matches =
+          String(byName.minDmg ?? '') === String(minDmg ?? '') &&
+          String(byName.maxDmg ?? '') === String(maxDmg ?? '')
+        return matches ? byName : CUSTOM_OPTION
+      }
+      return CUSTOM_OPTION
+    }
     if (!minDmg && !maxDmg) return null
-    const match = weapons.find(
+    const byDamage = weapons.find(
       (w) =>
         String(w.minDmg ?? '') === String(minDmg ?? '') &&
         String(w.maxDmg ?? '') === String(maxDmg ?? '')
     )
-    return match || CUSTOM_OPTION
-  }, [weapons, minDmg, maxDmg])
+    return byDamage || CUSTOM_OPTION
+  }, [weaponName, weapons, minDmg, maxDmg])
 
   const handleSelect = (_, val) => {
     if (!val) {
+      onWeaponNameChange?.('')
       onMinDmgChange('')
       onMaxDmgChange('')
       return
     }
-    if (val.__custom) return
+    if (val.__custom) {
+      onWeaponNameChange?.(CUSTOM_OPTION.name)
+      return
+    }
+    onWeaponNameChange?.(val.name)
     onMinDmgChange(val.minDmg ?? '')
     onMaxDmgChange(val.maxDmg ?? '')
   }

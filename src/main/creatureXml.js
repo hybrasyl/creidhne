@@ -8,18 +8,21 @@ import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
-const CREATURE_META_DEFAULTS = { family: '' }
+const CREATURE_META_DEFAULTS = { family: '', weapon: '' }
 
 function extractCreatureMeta(xmlString) {
   const raw = extractMeta(xmlString)
-  return { family: raw.family || '' }
+  return { family: raw.family || '', weapon: raw.weapon || '' }
 }
 
 function injectCreatureMeta(xml, meta) {
-  if (!meta?.family) return xml
+  if (!meta?.family && !meta?.weapon) return xml
+  const payload = {}
+  if (meta.family) payload.family = meta.family
+  if (meta.weapon) payload.weapon = meta.weapon
   return xml.replace(
     /(<Creature[^>]*>)/,
-    `$1\n  <!-- creidhne:meta ${JSON.stringify({ family: meta.family })} -->`
+    `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`
   )
 }
 
