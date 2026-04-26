@@ -29,12 +29,6 @@ async function handle(req) {
   } catch (err) {
     reply({ kind: 'error', error: err?.stack || err?.message || String(err) })
   } finally {
-    // hybindex-ts emits 'done' only at the end of buildIndex (full build); the
-    // buildSection (partial) path emits per-file scan events but no terminal
-    // event, so the renderer's progress pill would stick after every
-    // save / bulk op. Emit a guaranteed 'done' here so the pill always hides
-    // regardless of which op ran or whether the library was upgraded.
-    reply({ kind: 'progress', event: { phase: 'done' } })
     // One-shot: exit so the parent knows we're done and the process is freed.
     process.exit(0)
   }
