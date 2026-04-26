@@ -6,7 +6,6 @@ import {
   librariesState,
   currentPageState,
   activeLibraryState,
-  libraryIndexState,
   dirtyEditorState,
   clientPathState,
   taliesinPathState,
@@ -16,6 +15,7 @@ import {
   nationCrestPickerModeState
 } from './recoil/atoms' // Import Recoil atoms
 import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
+import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
 
 const themes = {
   hybrasyl: hybrasylTheme,
@@ -31,13 +31,13 @@ import ReferencePanel from './components/reference/ReferencePanel'
 import { stopSound } from './data/soundData'
 
 function App() {
+  const hydrateLibraryIndex = useLibraryIndexHydration()
   const [theme, setTheme] = useRecoilState(themeState)
   const [libraries, setLibraries] = useRecoilState(librariesState)
   const [currentPage, setCurrentPage] = useRecoilState(currentPageState) // Manage current page with Recoil
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
   const [clientPath, setClientPath] = useRecoilState(clientPathState)
   const [taliesinPath, setTaliesinPath] = useRecoilState(taliesinPathState)
-  const [, setLibraryIndex] = useRecoilState(libraryIndexState)
   const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState)
   const [, setActivePacks] = useRecoilState(activePacksState)
   const [, setPackCoverage] = useRecoilState(packCoverageState)
@@ -116,30 +116,8 @@ function App() {
 
   // Load persisted index from disk whenever active library changes
   useEffect(() => {
-    if (!activeLibrary) {
-      setLibraryIndex({})
-      return
-    }
-    Promise.all([
-      window.electronAPI.loadIndex(activeLibrary),
-      window.electronAPI.loadUserConstants(activeLibrary)
-    ]).then(([index, constants]) => {
-      const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort()
-      setLibraryIndex({
-        ...(index || {}),
-        vendorTabs: dedup(index?.vendorTabs, constants?.vendorTabs),
-        npcJobs: dedup(index?.npcJobs, constants?.npcJobs),
-        itemCategories: dedup(index?.itemCategories, constants?.itemCategories),
-        castableCategories: dedup(index?.castableCategories, constants?.castableCategories),
-        statusCategories: dedup(index?.statusCategories, constants?.statusCategories),
-        cookieNames: dedup(
-          index?.cookieNames,
-          (constants?.cookies || []).map((c) => c.name)
-        ),
-        motions: constants?.motions || []
-      })
-    })
-  }, [activeLibrary, setLibraryIndex])
+    hydrateLibraryIndex(activeLibrary)
+  }, [activeLibrary, hydrateLibraryIndex])
 
   // Save settings whenever theme or libraries change. Skip until fetchSettings
   // has populated state, otherwise we'd overwrite the on-disk settings with

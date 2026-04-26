@@ -22,6 +22,7 @@ import {
   currentPageState,
   taliesinPathState
 } from '../recoil/atoms'
+import { useLibraryIndexHydration } from '../hooks/useLibraryIndexHydration'
 
 const INDEX_TYPES = [
   { key: 'items', label: 'Items', page: 'items' },
@@ -163,10 +164,11 @@ function StatusCard({ icon, label, primary, secondary, emptyHint, onClick, foote
 
 function DashboardPage() {
   const activeLibrary = useRecoilValue(activeLibraryState)
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const libraryIndex = useRecoilValue(libraryIndexState)
   const [, setCurrentPage] = useRecoilState(currentPageState)
   const taliesinPath = useRecoilValue(taliesinPathState)
   const [rebuilding, setRebuilding] = useState(false)
+  const hydrateLibraryIndex = useLibraryIndexHydration()
 
   const hasIndex = !!libraryIndex.builtAt
   const builtAt = hasIndex ? new Date(libraryIndex.builtAt) : null
@@ -176,8 +178,7 @@ function DashboardPage() {
     setRebuilding(true)
     try {
       await window.electronAPI.buildIndex(activeLibrary)
-      const index = await window.electronAPI.loadIndex(activeLibrary)
-      setLibraryIndex(index || {})
+      await hydrateLibraryIndex(activeLibrary)
     } finally {
       setRebuilding(false)
     }

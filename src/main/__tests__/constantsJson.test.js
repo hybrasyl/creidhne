@@ -25,7 +25,8 @@ const EMPTY_SHAPE = {
   cookies: [],
   npcJobs: [],
   creatureFamilies: [],
-  motions: []
+  motions: [],
+  weapons: []
 }
 
 describe('getConstantsPath', () => {

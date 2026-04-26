@@ -168,7 +168,7 @@ describe('Field coverage — all fields', () => {
 
   it('defaults meta.family to empty string when no annotation present', async () => {
     const c = await parseCreatureXml(FULL_XML)
-    expect(c.meta).toEqual({ family: '' })
+    expect(c.meta).toEqual({ family: '', weapon: '' })
   })
 })
 
@@ -230,7 +230,7 @@ describe('Field coverage — minimal', () => {
 
   it('defaults meta.family to empty string', async () => {
     const c = await parseCreatureXml(MINIMAL_XML)
-    expect(c.meta).toEqual({ family: '' })
+    expect(c.meta).toEqual({ family: '', weapon: '' })
   })
 })
 
@@ -255,6 +255,90 @@ describe('meta.family annotation', () => {
     const c = await parseCreatureXml(MINIMAL_XML)
     const xml = serializeCreatureXml(c)
     expect(xml).not.toContain('creidhne:meta')
+  })
+
+  it('parses weapon from creidhne:meta comment alongside family', async () => {
+    const xml = `<?xml version="1.0"?>
+<Creature xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02"
+  Name="Wolf" Sprite="42" BehaviorSet="wolf-behavior">
+  <!-- creidhne:meta {"family":"wolf","weapon":"Steel Sword"} -->
+</Creature>`
+    const c = await parseCreatureXml(xml)
+    expect(c.meta).toEqual({ family: 'wolf', weapon: 'Steel Sword' })
+  })
+
+  it('round-trips weapon meta through serialize → parse', async () => {
+    const c = {
+      name: 'W',
+      sprite: '1',
+      behaviorSet: 'b',
+      minDmg: '5',
+      maxDmg: '10',
+      assailSound: '',
+      comment: '',
+      meta: { family: '', weapon: 'Mace' },
+      description: '',
+      loot: [],
+      hostility: { players: false, monsters: false },
+      cookies: [],
+      subtypes: []
+    }
+    const xml = serializeCreatureXml(c)
+    expect(xml).toContain('"weapon":"Mace"')
+    const parsed = await parseCreatureXml(xml)
+    expect(parsed.meta.weapon).toBe('Mace')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Test 3c: subtype meta annotation
+// ---------------------------------------------------------------------------
+
+describe('subtype meta annotation', () => {
+  const SUB_META_XML = `<?xml version="1.0"?>
+<Creature xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02"
+  Name="Wolf" Sprite="42" BehaviorSet="wolf-behavior">
+  <Types>
+    <Type Name="Alpha" Sprite="43" MinDmg="4" MaxDmg="8">
+      <!-- creidhne:meta {"weapon":"Iron Claw"} -->
+      <Description>Pack leader</Description>
+    </Type>
+    <Type Name="Pup" Sprite="44" MinDmg="1" MaxDmg="2">
+      <Description>Young wolf</Description>
+    </Type>
+  </Types>
+</Creature>`
+
+  it('parses subtype weapon meta from inline creidhne:meta comment', async () => {
+    const c = await parseCreatureXml(SUB_META_XML)
+    expect(c.subtypes[0].meta).toEqual({ weapon: 'Iron Claw' })
+  })
+
+  it('defaults subtype meta when annotation absent', async () => {
+    const c = await parseCreatureXml(SUB_META_XML)
+    expect(c.subtypes[1].meta).toEqual({ weapon: '' })
+  })
+
+  it('round-trips subtype weapon meta through serialize → parse', async () => {
+    const c = await parseCreatureXml(SUB_META_XML)
+    const xml = serializeCreatureXml(c)
+    // The Iron Claw comment must appear inside the Alpha block, not the Pup
+    const alphaIdx = xml.indexOf('Name="Alpha"')
+    const pupIdx = xml.indexOf('Name="Pup"')
+    const ironClawIdx = xml.indexOf('Iron Claw')
+    expect(alphaIdx).toBeGreaterThan(-1)
+    expect(ironClawIdx).toBeGreaterThan(alphaIdx)
+    expect(ironClawIdx).toBeLessThan(pupIdx)
+    const reparsed = await parseCreatureXml(xml)
+    expect(reparsed.subtypes[0].meta.weapon).toBe('Iron Claw')
+    expect(reparsed.subtypes[1].meta.weapon).toBe('')
+  })
+
+  it('omits subtype creidhne:meta annotation when weapon is empty', async () => {
+    const c = await parseCreatureXml(SUB_META_XML)
+    c.subtypes[0].meta = { weapon: '' }
+    const xml = serializeCreatureXml(c)
+    expect(xml).not.toContain('Iron Claw')
   })
 })
 

@@ -9,7 +9,8 @@ const EMPTY = {
   cookies: [],
   npcJobs: [],
   creatureFamilies: [],
-  motions: []
+  motions: [],
+  weapons: []
 }
 
 export function getConstantsPath(libraryPath) {

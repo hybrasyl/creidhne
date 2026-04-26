@@ -17,6 +17,7 @@ import {
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import EditorHeader from '../shared/EditorHeader'
 import SoundPicker from '../shared/SoundPicker'
+import WeaponPicker from '../shared/WeaponPicker'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -55,7 +56,8 @@ const makeDefaultSubtype = () => ({
   description: '',
   loot: [],
   hostility: { ...DEFAULT_HOSTILITY },
-  cookies: []
+  cookies: [],
+  meta: { weapon: '' }
 })
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
@@ -431,8 +433,8 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     sx={{ flex: 1 }}
                   />
                 </Box>
-                {/* Row 2: Sprite # | Min Damage | Max Damage | Assail Sound */}
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* Row 2: Sprite # | Assail Sound | Weapon (preset + Min/Max) */}
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                   <TextField
                     label="Sprite"
                     type="number"
@@ -444,31 +446,21 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                       htmlInput: { min: 1, max: 9999 }
                     }}
                   />
-                  <TextField
-                    label="Min Damage"
-                    size="small"
-                    sx={{ width: 120 }}
-                    value={data.minDmg}
-                    onChange={(e) => set('minDmg', e.target.value)}
-                    slotProps={{
-                      htmlInput: { maxLength: 32 }
-                    }}
-                  />
-                  <TextField
-                    label="Max Damage"
-                    size="small"
-                    sx={{ width: 120 }}
-                    value={data.maxDmg}
-                    onChange={(e) => set('maxDmg', e.target.value)}
-                    slotProps={{
-                      htmlInput: { maxLength: 32 }
-                    }}
-                  />
                   <SoundPicker
                     label="Assail Sound"
-                    width={120}
+                    width={140}
                     value={data.assailSound}
                     onChange={(val) => set('assailSound', val)}
+                  />
+                  <WeaponPicker
+                    weaponName={data.meta?.weapon || ''}
+                    minDmg={data.minDmg}
+                    maxDmg={data.maxDmg}
+                    onWeaponNameChange={(name) =>
+                      set('meta', { ...(data.meta || {}), weapon: name })
+                    }
+                    onMinDmgChange={(v) => set('minDmg', v)}
+                    onMaxDmgChange={(v) => set('maxDmg', v)}
                   />
                 </Box>
                 {/* Row 3: Description */}
@@ -764,8 +756,8 @@ function CreatureEditor({
                     sx={{ flex: 1 }}
                   />
                 </Box>
-                {/* Row 2: Sprite # | Min Damage | Max Damage | Assail Sound */}
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* Row 2: Sprite # | Assail Sound | Weapon (preset + Min/Max) */}
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                   <TextField
                     label="Sprite"
                     type="number"
@@ -777,31 +769,21 @@ function CreatureEditor({
                       htmlInput: { min: 1, max: 9999 }
                     }}
                   />
-                  <TextField
-                    label="Min Damage"
-                    size="small"
-                    sx={{ width: 120 }}
-                    value={data.minDmg}
-                    onChange={set('minDmg')}
-                    slotProps={{
-                      htmlInput: { maxLength: 32 }
-                    }}
-                  />
-                  <TextField
-                    label="Max Damage"
-                    size="small"
-                    sx={{ width: 120 }}
-                    value={data.maxDmg}
-                    onChange={set('maxDmg')}
-                    slotProps={{
-                      htmlInput: { maxLength: 32 }
-                    }}
-                  />
                   <SoundPicker
                     label="Assail Sound"
-                    width={120}
+                    width={140}
                     value={data.assailSound}
                     onChange={(val) => set('assailSound')({ target: { value: val } })}
+                  />
+                  <WeaponPicker
+                    weaponName={data.meta?.weapon || ''}
+                    minDmg={data.minDmg}
+                    maxDmg={data.maxDmg}
+                    onWeaponNameChange={(name) =>
+                      updateData((d) => ({ ...d, meta: { ...d.meta, weapon: name } }))
+                    }
+                    onMinDmgChange={(v) => updateData((d) => ({ ...d, minDmg: v }))}
+                    onMaxDmgChange={(v) => updateData((d) => ({ ...d, maxDmg: v }))}
                   />
                 </Box>
                 {/* Row 3: Description */}

@@ -40,7 +40,8 @@ const EMPTY_CONSTANTS = {
   npcJobs: [],
   creatureFamilies: [],
   motions: [],
-  spellBooks: []
+  spellBooks: [],
+  weapons: []
 }
 
 // ─── Simple Types Tab ──────────────────────────────────────────────────────────
@@ -1202,6 +1203,159 @@ function MotionsTab({ userConstants, onChange }) {
   );
 }
 
+// ─── Weapons Tab ───────────────────────────────────────────────────────────────
+//
+// Reserved for a future creature rework where weapons may be selectable
+// independently of items. The creature editor's WeaponPicker currently
+// reads from `libraryIndex.itemWeaponDamage` (the persisted index), not
+// from this list — so entries here aren't wired into any editor. Kept in
+// the schema so existing data round-trips and so we don't have to rebuild
+// the UI when the rework lands.
+
+function WeaponsTab({ userConstants, onChange }) {
+  const weapons = userConstants.weapons || []
+  const [newName, setNewName] = useState('')
+  const [newMin, setNewMin] = useState('')
+  const [newMax, setNewMax] = useState('')
+
+  const handleUpdate = (index, field, value) => {
+    const updated = weapons.map((w, i) => (i === index ? { ...w, [field]: value } : w))
+    onChange({ ...userConstants, weapons: updated })
+  }
+
+  const handleDelete = (index) => {
+    onChange({ ...userConstants, weapons: weapons.filter((_, i) => i !== index) })
+  }
+
+  const handleAdd = () => {
+    const name = newName.trim()
+    if (!name) return
+    onChange({
+      ...userConstants,
+      weapons: [...weapons, { name, minDmg: newMin.trim(), maxDmg: newMax.trim() }]
+    })
+    setNewName('')
+    setNewMin('')
+    setNewMax('')
+  }
+
+  return (
+    <Box
+      sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <strong>Not currently wired into any editor.</strong> Reserved for a
+        future creature rework where weapons may be selectable independently
+        of items. The creature editor's weapon picker currently reads damage
+        values from the indexed item set (small-damage column).
+      </Alert>
+      {weapons.length === 0 ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No weapons defined. Add entries below.
+        </Alert>
+      ) : (
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell sx={{ width: 130 }}>Min Damage</TableCell>
+                <TableCell sx={{ width: 130 }}>Max Damage</TableCell>
+                <TableCell sx={{ width: 40 }} padding="none" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {weapons.map((weapon, index) => (
+                <TableRow key={index} hover>
+                  <TableCell>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      variant="standard"
+                      value={weapon.name || ''}
+                      onChange={(e) => handleUpdate(index, 'name', e.target.value)}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      variant="standard"
+                      value={weapon.minDmg ?? ''}
+                      onChange={(e) => handleUpdate(index, 'minDmg', e.target.value)}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      variant="standard"
+                      value={weapon.maxDmg ?? ''}
+                      onChange={(e) => handleUpdate(index, 'maxDmg', e.target.value)}
+                      sx={{
+                        '& .MuiInput-root::before': { borderBottom: 'none' },
+                        '& input': { fontSize: '0.875rem' }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell padding="none">
+                    <IconButton size="small" onClick={() => handleDelete(index)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
+      <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Name..."
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          sx={{ flex: 1, maxWidth: 300 }}
+        />
+        <TextField
+          size="small"
+          placeholder="Min..."
+          value={newMin}
+          onChange={(e) => setNewMin(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          sx={{ width: 100 }}
+        />
+        <TextField
+          size="small"
+          placeholder="Max..."
+          value={newMax}
+          onChange={(e) => setNewMax(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          sx={{ width: 100 }}
+        />
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          disabled={!newName.trim()}
+        >
+          Add
+        </Button>
+      </Box>
+    </Box>
+  )
+}
+
 // ─── Spell Books Tab ───────────────────────────────────────────────────────────
 //
 // A "spell book" is a named collection of castables. Saving the book writes
@@ -1584,6 +1738,7 @@ const TABS = [
   { label: 'Status Categories' },
   { label: 'Cookies' },
   { label: 'Motions' },
+  { label: 'Weapons' },
   { label: 'Spell Books' }
 ]
 
@@ -1649,7 +1804,8 @@ function ConstantsPage() {
           rawIndex.cookieNames,
           (userConstants.cookies || []).map((c) => c.name)
         ),
-        motions: userConstants.motions || []
+        motions: userConstants.motions || [],
+        weapons: userConstants.weapons || []
       })
     },
     [setLibraryIndex, userConstants]
@@ -1672,7 +1828,8 @@ function ConstantsPage() {
           prev.cookieNames,
           (userConstants.cookies || []).map((c) => c.name)
         ),
-        motions: userConstants.motions || []
+        motions: userConstants.motions || [],
+        weapons: userConstants.weapons || []
       }))
       setDirty(false)
       markClean()
@@ -1789,7 +1946,8 @@ function ConstantsPage() {
           />
         )}
         {tab === 8 && <MotionsTab userConstants={userConstants} onChange={handleChange} />}
-        {tab === 9 && (
+        {tab === 9 && <WeaponsTab userConstants={userConstants} onChange={handleChange} />}
+        {tab === 10 && (
           <SpellBooksTab
             spellBooks={userConstants.spellBooks || []}
             onChange={(books) => handleChange({ ...userConstants, spellBooks: books })}

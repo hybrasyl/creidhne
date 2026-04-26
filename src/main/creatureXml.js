@@ -8,19 +8,75 @@ import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
-const CREATURE_META_DEFAULTS = { family: '' }
+const CREATURE_META_DEFAULTS = { family: '', weapon: '' }
 
 function extractCreatureMeta(xmlString) {
-  const raw = extractMeta(xmlString)
-  return { family: raw.family || '' }
+  // Root creature meta always sits between <Creature> and the first nested
+  // <Types> block. Constrain the search so a per-subtype creidhne:meta
+  // comment doesn't accidentally promote into the root meta.
+  const typesIdx = xmlString.search(/<Types?\b/)
+  const head = typesIdx === -1 ? xmlString : xmlString.slice(0, typesIdx)
+  const raw = extractMeta(head)
+  return { family: raw.family || '', weapon: raw.weapon || '' }
 }
 
 function injectCreatureMeta(xml, meta) {
-  if (!meta?.family) return xml
+  if (!meta?.family && !meta?.weapon) return xml
+  const payload = {}
+  if (meta.family) payload.family = meta.family
+  if (meta.weapon) payload.weapon = meta.weapon
   return xml.replace(
     /(<Creature[^>]*>)/,
-    `$1\n  <!-- creidhne:meta ${JSON.stringify({ family: meta.family })} -->`
+    `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`
   )
+}
+
+const SUBTYPE_META_DEFAULTS = { weapon: '' }
+
+// Per-subtype meta lives inside each <Type Name="X">...</Type> block. xml2js
+// strips comments, so we scan the raw XML and build a name→meta map keyed
+// by subtype name (subtype names are required and presumed unique within a
+// creature file).
+function extractSubtypeMetas(xmlString) {
+  const map = {}
+  const blockRe = /<Type\b([^>]*)>([\s\S]*?)<\/Type>/g
+  let m
+  while ((m = blockRe.exec(xmlString))) {
+    const attrs = m[1]
+    const body = m[2]
+    const nameMatch = /Name="([^"]*)"/.exec(attrs)
+    if (!nameMatch) continue
+    const metaMatch = /<!--\s*creidhne:meta\s+({.*?})\s*-->/.exec(body)
+    if (!metaMatch) continue
+    try {
+      map[nameMatch[1]] = { ...SUBTYPE_META_DEFAULTS, ...JSON.parse(metaMatch[1]) }
+    } catch {
+      /* skip malformed */
+    }
+  }
+  return map
+}
+
+// Inject creidhne:meta inside each <Type> block whose corresponding subtype
+// data carries a non-default meta. Handles self-closing tags by promoting
+// them to paired form, since a comment can only live inside element bodies.
+function injectSubtypeMetas(xml, subtypes) {
+  let result = xml
+  for (const sub of subtypes || []) {
+    if (!sub.meta?.weapon) continue
+    const escapedName = sub.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const re = new RegExp(`<Type\\b[^>]*\\bName="${escapedName}"[^>]*?(\\/?)>`)
+    const metaJson = JSON.stringify(sub.meta)
+    result = result.replace(re, (match, slash) => {
+      const metaComment = `<!-- creidhne:meta ${metaJson} -->`
+      if (slash) {
+        const opening = match.replace(/\s*\/\s*>$/, '>')
+        return `${opening}\n      ${metaComment}\n    </Type>`
+      }
+      return `${match}\n      ${metaComment}`
+    })
+  }
+  return result
 }
 
 const first = (arr, def = undefined) => (Array.isArray(arr) && arr.length ? arr[0] : def)
@@ -38,11 +94,12 @@ export function parseCreatureXml(xmlString) {
   return new Promise((resolve, reject) => {
     const comment = extractComment(xmlString)
     const meta = extractCreatureMeta(xmlString)
+    const subtypeMetas = extractSubtypeMetas(xmlString)
 
     xml2js.parseString(xmlString, { trim: true }, (err, result) => {
       if (err) return reject(err)
       try {
-        resolve(mapXmlToCreature(result, comment, meta))
+        resolve(mapXmlToCreature(result, comment, meta, subtypeMetas))
       } catch (e) {
         reject(e)
       }
@@ -92,9 +149,10 @@ function mapCookies(cookiesNode) {
   }))
 }
 
-function mapSubtype(typeNode) {
+function mapSubtype(typeNode, subtypeMetas) {
+  const name = a(typeNode, 'Name', '')
   return {
-    name: a(typeNode, 'Name', ''),
+    name,
     sprite: a(typeNode, 'Sprite', ''),
     behaviorSet: a(typeNode, 'BehaviorSet', ''),
     minDmg: a(typeNode, 'MinDmg', ''),
@@ -103,11 +161,12 @@ function mapSubtype(typeNode) {
     description: first(typeNode.Description, ''),
     loot: mapLoot(first(typeNode.Loot)),
     hostility: mapHostility(first(typeNode.Hostility)),
-    cookies: mapCookies(first(typeNode.SetCookies))
+    cookies: mapCookies(first(typeNode.SetCookies)),
+    meta: subtypeMetas[name] || { ...SUBTYPE_META_DEFAULTS }
   }
 }
 
-function mapXmlToCreature(result, comment, meta) {
+function mapXmlToCreature(result, comment, meta, subtypeMetas) {
   const root = result.Creature
   return {
     name: a(root, 'Name', ''),
@@ -122,7 +181,7 @@ function mapXmlToCreature(result, comment, meta) {
     loot: mapLoot(first(root.Loot)),
     hostility: mapHostility(first(root.Hostility)),
     cookies: mapCookies(first(root.SetCookies)),
-    subtypes: (root.Types?.[0]?.Type || []).map(mapSubtype)
+    subtypes: (root.Types?.[0]?.Type || []).map((t) => mapSubtype(t, subtypeMetas))
   }
 }
 
@@ -139,6 +198,7 @@ export function serializeCreatureXml(creature) {
   let xml = builder.buildObject(buildXmlObject(creature))
   xml = injectComment(xml, creature.comment, 'Creature')
   xml = injectCreatureMeta(xml, creature.meta)
+  xml = injectSubtypeMetas(xml, creature.subtypes)
 
   return xml + '\n'
 }
