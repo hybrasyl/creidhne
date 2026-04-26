@@ -53,19 +53,26 @@ currently produces 7 known failures — see the catalog below.
 
 Branch 4's path-safety pass set up the wiring needed for IPC validation,
 and we considered shipping XSD validation on every `xml:save*` handler.
-Two prerequisites blocked that:
+The remaining blocker:
 
-1. **The XSD-vs-real-data drift catalog below** — wrapping save handlers
-   with strict XSD validation would refuse legitimate user data on 7 of
-   the 14 XML payload types.
-2. **Tier-2 `serializer round-trip` test ([`xsdValidation.test.js`](../src/main/__tests__/xsdValidation.test.js))**
-   is `describe.skip`'d because the first run surfaced 14 real serializer
-   regressions. Even if the XSDs were perfect, our serializers can't
-   round-trip cleanly today.
+- **The XSD-vs-real-data drift catalog below** — wrapping save handlers
+  with strict XSD validation would refuse legitimate user data on 7 of
+  the 14 XML payload types until upstream `hybrasyl/xml` lands the
+  fixes (or we ship a creidhne-local patched XSD set).
 
-Both problems are fixable but live outside this work. Once they're closed,
-flipping XSD validation on at the IPC boundary is a one-helper change —
-the validator is already wired up, just not called.
+The Tier-2 serializer round-trip suite was originally cited as a
+second blocker (the existing `describe.skip` comment in
+[`xsdValidation.test.js`](../src/main/__tests__/xsdValidation.test.js)
+claims "14 real serializer regressions"). A targeted re-run showed
+the actual count was **1, not 14** — `serverconfigs` was reordering
+`<Motd>` to the front of its output. That regression is fixed; see
+[`xsd-validation-tier2-report.md`](xsd-validation-tier2-report.md) for
+the full per-type analysis. Once the upstream XSD drifts close, every
+Tier-2 case becomes a clean round-trip.
+
+Flipping XSD validation on at the IPC boundary is a one-helper change
+when prerequisites clear — the validator is already wired up, just
+not called.
 
 ## Drift catalog (current as of 2026-04-25)
 
