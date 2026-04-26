@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs'
 import { join } from 'path'
+import { assertInside } from './pathSafety.js'
 import { parseCastableXml } from './castableXml'
 import { parseStatusXml } from './statusXml'
 import { parseItemXml } from './itemXml'
@@ -51,16 +52,26 @@ export async function loadReference(libraryPath, type, name) {
 
   const dir = join(libraryPath, type)
 
-  // Filename often matches the identifier — try that first.
-  const guess = join(dir, `${name}.xml`)
+  // Filename often matches the identifier — try that first. assertInside
+  // catches a renderer-supplied `name` like `../escape` that would join out
+  // of the type subdir; on traversal we fall through to the directory scan
+  // (which still constrains entries via fs.readdir to dir).
+  let guess
   try {
-    const raw = await fs.readFile(guess, 'utf-8')
-    const parsed = await cfg.parse(raw)
-    if (valueMatches(parsed, cfg.idField, name)) {
-      return { ok: true, parsed, raw, path: guess }
-    }
+    guess = assertInside(dir, `${name}.xml`)
   } catch {
-    /* fall through to full scan */
+    guess = null
+  }
+  if (guess) {
+    try {
+      const raw = await fs.readFile(guess, 'utf-8')
+      const parsed = await cfg.parse(raw)
+      if (valueMatches(parsed, cfg.idField, name)) {
+        return { ok: true, parsed, raw, path: guess }
+      }
+    } catch {
+      /* fall through to full scan */
+    }
   }
 
   let entries

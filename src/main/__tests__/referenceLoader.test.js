@@ -120,6 +120,29 @@ describe('loadReference: errors', () => {
   })
 })
 
+// ─── Path-traversal guard (Category-B) ───────────────────────────────────────
+
+describe('loadReference: traversal guard on name', () => {
+  it('falls back to scan when name attempts ../ escape', async () => {
+    // The filename-first guess would compose to /escape.xml; assertInside
+    // rejects it, and the scan path takes over as the only avenue. The
+    // scan reads via fs.readdir(dir) — entries returned by the OS, never
+    // the renderer-supplied name — so a traversal can't reach a file
+    // outside the type subdir.
+    mockFs.readdir.mockResolvedValueOnce([{ isFile: () => true, name: 'a.xml' }])
+    mockFs.readFile.mockResolvedValueOnce(castableXml('Something Else'))
+
+    const result = await loadReference('/world', 'castables', '../escape')
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/No Castable named/)
+    // Critical: the readFile for the filename guess MUST NOT have been called
+    // with a path outside /world/castables — only the scan's readFile fires.
+    expect(mockFs.readFile).toHaveBeenCalledTimes(1)
+    const calledPath = mockFs.readFile.mock.calls[0][0]
+    expect(calledPath).toBe(join('/world', 'castables', 'a.xml'))
+  })
+})
+
 // ─── Localization uses locale, not name ──────────────────────────────────────
 
 describe('loadReference: localization id field', () => {
