@@ -68,6 +68,19 @@ const DEFAULT_CAST_MODIFIER = {
 }
 const DEFAULT_OP = { match: '', amount: '0', min: '', max: '' }
 
+// Five flags whose primary toggle lives in another section (Use Effect or
+// Variants). They still appear in the Flags grid for visibility but are
+// rendered read-only there with a tooltip pointing to the real toggle.
+const LINKED_FLAGS = new Set(['Consumable', 'Tailorable', 'Smithable', 'Enchantable', 'Consecratable'])
+const LINKED_FLAG_HINT = {
+  Consumable: 'Toggle in the Use Effect section',
+  Tailorable: 'Toggle in the Variants section',
+  Smithable: 'Toggle in the Variants section',
+  Enchantable: 'Toggle in the Variants section',
+  Consecratable: 'Toggle in the Variants section'
+}
+const VARIANT_FLAGS = ['Tailorable', 'Smithable', 'Enchantable', 'Consecratable']
+
 // ── Collapsible section wrapper ───────────────────────────────────────────────
 function Section({ title, open, onToggle, enabled, onEnable, children }) {
   return (
@@ -148,6 +161,7 @@ function ItemEditor({
   const [openPhysical, setOpenPhysical] = useState(true)
   const [openRestrictions, setOpenRestrictions] = useState(true)
   const [openUse, setOpenUse] = useState(item.properties.use !== null)
+  const [openVariants, setOpenVariants] = useState(true)
   const [openVendor, setOpenVendor] = useState(true)
 
   const isDirtyRef = useRef(false)
@@ -442,7 +456,7 @@ function ItemEditor({
         {/* ── Flags ── */}
         <Section title="Flags" open={openFlags} onToggle={() => setOpenFlags((v) => !v)}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-            {ITEM_FLAGS.map((flag) => (
+            {ITEM_FLAGS.filter((f) => !LINKED_FLAGS.has(f)).map((flag) => (
               <FormControlLabel
                 key={flag}
                 control={
@@ -455,6 +469,24 @@ function ItemEditor({
                 label={<Typography variant="body2">{flag}</Typography>}
                 sx={{ width: '33%', m: 0 }}
               />
+            ))}
+          </Box>
+          <Divider sx={{ my: 1 }} />
+          {/* Linked flags — read-only mirrors of toggles in other sections. */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
+            {ITEM_FLAGS.filter((f) => LINKED_FLAGS.has(f)).map((flag) => (
+              <Box key={flag} sx={{ width: '33%' }}>
+                <Tooltip title={LINKED_FLAG_HINT[flag]} placement="top">
+                  <span>
+                    <FormControlLabel
+                      disabled
+                      control={<Checkbox checked={p.flags.includes(flag)} size="small" />}
+                      label={<Typography variant="body2">{flag}</Typography>}
+                      sx={{ m: 0 }}
+                    />
+                  </span>
+                </Tooltip>
+              </Box>
             ))}
           </Box>
         </Section>
@@ -929,10 +961,70 @@ function ItemEditor({
           enabled={p.use !== null}
           onEnable={enableUse}
         >
+          {/* Consumable lives here so the read-only mirror in Flags has an
+           * obvious source. Independent of the Use Effect enable switch —
+           * a stackable can be flagged Consumable without scripting. */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={p.flags.includes('Consumable')}
+                onChange={() => toggleFlag('Consumable')}
+              />
+            }
+            label="Consumable"
+            sx={{ mb: 1 }}
+          />
           <UseTab
             data={{ use: p.use, motions: p.motions, procs: p.procs }}
             onChange={(updated) => updateProperties(updated)}
           />
+        </Section>
+
+        {/* ── Variants ── */}
+        <Section
+          title="Variants"
+          open={openVariants}
+          onToggle={() => setOpenVariants((v) => !v)}
+        >
+          {/* Linked flag toggles — read-only mirrors live in Flags section. */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 2 }}>
+            {VARIANT_FLAGS.map((flag) => (
+              <FormControlLabel
+                key={flag}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={p.flags.includes(flag)}
+                    onChange={() => toggleFlag(flag)}
+                  />
+                }
+                label={<Typography variant="body2">{flag}</Typography>}
+                sx={{ width: '25%', m: 0 }}
+              />
+            ))}
+          </Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Variant Groups
+          </Typography>
+          {p.variants.groups.map((group, index) => (
+            <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+              <Autocomplete
+                options={variantGroupNames}
+                value={group || null}
+                onChange={(_, val) => setVariantGroup(index, val || '')}
+                size="small"
+                sx={{ flex: 1 }}
+                renderInput={(params) => <TextField {...params} label="Group Name" />}
+              />
+              <IconButton size="small" color="error" onClick={() => removeVariantGroup(index)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          <Button startIcon={<AddIcon />} size="small" onClick={addVariantGroup}>
+            Add Variant Group
+          </Button>
         </Section>
 
         {/* ── Vendor ── */}
@@ -966,31 +1058,6 @@ function ItemEditor({
                 htmlInput: { maxLength: 255 }
               }}
             />
-
-            {/* Variant Groups */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Variant Groups
-              </Typography>
-              {p.variants.groups.map((group, index) => (
-                <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                  <Autocomplete
-                    options={variantGroupNames}
-                    value={group || null}
-                    onChange={(_, val) => setVariantGroup(index, val || '')}
-                    size="small"
-                    sx={{ flex: 1 }}
-                    renderInput={(params) => <TextField {...params} label="Group Name" />}
-                  />
-                  <IconButton size="small" color="error" onClick={() => removeVariantGroup(index)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              ))}
-              <Button startIcon={<AddIcon />} size="small" onClick={addVariantGroup}>
-                Add Variant Group
-              </Button>
-            </Box>
           </Box>
         </Section>
 
