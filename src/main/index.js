@@ -1,5 +1,4 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { spawn } from 'child_process'
 import { join } from 'path'
 import { promises as fs } from 'fs'
 import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
@@ -23,6 +22,7 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
+import { launchCompanion } from './launchCompanion.js'
 import {
   listDir,
   readFile,
@@ -138,16 +138,9 @@ app.whenReady().then(() => {
   ipcMain.handle('dialog:openFile', handleFileOpen)
   ipcMain.handle('dialog:openExeFile', handleExeFileOpen)
   ipcMain.handle('open-directory', handleDirectoryOpen)
-  ipcMain.handle('app:launchCompanion', async (_, exePath) => {
-    if (!exePath) return false
-    try {
-      await fs.access(exePath)
-      spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
-      return true
-    } catch {
-      return false
-    }
-  })
+  ipcMain.handle('app:launchCompanion', (_, exePath) =>
+    launchCompanion(settingsManager, exePath)
+  )
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
