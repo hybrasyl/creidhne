@@ -17,7 +17,7 @@ asarUnpack:
   - resources/**
 win:
   executableName: Creidhne
-  icon: build/icon.ico
+  icon: resources/icon.png
   target:
     - target: portable
       arch:
