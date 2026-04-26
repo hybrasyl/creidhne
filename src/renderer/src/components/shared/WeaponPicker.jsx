@@ -9,17 +9,22 @@ const CUSTOM_OPTION = { name: 'Custom', minDmg: '', maxDmg: '', __custom: true }
 
 /**
  * Composite picker over a min/max damage pair, with optional preset selection
- * from the user's `weapons` constants list.
+ * from the index of weapon items.
+ *
+ * Source: libraryIndex.itemWeaponDamage (built by hybindex-ts when items
+ * are scanned). Each entry has small + large damage values; in-game,
+ * creature MinDmg/MaxDmg corresponds to the SMALL damage column (the
+ * large column's runtime use isn't well-documented). The picker maps
+ * smallMin/smallMax → creature minDmg/maxDmg on selection.
  *
  * Min/max damage are the only values serialized to XML — `weaponName` is
  * a UI hint persisted separately (e.g. as a `<!-- creidhne:meta -->`
  * comment) so the editor remembers which preset was chosen across reloads.
  *
  * Display rule:
- *   - If weaponName matches a list weapon AND the weapon's min/max equal
+ *   - If weaponName matches a list weapon AND its small damage equals
  *     the current min/max → show that weapon
- *   - If weaponName matches but min/max have diverged (user hand-edited
- *     after picking) → show 'Custom'
+ *   - If weaponName matches but min/max have diverged → show 'Custom'
  *   - If weaponName === 'Custom' or is set but unmatched → show 'Custom'
  *   - If weaponName is empty → derive from min/max match against the list
  */
@@ -32,7 +37,21 @@ export default function WeaponPicker({
   onMaxDmgChange
 }) {
   const libraryIndex = useRecoilValue(libraryIndexState)
-  const weapons = libraryIndex.weapons || []
+  const itemWeaponDamage = libraryIndex.itemWeaponDamage || {}
+
+  // Materialise itemWeaponDamage into a list of { name, minDmg, maxDmg }
+  // using only the small-damage column. Sorted by name for predictable UX.
+  const weapons = useMemo(
+    () =>
+      Object.entries(itemWeaponDamage)
+        .map(([name, d]) => ({
+          name,
+          minDmg: String(d.smallMin ?? ''),
+          maxDmg: String(d.smallMax ?? '')
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [itemWeaponDamage]
+  )
 
   const options = useMemo(() => [...weapons, CUSTOM_OPTION], [weapons])
 

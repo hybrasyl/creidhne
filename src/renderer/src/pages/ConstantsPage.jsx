@@ -1205,10 +1205,12 @@ function MotionsTab({ userConstants, onChange }) {
 
 // ─── Weapons Tab ───────────────────────────────────────────────────────────────
 //
-// Weapon presets used by the creature editor. A weapon entry is a name plus
-// min/max damage values; selecting one in the creature editor prepopulates
-// the creature's Min/Max Damage fields. Only the damage values are saved
-// to XML — the weapon name is a UI hint, not persisted on the creature.
+// Reserved for a future creature rework where weapons may be selectable
+// independently of items. The creature editor's WeaponPicker currently
+// reads from `libraryIndex.itemWeaponDamage` (the persisted index), not
+// from this list — so entries here aren't wired into any editor. Kept in
+// the schema so existing data round-trips and so we don't have to rebuild
+// the UI when the rework lands.
 
 function WeaponsTab({ userConstants, onChange }) {
   const weapons = userConstants.weapons || []
@@ -1241,13 +1243,12 @@ function WeaponsTab({ userConstants, onChange }) {
     <Box
       sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Weapon presets used by the creature editor. Picking a weapon prepopulates
-          Min/Max Damage; only the damage values are saved to XML, so the weapon
-          name and Min/Max here are author-facing references.
-        </Typography>
-      </Box>
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <strong>Not currently wired into any editor.</strong> Reserved for a
+        future creature rework where weapons may be selectable independently
+        of items. The creature editor's weapon picker currently reads damage
+        values from the indexed item set (small-damage column).
+      </Alert>
       {weapons.length === 0 ? (
         <Alert severity="info" sx={{ mb: 2 }}>
           No weapons defined. Add entries below.
