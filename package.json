@@ -1,6 +1,6 @@
 {
   "name": "Creidhne",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A bespoke XML editor for dreaming Hybrasyl worlds into reality",
   "main": "./out/main/index.js",
   "author": "Sabrael (http://www.github.com/Caeldeth)",
