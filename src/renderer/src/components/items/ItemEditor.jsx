@@ -47,6 +47,7 @@ import {
   WEAPON_TYPES,
   ITEM_FLAGS
 } from '../../data/itemConstants'
+import { categoriesFor } from '../../data/khanData'
 
 const DEFAULT_EQUIPMENT = { slot: 'None', weaponType: 'None' }
 const DEFAULT_DAMAGE = { smallMin: '0', smallMax: '0', largeMin: '0', largeMax: '0' }
@@ -218,8 +219,25 @@ function ItemEditor({
 
   if (saveRef) saveRef.current = () => onSave(data, fileName)
 
-  const enableEquipment = (checked) =>
-    updateProperties({ equipment: checked ? { ...DEFAULT_EQUIPMENT } : null })
+  // Slot drives the existence of the equipment block. "None" → no equipment
+  // in XML; anything else creates / updates the block. Replaces the explicit
+  // Equipment toggle Switch — the dropdown's None option carries the same
+  // semantic, so the toggle was redundant.
+  const handleSlotChange = (e) => {
+    const newSlot = e.target.value
+    if (newSlot === 'None') {
+      updateProperties({ equipment: null })
+    } else {
+      updateProperties({
+        equipment: { ...DEFAULT_EQUIPMENT, ...(p.equipment || {}), slot: newSlot }
+      })
+    }
+  }
+
+  const handleWeaponTypeChange = (e) => {
+    if (!p.equipment) return
+    updateProperties({ equipment: { ...p.equipment, weaponType: e.target.value } })
+  }
 
   const enableDamage = (checked) =>
     updateProperties({ damage: checked ? { ...DEFAULT_DAMAGE } : null })
@@ -473,88 +491,122 @@ function ItemEditor({
           open={openAppearance}
           onToggle={() => setOpenAppearance((v) => !v)}
         >
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <ItemSpritePicker
-              value={p.appearance.sprite}
-              onChange={(val) => setPropField('appearance', 'sprite')({ target: { value: val } })}
-              required
-              helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
-            />
-            <ItemSpritePicker
-              label="Equip Sprite"
-              value={p.appearance.equipSprite}
-              onChange={(val) =>
-                setPropField('appearance', 'equipSprite')({ target: { value: val } })
-              }
-              helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
-            />
-            <DisplaySpritePicker
-              slot={p.equipment?.slot}
-              value={p.appearance.displaySprite}
-              onChange={(val) =>
-                setPropField('appearance', 'displaySprite')({ target: { value: val } })
-              }
-              helpTooltip="Overlay applied to the character model. Only used for Weapon, Armor, Shield, Helmet, Foot, Trousers, Coat, SecondAcc, and ThirdAcc slots."
-            />
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>Body Style</InputLabel>
-              <Select
-                value={p.appearance.bodyStyle}
-                label="Body Style"
-                onChange={setPropField('appearance', 'bodyStyle')}
-              >
-                {ITEM_BODY_STYLES.map((s) => (
-                  <MenuItem key={s || '__blank'} value={s}>
-                    {s || '(none)'}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Color</InputLabel>
-              <Select
-                value={p.appearance.color}
-                label="Color"
-                onChange={setPropField('appearance', 'color')}
-                renderValue={(val) => (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{val || '(none)'}</span>
-                    {colorSwatches && val && <ColorSwatch colors={colorSwatches.get(val)} />}
-                  </Box>
-                )}
-              >
-                {ITEM_COLORS.map((c) => (
-                  <MenuItem key={c || '__blank'} value={c}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-                      <span>{c || '(none)'}</span>
-                      {colorSwatches && c && (
-                        <Box sx={{ ml: 'auto' }}>
-                          <ColorSwatch colors={colorSwatches.get(c)} />
-                        </Box>
-                      )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Row 1 — sprites + cosmetic options */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <ItemSpritePicker
+                value={p.appearance.sprite}
+                onChange={(val) => setPropField('appearance', 'sprite')({ target: { value: val } })}
+                required
+                helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
+              />
+              <ItemSpritePicker
+                label="Equip Sprite"
+                value={p.appearance.equipSprite}
+                onChange={(val) =>
+                  setPropField('appearance', 'equipSprite')({ target: { value: val } })
+                }
+                helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
+              />
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Body Style</InputLabel>
+                <Select
+                  value={p.appearance.bodyStyle}
+                  label="Body Style"
+                  onChange={setPropField('appearance', 'bodyStyle')}
+                >
+                  {ITEM_BODY_STYLES.map((s) => (
+                    <MenuItem key={s || '__blank'} value={s}>
+                      {s || '(none)'}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Color</InputLabel>
+                <Select
+                  value={p.appearance.color}
+                  label="Color"
+                  onChange={setPropField('appearance', 'color')}
+                  renderValue={(val) => (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span>{val || '(none)'}</span>
+                      {colorSwatches && val && <ColorSwatch colors={colorSwatches.get(val)} />}
                     </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={p.appearance.hideBoots}
-                  onChange={(e) =>
-                    updateData((d) => ({
-                      ...d,
-                      properties: {
-                        ...d.properties,
-                        appearance: { ...d.properties.appearance, hideBoots: e.target.checked }
-                      }
-                    }))
+                  )}
+                >
+                  {ITEM_COLORS.map((c) => (
+                    <MenuItem key={c || '__blank'} value={c}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                        <span>{c || '(none)'}</span>
+                        {colorSwatches && c && (
+                          <Box sx={{ ml: 'auto' }}>
+                            <ColorSwatch colors={colorSwatches.get(c)} />
+                          </Box>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={p.appearance.hideBoots}
+                    onChange={(e) =>
+                      updateData((d) => ({
+                        ...d,
+                        properties: {
+                          ...d.properties,
+                          appearance: { ...d.properties.appearance, hideBoots: e.target.checked }
+                        }
+                      }))
+                    }
+                  />
+                }
+                label="Hide Boots"
+              />
+            </Box>
+            {/* Row 2 — equipment slot + slot-dependent fields */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Slot</InputLabel>
+                <Select value={p.equipment?.slot ?? 'None'} label="Slot" onChange={handleSlotChange}>
+                  {EQUIPMENT_SLOTS.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {p.equipment?.slot === 'Weapon' && (
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Weapon Type</InputLabel>
+                  <Select
+                    value={p.equipment.weaponType}
+                    label="Weapon Type"
+                    onChange={handleWeaponTypeChange}
+                  >
+                    {WEAPON_TYPES.map((t) => (
+                      <MenuItem key={t} value={t}>
+                        {t}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              {categoriesFor(p.equipment?.slot).length > 0 && (
+                <DisplaySpritePicker
+                  slot={p.equipment.slot}
+                  value={p.appearance.displaySprite}
+                  onChange={(val) =>
+                    setPropField('appearance', 'displaySprite')({ target: { value: val } })
                   }
+                  helpTooltip="Overlay applied to the character model on equip."
                 />
-              }
-              label="Hide Boots"
-            />
+              )}
+            </Box>
           </Box>
         </Section>
 
@@ -615,54 +667,6 @@ function ItemEditor({
                 Suggested sell price: {Math.round(Number(p.physical.value) / 5)} gold
               </Typography>
             ) : null}
-
-            {/* Equipment sub-paper */}
-            <Paper variant="outlined" sx={{ p: 1.5 }}>
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', mb: p.equipment !== null ? 1.5 : 0 }}
-              >
-                <Typography variant="body2" sx={{ flex: 1 }}>
-                  Equipment
-                </Typography>
-                <Switch
-                  size="small"
-                  checked={p.equipment !== null}
-                  onChange={(e) => enableEquipment(e.target.checked)}
-                />
-              </Box>
-              {p.equipment !== null && (
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <FormControl size="small" sx={{ minWidth: 160 }}>
-                    <InputLabel>Slot</InputLabel>
-                    <Select
-                      value={p.equipment.slot}
-                      label="Slot"
-                      onChange={setPropField('equipment', 'slot')}
-                    >
-                      {EQUIPMENT_SLOTS.map((s) => (
-                        <MenuItem key={s} value={s}>
-                          {s}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <InputLabel>Weapon Type</InputLabel>
-                    <Select
-                      value={p.equipment.weaponType}
-                      label="Weapon Type"
-                      onChange={setPropField('equipment', 'weaponType')}
-                    >
-                      {WEAPON_TYPES.map((t) => (
-                        <MenuItem key={t} value={t}>
-                          {t}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
-            </Paper>
 
             {/* Stat Modifiers — only when equipment enabled and slot != None */}
             {p.equipment !== null && p.equipment.slot !== 'None' && (

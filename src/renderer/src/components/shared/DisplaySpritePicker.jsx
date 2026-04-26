@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, TextField, IconButton, Tooltip, Typography } from '@mui/material'
+import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
 import { useRecoilValue } from 'recoil'
@@ -12,9 +12,11 @@ const PREVIEW_SIZE = 72
 
 /**
  * Composite picker for an item's displaySprite field. Shows male + female
- * previews side-by-side (items are generally consistent across gender),
- * plus the number field and a grid browse button scoped to the slot's
- * category letter.
+ * previews side-by-side, plus the number field and a grid browse button
+ * scoped to the slot's category letter.
+ *
+ * Caller is expected to gate rendering on `categoriesFor(slot).length > 0`
+ * — this component assumes the slot has a valid khan category mapping.
  *
  * Props:
  *   slot            — equipment slot name (e.g. 'Armor'); determines category
@@ -37,48 +39,20 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-      {mapped ? (
-        <>
-          <DisplaySpriteCanvas
-            category={category}
-            gender="M"
-            displaySprite={value}
-            size={PREVIEW_SIZE}
-            label="Male"
-          />
-          <DisplaySpriteCanvas
-            category={category}
-            gender="W"
-            displaySprite={value}
-            size={PREVIEW_SIZE}
-            label="Female"
-          />
-        </>
-      ) : (
-        <Box
-          sx={{
-            width: PREVIEW_SIZE * 2 + 16,
-            height: PREVIEW_SIZE,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            bgcolor: 'action.hover',
-            px: 1
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              color: "text.secondary",
-              textAlign: 'center'
-            }}>
-            Pick a valid equipment slot
-          </Typography>
-        </Box>
-      )}
+      <DisplaySpriteCanvas
+        category={category}
+        gender="M"
+        displaySprite={value}
+        size={PREVIEW_SIZE}
+        label="Male"
+      />
+      <DisplaySpriteCanvas
+        category={category}
+        gender="W"
+        displaySprite={value}
+        size={PREVIEW_SIZE}
+        label="Female"
+      />
       <TextField
         label="Display Sprite"
         size="small"
@@ -94,13 +68,11 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         title={
           !clientPath
             ? 'Set Dark Ages client path in Settings to browse display sprites'
-            : !mapped
-              ? 'This equipment slot is not yet mapped to a khan category'
-              : 'Browse display sprites for this slot'
+            : 'Browse display sprites for this slot'
         }
       >
         <span>
-          <IconButton size="small" onClick={() => setOpen(true)} disabled={!clientPath || !mapped}>
+          <IconButton size="small" onClick={() => setOpen(true)} disabled={!clientPath}>
             <GridViewIcon fontSize="small" />
           </IconButton>
         </span>
