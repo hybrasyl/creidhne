@@ -14,7 +14,9 @@ import {
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import ElementTableEditor from '../components/elementTables/ElementTableEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 
 const SUBDIR = 'elementtables'
@@ -149,50 +151,28 @@ function ElementsPage() {
     }
   }
 
-  const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message: 'An archived element table with this name already exists.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingTable(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
-
-  const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message:
-          'An active element table with this name already exists. Rename the archived file before unarchiving.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingTable(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
+  const {
+    selectionCount,
+    onSelectionChange,
+    handleArchive,
+    handleUnarchive,
+    handleBulkArchive,
+    handleBulkUnarchive,
+    handleBulkDelete,
+    handleDuplicate
+  } = useBulkFileActions({
+    activeLibrary,
+    subdir: SUBDIR,
+    ignoreSubdir: IGNORE_SUBDIR,
+    selectedFile,
+    setSelectedFile,
+    clearEditing: () => setEditingTable(null),
+    setLibraryIndex,
+    loadActiveFiles,
+    loadArchivedFiles,
+    setSnackbar,
+    markClean
+  })
 
   const handleDirtyChange = useCallback(
     (dirty) => {
@@ -215,8 +195,22 @@ function ElementsPage() {
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
+        onArchive={handleBulkArchive}
+        onUnarchive={handleBulkUnarchive}
+        onDelete={handleBulkDelete}
+        onDuplicate={handleDuplicate}
+        onSelectionChange={onSelectionChange}
       />
-      <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load element table:</strong> {loadError}
@@ -250,6 +244,7 @@ function ElementsPage() {
             </Typography>
           </Box>
         )}
+        <MultiSelectOverlay count={selectionCount} />
       </Box>
       <UnsavedChangesDialog
         open={dialogOpen}

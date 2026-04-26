@@ -14,7 +14,9 @@ import {
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import NationEditor from '../components/nations/NationEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 
 const NATIONS_SUBDIR = 'nations'
@@ -156,50 +158,28 @@ function NationsPage() {
     }
   }
 
-  const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message: 'An archived nation with this name already exists.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingNation(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, NATIONS_SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
-
-  const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${NATIONS_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message:
-          'An active nation with this name already exists. Rename the archived nation before unarchiving.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingNation(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, NATIONS_SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
+  const {
+    selectionCount,
+    onSelectionChange,
+    handleArchive,
+    handleUnarchive,
+    handleBulkArchive,
+    handleBulkUnarchive,
+    handleBulkDelete,
+    handleDuplicate
+  } = useBulkFileActions({
+    activeLibrary,
+    subdir: NATIONS_SUBDIR,
+    ignoreSubdir: IGNORE_SUBDIR,
+    selectedFile,
+    setSelectedFile,
+    clearEditing: () => setEditingNation(null),
+    setLibraryIndex,
+    loadActiveFiles,
+    loadArchivedFiles,
+    setSnackbar,
+    markClean
+  })
 
   const handleDirtyChange = useCallback(
     (dirty) => {
@@ -222,8 +202,22 @@ function NationsPage() {
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
+        onArchive={handleBulkArchive}
+        onUnarchive={handleBulkUnarchive}
+        onDelete={handleBulkDelete}
+        onDuplicate={handleDuplicate}
+        onSelectionChange={onSelectionChange}
       />
-      <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load nation:</strong> {loadError}
@@ -257,6 +251,7 @@ function NationsPage() {
             </Typography>
           </Box>
         )}
+        <MultiSelectOverlay count={selectionCount} />
       </Box>
       <Snackbar
         open={!!snackbar}

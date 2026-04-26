@@ -105,3 +105,67 @@ export async function archiveFile(src, archiveDir) {
   await fs.rename(src, dest)
   return { success: true, archivedAs: dest.split(/[\\/]/).pop() }
 }
+
+// Bulk wrappers — settle each independently so a single failure doesn't
+// strand the rest of the batch. Caller renders ok/failed counts to the user.
+
+export async function archiveFiles(srcs, archiveDir) {
+  const ok = []
+  const failed = []
+  for (const src of srcs) {
+    try {
+      const r = await archiveFile(src, archiveDir)
+      ok.push({ src, archivedAs: r.archivedAs })
+    } catch (err) {
+      failed.push({ src, reason: err?.message || 'archive failed' })
+    }
+  }
+  return { ok, failed }
+}
+
+// Copy a file in place under a "_copy" / "_copy_2" / ... filename. Returns
+// the destination basename so the renderer can snackbar it. The duplicate
+// is a byte-for-byte copy — the inner <Name>/<Locale>/etc. is left
+// unchanged. The user is expected to rename in the editor; the existing
+// dup-name guard catches the collision on first save.
+export async function duplicateFile(src) {
+  const baseName = src.split(/[\\/]/).pop()
+  const dir = src.slice(0, src.length - baseName.length - 1)
+  const ext = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
+  const stem = ext ? baseName.slice(0, -ext.length) : baseName
+  // Collision-avoid: try `${stem}_copy${ext}`, then `${stem}_copy_2${ext}`, ...
+  let candidate = `${stem}_copy${ext}`
+  let counter = 2
+  while (true) {
+    const dest = join(dir, candidate)
+    try {
+      await fs.access(dest)
+      candidate = `${stem}_copy_${counter}${ext}`
+      counter++
+    } catch {
+      const content = await fs.readFile(src)
+      await fs.writeFile(dest, content)
+      return { success: true, duplicateAs: candidate, dest }
+    }
+  }
+}
+
+export async function unarchiveFiles(srcs, destDir) {
+  const ok = []
+  const failed = []
+  for (const src of srcs) {
+    const baseName = src.split(/[\\/]/).pop()
+    const dest = join(destDir, baseName)
+    try {
+      const r = await moveFile(src, dest)
+      if (r?.conflict) {
+        failed.push({ src, reason: 'conflict' })
+      } else {
+        ok.push({ src, dest })
+      }
+    } catch (err) {
+      failed.push({ src, reason: err?.message || 'unarchive failed' })
+    }
+  }
+  return { ok, failed }
+}

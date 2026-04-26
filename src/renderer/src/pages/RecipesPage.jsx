@@ -14,7 +14,9 @@ import {
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import RecipeEditor from '../components/recipes/RecipeEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 
 const RECIPES_SUBDIR = 'recipes'
@@ -153,50 +155,28 @@ function RecipesPage() {
     }
   }
 
-  const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message: 'An archived recipe with this name already exists.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingRecipe(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, RECIPES_SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
-
-  const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${RECIPES_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message:
-          'An active recipe with this name already exists. Rename the archived recipe before unarchiving.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingRecipe(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, RECIPES_SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
+  const {
+    selectionCount,
+    onSelectionChange,
+    handleArchive,
+    handleUnarchive,
+    handleBulkArchive,
+    handleBulkUnarchive,
+    handleBulkDelete,
+    handleDuplicate
+  } = useBulkFileActions({
+    activeLibrary,
+    subdir: RECIPES_SUBDIR,
+    ignoreSubdir: IGNORE_SUBDIR,
+    selectedFile,
+    setSelectedFile,
+    clearEditing: () => setEditingRecipe(null),
+    setLibraryIndex,
+    loadActiveFiles,
+    loadArchivedFiles,
+    setSnackbar,
+    markClean
+  })
 
   const handleDirtyChange = useCallback(
     (dirty) => {
@@ -219,8 +199,22 @@ function RecipesPage() {
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
+        onArchive={handleBulkArchive}
+        onUnarchive={handleBulkUnarchive}
+        onDelete={handleBulkDelete}
+        onDuplicate={handleDuplicate}
+        onSelectionChange={onSelectionChange}
       />
-      <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load recipe:</strong> {loadError}
@@ -254,6 +248,7 @@ function RecipesPage() {
             </Typography>
           </Box>
         )}
+        <MultiSelectOverlay count={selectionCount} />
       </Box>
       <Snackbar
         open={!!snackbar}

@@ -14,7 +14,9 @@ import {
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import CastableEditor from '../components/castables/CastableEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import { DEFAULT_CASTABLE, derivePrefix, computeCastableFilename } from '../data/castableConstants'
 
@@ -165,49 +167,28 @@ function CastablesPage() {
     }
   }
 
-  const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message: 'An archived castable with this name already exists.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingCastable(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
-
-  const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message: 'An active castable with this name already exists. Rename before unarchiving.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingCastable(null)
-    await loadActiveFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-    const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
-    setLibraryIndex((prev) => ({ ...prev, ...section }))
-  }
+  const {
+    selectionCount,
+    onSelectionChange,
+    handleArchive,
+    handleUnarchive,
+    handleBulkArchive,
+    handleBulkUnarchive,
+    handleBulkDelete,
+    handleDuplicate
+  } = useBulkFileActions({
+    activeLibrary,
+    subdir: SUBDIR,
+    ignoreSubdir: IGNORE_SUBDIR,
+    selectedFile,
+    setSelectedFile,
+    clearEditing: () => setEditingCastable(null),
+    setLibraryIndex,
+    loadActiveFiles,
+    loadArchivedFiles,
+    setSnackbar,
+    markClean
+  })
 
   const handleDirtyChange = useCallback(
     (dirty) => {
@@ -230,8 +211,22 @@ function CastablesPage() {
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
+        onArchive={handleBulkArchive}
+        onUnarchive={handleBulkUnarchive}
+        onDelete={handleBulkDelete}
+        onDuplicate={handleDuplicate}
+        onSelectionChange={onSelectionChange}
       />
-      <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load castable:</strong> {loadError}
@@ -265,6 +260,7 @@ function CastablesPage() {
             </Typography>
           </Box>
         )}
+        <MultiSelectOverlay count={selectionCount} />
       </Box>
       <UnsavedChangesDialog
         open={dialogOpen}

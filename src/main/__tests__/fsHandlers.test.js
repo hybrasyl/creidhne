@@ -18,6 +18,9 @@ const {
   writeFile,
   moveFile,
   archiveFile,
+  archiveFiles,
+  unarchiveFiles,
+  duplicateFile,
   readBinaryFile,
   checkClientPath,
   KNOWN_DAT_FILES
@@ -209,5 +212,114 @@ describe('archiveFile', () => {
     mockFs.access.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('ENOENT'))
     const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
     expect(result.archivedAs).toMatch(/\.xml$/)
+  })
+})
+
+// ─── archiveFiles (bulk) ─────────────────────────────────────────────────────
+
+describe('archiveFiles', () => {
+  it('archives every src and aggregates ok results', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT')) // every dest free
+    const result = await archiveFiles(
+      ['/world/items/a.xml', '/world/items/b.xml'],
+      '/world/_archive'
+    )
+    expect(result.failed).toEqual([])
+    expect(result.ok).toEqual([
+      { src: '/world/items/a.xml', archivedAs: 'a.xml' },
+      { src: '/world/items/b.xml', archivedAs: 'b.xml' }
+    ])
+    expect(mockFs.rename).toHaveBeenCalledTimes(2)
+  })
+
+  it('records failure without aborting the rest of the batch', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    mockFs.rename
+      .mockRejectedValueOnce(new Error('boom on first'))
+      .mockResolvedValueOnce(undefined)
+    const result = await archiveFiles(
+      ['/world/items/a.xml', '/world/items/b.xml'],
+      '/world/_archive'
+    )
+    expect(result.ok).toEqual([{ src: '/world/items/b.xml', archivedAs: 'b.xml' }])
+    expect(result.failed).toEqual([{ src: '/world/items/a.xml', reason: 'boom on first' }])
+  })
+
+  it('handles empty src list as no-op', async () => {
+    const result = await archiveFiles([], '/world/_archive')
+    expect(result).toEqual({ ok: [], failed: [] })
+    expect(mockFs.rename).not.toHaveBeenCalled()
+  })
+})
+
+// ─── unarchiveFiles (bulk) ───────────────────────────────────────────────────
+
+describe('unarchiveFiles', () => {
+  it('moves each src back to destDir using its basename', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT')) // every dest free
+    const result = await unarchiveFiles(
+      ['/world/_archive/a.xml', '/world/_archive/b.xml'],
+      '/world/items'
+    )
+    expect(result.failed).toEqual([])
+    expect(result.ok).toEqual([
+      { src: '/world/_archive/a.xml', dest: join('/world/items', 'a.xml') },
+      { src: '/world/_archive/b.xml', dest: join('/world/items', 'b.xml') }
+    ])
+  })
+
+  it('records conflict without overwriting', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // a.xml dest exists → conflict
+      .mockRejectedValueOnce(new Error('ENOENT')) // b.xml dest free
+    const result = await unarchiveFiles(
+      ['/world/_archive/a.xml', '/world/_archive/b.xml'],
+      '/world/items'
+    )
+    expect(result.failed).toEqual([{ src: '/world/_archive/a.xml', reason: 'conflict' }])
+    expect(result.ok).toEqual([
+      { src: '/world/_archive/b.xml', dest: join('/world/items', 'b.xml') }
+    ])
+  })
+
+  it('handles empty src list as no-op', async () => {
+    const result = await unarchiveFiles([], '/world/items')
+    expect(result).toEqual({ ok: [], failed: [] })
+  })
+})
+
+// ─── duplicateFile ───────────────────────────────────────────────────────────
+
+describe('duplicateFile', () => {
+  it('writes a "_copy" sibling when no collision', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    mockFs.readFile.mockResolvedValueOnce('<Item />')
+    const result = await duplicateFile('/world/items/sword.xml')
+    expect(mockFs.writeFile).toHaveBeenCalledWith(
+      join('/world/items', 'sword_copy.xml'),
+      '<Item />'
+    )
+    expect(result).toEqual({
+      success: true,
+      duplicateAs: 'sword_copy.xml',
+      dest: join('/world/items', 'sword_copy.xml')
+    })
+  })
+
+  it('appends incrementing counter on collision', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // sword_copy.xml exists
+      .mockResolvedValueOnce(undefined) // sword_copy_2.xml exists
+      .mockRejectedValueOnce(new Error('ENOENT')) // sword_copy_3.xml is free
+    mockFs.readFile.mockResolvedValueOnce('<Item />')
+    const result = await duplicateFile('/world/items/sword.xml')
+    expect(result.duplicateAs).toBe('sword_copy_3.xml')
+  })
+
+  it('preserves .xml extension', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    mockFs.readFile.mockResolvedValueOnce('<X/>')
+    const result = await duplicateFile('/world/items/blade.xml')
+    expect(result.duplicateAs).toMatch(/\.xml$/)
   })
 })

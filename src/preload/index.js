@@ -64,6 +64,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('xml:saveServerConfig', filePath, cfgData),
   moveFile: (src, dest) => ipcRenderer.invoke('fs:moveFile', src, dest),
   archiveFile: (src, archiveDir) => ipcRenderer.invoke('fs:archiveFile', src, archiveDir),
+  archiveFiles: (srcs, archiveDir) => ipcRenderer.invoke('fs:archiveFiles', srcs, archiveDir),
+  unarchiveFiles: (srcs, destDir) => ipcRenderer.invoke('fs:unarchiveFiles', srcs, destDir),
+  trashFiles: (srcs) => ipcRenderer.invoke('fs:trashFiles', srcs),
+  duplicateFile: (src) => ipcRenderer.invoke('fs:duplicateFile', src),
   buildIndex: (libraryPath) => ipcRenderer.invoke('index:build', libraryPath),
   buildIndexSection: (libraryPath, section) =>
     ipcRenderer.invoke('index:buildSection', libraryPath, section),

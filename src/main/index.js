@@ -38,6 +38,9 @@ import {
   writeFile,
   moveFile,
   archiveFile,
+  archiveFiles,
+  unarchiveFiles,
+  duplicateFile,
   readBinaryFile,
   checkClientPath
 } from './fsHandlers'
@@ -340,6 +343,42 @@ app.whenReady().then(async () => {
   ipcMain.handle('fs:archiveFile', (_, src, archiveDir) =>
     archiveFile(validatePath(src), validatePath(archiveDir))
   )
+
+  // Bulk file ops — accept arrays of paths so the renderer can dispatch a
+  // multiselect action in one round-trip. Each result returns
+  // { ok: [...], failed: [{ src, reason }] } so the UI can report partial
+  // success without bailing the whole batch on a single failure.
+  ipcMain.handle('fs:archiveFiles', (_, srcs, archiveDir) => {
+    const validatedArchiveDir = validatePath(archiveDir)
+    const validatedSrcs = (srcs || []).map((s) => validatePath(s))
+    return archiveFiles(validatedSrcs, validatedArchiveDir)
+  })
+
+  ipcMain.handle('fs:duplicateFile', (_, src) => duplicateFile(validatePath(src)))
+
+  ipcMain.handle('fs:unarchiveFiles', (_, srcs, destDir) => {
+    const validatedDest = validatePath(destDir)
+    const validatedSrcs = (srcs || []).map((s) => validatePath(s))
+    return unarchiveFiles(validatedSrcs, validatedDest)
+  })
+
+  // shell.trashItem moves to the OS recycle bin (Windows Recycle Bin /
+  // macOS Trash / Linux trash equivalent). OS-level undo is the user's
+  // safety net — no in-app staging area.
+  ipcMain.handle('fs:trashFiles', async (_, srcs) => {
+    const ok = []
+    const failed = []
+    for (const src of srcs || []) {
+      try {
+        const validated = validatePath(src)
+        await shell.trashItem(validated)
+        ok.push({ src })
+      } catch (err) {
+        failed.push({ src, reason: err?.message || 'trash failed' })
+      }
+    }
+    return { ok, failed }
+  })
 
   // Handling settings load and save
   ipcMain.handle('settings:load', () => settingsManager.load())

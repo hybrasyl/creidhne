@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useRecoilValue } from 'recoil'
+import { useRecoilValue, useRecoilState } from 'recoil'
 import {
   Box,
   Typography,
@@ -13,7 +13,9 @@ import {
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
+import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 
 const SUBDIR = 'serverconfigs'
@@ -65,7 +67,7 @@ export const DEFAULT_SERVERCONFIG = {
 
 function ServerConfigPage() {
   const activeLibrary = useRecoilValue(activeLibraryState)
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
   const namesByFilename = libraryIndex?.serverconfigsNamesByFilename
   const [files, setFiles] = useState([])
   const [archivedFiles, setArchivedFiles] = useState([])
@@ -178,46 +180,28 @@ function ServerConfigPage() {
     }
   }
 
-  const handleArchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${IGNORE_SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message: 'An archived config with this name already exists.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingConfig(null)
-    await loadFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-  }
-
-  const handleUnarchive = async () => {
-    if (!selectedFile || !activeLibrary) return
-    const result = await window.electronAPI.moveFile(
-      selectedFile.path,
-      `${activeLibrary}/${SUBDIR}/${selectedFile.name}`
-    )
-    if (result?.conflict) {
-      setSnackbar({
-        message:
-          'An active config with this name already exists. Rename the archived file before unarchiving.',
-        severity: 'error'
-      })
-      return
-    }
-    markClean()
-    setSelectedFile(null)
-    setEditingConfig(null)
-    await loadFiles(activeLibrary)
-    await loadArchivedFiles(activeLibrary)
-  }
+  const {
+    selectionCount,
+    onSelectionChange,
+    handleArchive,
+    handleUnarchive,
+    handleBulkArchive,
+    handleBulkUnarchive,
+    handleBulkDelete,
+    handleDuplicate
+  } = useBulkFileActions({
+    activeLibrary,
+    subdir: SUBDIR,
+    ignoreSubdir: IGNORE_SUBDIR,
+    selectedFile,
+    setSelectedFile,
+    clearEditing: () => setEditingConfig(null),
+    setLibraryIndex,
+    loadActiveFiles: loadFiles,
+    loadArchivedFiles,
+    setSnackbar,
+    markClean
+  })
 
   const handleDirtyChange = useCallback(
     (dirty) => {
@@ -240,8 +224,22 @@ function ServerConfigPage() {
         onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
+        onArchive={handleBulkArchive}
+        onUnarchive={handleBulkUnarchive}
+        onDelete={handleBulkDelete}
+        onDuplicate={handleDuplicate}
+        onSelectionChange={onSelectionChange}
       />
-      <Box sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: 2,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+      >
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load server config:</strong> {loadError}
@@ -269,6 +267,7 @@ function ServerConfigPage() {
             </Typography>
           </Box>
         )}
+        <MultiSelectOverlay count={selectionCount} />
       </Box>
       <UnsavedChangesDialog
         open={dialogOpen}
