@@ -127,7 +127,8 @@ function RestrictionsTab({ data, onChange }) {
           sx={{ width: 110 }}
           onChange={setSubField('level', 'min')}
           slotProps={{
-            htmlInput: { min: 1, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <TextField
@@ -139,7 +140,8 @@ function RestrictionsTab({ data, onChange }) {
           sx={{ width: 110 }}
           onChange={setSubField('level', 'max')}
           slotProps={{
-            htmlInput: { min: 1, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <TextField
@@ -151,7 +153,8 @@ function RestrictionsTab({ data, onChange }) {
           sx={{ width: 100 }}
           onChange={setAbField('min')}
           slotProps={{
-            htmlInput: { min: 1, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <TextField
@@ -163,20 +166,13 @@ function RestrictionsTab({ data, onChange }) {
           sx={{ width: 100 }}
           onChange={setAbField('max')}
           slotProps={{
-            htmlInput: { min: 1, max: 99 }
+            htmlInput: { min: 1, max: 99 },
+            inputLabel: { shrink: true }
           }}
         />
         <FormControl size="small" sx={{ minWidth: 130 }}>
-          <InputLabel shrink>Gender</InputLabel>
-          <Select
-            value={r.gender ?? ''}
-            label="Gender"
-            displayEmpty
-            onChange={setRestriction('gender')}
-          >
-            <MenuItem value="">
-              <em>(none)</em>
-            </MenuItem>
+          <InputLabel>Gender</InputLabel>
+          <Select value={r.gender} label="Gender" onChange={setRestriction('gender')}>
             {GENDERS.map((g) => (
               <MenuItem key={g} value={g}>
                 {g}
