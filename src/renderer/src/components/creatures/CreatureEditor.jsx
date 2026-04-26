@@ -407,12 +407,6 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                 >
                   Browse
                 </Button>
-                <SoundPicker
-                  label="Assail Sound"
-                  width={SPRITE_PREVIEW + 24}
-                  value={data.assailSound}
-                  onChange={(val) => set('assailSound', val)}
-                />
               </Box>
               {/* Right: 3 rows */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -438,7 +432,7 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     sx={{ flex: 1 }}
                   />
                 </Box>
-                {/* Row 2: Sprite # | Weapon (preset + Min/Max) */}
+                {/* Row 2: Sprite # | Assail Sound | Weapon (preset + Min/Max) */}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                   <TextField
                     label="Sprite"
@@ -450,6 +444,12 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     slotProps={{
                       htmlInput: { min: 1, max: 9999 }
                     }}
+                  />
+                  <SoundPicker
+                    label="Assail Sound"
+                    width={140}
+                    value={data.assailSound}
+                    onChange={(val) => set('assailSound', val)}
                   />
                   <WeaponPicker
                     minDmg={data.minDmg}
@@ -700,12 +700,6 @@ function CreatureEditor({
                 >
                   Browse
                 </Button>
-                <SoundPicker
-                  label="Assail Sound"
-                  width={SPRITE_PREVIEW + 24}
-                  value={data.assailSound}
-                  onChange={(val) => set('assailSound')({ target: { value: val } })}
-                />
               </Box>
               {/* Right: 3 rows */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -757,7 +751,7 @@ function CreatureEditor({
                     sx={{ flex: 1 }}
                   />
                 </Box>
-                {/* Row 2: Sprite # | Weapon (preset + Min/Max) */}
+                {/* Row 2: Sprite # | Assail Sound | Weapon (preset + Min/Max) */}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                   <TextField
                     label="Sprite"
@@ -769,6 +763,12 @@ function CreatureEditor({
                     slotProps={{
                       htmlInput: { min: 1, max: 9999 }
                     }}
+                  />
+                  <SoundPicker
+                    label="Assail Sound"
+                    width={140}
+                    value={data.assailSound}
+                    onChange={(val) => set('assailSound')({ target: { value: val } })}
                   />
                   <WeaponPicker
                     minDmg={data.minDmg}
