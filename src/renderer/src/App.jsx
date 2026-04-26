@@ -16,10 +16,7 @@ import {
   iconPickerModeState,
   nationCrestPickerModeState
 } from './recoil/atoms' // Import Recoil atoms
-import hybrasylTheme from './themes/hybrasyl'
-import chadulTheme from './themes/chadul'
-import danaanTheme from './themes/danaan'
-import grinnealTheme from './themes/grinneal'
+import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
 
 const themes = {
   hybrasyl: hybrasylTheme,

@@ -95,7 +95,7 @@ const MainToolbar = ({ navigate }) => {
           sx={{ fontWeight: 'bold', flexGrow: 0 }}
           style={{ fontSize: '1.5rem' }}
         >
-          Creidhne: XML Forge
+          Creidhne
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
         <Tooltip title="Minimize">
