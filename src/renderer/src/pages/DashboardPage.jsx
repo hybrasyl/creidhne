@@ -177,7 +177,10 @@ function DashboardPage() {
     try {
       await window.electronAPI.buildIndex(activeLibrary)
       const index = await window.electronAPI.loadIndex(activeLibrary)
-      setLibraryIndex(index || {})
+      // Merge over previous state instead of replacing — constants-derived
+      // fields (weapons, motions, etc.) live on libraryIndex too and aren't
+      // part of the rebuilt index payload.
+      setLibraryIndex((prev) => ({ ...prev, ...(index || {}) }))
     } finally {
       setRebuilding(false)
     }

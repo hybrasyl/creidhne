@@ -98,7 +98,10 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       }))
       if (library === activeLibrary) {
         const index = await window.electronAPI.loadIndex(library)
-        setLibraryIndex(index || {})
+        // Merge over previous state — constants-derived fields (weapons,
+        // motions, etc.) live on libraryIndex but aren't in the rebuilt
+        // index payload.
+        setLibraryIndex((prev) => ({ ...prev, ...(index || {}) }))
       }
     } finally {
       setBuilding((prev) => ({ ...prev, [library]: false }))
