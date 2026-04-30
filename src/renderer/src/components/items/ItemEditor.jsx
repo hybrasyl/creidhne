@@ -530,6 +530,7 @@ function ItemEditor({
                 value={p.appearance.sprite}
                 onChange={(val) => setPropField('appearance', 'sprite')({ target: { value: val } })}
                 required
+                color={p.appearance.color}
                 helpTooltip="Icon shown on the ground, in inventory, and in vendor menus."
               />
               <ItemSpritePicker
@@ -538,6 +539,7 @@ function ItemEditor({
                 onChange={(val) =>
                   setPropField('appearance', 'equipSprite')({ target: { value: val } })
                 }
+                color={p.appearance.color}
                 helpTooltip="Override for the icon shown on the paperdoll/inventory screen when equipped. Leave 0 to reuse Sprite."
               />
               <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -635,6 +637,7 @@ function ItemEditor({
                   onChange={(val) =>
                     setPropField('appearance', 'displaySprite')({ target: { value: val } })
                   }
+                  color={p.appearance.color}
                   helpTooltip="Overlay applied to the character model on equip."
                 />
               )}

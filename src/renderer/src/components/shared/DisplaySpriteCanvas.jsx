@@ -23,7 +23,8 @@ export default function DisplaySpriteCanvas({
   size = 96,
   label,
   pose,
-  frameIdx
+  frameIdx,
+  color = ''
 }) {
   const clientPath = useRecoilValue(clientPathState)
   const canvasRef = useRef(null)
@@ -42,7 +43,7 @@ export default function DisplaySpriteCanvas({
       String(displaySprite) === ''
     )
       return undefined
-    const opts = { category, gender, displaySprite }
+    const opts = { category, gender, displaySprite, color }
     if (pose) opts.pose = pose
     if (frameIdx != null) opts.frameIdx = frameIdx
     getDisplaySpriteBitmap(clientPath, opts)
@@ -59,7 +60,7 @@ export default function DisplaySpriteCanvas({
     return () => {
       cancelled = true
     }
-  }, [clientPath, category, gender, displaySprite, size, pose, frameIdx])
+  }, [clientPath, category, gender, displaySprite, size, pose, frameIdx, color])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.25 }}>

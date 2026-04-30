@@ -10,7 +10,7 @@ import { getItemSpriteBitmap } from '../../data/itemSpriteData'
  * If clientPath isn't set or the sprite can't be rendered, the canvas stays
  * blank (caller provides the surrounding placeholder chrome).
  */
-export default function ItemSpriteCanvas({ value, size }) {
+export default function ItemSpriteCanvas({ value, size, color = '' }) {
   const clientPath = useRecoilValue(clientPathState)
   const canvasRef = useRef(null)
 
@@ -23,7 +23,7 @@ export default function ItemSpriteCanvas({ value, size }) {
 
     if (!clientPath || !value || Number(value) < 1) return undefined
 
-    getItemSpriteBitmap(clientPath, Number(value))
+    getItemSpriteBitmap(clientPath, Number(value), color)
       .then((bitmap) => {
         if (cancelled || !bitmap) return
         const dx = Math.floor((size - bitmap.width) / 2)
@@ -38,7 +38,7 @@ export default function ItemSpriteCanvas({ value, size }) {
     return () => {
       cancelled = true
     }
-  }, [clientPath, value, size])
+  }, [clientPath, value, size, color])
 
   return (
     <Box

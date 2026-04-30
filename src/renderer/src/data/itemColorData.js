@@ -14,6 +14,34 @@ import { clientPathState } from '../recoil/atoms'
 
 // clientPath → Map<colorName, [{r,g,b,a}, ...]>
 const swatchMapCache = new Map()
+// clientPath → Map<colorName, ColorTableEntry>
+const entryMapCache = new Map()
+
+async function loadColorMaps(clientPath) {
+  const cachedSwatch = swatchMapCache.get(clientPath)
+  const cachedEntry = entryMapCache.get(clientPath)
+  if (cachedSwatch && cachedEntry) return { swatches: cachedSwatch, entries: cachedEntry }
+
+  const archive = await loadArchive(clientPath, 'legend.dat')
+  const table = ColorTable.fromArchive('color0', archive)
+  const swatches = new Map()
+  const entries = new Map()
+  // ITEM_COLORS[0] is '' (the "(none)" UI option, no swatch). Every entry
+  // after that corresponds to enum value (index - 1).
+  for (let i = 1; i < ITEM_COLORS.length; i++) {
+    const name = ITEM_COLORS[i]
+    const entry = table.get(i - 1)
+    if (entry?.colors) {
+      swatches.set(name, entry.colors)
+      entries.set(name, entry)
+    }
+  }
+  swatchMapCache.set(clientPath, swatches)
+  entryMapCache.set(clientPath, entries)
+
+  console.log(`[itemColorData] loaded ${swatches.size} color swatches from color0.tbl`)
+  return { swatches, entries }
+}
 
 /**
  * Load color0.tbl from legend.dat and build a Map keyed by ItemColor enum
@@ -24,27 +52,26 @@ const swatchMapCache = new Map()
  */
 export async function loadItemColorSwatches(clientPath) {
   if (!clientPath) return new Map()
-  const cached = swatchMapCache.get(clientPath)
-  if (cached) return cached
+  const { swatches } = await loadColorMaps(clientPath)
+  return swatches
+}
 
-  const archive = await loadArchive(clientPath, 'legend.dat')
-  const table = ColorTable.fromArchive('color0', archive)
-  const map = new Map()
-  // ITEM_COLORS[0] is '' (the "(none)" UI option, no swatch). Every entry
-  // after that corresponds to enum value (index - 1).
-  for (let i = 1; i < ITEM_COLORS.length; i++) {
-    const name = ITEM_COLORS[i]
-    const entry = table.get(i - 1)
-    if (entry?.colors) map.set(name, entry.colors)
-  }
-  swatchMapCache.set(clientPath, map)
-
-  console.log(`[itemColorData] loaded ${map.size} color swatches from color0.tbl`)
-  return map
+/**
+ * Resolve an ItemColor enum name to its raw ColorTableEntry, suitable for
+ * passing to dalib's `Palette.dye()`. Returns null for blank/'None' (the
+ * legacy un-dyed sentinels) and unknown names.
+ *
+ * @returns {Promise<{ colors: {r:number,g:number,b:number,a:number}[] } | null>}
+ */
+export async function getItemColorEntry(clientPath, colorName) {
+  if (!clientPath || !colorName || colorName === 'None') return null
+  const { entries } = await loadColorMaps(clientPath)
+  return entries.get(colorName) ?? null
 }
 
 export function clearItemColorCache() {
   swatchMapCache.clear()
+  entryMapCache.clear()
 }
 registerCacheClearer(clearItemColorCache)
 

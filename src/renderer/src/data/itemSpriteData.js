@@ -9,6 +9,7 @@
 import { EpfFile, PaletteLookup, renderEpf } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, clearArchiveCache, registerCacheClearer } from '../utils/daClient'
+import { getItemColorEntry } from './itemColorData'
 
 const FRAMES_PER_EPF = 266
 
@@ -17,6 +18,15 @@ const paletteLookupCache = new Map() // clientPath → PaletteLookup
 const epfMapCache = new Map() // clientPath → Map<epfNum, EpfFile>
 const bitmapCache = new Map() // `${clientPath}|${id}` → ImageBitmap
 const indexCache = new Map() // clientPath → { total, visibleIds }
+
+/**
+ * Build the cache key for a rendered sprite bitmap. '' and 'None' are the
+ * legacy un-dyed sentinels and collapse to the same key so we render once.
+ */
+export function buildItemSpriteCacheKey(clientPath, id, colorName) {
+  const dye = !colorName || colorName === 'None' ? '' : colorName
+  return `${clientPath}|${id}|${dye}`
+}
 
 /**
  * Convert a 1-based sprite id to its EPF number and the frame index within
@@ -147,14 +157,20 @@ export async function getItemSpriteIndex(clientPath) {
 
 /**
  * Render a single item sprite and return an ImageBitmap ready for canvas use.
- * Cached; repeated calls for the same (clientPath, id) return the same bitmap.
+ * Cached; repeated calls for the same (clientPath, id, colorName) return the
+ * same bitmap.
+ *
+ * If `colorName` is set to a real DisplayColor (anything other than '' or
+ * 'None'), the palette's dye-slot indices (98–103) are overwritten with the
+ * matching color0.tbl entry before rendering — mirroring the legacy DA
+ * client's `palette.Dye()` step.
  */
-export async function getItemSpriteBitmap(clientPath, id) {
+export async function getItemSpriteBitmap(clientPath, id, colorName = '') {
   if (!clientPath) return null
   const resolved = resolveItemSprite(id)
   if (!resolved) return null
 
-  const key = `${clientPath}|${id}`
+  const key = buildItemSpriteCacheKey(clientPath, id, colorName)
   const cached = bitmapCache.get(key)
   if (cached) return cached
 
@@ -178,6 +194,10 @@ export async function getItemSpriteBitmap(clientPath, id) {
     if (!palette) return null
     warnFallbackOnce(resolved.epfNum)
   }
+
+  const dyeEntry = await getItemColorEntry(clientPath, colorName)
+  if (dyeEntry) palette = palette.dye(dyeEntry)
+
   const rgba = renderEpf(frame, palette)
   const bitmap = await createImageBitmap(toImageData(rgba))
 

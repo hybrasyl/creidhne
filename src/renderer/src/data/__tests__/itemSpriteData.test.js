@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { resolveItemSprite, isFrameBlank } from '../itemSpriteData.js'
+import {
+  resolveItemSprite,
+  isFrameBlank,
+  buildItemSpriteCacheKey
+} from '../itemSpriteData.js'
 
 describe('resolveItemSprite', () => {
   it('maps id 1 to item001.epf frame 0', () => {
@@ -85,5 +89,29 @@ describe('isFrameBlank', () => {
     expect(isFrameBlank({ left: 0, top: 5, right: 4, bottom: 3, data: new Uint8Array([1]) })).toBe(
       true
     )
+  })
+})
+
+describe('buildItemSpriteCacheKey', () => {
+  it('includes clientPath, id, and color in the key', () => {
+    expect(buildItemSpriteCacheKey('/p', 42, 'Crimson')).toBe('/p|42|Crimson')
+  })
+
+  it('produces different keys for different colors on the same sprite', () => {
+    const a = buildItemSpriteCacheKey('/p', 42, 'Crimson')
+    const b = buildItemSpriteCacheKey('/p', 42, 'Black')
+    expect(a).not.toBe(b)
+  })
+
+  it('collapses blank, None, null, and undefined to a single un-dyed key', () => {
+    const blank = buildItemSpriteCacheKey('/p', 42, '')
+    expect(buildItemSpriteCacheKey('/p', 42, 'None')).toBe(blank)
+    expect(buildItemSpriteCacheKey('/p', 42, null)).toBe(blank)
+    expect(buildItemSpriteCacheKey('/p', 42, undefined)).toBe(blank)
+  })
+
+  it('keeps clientPath and id distinct across different inputs', () => {
+    expect(buildItemSpriteCacheKey('/a', 1, '')).not.toBe(buildItemSpriteCacheKey('/b', 1, ''))
+    expect(buildItemSpriteCacheKey('/p', 1, '')).not.toBe(buildItemSpriteCacheKey('/p', 2, ''))
   })
 })

@@ -4,6 +4,7 @@ import {
   entryName,
   categoriesFor,
   defaultsFor,
+  buildKhanBitmapCacheKey,
   SLOT_TO_CATEGORY,
   CATEGORY_DEFAULTS
 } from '../khanData.js'
@@ -136,6 +137,42 @@ describe('defaultsFor', () => {
 
   it('is case-insensitive', () => {
     expect(defaultsFor('u')).toEqual(CATEGORY_DEFAULTS.U)
+  })
+})
+
+describe('buildKhanBitmapCacheKey', () => {
+  it('includes clientPath, entry name, frameIdx, and color in the key', () => {
+    expect(buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, 'Crimson')).toBe(
+      '/p|MU00103.epf|5|Crimson'
+    )
+  })
+
+  it('produces different keys for different colors on the same frame', () => {
+    const a = buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, 'Crimson')
+    const b = buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, 'Black')
+    expect(a).not.toBe(b)
+  })
+
+  it('collapses blank, None, null, and undefined to a single un-dyed key', () => {
+    const blank = buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, '')
+    expect(buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, 'None')).toBe(blank)
+    expect(buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, null)).toBe(blank)
+    expect(buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, undefined)).toBe(blank)
+  })
+
+  it('separates frames within the same sprite and color', () => {
+    expect(buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, 'Crimson')).not.toBe(
+      buildKhanBitmapCacheKey('/p', 'MU00103.epf', 6, 'Crimson')
+    )
+  })
+
+  it('separates entries and clientPaths', () => {
+    expect(buildKhanBitmapCacheKey('/p', 'MU00103.epf', 5, '')).not.toBe(
+      buildKhanBitmapCacheKey('/p', 'MU00203.epf', 5, '')
+    )
+    expect(buildKhanBitmapCacheKey('/a', 'MU00103.epf', 5, '')).not.toBe(
+      buildKhanBitmapCacheKey('/b', 'MU00103.epf', 5, '')
+    )
   })
 })
 

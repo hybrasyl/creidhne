@@ -23,14 +23,19 @@ const PREVIEW_SIZE = 72
  *   value           — current displaySprite id (string or number)
  *   onChange        — called with the new id (raw value)
  *   helpTooltip     — optional help icon
+ *   color           — DisplayColor name to dye the sprite with. Suppressed
+ *                     for the Helmet slot (legacy DA renders helmet sprites
+ *                     with the player's HairColor, not the item's Color, so
+ *                     a dyed preview here would mislead the editor).
  */
-export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip }) {
+export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip, color = '' }) {
   const [open, setOpen] = useState(false)
   const clientPath = useRecoilValue(clientPathState)
 
   const categories = categoriesFor(slot)
   const category = categories.length ? categories : null
   const mapped = Boolean(category)
+  const previewColor = slot === 'Helmet' ? '' : color
 
   const handleSelect = (id) => {
     onChange(String(id))
@@ -45,6 +50,7 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         displaySprite={value}
         size={PREVIEW_SIZE}
         label="Male"
+        color={previewColor}
       />
       <DisplaySpriteCanvas
         category={category}
@@ -52,6 +58,7 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         displaySprite={value}
         size={PREVIEW_SIZE}
         label="Female"
+        color={previewColor}
       />
       <TextField
         label="Display Sprite"

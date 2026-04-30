@@ -15,7 +15,8 @@ export default function ItemSpritePicker({
   label = 'Sprite',
   required = false,
   max = 65535,
-  helpTooltip
+  helpTooltip,
+  color = ''
 }) {
   const [open, setOpen] = useState(false)
   const clientPath = useRecoilValue(clientPathState)
@@ -41,7 +42,7 @@ export default function ItemSpritePicker({
           bgcolor: 'action.hover'
         }}
       >
-        <ItemSpriteCanvas value={value} size={PREVIEW_SIZE} />
+        <ItemSpriteCanvas value={value} size={PREVIEW_SIZE} color={color} />
       </Box>
       <TextField
         label={label}

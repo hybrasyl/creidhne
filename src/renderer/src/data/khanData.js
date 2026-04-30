@@ -19,6 +19,7 @@
 import { EpfFile, PaletteLookup, renderEpf } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
+import { getItemColorEntry } from './itemColorData'
 
 const PALETTE_ARCHIVE = 'khanpal.dat'
 
@@ -99,6 +100,15 @@ export function entryName(category, gender, displaySprite, pose) {
   return `${gender.toUpperCase()}${category.toUpperCase()}${id}${pose}.epf`
 }
 
+/**
+ * Build the cache key for a rendered display-sprite bitmap. '' and 'None' are
+ * the legacy un-dyed sentinels and collapse to the same key so we render once.
+ */
+export function buildKhanBitmapCacheKey(clientPath, name, frameIdx, colorName) {
+  const dye = !colorName || colorName === 'None' ? '' : colorName
+  return `${clientPath}|${name}|${frameIdx}|${dye}`
+}
+
 // ── Caches (keyed by clientPath so a path change clears everything) ───────────
 const paletteLookupCache = new Map() // `${clientPath}|${category}` → PaletteLookup
 const epfCache = new Map() // `${clientPath}|${entryName}` → EpfFile
@@ -156,7 +166,11 @@ async function resolvePose(clientPath, { category, gender, displaySprite, pose }
  * Returns null if the sprite isn't present or can't be rendered.
  *
  * @param {string} clientPath
- * @param {{ category: string, gender: 'M'|'W', displaySprite: number|string, pose?: string, frameIdx?: number }} opts
+ * @param {{ category: string, gender: 'M'|'W', displaySprite: number|string, pose?: string, frameIdx?: number, color?: string }} opts
+ *   color: an ItemColor enum name (e.g. 'Crimson'). When set to a real
+ *   DisplayColor (anything other than '' or 'None'), the palette's dye-slot
+ *   indices (98–103) are overwritten with the matching color0.tbl entry
+ *   before rendering — mirroring the legacy DA client's `palette.Dye()` step.
  */
 /**
  * When `category` is an array, probe each (in order) for an entry that
@@ -182,7 +196,7 @@ async function resolveCategoryForSprite(clientPath, category, gender, displaySpr
 
 export async function getDisplaySpriteBitmap(clientPath, opts) {
   if (!clientPath) return null
-  const { gender, displaySprite } = opts
+  const { gender, displaySprite, color = '' } = opts
   const category = Array.isArray(opts.category)
     ? await resolveCategoryForSprite(clientPath, opts.category, gender, displaySprite)
     : opts.category
@@ -199,7 +213,7 @@ export async function getDisplaySpriteBitmap(clientPath, opts) {
   if (!actualPose) return null
 
   const name = entryName(category, gender, id, actualPose)
-  const bmpKey = `${clientPath}|${name}|${frameIdx}`
+  const bmpKey = buildKhanBitmapCacheKey(clientPath, name, frameIdx, color)
   const cachedBmp = bitmapCache.get(bmpKey)
   if (cachedBmp) return cachedBmp
 
@@ -233,6 +247,9 @@ export async function getDisplaySpriteBitmap(clientPath, opts) {
       console.warn(`[khanData] no palette for category=${category} id=${id}; using fallback`)
     }
   }
+
+  const dyeEntry = await getItemColorEntry(clientPath, color)
+  if (dyeEntry) palette = palette.dye(dyeEntry)
 
   try {
     const rgba = renderEpf(frame, palette)
