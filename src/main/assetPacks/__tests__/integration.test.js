@@ -12,7 +12,7 @@ const {
   listCoveredIds,
   resolveAsset,
   _resetForTests
-} = await import('../assetPackLoader.js')
+} = await import('../index.js')
 
 // Build a fake unzipper directory object. Entries are filename → buffer.
 // `manifest` is stringified+encoded into _manifest.json unless `omitManifest` is set.
@@ -239,5 +239,99 @@ describe('file-extension filtering', () => {
       'icons',
       'nations'
     ])
+  })
+})
+
+describe('content_type dispatch', () => {
+  it('loads a nation_badges pack and indexes under subtype "nation"', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['hybnations.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'nations',
+          content_type: 'nation_badges',
+          covers: { nation_badges: {} }
+        }),
+        entries: {
+          'nation0001.png': Buffer.from('flag-1'),
+          'nation0042.png': Buffer.from('flag-42')
+        }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+    expect(await listCoveredIds('nation')).toEqual([1, 42])
+    expect((await resolveAsset('nation', 42))?.toString()).toBe('flag-42')
+  })
+
+  it('loads a legend_mark_icons pack and indexes under subtype "legend"', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['hyblegends.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'legends',
+          content_type: 'legend_mark_icons',
+          covers: { legend_mark_icons: {} }
+        }),
+        entries: { 'legend0000.png': Buffer.from('mark-0') }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+    expect(await listCoveredIds('legend')).toEqual([0])
+    expect((await resolveAsset('legend', 0))?.toString()).toBe('mark-0')
+  })
+
+  it('skips packs whose content_type is registered but planned (not yet implemented)', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['future.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'future-items',
+          content_type: 'item_icons',
+          covers: { item_icons: {} }
+        }),
+        entries: { 'item00001.png': Buffer.from('placeholder') }
+      })
+    )
+    await loadPacksForClientPath('/fake/client')
+    expect(await listActivePacks()).toHaveLength(0)
+  })
+
+  it('skips packs whose content_type is not registered at all', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['weird.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'weird',
+          content_type: 'not_a_real_type',
+          covers: {}
+        })
+      })
+    )
+    await loadPacksForClientPath('/fake/client')
+    expect(await listActivePacks()).toHaveLength(0)
+  })
+
+  it('silently skips out_of_scope packs without a warning', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFs.readdir.mockResolvedValueOnce(['ui-sprite-overrides-smoke.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'ui-overrides',
+          content_type: 'ui_sprite_overrides',
+          covers: { ui_sprite_overrides: {} }
+        }),
+        entries: { 'butt001.epf/0015.png': Buffer.from('ok-button') }
+      })
+    )
+    await loadPacksForClientPath('/fake/client')
+
+    expect(await listActivePacks()).toHaveLength(0)
+    // No "unknown content_type" or "not yet implemented" warning for a
+    // valid Comhaigne type that Creidhne doesn't consume.
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 })

@@ -59,7 +59,7 @@ import {
   listActivePacks,
   listCoveredIds,
   resolveAsset
-} from './assetPackLoader'
+} from './assetPacks/index.js'
 
 // Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
 const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne')
