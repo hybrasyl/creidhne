@@ -1,30 +1,25 @@
 // content_type: 'item_icons'
-// Spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#item_icons (planned)
-//      docs/plans/hybrasyl.client/item-asset-pack-scoping.md (full Phase 1 design)
+// Spec: docs/plans/hybrasyl.client/item-asset-pack-scoping.md (Phase 1)
+//       Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md (future-types entry)
 //
-// Replaces legacy item###.epf sheets in legend.dat. The scoping doc fixes
-// the filename schema as flat (item{id:D5}.png) so the eventual handler
-// can be a one-liner via makeFlatPatternHandler({ contentType, subtypes: ['item'], padding: 5 }).
+// Replaces legacy item###.epf sheets in legend.dat. Filename schema is
+// flat: item{id:D5}.png (5-digit zero-padded, 1-based item ID matching
+// the renamed Unity-rip filenames). Subtype 'item' is exposed by
+// listCoveredIds(); the renderer-side ItemSpriteCanvas wiring (pack-first
+// lookup + RGB find-and-replace dye for the Phase 1 PNG path) is a
+// separate concern handled in the renderer data layer.
 //
-// Two reasons the handler is still a stub:
-//   1. Item packs are multi-pack per content type (one .datf per sheet
-//      range), and the registry today registers a single handler per
-//      content_type. The loader needs a small extension to track multiple
-//      packs of one type before items can be wired up.
-//   2. The dye pipeline (manifest `covers.item_icons.no_dye` opt-out + the
-//      runtime find-and-replace pass) lives outside the flat-handler
-//      contract and needs its own integration with the renderer's
-//      ItemSpriteCanvas / dye preview path that landed in commit 44e6a4d.
+// Multi-pack registration: the loader already iterates state.packs in
+// priority order, so the four phase-1 chunked packs (items_001-005,
+// items_006-010, items_011-041, items_042-061) coexist naturally — each
+// resolveAsset('item', id) call walks every active pack and returns the
+// first hit. No extra registry plumbing required.
 
-export default {
+import { makeFlatPatternHandler } from './flatPattern.js'
+
+export default makeFlatPatternHandler({
   contentType: 'item_icons',
-  status: 'planned',
-  subtypes: [],
-  spec: 'item-asset-pack-scoping.md',
-  parseEntry() {
-    return null
-  },
-  keyFor() {
-    return null
-  }
-}
+  subtypes: ['item'],
+  padding: 5,
+  spec: 'item-asset-pack-scoping.md'
+})

@@ -12,20 +12,26 @@ describe('handler registry', () => {
     expect(getHandler(undefined)).toBeNull()
   })
 
-  it('exposes the three implemented content types', () => {
+  it('exposes the implemented content types', () => {
     expect(getHandler('ability_icons')?.status).toBe('implemented')
     expect(getHandler('nation_badges')?.status).toBe('implemented')
     expect(getHandler('legend_mark_icons')?.status).toBe('implemented')
+    expect(getHandler('item_icons')?.status).toBe('implemented')
   })
 
-  it('exposes the five planned content types as stubs', () => {
-    for (const ct of [
-      'item_icons',
-      'creatures',
-      'effects',
-      'display_sprites',
-      'sounds'
-    ]) {
+  it('item_icons handler claims subtype "item" with 5-digit padding', () => {
+    const h = getHandler('item_icons')
+    expect(h.subtypes).toEqual(['item'])
+    expect(h.padding).toBe(5)
+    expect(h.parseEntry('item13688.png')).toEqual({
+      subtype: 'item',
+      id: 13688,
+      key: 'item:13688'
+    })
+  })
+
+  it('exposes the four planned content types as stubs', () => {
+    for (const ct of ['creatures', 'effects', 'display_sprites', 'sounds']) {
       const h = getHandler(ct)
       expect(h, ct).not.toBeNull()
       expect(h.status, ct).toBe('planned')
@@ -58,6 +64,7 @@ describe('handler registry', () => {
   it('listImplementedHandlers omits planned stubs', () => {
     expect(listImplementedHandlers().map((h) => h.contentType).sort()).toEqual([
       'ability_icons',
+      'item_icons',
       'legend_mark_icons',
       'nation_badges'
     ])

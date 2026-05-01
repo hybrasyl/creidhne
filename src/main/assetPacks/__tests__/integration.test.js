@@ -287,15 +287,68 @@ describe('content_type dispatch', () => {
     mockUnzipper.Open.file.mockResolvedValueOnce(
       fakeDirectory({
         manifest: manifest({
-          pack_id: 'future-items',
-          content_type: 'item_icons',
-          covers: { item_icons: {} }
+          pack_id: 'future-creatures',
+          content_type: 'creatures',
+          covers: { creatures: {} }
         }),
-        entries: { 'item00001.png': Buffer.from('placeholder') }
+        entries: { 'creature00001.png': Buffer.from('placeholder') }
       })
     )
     await loadPacksForClientPath('/fake/client')
     expect(await listActivePacks()).toHaveLength(0)
+  })
+
+  it('loads an item_icons pack with 5-digit IDs under subtype "item"', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['items_001-005.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'items-001-005',
+          content_type: 'item_icons',
+          covers: { item_icons: {} }
+        }),
+        entries: {
+          'item00001.png': Buffer.from('item-1'),
+          'item00095.png': Buffer.from('item-95'),
+          'item13688.png': Buffer.from('item-13688')
+        }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+    expect(await listCoveredIds('item')).toEqual([1, 95, 13688])
+    expect((await resolveAsset('item', 95))?.toString()).toBe('item-95')
+    expect((await resolveAsset('item', 13688))?.toString()).toBe('item-13688')
+  })
+
+  it('merges multiple item_icons packs covering disjoint sheet ranges', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['items_001-005.datf', 'items_042-061.datf'])
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({
+            pack_id: 'items-001-005',
+            content_type: 'item_icons',
+            priority: 100
+          }),
+          entries: { 'item00001.png': Buffer.from('low-range') }
+        })
+      )
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({
+            pack_id: 'items-042-061',
+            content_type: 'item_icons',
+            priority: 100
+          }),
+          entries: { 'item11000.png': Buffer.from('high-range') }
+        })
+      )
+
+    await loadPacksForClientPath('/fake/client')
+    expect(await listCoveredIds('item')).toEqual([1, 11000])
+    expect((await resolveAsset('item', 1))?.toString()).toBe('low-range')
+    expect((await resolveAsset('item', 11000))?.toString()).toBe('high-range')
   })
 
   it('skips packs whose content_type is not registered at all', async () => {
