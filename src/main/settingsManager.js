@@ -83,24 +83,32 @@ export function createSettingsManager(userDataPath) {
     await fs.rename(src, dest)
   }
 
+  async function doSave(data) {
+    const content = JSON.stringify(data, null, 2)
+    await fs.mkdir(userDataPath, { recursive: true })
+    // 1. Write to tmp
+    await fs.writeFile(tmp, content, 'utf-8')
+    // 2. Rotate: current primary → backup
+    try {
+      await fs.copyFile(primary, backup)
+    } catch {
+      /* primary may not exist yet */
+    }
+    // 3. Atomic rename tmp → primary (with retry for Windows EPERM)
+    await renameWithRetry(tmp, primary)
+  }
+
+  // Save serialization queue. Use .then(fn, fn) so both fulfillment and
+  // rejection of the previous save route to doSave — a single failed save
+  // (transient disk error, AV interference, etc.) no longer poisons the
+  // queue and silently no-ops every subsequent call.
   let saveQueue = Promise.resolve()
 
   function save(data) {
-    saveQueue = saveQueue.then(async () => {
-      const content = JSON.stringify(data, null, 2)
-      await fs.mkdir(userDataPath, { recursive: true })
-      // 1. Write to tmp
-      await fs.writeFile(tmp, content, 'utf-8')
-      // 2. Rotate: current primary → backup
-      try {
-        await fs.copyFile(primary, backup)
-      } catch {
-        /* primary may not exist yet */
-      }
-      // 3. Atomic rename tmp → primary (with retry for Windows EPERM)
-      await renameWithRetry(tmp, primary)
-    })
-    return saveQueue
+    const op = saveQueue.then(() => doSave(data), () => doSave(data))
+    op.catch((err) => console.error('[settings] save failed:', err))
+    saveQueue = op.catch(() => {})
+    return op
   }
 
   return { load, save }

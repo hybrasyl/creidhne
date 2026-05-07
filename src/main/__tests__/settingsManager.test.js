@@ -137,6 +137,48 @@ describe('settingsManager', () => {
       await manager.save(VALID)
       expect(mockFs.mkdir).toHaveBeenCalledWith(USER_DATA, { recursive: true })
     })
+
+    // Regression guard for the queue-poisoning bug. Without the .then(fn, fn)
+    // resilience pattern in save(), a single failed save would leave saveQueue
+    // as a rejected promise — and every subsequent .then(handler) call would
+    // skip the handler and propagate the rejection, silently dropping all
+    // future saves.
+    it('queue survives a failed save (next save still runs)', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      // First save fails at writeFile; second save's writeFile succeeds.
+      mockFs.writeFile
+        .mockRejectedValueOnce(new Error('disk full'))
+        .mockResolvedValue(undefined)
+
+      await expect(manager.save(VALID)).rejects.toThrow('disk full')
+      await expect(manager.save(VALID)).resolves.not.toThrow()
+
+      // Both saves attempted to write — the queue didn't poison.
+      expect(mockFs.writeFile).toHaveBeenCalledTimes(2)
+      // The failure was logged for diagnostic purposes.
+      expect(errSpy).toHaveBeenCalledWith('[settings] save failed:', expect.any(Error))
+
+      errSpy.mockRestore()
+    })
+
+    it('serializes concurrent saves in queue order', async () => {
+      // Two saves issued back-to-back must complete in order — the second
+      // save's writeFile must not run until the first save's renameWithRetry
+      // finishes. We assert ordering via the call sequence on writeFile.
+      const writeOrder = []
+      mockFs.writeFile.mockImplementation(async (_path, content) => {
+        writeOrder.push(content)
+      })
+
+      const a = { ...VALID, theme: 'first' }
+      const b = { ...VALID, theme: 'second' }
+      const p1 = manager.save(a)
+      const p2 = manager.save(b)
+      await Promise.all([p1, p2])
+
+      expect(writeOrder).toEqual([JSON.stringify(a, null, 2), JSON.stringify(b, null, 2)])
+    })
   })
 
   // ─── round-trip tripwire ─────────────────────────────────────────────────────
