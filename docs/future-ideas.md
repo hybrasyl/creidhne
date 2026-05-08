@@ -38,6 +38,43 @@ Already in place:
   regardless of source — switching the picker's data source later
   doesn't break round-trip.
 
+## FormulasPage: restore category chip on the file list
+
+Before commit `11d68a8` (formulas adopted the shared `EditorFileListPanel`),
+each row on the Formulas page rendered a small colored category chip
+beneath the formula name — same chip the formula picker dialog still
+uses today. The shared panel only supports `primary` (display name) +
+`secondary` (bare filename fallback), so the chip was dropped during
+the migration.
+
+**Nothing is broken under the hood:**
+
+- `formulas.js` schema uses `.passthrough()` (added in the same
+  commit), so `description`, `category`, `patternId`, and per-formula
+  coefficient overrides round-trip cleanly to disk.
+- `FormulaEditor` still edits both fields.
+- `FormulaPickerDialog` still shows the chip when picking from inside
+  Damage / Heal / status sub-editors.
+
+Purely a visual regression on the Formulas list.
+
+**If we revisit:**
+
+- Add a `renderSecondary?: (file) => ReactNode` render prop to
+  `EditorFileListPanel` plus an `itemHeight` override. Default behavior
+  (filename fallback, 52px rows) stays for the other 13 consumer
+  pages.
+- `FormulasPage` builds a path → formula `Map` and supplies a
+  `renderSecondary` that returns the chip (matching the picker's style)
+  and optionally a `<Typography variant="caption" noWrap>` with the
+  description.
+- Reuse `CATEGORY_COLORS` already imported by `FormulaPickerDialog`
+  rather than duplicating it.
+
+The render-prop shape would let other pages opt in later (e.g. items
+showing their category, statuses showing duration) without a separate
+migration each time.
+
 ## Spawngroups: spellbook constants support
 
 Spell Books (defined in **Constants → Spell Books**) are named bundles
