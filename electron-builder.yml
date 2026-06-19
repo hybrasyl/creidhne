@@ -24,4 +24,11 @@ win:
         - x64
 portable:
   artifactName: ${name}-${version}-portable.${ext}
+linux:
+  target:
+    - deb
+    - AppImage
+  category: Development
+  maintainer: Hybrasyl Maintainers <hybrasyl@eris.co>
+  icon: resources/icon.png
 npmRebuild: false
