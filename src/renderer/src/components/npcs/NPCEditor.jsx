@@ -30,7 +30,7 @@ import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import NpcPortraitCanvas from '../shared/NpcPortraitCanvas'
 import NpcPortraitPickerDialog from '../shared/NpcPortraitPickerDialog'
 import CommentField from '../shared/CommentField'
-import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData'
+import CreatureSpriteCanvas from '../shared/CreatureSpriteCanvas'
 import SpritePickerDialog from '../shared/SpritePickerDialog'
 import EditorHeader from '../shared/EditorHeader'
 import StringKeyField from '../shared/StringKeyField'
@@ -374,11 +374,6 @@ function NPCEditor({
     }))
 
   const SPRITE_PREVIEW = 128
-  const spritePreviewKey = keyFromSprite(data.sprite)
-  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null
-  const spritePreviewFrame = spritePreviewMeta
-    ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW)
-    : null
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -440,23 +435,7 @@ function NPCEditor({
                   bgcolor: 'action.hover'
                 }}
               >
-                {spritePreviewFrame && (
-                  <Box
-                    sx={{
-                      width: spritePreviewFrame.clipW,
-                      height: spritePreviewFrame.clipH,
-                      overflow: 'hidden',
-                      flexShrink: 0
-                    }}
-                  >
-                    <img
-                      src={spriteUrl(spritePreviewKey)}
-                      alt={spritePreviewKey}
-                      draggable={false}
-                      style={spritePreviewFrame.imgStyle}
-                    />
-                  </Box>
-                )}
+                <CreatureSpriteCanvas value={data.sprite} size={SPRITE_PREVIEW} />
               </Box>
               <Button
                 size="small"
@@ -614,8 +593,8 @@ function NPCEditor({
           open={spritePickerOpen}
           value={data.sprite}
           onClose={() => setSpritePickerOpen(false)}
-          onChange={(key) => {
-            updateData((d) => ({ ...d, sprite: String(parseInt(key.replace('monster', ''), 10)) }))
+          onChange={(id) => {
+            updateData((d) => ({ ...d, sprite: String(id) }))
             setSpritePickerOpen(false)
           }}
         />

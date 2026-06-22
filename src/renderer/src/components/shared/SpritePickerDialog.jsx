@@ -7,12 +7,16 @@ import {
   Box,
   Typography,
   IconButton,
-  InputAdornment
+  InputAdornment,
+  CircularProgress
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
-import spriteMeta, { spriteUrl, keyFromSprite, frameDisplay } from '../../data/creatureSpriteData'
+import { useRecoilValue } from 'recoil'
+import { clientPathState } from '../../recoil/atoms'
+import { getCreatureSpriteIndex } from '../../data/creatureSpriteData'
+import CreatureSpriteCanvas from './CreatureSpriteCanvas'
 
 const COLS = 6
 const CELL_SIZE = 144
@@ -21,48 +25,14 @@ const GRID_H = 480
 
 // ── Single grid cell ──────────────────────────────────────────────────────────
 
-function SpriteCell({ columnIndex, rowIndex, style, entries, selectedKey, onSelect }) {
+function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect }) {
   const index = rowIndex * COLS + columnIndex
-  if (index >= entries.length) return <div style={style} />
-
-  const [key, meta] = entries[index]
-  const [animIdx, setAnimIdx] = useState(null)
-  const timerRef = useRef(null)
-
-  // Reset animation when cell is recycled to a different sprite
-  useEffect(() => {
-    clearInterval(timerRef.current)
-    setAnimIdx(null)
-  }, [key])
-
-  // Cleanup on unmount
-  useEffect(() => () => clearInterval(timerRef.current), [])
-
-  const handleMouseEnter = () => {
-    if (!meta.use?.length) return
-    setAnimIdx(0)
-    let i = 0
-    timerRef.current = setInterval(() => {
-      i = (i + 1) % meta.use.length
-      setAnimIdx(i)
-    }, 200)
-  }
-
-  const handleMouseLeave = () => {
-    clearInterval(timerRef.current)
-    setAnimIdx(null)
-  }
-
-  const frameNum = animIdx !== null && meta.use?.length ? meta.use[animIdx] : (meta.still ?? 1)
-  const { clipW, clipH, imgStyle } = frameDisplay(meta, frameNum, IMAGE_SIZE)
+  if (index >= ids.length) return <div style={style} />
+  const id = ids[index]
+  const selected = id === selectedId
 
   return (
-    <div
-      style={style}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={() => onSelect(key)}
-    >
+    <div style={style} onClick={() => onSelect(id)}>
       <Box
         sx={{
           width: CELL_SIZE,
@@ -75,27 +45,14 @@ function SpriteCell({ columnIndex, rowIndex, style, entries, selectedKey, onSele
           gap: 0.5,
           borderRadius: 1,
           border: 2,
-          borderColor: key === selectedKey ? 'primary.main' : 'transparent',
-          bgcolor: key === selectedKey ? 'action.selected' : 'transparent',
-          '&:hover': { bgcolor: key === selectedKey ? 'action.selected' : 'action.hover' }
+          borderColor: selected ? 'primary.main' : 'transparent',
+          bgcolor: selected ? 'action.selected' : 'transparent',
+          '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <Box
-          sx={{
-            width: IMAGE_SIZE,
-            height: IMAGE_SIZE,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}
-        >
-          <Box sx={{ width: clipW, height: clipH, overflow: 'hidden', flexShrink: 0 }}>
-            <img src={spriteUrl(key)} alt={key} draggable={false} style={imgStyle} />
-          </Box>
-        </Box>
+        <CreatureSpriteCanvas value={id} size={IMAGE_SIZE} animate />
         <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1 }}>
-          {parseInt(key.replace('monster', ''), 10)}
+          {id}
         </Typography>
       </Box>
     </div>
@@ -105,26 +62,46 @@ function SpriteCell({ columnIndex, rowIndex, style, entries, selectedKey, onSele
 // ── Dialog ────────────────────────────────────────────────────────────────────
 
 export default function SpritePickerDialog({ open, value, onClose, onChange }) {
+  const clientPath = useRecoilValue(clientPathState)
   const [search, setSearch] = useState('')
+  const [index, setIndex] = useState(null) // null = loading, { ids } = ready
+  const [loadError, setLoadError] = useState(null)
   const gridRef = useRef(null)
 
-  const allEntries = useMemo(() => Object.entries(spriteMeta), [])
+  // Load index when dialog opens (cached internally so re-open is instant).
+  useEffect(() => {
+    if (!open || !clientPath) return
+    let cancelled = false
+    setIndex(null)
+    setLoadError(null)
+    getCreatureSpriteIndex(clientPath)
+      .then((result) => {
+        if (!cancelled) setIndex(result)
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err.message || String(err))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, clientPath])
 
-  const filtered = useMemo(() => {
+  const filteredIds = useMemo(() => {
+    if (!index) return []
     const q = search.trim()
-    if (!q) return allEntries
-    return allEntries.filter(([key]) => {
-      const num = String(parseInt(key.replace('monster', ''), 10))
-      return num.includes(q)
-    })
-  }, [allEntries, search])
+    if (!q) return index.ids
+    return index.ids.filter((id) => String(id).includes(q))
+  }, [index, search])
 
-  const selectedKey = useMemo(() => keyFromSprite(value), [value])
+  const selectedId = useMemo(() => {
+    const n = Number(value)
+    return Number.isFinite(n) && n >= 1 ? n : null
+  }, [value])
 
   // Scroll to selected item when dialog opens
   useEffect(() => {
-    if (!open || !selectedKey || !gridRef.current) return
-    const idx = filtered.findIndex(([k]) => k === selectedKey)
+    if (!open || !selectedId || !gridRef.current || filteredIds.length === 0) return
+    const idx = filteredIds.indexOf(selectedId)
     if (idx < 0) return
     gridRef.current.scrollToCell({
       columnIndex: idx % COLS,
@@ -132,13 +109,13 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
       columnAlign: 'smart',
       rowAlign: 'smart'
     })
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, selectedId, filteredIds])
 
   const cellData = useMemo(
-    () => ({ entries: filtered, selectedKey, onSelect: onChange }),
-    [filtered, selectedKey, onChange]
+    () => ({ ids: filteredIds, selectedId, onSelect: onChange }),
+    [filteredIds, selectedId, onChange]
   )
-  const rowCount = Math.ceil(filtered.length / COLS)
+  const rowCount = Math.ceil(filteredIds.length / COLS)
 
   return (
     <Dialog
@@ -151,6 +128,11 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', py: 1.6 }}>
         Creature Sprites
+        {index && (
+          <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
+            ({index.ids.length.toLocaleString()} shown)
+          </Typography>
+        )}
         <IconButton size="small" onClick={onClose} sx={{ ml: 'auto' }}>
           <CloseIcon fontSize="small" />
         </IconButton>
@@ -173,16 +155,35 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
             }
           }}
         />
-        <Grid
-          gridRef={gridRef}
-          columnCount={COLS}
-          rowCount={rowCount}
-          columnWidth={CELL_SIZE}
-          rowHeight={CELL_SIZE}
-          style={{ width: COLS * CELL_SIZE + 17, height: GRID_H }}
-          cellComponent={SpriteCell}
-          cellProps={cellData}
-        />
+        {!clientPath && (
+          <Box sx={{ p: 2, color: 'text.secondary' }}>
+            <Typography variant="body2">
+              Set the Dark Ages client path in Settings to browse creature sprites.
+            </Typography>
+          </Box>
+        )}
+        {clientPath && loadError && (
+          <Box sx={{ p: 2, color: 'error.main' }}>
+            <Typography variant="body2">Failed to load creature sprites: {loadError}</Typography>
+          </Box>
+        )}
+        {clientPath && !loadError && !index && (
+          <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress size={32} />
+          </Box>
+        )}
+        {clientPath && !loadError && index && (
+          <Grid
+            gridRef={gridRef}
+            columnCount={COLS}
+            rowCount={rowCount}
+            columnWidth={CELL_SIZE}
+            rowHeight={CELL_SIZE}
+            style={{ width: COLS * CELL_SIZE + 17, height: GRID_H }}
+            cellComponent={SpriteCell}
+            cellProps={cellData}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

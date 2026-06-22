@@ -25,7 +25,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import CommentField from '../shared/CommentField'
-import spriteMeta, { keyFromSprite, spriteUrl, frameDisplay } from '../../data/creatureSpriteData'
+import CreatureSpriteCanvas from '../shared/CreatureSpriteCanvas'
 import SpritePickerDialog from '../shared/SpritePickerDialog'
 import GridViewIcon from '@mui/icons-material/GridView'
 import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
@@ -319,11 +319,6 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
   const set = (field, val) => onChange({ ...data, [field]: val })
 
   const SPRITE_PREVIEW = 96
-  const spritePreviewKey = keyFromSprite(data.sprite)
-  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null
-  const spritePreviewFrame = spritePreviewMeta
-    ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW)
-    : null
 
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
@@ -383,23 +378,7 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     bgcolor: 'action.hover'
                   }}
                 >
-                  {spritePreviewFrame && (
-                    <Box
-                      sx={{
-                        width: spritePreviewFrame.clipW,
-                        height: spritePreviewFrame.clipH,
-                        overflow: 'hidden',
-                        flexShrink: 0
-                      }}
-                    >
-                      <img
-                        src={spriteUrl(spritePreviewKey)}
-                        alt={spritePreviewKey}
-                        draggable={false}
-                        style={spritePreviewFrame.imgStyle}
-                      />
-                    </Box>
-                  )}
+                  <CreatureSpriteCanvas value={data.sprite} size={SPRITE_PREVIEW} />
                 </Box>
                 <Button
                   size="small"
@@ -482,8 +461,8 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
             open={spritePickerOpen}
             value={data.sprite}
             onClose={() => setSpritePickerOpen(false)}
-            onChange={(key) => {
-              set('sprite', String(parseInt(key.replace('monster', ''), 10)))
+            onChange={(id) => {
+              set('sprite', String(id))
               setSpritePickerOpen(false)
             }}
           />
@@ -623,11 +602,6 @@ function CreatureEditor({
   if (saveRef) saveRef.current = () => onSave(data, fileName)
 
   const SPRITE_PREVIEW = 96
-  const spritePreviewKey = keyFromSprite(data.sprite)
-  const spritePreviewMeta = spritePreviewKey ? spriteMeta[spritePreviewKey] : null
-  const spritePreviewFrame = spritePreviewMeta
-    ? frameDisplay(spritePreviewMeta, spritePreviewMeta.still, SPRITE_PREVIEW)
-    : null
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -680,23 +654,7 @@ function CreatureEditor({
                     bgcolor: 'action.hover'
                   }}
                 >
-                  {spritePreviewFrame && (
-                    <Box
-                      sx={{
-                        width: spritePreviewFrame.clipW,
-                        height: spritePreviewFrame.clipH,
-                        overflow: 'hidden',
-                        flexShrink: 0
-                      }}
-                    >
-                      <img
-                        src={spriteUrl(spritePreviewKey)}
-                        alt={spritePreviewKey}
-                        draggable={false}
-                        style={spritePreviewFrame.imgStyle}
-                      />
-                    </Box>
-                  )}
+                  <CreatureSpriteCanvas value={data.sprite} size={SPRITE_PREVIEW} />
                 </Box>
                 <Button
                   size="small"
@@ -807,8 +765,8 @@ function CreatureEditor({
           open={spritePickerOpen}
           value={data.sprite}
           onClose={() => setSpritePickerOpen(false)}
-          onChange={(key) => {
-            updateData((d) => ({ ...d, sprite: String(parseInt(key.replace('monster', ''), 10)) }))
+          onChange={(id) => {
+            updateData((d) => ({ ...d, sprite: String(id) }))
             setSpritePickerOpen(false)
           }}
         />
