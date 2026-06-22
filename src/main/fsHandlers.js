@@ -26,6 +26,7 @@ export async function readBinaryFile(filePath) {
 // `category` controls which pickers are affected when a file is missing.
 export const KNOWN_DAT_FILES = [
   { rel: 'legend.dat', category: 'sounds + spell/skill icons + item sprites' },
+  { rel: 'hades.dat', category: 'creature/NPC sprites' },
   { rel: 'roh.dat', category: 'spell effects' },
   { rel: 'setoa.dat', category: 'nation crests (nation.epf)' },
   { rel: 'npc/npcbase.dat', category: 'NPC portraits' },
