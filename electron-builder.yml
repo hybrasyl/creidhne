@@ -1,4 +1,4 @@
-appId: com.darkages.creidhne
+appId: co.eris.creidhne
 productName: Creidhne
 directories:
   buildResources: build
@@ -14,7 +14,11 @@ files:
   - '!vitest.config.{js,ts,mjs,cjs}'
   - '!eslint.config.{js,ts,mjs,cjs}'
 asarUnpack:
-  - resources/**
+  # Only the lua-annotations template needs to be a real on-disk file
+  # (src/main/index.js fs.copyFile's it into the user's library). The other
+  # resources/ entries are icons that don't need unpacking, so scope this
+  # narrowly instead of unpacking all of resources/**.
+  - resources/lua-annotations/**
 win:
   executableName: Creidhne
   icon: resources/icon.png
@@ -24,6 +28,20 @@ win:
         - x64
 portable:
   artifactName: ${name}-${version}-portable.${ext}
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
+  target:
+    - target: dmg
+      arch:
+        - universal
+dmg:
+  artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - deb
