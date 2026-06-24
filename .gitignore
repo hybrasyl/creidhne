@@ -6,7 +6,11 @@ node_modules/
 # =========================
 # Build output
 # =========================
-build/
+# build/ is electron-builder's buildResources dir: ignore stray build
+# output but keep the macOS signing/icon inputs that must be committed.
+build/*
+!build/entitlements.mac.plist
+!build/icon.icns
 dist/
 out/
 
