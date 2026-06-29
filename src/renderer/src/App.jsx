@@ -114,9 +114,29 @@ function App() {
     }
   }, [clientPath, setActivePacks, setPackCoverage])
 
-  // Load persisted index from disk whenever active library changes
+  // Load persisted index from disk whenever active library changes. The index
+  // is a rebuildable cache that now lives outside the (git) world folder, so a
+  // fresh clone — or a world edited externally — may have no cache or a stale
+  // one. Auto-build in that case (progress shows via the build pill), then
+  // hydrate. buildIndex is incremental, so an up-to-date cache makes this cheap.
   useEffect(() => {
-    hydrateLibraryIndex(activeLibrary)
+    let cancelled = false
+    ;(async () => {
+      if (activeLibrary) {
+        try {
+          const status = await window.electronAPI.getIndexStatus(activeLibrary)
+          if (!status?.exists || status?.stale) {
+            await window.electronAPI.buildIndex(activeLibrary)
+          }
+        } catch {
+          // Status/build failure shouldn't block hydration of whatever exists.
+        }
+      }
+      if (!cancelled) await hydrateLibraryIndex(activeLibrary)
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [activeLibrary, hydrateLibraryIndex])
 
   // Save settings whenever theme or libraries change. Skip until fetchSettings

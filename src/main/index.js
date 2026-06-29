@@ -1,6 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
-import { promises as fs } from 'fs'
+import { promises as fs, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { getCreidhneFilePath, ensureCreidhneDir } from './worldData.js'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
@@ -61,10 +61,47 @@ import {
   resolveAsset
 } from './assetPacks/index.js'
 
-// Settings in %APPDATA%/Erisco/Creidhne (roaming), cache in %LOCALAPPDATA%/Erisco/Creidhne (local)
-const settingsPath = join(app.getPath('appData'), 'Erisco', 'Creidhne')
-const cachePath = join(app.getPath('cache'), 'Erisco', 'Creidhne')
+// Local per-user app-data root. On Windows, Electron's app.getPath('cache')
+// actually returns the ROAMING dir (Windows has no standard per-user cache dir,
+// so Chromium falls back to %APPDATA%) — so resolve %LOCALAPPDATA% explicitly.
+// macOS/Linux have no roaming concept; appData is already the right local dir.
+function localAppDataDir() {
+  if (process.platform === 'win32') {
+    return process.env.LOCALAPPDATA || join(app.getPath('home'), 'AppData', 'Local')
+  }
+  return app.getPath('appData')
+}
+
+// Settings + cache both under %LOCALAPPDATA%/Erisco/Creidhne (local). Settings
+// previously lived in %APPDATA% (roaming); migrate once below so users keep
+// their libraries/preferences. (The world index lives separately, under
+// %LOCALAPPDATA%/Erisco/hybindex, managed by @eriscorp/hybindex-ts.)
+const localBase = join(localAppDataDir(), 'Erisco', 'Creidhne')
+const settingsPath = localBase
+const cachePath = localBase
 app.setPath('userData', cachePath)
+
+// One-time roaming → local settings migration. Runs before the settings
+// manager first reads, so a returning user's settings.json (libraries,
+// activeLibrary, theme, clientPath/taliesinPath) carries over instead of
+// resetting to defaults. Best-effort: any failure falls through to defaults.
+function migrateSettingsFromRoaming() {
+  try {
+    const oldDir = join(app.getPath('appData'), 'Erisco', 'Creidhne')
+    if (oldDir === settingsPath) return // same location (e.g. non-Windows) — nothing to do
+    const newPrimary = join(settingsPath, 'settings.json')
+    if (existsSync(newPrimary)) return // already migrated or fresh local settings exist
+    const oldPrimary = join(oldDir, 'settings.json')
+    if (!existsSync(oldPrimary)) return // nothing to migrate
+    mkdirSync(settingsPath, { recursive: true })
+    copyFileSync(oldPrimary, newPrimary)
+    const oldBackup = join(oldDir, 'settings.bak.json')
+    if (existsSync(oldBackup)) copyFileSync(oldBackup, join(settingsPath, 'settings.bak.json'))
+  } catch {
+    /* best effort — settings manager will fall back to defaults */
+  }
+}
+migrateSettingsFromRoaming()
 
 const settingsManager = createSettingsManager(settingsPath)
 
