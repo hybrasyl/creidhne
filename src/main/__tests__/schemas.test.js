@@ -15,8 +15,11 @@ describe('settingsSchema', () => {
     theme: 'light',
     clientPath: null,
     taliesinPath: null,
+    brigidAssetsPath: null,
     iconPickerMode: 'vanilla',
-    nationCrestPickerMode: 'vanilla'
+    nationCrestPickerMode: 'vanilla',
+    npcPortraitPickerMode: 'vanilla',
+    soundPickerMode: 'vanilla'
   }
 
   it('accepts a fully-populated valid payload', () => {

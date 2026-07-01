@@ -106,10 +106,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
   confirmClose: () => ipcRenderer.send('app:confirm-close'),
-  // Hybrasyl asset packs (*.datf in the DA client dir)
+  // Hybrasyl asset packs (*.datf in the brigid assets dir + DA client dir)
   listActivePacks: () => ipcRenderer.invoke('pack:listActive'),
   listPackCoveredIds: (subtype) => ipcRenderer.invoke('pack:listCoveredIds', subtype),
-  resolvePackAsset: (subtype, id) => ipcRenderer.invoke('pack:resolveAsset', subtype, id)
+  resolvePackAsset: (subtype, id) => ipcRenderer.invoke('pack:resolveAsset', subtype, id),
+  resolvePackAssetUrl: (subtype, id) => ipcRenderer.invoke('pack:resolveAssetUrl', subtype, id),
+  getSuggestedBrigidAssetsPath: () => ipcRenderer.invoke('pack:suggestedBrigidAssetsPath')
 })
 
 // If context isolation is disabled, add to the DOM global directly

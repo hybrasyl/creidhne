@@ -13,6 +13,9 @@ export const settingsSchema = z.object({
   theme: z.string(),
   clientPath: z.string().nullable(),
   taliesinPath: z.string().nullable(),
+  brigidAssetsPath: z.string().nullable(),
   iconPickerMode: PickerMode,
-  nationCrestPickerMode: PickerMode
+  nationCrestPickerMode: PickerMode,
+  npcPortraitPickerMode: PickerMode,
+  soundPickerMode: PickerMode
 })

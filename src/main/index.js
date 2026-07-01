@@ -55,10 +55,11 @@ import {
 } from './indexService.js'
 import { saveSection } from '@eriscorp/hybindex-ts'
 import {
-  loadPacksForClientPath,
+  loadPacks,
   listActivePacks,
   listCoveredIds,
-  resolveAsset
+  resolveAsset,
+  resolveAssetUrl
 } from './assetPacks/index.js'
 
 // Local per-user app-data root. On Windows, Electron's app.getPath('cache')
@@ -425,14 +426,22 @@ app.whenReady().then(async () => {
     const before = await settingsManager.load()
     await settingsManager.save(parsed)
     // Refresh path-safety roots in lockstep with the persisted settings so a
-    // newly-added library or clientPath becomes immediately valid.
+    // newly-added library, clientPath, or brigidAssetsPath becomes immediately valid.
     applySettingsRoots(parsed)
-    if (before?.clientPath !== parsed?.clientPath) {
-      await loadPacksForClientPath(parsed?.clientPath || null)
+    // .datf packs are scanned from both the brigid assets dir and the DA client
+    // dir; reload when either source path changes.
+    if (
+      before?.clientPath !== parsed?.clientPath ||
+      before?.brigidAssetsPath !== parsed?.brigidAssetsPath
+    ) {
+      await loadPacks({
+        brigidAssetsPath: parsed?.brigidAssetsPath || null,
+        clientPath: parsed?.clientPath || null
+      })
     }
   })
 
-  // Hybrasyl asset packs (*.datf bundles in the DA client dir)
+  // Hybrasyl asset packs (*.datf bundles in the brigid assets dir + DA client dir)
   ipcMain.handle('pack:listActive', () => listActivePacks())
   ipcMain.handle('pack:listCoveredIds', (_, subtype) => listCoveredIds(subtype))
   ipcMain.handle('pack:resolveAsset', async (_, subtype, id) => {
@@ -440,11 +449,28 @@ app.whenReady().then(async () => {
     if (!buf) return null
     return `data:image/png;base64,${buf.toString('base64')}`
   })
+  // MIME-aware variant for non-PNG assets (e.g. sound_effects audio). Returns a
+  // full data URL with the correct MIME inferred from the pack entry extension.
+  ipcMain.handle('pack:resolveAssetUrl', (_, subtype, id) => resolveAssetUrl(subtype, id))
 
-  // Initial pack load from saved clientPath, if any.
+  // Suggested default location for brigid's .datf packs, so the settings UI can
+  // offer a "Use default" prefill. Mirrors brigid's AppPaths.AssetsDir:
+  // %LOCALAPPDATA%\erisco\Brigid\assets on Windows.
+  ipcMain.handle('pack:suggestedBrigidAssetsPath', () => {
+    const localAppData = process.env.LOCALAPPDATA
+    if (!localAppData) return null
+    return join(localAppData, 'erisco', 'Brigid', 'assets')
+  })
+
+  // Initial pack load from saved source paths, if any.
   settingsManager
     .load()
-    .then((s) => loadPacksForClientPath(s?.clientPath || null))
+    .then((s) =>
+      loadPacks({
+        brigidAssetsPath: s?.brigidAssetsPath || null,
+        clientPath: s?.clientPath || null
+      })
+    )
     .catch(() => {})
 
   ipcMain.handle('get-user-data-path', async () => {

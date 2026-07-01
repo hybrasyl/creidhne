@@ -10,9 +10,10 @@ import unzipper from 'unzipper'
 import { validateManifest } from './manifest.js'
 import { getHandler } from './handlers/index.js'
 
-// Single-active state: we only ever load packs for one client path at a time.
-// Reloaded on client-path change; not watched for file changes within a session.
-let state = { clientPath: null, packs: [] }
+// Single-active state: the merged set of packs loaded from the currently
+// configured source directories. Reloaded whenever a source path changes;
+// not watched for file changes within a session.
+let state = { sources: [], packs: [] }
 
 // Tracks the in-flight load so concurrent IPC getters can wait for it to
 // finish. Without this, the renderer's initial listActivePacks() would race
@@ -70,16 +71,29 @@ async function loadPack(filePath) {
     return null
   }
 
-  const entries = new Map() // handler-defined key → zip entry
-  const coverage = new Map() // subtype → Set<id>
-  for (const zipEntry of directory.files) {
-    if (zipEntry.path === '_manifest.json') continue
-    if (zipEntry.type && zipEntry.type !== 'File') continue
-    const parsed = handler.parseEntry(zipEntry.path)
-    if (!parsed) continue
-    entries.set(parsed.key, zipEntry)
-    if (!coverage.has(parsed.subtype)) coverage.set(parsed.subtype, new Set())
-    coverage.get(parsed.subtype).add(parsed.id)
+  // Two indexing paths. Flat-schema types (ability_icons, nation_badges, …)
+  // derive coverage per-file via parseEntry. Manifest-driven types
+  // (npc_portraits, …) need the whole manifest — the key→file mapping lives in
+  // `covers`, not the filename — so they implement buildIndex(manifest, files)
+  // and own the entries/coverage construction wholesale.
+  let entries // handler-defined key → zip entry
+  let coverage // subtype → Set<id>
+  if (typeof handler.buildIndex === 'function') {
+    const built = handler.buildIndex(manifest, directory.files)
+    entries = built.entries
+    coverage = built.coverage
+  } else {
+    entries = new Map()
+    coverage = new Map()
+    for (const zipEntry of directory.files) {
+      if (zipEntry.path === '_manifest.json') continue
+      if (zipEntry.type && zipEntry.type !== 'File') continue
+      const parsed = handler.parseEntry(zipEntry.path)
+      if (!parsed) continue
+      entries.set(parsed.key, zipEntry)
+      if (!coverage.has(parsed.subtype)) coverage.set(parsed.subtype, new Set())
+      coverage.get(parsed.subtype).add(parsed.id)
+    }
   }
 
   return {
@@ -92,30 +106,48 @@ async function loadPack(filePath) {
   }
 }
 
-// Scan a client-path for *.datf files and load each. Called on app start +
-// whenever the user changes the client path.
-export function loadPacksForClientPath(clientPath) {
+// Scan one directory (top-level) for *.datf files and load each. Mirrors
+// brigid's own TopDirectoryOnly discovery. Returns loaded packs; missing or
+// unreadable dirs yield an empty list.
+async function loadPacksFromDir(dir) {
+  if (!dir) return []
+  let files = []
+  try {
+    files = await fs.readdir(dir)
+  } catch {
+    return []
+  }
+  const packs = []
+  const datfFiles = files.filter((f) => f.toLowerCase().endsWith('.datf'))
+  for (const f of datfFiles) {
+    const pack = await loadPack(join(dir, f))
+    if (pack) packs.push(pack)
+  }
+  return packs
+}
+
+// Scan every configured source directory for *.datf files and load each into
+// one merged set. Called on app start + whenever a source path changes.
+// Sources are scanned in order (brigid assets dir first, then the DA client
+// dir); ties in priority resolve to the first source scanned.
+export function loadPacks({ brigidAssetsPath = null, clientPath = null } = {}) {
   pendingLoad = (async () => {
-    state = { clientPath, packs: [] }
-    if (!clientPath) return
-
-    let files = []
-    try {
-      files = await fs.readdir(clientPath)
-    } catch {
-      return
+    const sources = [brigidAssetsPath, clientPath].filter(Boolean)
+    state = { sources, packs: [] }
+    for (const dir of sources) {
+      const packs = await loadPacksFromDir(dir)
+      state.packs.push(...packs)
     }
-
-    const datfFiles = files.filter((f) => f.toLowerCase().endsWith('.datf'))
-    for (const f of datfFiles) {
-      const pack = await loadPack(join(clientPath, f))
-      if (pack) state.packs.push(pack)
-    }
-
-    // Higher priority resolves first.
+    // Higher priority resolves first. Stable sort preserves source order for ties.
     state.packs.sort((a, b) => (b.manifest.priority ?? 0) - (a.manifest.priority ?? 0))
   })()
   return pendingLoad
+}
+
+// Back-compat wrapper: scan a single client path. Retained so existing
+// callers/tests that only know about the DA client dir keep working.
+export function loadPacksForClientPath(clientPath) {
+  return loadPacks({ clientPath })
 }
 
 // IPC-safe summaries (strip zip-entry references and the handler instance).
@@ -138,7 +170,12 @@ export async function listCoveredIds(subtype) {
     const set = pack.coverage.get(subtype)
     if (set) for (const id of set) merged.add(id)
   }
-  return Array.from(merged).sort((a, b) => a - b)
+  const ids = Array.from(merged)
+  // Numeric subtypes (nation, item, skill…) sort numerically; string-keyed
+  // subtypes (npcportrait) sort lexicographically.
+  return ids.every((x) => typeof x === 'number')
+    ? ids.sort((a, b) => a - b)
+    : ids.sort((a, b) => String(a).localeCompare(String(b)))
 }
 
 // Returns a PNG buffer from the highest-priority pack covering (subtype, id),
@@ -161,8 +198,44 @@ export async function resolveAsset(subtype, id) {
   return null
 }
 
+// MIME lookup for building data URLs. Covers the image extensions used by the
+// flat/manifest handlers and the audio extensions used by sound_effects.
+const MIME_BY_EXT = {
+  png: 'image/png',
+  webp: 'image/webp',
+  mp3: 'audio/mpeg',
+  ogg: 'audio/ogg',
+  wav: 'audio/wav',
+  flac: 'audio/flac'
+}
+
+// Like resolveAsset, but returns a ready-to-use `data:<mime>;base64,…` URL with
+// the MIME inferred from the covering entry's file extension. General across
+// image and audio packs — image canvases can use resolveAsset (raw buffer),
+// audio needs the correct MIME, so it uses this. Returns null when uncovered.
+export async function resolveAssetUrl(subtype, id) {
+  await pendingLoad
+  for (const pack of state.packs) {
+    const key = pack.handler.keyFor(subtype, id)
+    if (!key) continue
+    const entry = pack.entries.get(key)
+    if (!entry) continue
+    try {
+      const buf = await entry.buffer()
+      const ext = String(entry.path).split('.').pop().toLowerCase()
+      const mime = MIME_BY_EXT[ext] || 'application/octet-stream'
+      return `data:${mime};base64,${buf.toString('base64')}`
+    } catch (err) {
+      console.warn(
+        `[assetPackLoader] failed reading ${subtype}${id} from ${pack.fileName}: ${err.message}`
+      )
+    }
+  }
+  return null
+}
+
 // Test hook — reset state between tests.
 export function _resetForTests() {
-  state = { clientPath: null, packs: [] }
+  state = { sources: [], packs: [] }
   pendingLoad = Promise.resolve()
 }

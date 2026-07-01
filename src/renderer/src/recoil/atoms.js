@@ -32,6 +32,21 @@ export const taliesinPathState = atom({
   default: null // Path to companion app (Taliesin.exe)
 })
 
+export const brigidAssetsPathState = atom({
+  key: 'brigidAssetsPathState',
+  default: null // Path to brigid's .datf asset-pack folder (%LOCALAPPDATA%\erisco\Brigid\assets)
+})
+
+export const npcPortraitPickerModeState = atom({
+  key: 'npcPortraitPickerModeState',
+  default: 'vanilla' // 'vanilla' | 'hybrasyl' — NPC portrait picker asset source
+})
+
+export const soundPickerModeState = atom({
+  key: 'soundPickerModeState',
+  default: 'vanilla' // 'vanilla' | 'hybrasyl' — sound-effect picker asset source
+})
+
 export const librariesState = atom({
   key: 'librariesState',
   default: []
