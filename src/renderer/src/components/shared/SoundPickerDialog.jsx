@@ -8,22 +8,30 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import { List } from 'react-window'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
-import { useSoundIndex, playSound, stopSound, useCurrentlyPlayingSound } from '../../data/soundData'
+import { useRecoilValue, useRecoilState } from 'recoil'
+import { clientPathState, packCoverageState, soundPickerModeState } from '../../recoil/atoms'
+import {
+  useSoundIndex,
+  playSound,
+  playPackSound,
+  stopSound,
+  useCurrentlyPlayingSound
+} from '../../data/soundData'
 
 const ROW_HEIGHT = 40
 const LIST_HEIGHT = 480
 const LIST_WIDTH = 320
 
-function Row({ index, style, ids, selectedId, onSelect, clientPath, playingId }) {
+function Row({ index, style, ids, selectedId, onSelect, clientPath, playingId, preferPack }) {
   const id = ids[index]
   const selected = id === selectedId
   const isPlaying = playingId === id
@@ -31,6 +39,7 @@ function Row({ index, style, ids, selectedId, onSelect, clientPath, playingId })
   const togglePlay = (e) => {
     e.stopPropagation()
     if (isPlaying) stopSound()
+    else if (preferPack) playPackSound(clientPath, id)
     else playSound(clientPath, id)
   }
 
@@ -64,15 +73,30 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
   const clientPath = useRecoilValue(clientPathState)
   const ids = useSoundIndex()
   const playingId = useCurrentlyPlayingSound()
+  const packCoverage = useRecoilValue(packCoverageState)
+  const [mode, setMode] = useRecoilState(soundPickerModeState)
   const [search, setSearch] = useState('')
   const listRef = useRef(null)
 
+  const packHasType = (packCoverage.sfx?.length ?? 0) > 0
+  const effectiveMode = packHasType ? mode : 'vanilla'
+  const preferPack = effectiveMode === 'hybrasyl'
+
+  // Base list: vanilla legend.dat sound ids, plus (in Hybrasyl mode) any
+  // pack-only sound ids the vanilla archive doesn't have.
+  const allIds = useMemo(() => {
+    const base = ids || []
+    if (!preferPack || !packHasType) return base
+    const merged = new Set(base)
+    for (const id of packCoverage.sfx || []) merged.add(id)
+    return Array.from(merged).sort((a, b) => a - b)
+  }, [ids, preferPack, packHasType, packCoverage])
+
   const filteredIds = useMemo(() => {
-    if (!ids) return []
     const q = search.trim()
-    if (!q) return ids
-    return ids.filter((id) => String(id).includes(q))
-  }, [ids, search])
+    if (!q) return allIds
+    return allIds.filter((id) => String(id).includes(q))
+  }, [allIds, search])
 
   const selectedId = useMemo(() => {
     const n = Number(value)
@@ -92,8 +116,8 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
   }, [open])
 
   const itemData = useMemo(
-    () => ({ ids: filteredIds, selectedId, onSelect: onChange, clientPath, playingId }),
-    [filteredIds, selectedId, onChange, clientPath, playingId]
+    () => ({ ids: filteredIds, selectedId, onSelect: onChange, clientPath, playingId, preferPack }),
+    [filteredIds, selectedId, onChange, clientPath, playingId, preferPack]
   )
 
   return (
@@ -102,8 +126,20 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
         Sounds
         {ids && (
           <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-            ({ids.length.toLocaleString()} total)
+            ({allIds.length.toLocaleString()} total)
           </Typography>
+        )}
+        {packHasType && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={{ ml: 2 }}
+          >
+            <ToggleButton value="vanilla">Vanilla</ToggleButton>
+            <ToggleButton value="hybrasyl">Hybrasyl</ToggleButton>
+          </ToggleButtonGroup>
         )}
         <IconButton size="small" onClick={onClose} sx={{ ml: 'auto' }}>
           <CloseIcon fontSize="small" />

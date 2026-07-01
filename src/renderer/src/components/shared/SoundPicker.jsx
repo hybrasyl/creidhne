@@ -5,8 +5,8 @@ import StopIcon from '@mui/icons-material/Stop'
 import ListIcon from '@mui/icons-material/List'
 import HelpIcon from '@mui/icons-material/Help'
 import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
-import { playSound, stopSound, useCurrentlyPlayingSound } from '../../data/soundData'
+import { clientPathState, packCoverageState, soundPickerModeState } from '../../recoil/atoms'
+import { playSound, playPackSound, stopSound, useCurrentlyPlayingSound } from '../../data/soundData'
 import SoundPickerDialog from './SoundPickerDialog'
 
 export default function SoundPicker({
@@ -19,15 +19,19 @@ export default function SoundPicker({
 }) {
   const [open, setOpen] = useState(false)
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
+  const mode = useRecoilValue(soundPickerModeState)
   const playingId = useCurrentlyPlayingSound()
 
   const numericId = Number(value)
   const isValid = Number.isFinite(numericId) && numericId >= 0
   const isPlaying = isValid && playingId === numericId
+  const preferPack = mode === 'hybrasyl' && (packCoverage.sfx?.length ?? 0) > 0
 
   const handlePlayToggle = () => {
     if (!clientPath || !isValid) return
     if (isPlaying) stopSound()
+    else if (preferPack) playPackSound(clientPath, numericId)
     else playSound(clientPath, numericId)
   }
 

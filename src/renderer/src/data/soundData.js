@@ -79,14 +79,10 @@ export async function getSoundBlobUrl(clientPath, id) {
   return url
 }
 
-/**
- * Play a sound. Stops any currently-playing sound first.
- * Returns true if playback started, false otherwise.
- */
-export async function playSound(clientPath, id) {
-  stopSound()
-  const url = await getSoundBlobUrl(clientPath, id)
-  if (!url) return false
+// Shared playback body: point the single audio element at `url`, wire the
+// end/error handlers, and mark `id` as the currently-playing sound. Used by
+// both vanilla (legend.dat blob) and Hybrasyl (pack data URL) playback.
+async function playUrl(url, id, label) {
   const audio = getAudioElement()
   audio.src = url
   audio.onended = () => {
@@ -96,7 +92,7 @@ export async function playSound(clientPath, id) {
     }
   }
   audio.onerror = () => {
-    console.warn(`[soundData] playback error for id ${id}:`, audio.error)
+    console.warn(`[soundData] ${label} playback error for id ${id}:`, audio.error)
     if (currentPlayingId === Number(id)) {
       currentPlayingId = null
       notify()
@@ -108,13 +104,36 @@ export async function playSound(clientPath, id) {
     await audio.play()
     return true
   } catch (err) {
-    console.warn(`[soundData] audio.play() rejected for id ${id}:`, err)
+    console.warn(`[soundData] ${label} audio.play() rejected for id ${id}:`, err)
     if (currentPlayingId === Number(id)) {
       currentPlayingId = null
       notify()
     }
     return false
   }
+}
+
+/**
+ * Play a vanilla sound from legend.dat. Stops any currently-playing sound first.
+ * Returns true if playback started, false otherwise.
+ */
+export async function playSound(clientPath, id) {
+  stopSound()
+  const url = await getSoundBlobUrl(clientPath, id)
+  if (!url) return false
+  return playUrl(url, id, 'vanilla')
+}
+
+/**
+ * Play a Hybrasyl sound-effect override from an active .datf pack, falling back
+ * to the vanilla legend.dat sound if no pack covers this id. Stops any
+ * currently-playing sound first. Returns true if playback started.
+ */
+export async function playPackSound(clientPath, id) {
+  stopSound()
+  const url = await window.electronAPI.resolvePackAssetUrl('sfx', id)
+  if (!url) return playSound(clientPath, id)
+  return playUrl(url, id, 'pack')
 }
 
 export function stopSound() {
