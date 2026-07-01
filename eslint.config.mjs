@@ -9,5 +9,12 @@ export default [
   reactPlugin.configs.flat.recommended,
   reactPlugin.configs.flat['jsx-runtime'],
   { settings: { react: { version: 'detect' } } },
-  electronToolkitPrettier
+  electronToolkitPrettier,
+  {
+    rules: {
+      // This codebase uses plain function components without PropTypes
+      // (validation lives in the XSD/IPC layer, not runtime prop checks).
+      'react/prop-types': 'off'
+    }
+  }
 ]
