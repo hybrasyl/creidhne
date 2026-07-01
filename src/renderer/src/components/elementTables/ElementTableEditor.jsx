@@ -225,7 +225,7 @@ function ElementTableEditor({
     width: 160
   }
 
-  const stickyColHeader = (ci) => ({
+  const stickyColHeader = () => ({
     position: 'sticky',
     top: 0,
     zIndex: 3,

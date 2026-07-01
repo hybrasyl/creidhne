@@ -868,11 +868,6 @@ function HandlersTab({ data, updateData }) {
     setOpenChat(checked)
   }
 
-  const setDeath = (field) => (val) =>
-    updateData((d) => ({
-      ...d,
-      handlers: { ...d.handlers, death: { ...d.handlers.death, [field]: val } }
-    }))
   const setDeathSub = (field, subField) => (e) =>
     updateData((d) => ({
       ...d,

@@ -41,11 +41,6 @@ import {
 } from '../../data/formulaConstants'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj))
-}
-
 function mergeSettings(saved) {
   return {
     budgetModifier: { ...DEFAULT_BUDGET_MODIFIER, ...saved?.budgetModifier },

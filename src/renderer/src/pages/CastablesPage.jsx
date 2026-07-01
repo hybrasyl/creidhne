@@ -73,7 +73,7 @@ function CastablesPage() {
     Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
       setLoading(false)
     )
-  }, [activeLibrary]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeLibrary])
 
   const handleToggleArchived = async () => {
     const next = !showArchived

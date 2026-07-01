@@ -68,7 +68,7 @@ function FormulasPage() {
     setSelectedFile(null)
     setEditingFormula(null)
     loadData(activeLibrary)
-  }, [activeLibrary]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeLibrary])
 
   // Active = !isArchived; Archived = isArchived. Sort each by name asc so the
   // panel's virtualized active list and native archived list are stable.

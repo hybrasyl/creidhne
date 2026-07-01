@@ -34,7 +34,6 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
 
   const categories = categoriesFor(slot)
   const category = categories.length ? categories : null
-  const mapped = Boolean(category)
   const previewColor = slot === 'Helmet' ? '' : color
 
   const handleSelect = (id) => {

@@ -26,7 +26,7 @@ const DEFAULT_REACTOR = {
   displayCookie: ''
 }
 
-function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
+function ReactorRow({ reactor, statusNames, onChange, onRemove }) {
   const set = (field, val) => onChange({ ...reactor, [field]: val })
   const setNumeric = (field) => (e) => set(field, e.target.value.replace(/\D/g, ''))
   const setSignedNumeric = (field) => (e) =>

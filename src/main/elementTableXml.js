@@ -3,7 +3,6 @@ import { extractComment, injectComment } from './xmlCommentUtils.js'
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
-const first = (arr, def = undefined) => (Array.isArray(arr) && arr.length ? arr[0] : def)
 const a = (node, key, def = '') => node?.$?.[key] ?? def
 
 // =============================================================================
