@@ -87,7 +87,7 @@ function BudgetModifierTab({ settings, onChange }) {
   const [newVarKey, setNewVarKey] = useState('')
   const handleAddVar = () => {
     const k = newVarKey.trim()
-    if (!k || vars.hasOwnProperty(k)) return
+    if (!k || Object.hasOwn(vars, k)) return
     onChange({ ...settings, customVariables: { ...vars, [k]: '' } })
     setNewVarKey('')
   }
@@ -545,7 +545,7 @@ function BudgetModifierTab({ settings, onChange }) {
             size="small"
             startIcon={<AddIcon />}
             onClick={handleAddVar}
-            disabled={!newVarKey.trim() || vars.hasOwnProperty(newVarKey.trim())}
+            disabled={!newVarKey.trim() || Object.hasOwn(vars, newVarKey.trim())}
           >
             Add
           </Button>
