@@ -18,6 +18,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
 import { useRecoilValue, useRecoilState } from 'recoil'
 import { clientPathState, packCoverageState, iconPickerModeState } from '../../recoil/atoms'
@@ -84,6 +85,7 @@ function Cell({
 }
 
 export default function IconPickerDialog({ open, type, value, onClose, onChange }) {
+  useRescanPacksOnOpen(open)
   const index = useIconIndex(type)
   const clientPath = useRecoilValue(clientPathState)
   const packCoverage = useRecoilValue(packCoverageState)

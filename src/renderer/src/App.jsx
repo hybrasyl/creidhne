@@ -20,6 +20,7 @@ import {
 } from './recoil/atoms' // Import Recoil atoms
 import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
 import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
+import { loadPackState } from './hooks/usePackRescan'
 
 const themes = {
   hybrasyl: hybrasylTheme,
@@ -106,26 +107,10 @@ function App() {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      try {
-        const packs = await window.electronAPI.listActivePacks()
-        if (cancelled) return
-        const packList = Array.isArray(packs) ? packs : []
-        setActivePacks(packList)
-
-        const subtypes = new Set()
-        for (const p of packList) for (const s of p.coveredSubtypes || []) subtypes.add(s)
-        const coverage = {}
-        for (const s of subtypes) {
-          const ids = await window.electronAPI.listPackCoveredIds(s)
-          coverage[s] = Array.isArray(ids) ? ids : []
-        }
-        if (!cancelled) setPackCoverage(coverage)
-      } catch {
-        if (!cancelled) {
-          setActivePacks([])
-          setPackCoverage({})
-        }
-      }
+      const { packs, coverage } = await loadPackState()
+      if (cancelled) return
+      setActivePacks(packs)
+      setPackCoverage(coverage)
     })()
     return () => {
       cancelled = true

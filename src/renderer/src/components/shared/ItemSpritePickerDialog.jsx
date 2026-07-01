@@ -12,6 +12,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'
@@ -62,6 +63,7 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect })
 // ── Dialog ────────────────────────────────────────────────────────────────────
 
 export default function ItemSpritePickerDialog({ open, value, onClose, onChange }) {
+  useRescanPacksOnOpen(open)
   const clientPath = useRecoilValue(clientPathState)
   const [search, setSearch] = useState('')
   const [index, setIndex] = useState(null) // null = loading, { total, visibleIds } = ready

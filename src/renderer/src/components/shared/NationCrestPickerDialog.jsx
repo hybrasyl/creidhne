@@ -18,6 +18,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
 import { useRecoilValue, useRecoilState } from 'recoil'
 import { clientPathState, packCoverageState, nationCrestPickerModeState } from '../../recoil/atoms'
@@ -82,6 +83,7 @@ function Cell({
 }
 
 export default function NationCrestPickerDialog({ open, value, onClose, onChange }) {
+  useRescanPacksOnOpen(open)
   const clientPath = useRecoilValue(clientPathState)
   const index = useNationCrestIndex()
   const packCoverage = useRecoilValue(packCoverageState)

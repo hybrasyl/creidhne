@@ -446,6 +446,17 @@ app.whenReady().then(async () => {
   // full data URL with the correct MIME inferred from the pack entry extension.
   ipcMain.handle('pack:resolveAssetUrl', (_, subtype, id) => resolveAssetUrl(subtype, id))
 
+  // On-demand rescan of the .datf source dirs so packs dropped in while the app
+  // is running get picked up (pickers call this on open). Re-reads the current
+  // settings paths and reloads.
+  ipcMain.handle('pack:reload', async () => {
+    const s = await settingsManager.load()
+    await loadPacks({
+      brigidAssetsPath: s?.brigidAssetsPath || null,
+      clientPath: s?.clientPath || null
+    })
+  })
+
   // Suggested default location for brigid's .datf packs, so the settings UI can
   // offer a "Use default" prefill. Mirrors brigid's AppPaths.AssetsDir:
   // %LOCALAPPDATA%\erisco\Brigid\assets on Windows.
