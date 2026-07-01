@@ -17,6 +17,10 @@ import creatures from './creatures.js'
 import effects from './effects.js'
 import displaySprites from './displaySprites.js'
 import sounds from './sounds.js'
+import music from './music.js'
+import npcPortraits from './npcPortraits.js'
+import staticTiles from './staticTiles.js'
+import worldMaps from './worldMaps.js'
 import uiSpriteOverrides from './uiSpriteOverrides.js'
 
 const HANDLERS = new Map()
@@ -39,6 +43,10 @@ register(creatures)
 register(effects)
 register(displaySprites)
 register(sounds)
+register(music)
+register(npcPortraits)
+register(staticTiles)
+register(worldMaps)
 register(uiSpriteOverrides)
 
 /** Lookup the registered handler for a given manifest content_type. */

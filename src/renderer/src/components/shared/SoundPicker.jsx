@@ -6,7 +6,7 @@ import ListIcon from '@mui/icons-material/List'
 import HelpIcon from '@mui/icons-material/Help'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'
-import { playSound, stopSound, useCurrentlyPlayingSound } from '../../data/soundData'
+import { playPackSound, stopSound, useCurrentlyPlayingSound } from '../../data/soundData'
 import SoundPickerDialog from './SoundPickerDialog'
 
 export default function SoundPicker({
@@ -28,7 +28,9 @@ export default function SoundPicker({
   const handlePlayToggle = () => {
     if (!clientPath || !isValid) return
     if (isPlaying) stopSound()
-    else playSound(clientPath, numericId)
+    // Always prefer the pack override when one covers this id; playPackSound
+    // falls back to the vanilla legend.dat sound when it doesn't.
+    else playPackSound(clientPath, numericId)
   }
 
   const handleSelect = (id) => {

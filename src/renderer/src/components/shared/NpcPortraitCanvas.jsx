@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
 
 /**
@@ -10,12 +10,25 @@ import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
  * filename doesn't resolve.
  *
  * Props:
- *   filename — literal SPF name (e.g. "mage.spf"); controlled value
- *   size     — square canvas edge in CSS px (default 96)
+ *   filename   — literal SPF name (e.g. "mage.spf"); controlled value
+ *   size       — square canvas edge in CSS px (default 96)
+ *   preferPack — when true, try a Hybrasyl .datf pack override (keyed by the
+ *                portrait name) first; fall back to the vanilla SPF bitmap if
+ *                no pack covers this portrait. When omitted (inline field
+ *                previews), it self-derives from pack coverage: the pack asset
+ *                is always preferred when a pack covers this portrait, so the
+ *                form shows what the player actually sees.
  */
-export default function NpcPortraitCanvas({ filename, size = 96 }) {
+export default function NpcPortraitCanvas({ filename, size = 96, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
   const canvasRef = useRef(null)
+
+  // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
+  // whenever a pack covers this portrait key (case-insensitive).
+  const nameLc = String(filename || '').toLowerCase()
+  const autoPrefer = (packCoverage.npcportrait || []).some((k) => k.toLowerCase() === nameLc)
+  const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {
     let cancelled = false
@@ -24,25 +37,50 @@ export default function NpcPortraitCanvas({ filename, size = 96 }) {
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, size, size)
     if (!clientPath || !filename) return undefined
-    getNpcPortraitBitmap(clientPath, filename)
-      .then((bmp) => {
-        if (cancelled || !bmp) return
-        // Scale-to-fit preserving aspect ratio; center inside the canvas.
-        const scale = Math.min(size / bmp.width, size / bmp.height, 1)
-        const w = Math.round(bmp.width * scale)
-        const h = Math.round(bmp.height * scale)
-        const dx = Math.floor((size - w) / 2)
-        const dy = Math.floor((size - h) / 2)
-        ctx.imageSmoothingEnabled = false
-        ctx.drawImage(bmp, dx, dy, w, h)
-      })
-      .catch(() => {
-        /* blank */
-      })
+
+    // Scale-to-fit preserving aspect ratio; center inside the canvas.
+    const drawScaled = (source) => {
+      const scale = Math.min(size / source.width, size / source.height, 1)
+      const w = Math.round(source.width * scale)
+      const h = Math.round(source.height * scale)
+      const dx = Math.floor((size - w) / 2)
+      const dy = Math.floor((size - h) / 2)
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(source, dx, dy, w, h)
+    }
+
+    const drawVanilla = () =>
+      getNpcPortraitBitmap(clientPath, filename)
+        .then((bmp) => {
+          if (cancelled || !bmp) return
+          drawScaled(bmp)
+        })
+        .catch(() => {
+          /* blank */
+        })
+
+    if (effectivePreferPack) {
+      window.electronAPI
+        .resolvePackAsset('npcportrait', filename)
+        .then((dataUrl) => {
+          if (cancelled) return
+          if (!dataUrl) return drawVanilla()
+          const img = new Image()
+          img.onload = () => {
+            if (cancelled) return
+            drawScaled(img)
+          }
+          img.src = dataUrl
+        })
+        .catch(drawVanilla)
+    } else {
+      drawVanilla()
+    }
+
     return () => {
       cancelled = true
     }
-  }, [clientPath, filename, size])
+  }, [clientPath, filename, size, effectivePreferPack])
 
   return (
     <Box

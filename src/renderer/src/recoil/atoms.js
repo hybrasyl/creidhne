@@ -32,6 +32,26 @@ export const taliesinPathState = atom({
   default: null // Path to companion app (Taliesin.exe)
 })
 
+export const brigidAssetsPathState = atom({
+  key: 'brigidAssetsPathState',
+  default: null // Path to brigid's .datf asset-pack folder (%LOCALAPPDATA%\erisco\Brigid\assets)
+})
+
+export const npcPortraitPickerModeState = atom({
+  key: 'npcPortraitPickerModeState',
+  default: 'vanilla' // 'vanilla' | 'hybrasyl' — NPC portrait picker asset source
+})
+
+export const soundPickerModeState = atom({
+  key: 'soundPickerModeState',
+  default: 'vanilla' // 'vanilla' | 'hybrasyl' — sound-effect picker asset source
+})
+
+export const creaturePickerModeState = atom({
+  key: 'creaturePickerModeState',
+  default: 'vanilla' // 'vanilla' | 'hybrasyl' — creature-sprite picker asset source
+})
+
 export const librariesState = atom({
   key: 'librariesState',
   default: []
@@ -67,8 +87,8 @@ export const activePacksState = atom({
 
 // Per-subtype covered-id set, derived from activePacks. Populated by App
 // whenever activePacks changes. Example: { skill: Set<number>, spell: Set<number>, nation: Set<number> }.
-// Consumed by DualIconView / picker dialogs to answer "does Hybrasyl cover id X?"
-// in O(1).
+// Consumed by the sprite canvases / picker dialogs to answer "does Hybrasyl
+// cover id X?" in O(1).
 export const packCoverageState = atom({
   key: 'packCoverageState',
   default: {}

@@ -7,8 +7,12 @@ const DEFAULTS = {
   theme: 'light',
   clientPath: null,
   taliesinPath: null,
+  brigidAssetsPath: null,
   iconPickerMode: 'vanilla',
-  nationCrestPickerMode: 'vanilla'
+  nationCrestPickerMode: 'vanilla',
+  npcPortraitPickerMode: 'vanilla',
+  soundPickerMode: 'vanilla',
+  creaturePickerMode: 'vanilla'
 }
 
 const PICKER_MODES = new Set(['vanilla', 'hybrasyl'])
@@ -27,12 +31,25 @@ function withDefaults(data) {
     clientPath: typeof data?.clientPath === 'string' ? data.clientPath : DEFAULTS.clientPath,
     taliesinPath:
       typeof data?.taliesinPath === 'string' ? data.taliesinPath : DEFAULTS.taliesinPath,
+    brigidAssetsPath:
+      typeof data?.brigidAssetsPath === 'string'
+        ? data.brigidAssetsPath
+        : DEFAULTS.brigidAssetsPath,
     iconPickerMode: PICKER_MODES.has(data?.iconPickerMode)
       ? data.iconPickerMode
       : DEFAULTS.iconPickerMode,
     nationCrestPickerMode: PICKER_MODES.has(data?.nationCrestPickerMode)
       ? data.nationCrestPickerMode
-      : DEFAULTS.nationCrestPickerMode
+      : DEFAULTS.nationCrestPickerMode,
+    npcPortraitPickerMode: PICKER_MODES.has(data?.npcPortraitPickerMode)
+      ? data.npcPortraitPickerMode
+      : DEFAULTS.npcPortraitPickerMode,
+    soundPickerMode: PICKER_MODES.has(data?.soundPickerMode)
+      ? data.soundPickerMode
+      : DEFAULTS.soundPickerMode,
+    creaturePickerMode: PICKER_MODES.has(data?.creaturePickerMode)
+      ? data.creaturePickerMode
+      : DEFAULTS.creaturePickerMode
   }
 }
 

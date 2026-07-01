@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getCreatureMeta, getCreatureFrameBitmap } from '../../data/creatureSpriteData'
 
 const FRAME_INTERVAL_MS = 200
@@ -12,14 +12,26 @@ const FRAME_INTERVAL_MS = 200
  *
  * By default the forward-facing "still" frame is shown. When `animate` is set
  * and the cell is hovered, the creature's forward-facing walk/attack frames are
- * pre-rendered and cycled. If clientPath isn't set or the sprite can't be
- * rendered, the canvas stays blank (caller provides the placeholder chrome).
+ * pre-rendered and cycled. When `preferPack` is set and a .datf creature_sprites
+ * pack covers this id, its static master PNG is drawn instead (phase-1 packs are
+ * static, so there's no animation); otherwise it falls back to the MPF path. If
+ * clientPath isn't set or the sprite can't be rendered, the canvas stays blank
+ * (caller provides the placeholder chrome). When `preferPack` is omitted (inline
+ * field previews), it self-derives from pack coverage: the pack asset is always
+ * preferred when a pack covers this creature, so the form shows what the player
+ * actually sees.
  */
-export default function CreatureSpriteCanvas({ value, size, animate = false }) {
+export default function CreatureSpriteCanvas({ value, size, animate = false, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
   const canvasRef = useRef(null)
   const [hovered, setHovered] = useState(false)
   const id = Number(value)
+
+  // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
+  // whenever a pack covers this specific creature id.
+  const autoPrefer = (packCoverage.creature || []).includes(id)
+  const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {
     let cancelled = false
@@ -30,6 +42,7 @@ export default function CreatureSpriteCanvas({ value, size, animate = false }) {
 
     if (!clientPath || !id || id < 1) return undefined
 
+    // Native-size centered draw (MPF frames render at their in-game size).
     const draw = (bitmap) => {
       if (cancelled || !bitmap) return
       ctx.clearRect(0, 0, size, size)
@@ -39,9 +52,22 @@ export default function CreatureSpriteCanvas({ value, size, animate = false }) {
       ctx.drawImage(bitmap, dx, dy)
     }
 
+    // Scale-to-fit centered draw (pack masters may exceed the cell size).
+    const drawScaled = (source) => {
+      if (cancelled || !source) return
+      ctx.clearRect(0, 0, size, size)
+      const scale = Math.min(size / source.width, size / source.height, 1)
+      const w = Math.round(source.width * scale)
+      const h = Math.round(source.height * scale)
+      const dx = Math.floor((size - w) / 2)
+      const dy = Math.floor((size - h) / 2)
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(source, dx, dy, w, h)
+    }
+
     let timer = null
 
-    ;(async () => {
+    const drawVanilla = async () => {
       const meta = await getCreatureMeta(clientPath, id)
       if (cancelled || !meta) return
 
@@ -68,6 +94,21 @@ export default function CreatureSpriteCanvas({ value, size, animate = false }) {
         i = (i + 1) % frames.length
         draw(frames[i])
       }, FRAME_INTERVAL_MS)
+    }
+
+    ;(async () => {
+      if (effectivePreferPack) {
+        const dataUrl = await window.electronAPI.resolvePackAsset('creature', id)
+        if (cancelled) return
+        if (dataUrl) {
+          // Pack override is a single static master — draw it, no animation.
+          const img = new Image()
+          img.onload = () => drawScaled(img)
+          img.src = dataUrl
+          return
+        }
+      }
+      await drawVanilla()
     })().catch(() => {
       /* swallow — blank canvas is an acceptable error state */
     })
@@ -76,7 +117,7 @@ export default function CreatureSpriteCanvas({ value, size, animate = false }) {
       cancelled = true
       if (timer) clearInterval(timer)
     }
-  }, [clientPath, id, size, animate, hovered])
+  }, [clientPath, id, size, animate, hovered, effectivePreferPack])
 
   return (
     <Box

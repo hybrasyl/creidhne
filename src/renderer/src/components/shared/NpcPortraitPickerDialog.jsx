@@ -8,11 +8,15 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
+import { useRecoilValue, useRecoilState } from 'recoil'
+import { packCoverageState, npcPortraitPickerModeState } from '../../recoil/atoms'
 import { useNpcPortraitIndex } from '../../data/npcPortraitData'
 import NpcPortraitCanvas from './NpcPortraitCanvas'
 
@@ -21,7 +25,7 @@ const CELL_SIZE = 140
 const IMAGE_SIZE = 96
 const GRID_H = 520
 
-function Cell({ columnIndex, rowIndex, style, names, selectedName, onSelect }) {
+function Cell({ columnIndex, rowIndex, style, names, selectedName, onSelect, preferPack }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= names.length) return <div style={style} />
   const name = names[index]
@@ -46,7 +50,7 @@ function Cell({ columnIndex, rowIndex, style, names, selectedName, onSelect }) {
           '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <NpcPortraitCanvas filename={name} size={IMAGE_SIZE} />
+        <NpcPortraitCanvas filename={name} size={IMAGE_SIZE} preferPack={preferPack} />
         <Typography
           sx={{
             fontSize: '0.72rem',
@@ -68,15 +72,34 @@ function Cell({ columnIndex, rowIndex, style, names, selectedName, onSelect }) {
 
 export default function NpcPortraitPickerDialog({ open, value, onClose, onChange }) {
   const names = useNpcPortraitIndex()
+  const packCoverage = useRecoilValue(packCoverageState)
+  const [mode, setMode] = useRecoilState(npcPortraitPickerModeState)
   const [search, setSearch] = useState('')
   const gridRef = useRef(null)
 
+  const packHasType = (packCoverage.npcportrait?.length ?? 0) > 0
+  const effectiveMode = packHasType ? mode : 'vanilla'
+  const preferPack = effectiveMode === 'hybrasyl'
+
+  // Base list: vanilla SPF names, plus (in Hybrasyl mode) any pack-only
+  // portrait keys the vanilla archive doesn't have (e.g. modern "Gobalt").
+  // Dedup case-insensitively, keeping the vanilla display name when both exist.
+  const allNames = useMemo(() => {
+    const base = names || []
+    if (!preferPack || !packHasType) return base
+    const seen = new Map() // lowercase → display name
+    for (const n of base) seen.set(n.toLowerCase(), n)
+    for (const k of packCoverage.npcportrait || []) {
+      if (!seen.has(k.toLowerCase())) seen.set(k.toLowerCase(), k)
+    }
+    return Array.from(seen.values()).sort((a, b) => a.localeCompare(b))
+  }, [names, preferPack, packHasType, packCoverage])
+
   const filteredNames = useMemo(() => {
-    if (!names) return []
     const q = search.trim().toLowerCase()
-    if (!q) return names
-    return names.filter((n) => n.toLowerCase().includes(q))
-  }, [names, search])
+    if (!q) return allNames
+    return allNames.filter((n) => n.toLowerCase().includes(q))
+  }, [allNames, search])
 
   useEffect(() => {
     if (!open || !value || !gridRef.current || filteredNames.length === 0) return
@@ -91,8 +114,8 @@ export default function NpcPortraitPickerDialog({ open, value, onClose, onChange
   }, [open, value, filteredNames])
 
   const cellData = useMemo(
-    () => ({ names: filteredNames, selectedName: value, onSelect: onChange }),
-    [filteredNames, value, onChange]
+    () => ({ names: filteredNames, selectedName: value, onSelect: onChange, preferPack }),
+    [filteredNames, value, onChange, preferPack]
   )
   const rowCount = Math.ceil(filteredNames.length / COLS)
 
@@ -109,8 +132,20 @@ export default function NpcPortraitPickerDialog({ open, value, onClose, onChange
         NPC Portraits
         {names && (
           <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-            ({names.length.toLocaleString()} total)
+            ({allNames.length.toLocaleString()} total)
           </Typography>
+        )}
+        {packHasType && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={{ ml: 2 }}
+          >
+            <ToggleButton value="vanilla">Vanilla</ToggleButton>
+            <ToggleButton value="hybrasyl">Hybrasyl</ToggleButton>
+          </ToggleButtonGroup>
         )}
         <IconButton size="small" onClick={onClose} sx={{ ml: 'auto' }}>
           <CloseIcon fontSize="small" />

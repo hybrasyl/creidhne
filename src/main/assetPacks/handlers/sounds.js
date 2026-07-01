@@ -1,35 +1,49 @@
-// content_type: 'sounds' (Creidhne-defined; not yet in Comhaigne)
+// content_type: 'sound_effects' (brigid's canonical name; see
+// brigid Brigid.Data/AssetPacks/AssetPackRegistry.cs + SfxPack.cs / AudioPack.cs)
 //
-// Will cover sound effects shipped today as numbered entries inside
-// sound.dat. The wire shape is similar to ability_icons (flat numeric ID
-// per asset), but the asset payloads are audio (MP3/WAV/OGG) rather than
-// PNG — the loader's current "PNG buffer in, PNG buffer out" assumption
-// doesn't apply.
+// Replaces legacy legend.dat {id}.mp3 sound effects. Brigid names entries
+// `sfx_{id}.{ext}` at the ZIP root, where {id} is the integer sound id (the
+// value the server sends in SoundArgs.Sound when IsMusic is false — the SAME
+// numbering as Creidhne's legend.dat sound picker) and {ext} ∈
+// {wav, ogg, mp3, flac}. Zero-padding is tolerated (parsed via base-10 int);
+// ids ≤ 0 are ignored, matching AudioPack's int.TryParse && id > 0 gate.
 //
-// Open questions to resolve in a Comhaigne scoping pass before
-// implementing:
-//   1. Audio container format. MP3 keeps file sizes small; WAV is
-//      simpler but bigger; OGG is open-source. The legacy client used
-//      a custom WAV-like format — modern packs likely target MP3.
-//   2. Filename schema. Likely flat: sound{id:D4}.mp3.
-//   3. Whether music (background tracks) is the same content_type or
-//      a sibling 'music' type — the legacy archive bundles both.
-//   4. Streaming vs. preload. Long tracks shouldn't be cached as
-//      whole buffers; the loader needs a streaming variant.
+// Unlike the image types, the payload is audio: the loader's resolveAssetUrl
+// infers the MIME from the entry extension, and the renderer plays the bytes
+// directly (no decode/render step here).
 //
-// Likely flat schema with audio extensions; will need to extend
-// flatPattern.js (or add an audioFlatPattern.js) to permit non-PNG
-// extensions when this lands.
+// (Background music — content_type 'music' — is a per-map property owned by
+// Taliesin, so Creidhne registers it out_of_scope; see handlers/music.js.)
+
+const SUBTYPE = 'sfx'
+const EXT = /^(wav|ogg|mp3|flac)$/i
+// sfx_{id}.{ext} at the archive root (basename only — brigid rejects nested).
+const SFX_PATTERN = /^sfx_(\d+)\.(wav|ogg|mp3|flac)$/i
 
 export default {
-  contentType: 'sounds',
-  status: 'planned',
-  subtypes: [],
-  spec: 'TBD: needs Comhaigne scoping pass',
-  parseEntry() {
-    return null
+  contentType: 'sound_effects',
+  status: 'implemented',
+  subtypes: [SUBTYPE],
+  spec: 'brigid SfxPack.cs (sfx_{id}.{wav|ogg|mp3|flac} at ZIP root)',
+
+  parseEntry(path) {
+    const base = String(path).split('/').pop()
+    // Reject nested entries — brigid only honors flat archive-root files.
+    if (base !== path) return null
+    const m = SFX_PATTERN.exec(base)
+    if (!m) return null
+    const id = parseInt(m[1], 10)
+    if (!Number.isFinite(id) || id <= 0) return null // brigid: id > 0
+    return { subtype: SUBTYPE, id, key: `${SUBTYPE}:${id}` }
   },
-  keyFor() {
-    return null
+
+  keyFor(subtype, id) {
+    if (String(subtype || '').toLowerCase() !== SUBTYPE) return null
+    return `${SUBTYPE}:${id}`
+  },
+
+  // Exposed for parity/testing — the allowed audio extensions.
+  isAllowedExtension(ext) {
+    return EXT.test(String(ext || ''))
   }
 }

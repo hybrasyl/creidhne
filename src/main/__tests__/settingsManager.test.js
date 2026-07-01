@@ -24,8 +24,12 @@ const VALID = {
   theme: 'hybrasyl',
   clientPath: null,
   taliesinPath: null,
+  brigidAssetsPath: null,
   iconPickerMode: 'vanilla',
-  nationCrestPickerMode: 'vanilla'
+  nationCrestPickerMode: 'vanilla',
+  npcPortraitPickerMode: 'vanilla',
+  soundPickerMode: 'vanilla',
+  creaturePickerMode: 'vanilla'
 }
 
 const DEFAULTS = {
@@ -34,8 +38,12 @@ const DEFAULTS = {
   theme: 'light',
   clientPath: null,
   taliesinPath: null,
+  brigidAssetsPath: null,
   iconPickerMode: 'vanilla',
-  nationCrestPickerMode: 'vanilla'
+  nationCrestPickerMode: 'vanilla',
+  npcPortraitPickerMode: 'vanilla',
+  soundPickerMode: 'vanilla',
+  creaturePickerMode: 'vanilla'
 }
 
 describe('settingsManager', () => {
@@ -194,8 +202,12 @@ describe('settingsManager', () => {
       theme: 'hybrasyl',
       clientPath: '/client',
       taliesinPath: '/taliesin/Taliesin.exe',
+      brigidAssetsPath: '/brigid/assets',
       iconPickerMode: 'hybrasyl',
-      nationCrestPickerMode: 'hybrasyl'
+      nationCrestPickerMode: 'hybrasyl',
+      npcPortraitPickerMode: 'hybrasyl',
+      soundPickerMode: 'hybrasyl',
+      creaturePickerMode: 'hybrasyl'
     }
 
     it('preserves every field through save → load', async () => {

@@ -8,13 +8,15 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useRecoilValue, useRecoilState } from 'recoil'
+import { clientPathState, packCoverageState, creaturePickerModeState } from '../../recoil/atoms'
 import { getCreatureSpriteIndex } from '../../data/creatureSpriteData'
 import CreatureSpriteCanvas from './CreatureSpriteCanvas'
 
@@ -25,7 +27,7 @@ const GRID_H = 480
 
 // ── Single grid cell ──────────────────────────────────────────────────────────
 
-function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect }) {
+function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, preferPack }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
@@ -50,7 +52,7 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect })
           '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <CreatureSpriteCanvas value={id} size={IMAGE_SIZE} animate />
+        <CreatureSpriteCanvas value={id} size={IMAGE_SIZE} animate={!preferPack} preferPack={preferPack} />
         <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1 }}>
           {id}
         </Typography>
@@ -63,10 +65,16 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect })
 
 export default function SpritePickerDialog({ open, value, onClose, onChange }) {
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
+  const [mode, setMode] = useRecoilState(creaturePickerModeState)
   const [search, setSearch] = useState('')
   const [index, setIndex] = useState(null) // null = loading, { ids } = ready
   const [loadError, setLoadError] = useState(null)
   const gridRef = useRef(null)
+
+  const packHasType = (packCoverage.creature?.length ?? 0) > 0
+  const effectiveMode = packHasType ? mode : 'vanilla'
+  const preferPack = effectiveMode === 'hybrasyl'
 
   // Load index when dialog opens (cached internally so re-open is instant).
   useEffect(() => {
@@ -86,12 +94,22 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
     }
   }, [open, clientPath])
 
+  // Base list: vanilla hades.dat creature ids, plus (in Hybrasyl mode) any
+  // pack-only creature ids the vanilla archive doesn't have.
+  const allIds = useMemo(() => {
+    const base = index?.ids || []
+    if (!preferPack || !packHasType) return base
+    const merged = new Set(base)
+    for (const id of packCoverage.creature || []) merged.add(id)
+    return Array.from(merged).sort((a, b) => a - b)
+  }, [index, preferPack, packHasType, packCoverage])
+
   const filteredIds = useMemo(() => {
     if (!index) return []
     const q = search.trim()
-    if (!q) return index.ids
-    return index.ids.filter((id) => String(id).includes(q))
-  }, [index, search])
+    if (!q) return allIds
+    return allIds.filter((id) => String(id).includes(q))
+  }, [index, allIds, search])
 
   const selectedId = useMemo(() => {
     const n = Number(value)
@@ -112,8 +130,8 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
   }, [open, selectedId, filteredIds])
 
   const cellData = useMemo(
-    () => ({ ids: filteredIds, selectedId, onSelect: onChange }),
-    [filteredIds, selectedId, onChange]
+    () => ({ ids: filteredIds, selectedId, onSelect: onChange, preferPack }),
+    [filteredIds, selectedId, onChange, preferPack]
   )
   const rowCount = Math.ceil(filteredIds.length / COLS)
 
@@ -130,8 +148,20 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
         Creature Sprites
         {index && (
           <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-            ({index.ids.length.toLocaleString()} shown)
+            ({allIds.length.toLocaleString()} shown)
           </Typography>
+        )}
+        {packHasType && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={{ ml: 2 }}
+          >
+            <ToggleButton value="vanilla">Vanilla</ToggleButton>
+            <ToggleButton value="hybrasyl">Hybrasyl</ToggleButton>
+          </ToggleButtonGroup>
         )}
         <IconButton size="small" onClick={onClose} sx={{ ml: 'auto' }}>
           <CloseIcon fontSize="small" />

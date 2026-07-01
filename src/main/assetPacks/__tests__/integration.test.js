@@ -7,10 +7,12 @@ vi.mock('fs', () => ({ promises: mockFs }))
 vi.mock('unzipper', () => ({ default: mockUnzipper }))
 
 const {
+  loadPacks,
   loadPacksForClientPath,
   listActivePacks,
   listCoveredIds,
   resolveAsset,
+  resolveAssetUrl,
   _resetForTests
 } = await import('../index.js')
 
@@ -282,16 +284,103 @@ describe('content_type dispatch', () => {
     expect((await resolveAsset('legend', 0))?.toString()).toBe('mark-0')
   })
 
+  it('loads an npc_portraits pack indexed from the manifest (name-keyed, case-insensitive)', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['portraits.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'portraits',
+          content_type: 'npc_portraits',
+          covers: {
+            npc_portraits: {
+              dimensions: [200, 200],
+              portraits: { Gobalt: 'gobalt.png', 'inn.spf': 'inn_green.png' }
+            }
+          }
+        }),
+        entries: {
+          'gobalt.png': Buffer.from('gobalt-bytes'),
+          'inn_green.png': Buffer.from('inn-bytes')
+        }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+
+    // Coverage lists original-case portrait keys (for display + XML round-trip).
+    expect(await listCoveredIds('npcportrait')).toEqual(['Gobalt', 'inn.spf'])
+    // Resolution is case-insensitive on the portrait key.
+    expect((await resolveAsset('npcportrait', 'inn.spf'))?.toString()).toBe('inn-bytes')
+    expect((await resolveAsset('npcportrait', 'GOBALT'))?.toString()).toBe('gobalt-bytes')
+    expect(await resolveAsset('npcportrait', 'nobody')).toBeNull()
+  })
+
+  it('loads a sound_effects pack (sfx_{id}.{ext}) and resolves audio with the right MIME', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['sfx.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'sfx',
+          content_type: 'sound_effects',
+          covers: { sound_effects: {} }
+        }),
+        entries: {
+          'sfx_0001.wav': Buffer.from('wav-bytes'),
+          'sfx_0042.ogg': Buffer.from('ogg-bytes'),
+          'sfx_0000.wav': Buffer.from('ignored'), // id 0 rejected
+          'readme.txt': Buffer.from('docs') // non-matching
+        }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+
+    expect(await listCoveredIds('sfx')).toEqual([1, 42])
+    // resolveAssetUrl infers MIME from the covering entry's extension.
+    const wavUrl = await resolveAssetUrl('sfx', 1)
+    expect(wavUrl).toBe(`data:audio/wav;base64,${Buffer.from('wav-bytes').toString('base64')}`)
+    const oggUrl = await resolveAssetUrl('sfx', 42)
+    expect(oggUrl).toBe(`data:audio/ogg;base64,${Buffer.from('ogg-bytes').toString('base64')}`)
+    expect(await resolveAssetUrl('sfx', 999)).toBeNull()
+  })
+
+  it('loads a creature_sprites pack from the directory layout (representative = East master)', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['creatures.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'creatures',
+          content_type: 'creature_sprites',
+          covers: { creature_sprites: {} }
+        }),
+        entries: {
+          'creature_sprites/creature_01000/stand/n_001.png': Buffer.from('c1000-north'),
+          'creature_sprites/creature_01000/stand/e_001.png': Buffer.from('c1000-east'),
+          'creature_sprites/creature_02000/stand/n_001.png': Buffer.from('c2000-north')
+        }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+
+    expect(await listCoveredIds('creature')).toEqual([1000, 2000])
+    // Both masters present → representative is the East one.
+    expect((await resolveAsset('creature', 1000))?.toString()).toBe('c1000-east')
+    // Only the North master present → that's the representative.
+    expect((await resolveAsset('creature', 2000))?.toString()).toBe('c2000-north')
+    expect(await resolveAsset('creature', 9999)).toBeNull()
+  })
+
   it('skips packs whose content_type is registered but planned (not yet implemented)', async () => {
     mockFs.readdir.mockResolvedValueOnce(['future.datf'])
     mockUnzipper.Open.file.mockResolvedValueOnce(
       fakeDirectory({
         manifest: manifest({
-          pack_id: 'future-creatures',
-          content_type: 'creatures',
-          covers: { creatures: {} }
+          pack_id: 'future-display',
+          content_type: 'display_sprites',
+          covers: { display_sprites: {} }
         }),
-        entries: { 'creature00001.png': Buffer.from('placeholder') }
+        entries: { 'display00001.png': Buffer.from('placeholder') }
       })
     )
     await loadPacksForClientPath('/fake/client')
@@ -386,5 +475,117 @@ describe('content_type dispatch', () => {
     // valid Comhaigne type that Creidhne doesn't consume.
     expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
+  })
+
+  it('silently skips Taliesin-owned out_of_scope types (static_tiles, world_maps)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFs.readdir.mockResolvedValueOnce(['tiles.datf', 'fields.datf'])
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({ pack_id: 'tiles', content_type: 'static_tiles', covers: {} }),
+          entries: { 'floor00524.png': Buffer.from('floor') }
+        })
+      )
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({ pack_id: 'fields', content_type: 'world_maps', covers: {} }),
+          entries: { 'field001.png': Buffer.from('field') }
+        })
+      )
+    await loadPacksForClientPath('/fake/client')
+
+    expect(await listActivePacks()).toHaveLength(0)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+})
+
+describe('loadPacks: dual-source (brigid assets + client) scan', () => {
+  it('merges packs from both source directories', async () => {
+    // readdir is called once per source, in order: brigid assets dir, then client dir.
+    mockFs.readdir
+      .mockResolvedValueOnce(['nations.datf']) // brigid assets dir
+      .mockResolvedValueOnce(['icons.datf']) // client dir
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({
+            pack_id: 'nations',
+            content_type: 'nation_badges',
+            covers: { nation_badges: {} }
+          }),
+          entries: { 'nation0001.png': Buffer.from('flag-1') }
+        })
+      )
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({ pack_id: 'icons' }),
+          entries: { 'skill0001.png': Buffer.from('skill-1') }
+        })
+      )
+
+    await loadPacks({ brigidAssetsPath: '/brigid/assets', clientPath: '/fake/client' })
+
+    expect((await listActivePacks()).map((p) => p.manifest.pack_id).sort()).toEqual([
+      'icons',
+      'nations'
+    ])
+    expect(await listCoveredIds('nation')).toEqual([1])
+    expect(await listCoveredIds('skill')).toEqual([1])
+  })
+
+  it('is a no-op when no source paths are given', async () => {
+    await loadPacks({})
+    expect(await listActivePacks()).toHaveLength(0)
+    expect(mockFs.readdir).not.toHaveBeenCalled()
+  })
+
+  it('scans only the client dir when brigidAssetsPath is null', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['icons.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({ pack_id: 'icons' }),
+        entries: { 'skill0001.png': Buffer.from('x') }
+      })
+    )
+
+    await loadPacks({ brigidAssetsPath: null, clientPath: '/fake/client' })
+
+    expect(mockFs.readdir).toHaveBeenCalledTimes(1)
+    expect(await listCoveredIds('skill')).toEqual([1])
+  })
+
+  it('higher-priority pack wins across sources (brigid scanned first, but priority decides)', async () => {
+    mockFs.readdir
+      .mockResolvedValueOnce(['brigid-nations.datf']) // brigid assets dir
+      .mockResolvedValueOnce(['client-nations.datf']) // client dir
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({
+            pack_id: 'brigid-nations',
+            content_type: 'nation_badges',
+            covers: { nation_badges: {} },
+            priority: 10
+          }),
+          entries: { 'nation0001.png': Buffer.from('brigid-flag') }
+        })
+      )
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({
+            pack_id: 'client-nations',
+            content_type: 'nation_badges',
+            covers: { nation_badges: {} },
+            priority: 200
+          }),
+          entries: { 'nation0001.png': Buffer.from('client-flag') }
+        })
+      )
+
+    await loadPacks({ brigidAssetsPath: '/brigid/assets', clientPath: '/fake/client' })
+
+    expect((await resolveAsset('nation', 1))?.toString()).toBe('client-flag')
   })
 })

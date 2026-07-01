@@ -38,6 +38,9 @@ export function applySettingsRoots(settings) {
   if (typeof settings?.clientPath === 'string' && settings.clientPath) {
     settingsRoots.add(normalize(settings.clientPath))
   }
+  if (typeof settings?.brigidAssetsPath === 'string' && settings.brigidAssetsPath) {
+    settingsRoots.add(normalize(settings.brigidAssetsPath))
+  }
 }
 
 // Add a path to the blessed (session-scoped) root set. Called by every

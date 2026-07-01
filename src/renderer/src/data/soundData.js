@@ -14,6 +14,7 @@ import { clientPathState } from '../recoil/atoms'
 
 const indexCache = new Map() // clientPath → number[] (sorted ids)
 const blobUrlCache = new Map() // `${clientPath}|${id}` → blob URL
+const packBlobUrlCache = new Map() // sfx id → blob URL (Hybrasyl pack override)
 
 // Reuse a single HTMLAudioElement across plays; mirrors Taliesin's pattern
 // and sidesteps subtle issues with per-play Audio instances in Electron.
@@ -79,14 +80,41 @@ export async function getSoundBlobUrl(clientPath, id) {
   return url
 }
 
+// Decode a `data:<mime>;base64,…` URL into a Blob. The pack IPC returns a data
+// URL, but the app CSP only allows `media-src 'self' blob:` (no `data:`), so
+// audio must be played from a blob: URL — same as the vanilla legend.dat path.
+function dataUrlToBlob(dataUrl) {
+  const comma = dataUrl.indexOf(',')
+  if (comma < 0) return null
+  const header = dataUrl.slice(0, comma)
+  const mime = header.slice(5, header.indexOf(';')) || 'application/octet-stream' // after "data:"
+  const bin = atob(dataUrl.slice(comma + 1))
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 /**
- * Play a sound. Stops any currently-playing sound first.
- * Returns true if playback started, false otherwise.
+ * Resolve a Hybrasyl pack sound override to a blob URL (lazy, cached).
+ * Returns null if no active pack covers this sfx id.
  */
-export async function playSound(clientPath, id) {
-  stopSound()
-  const url = await getSoundBlobUrl(clientPath, id)
-  if (!url) return false
+async function getPackSoundBlobUrl(id) {
+  const key = Number(id)
+  const cached = packBlobUrlCache.get(key)
+  if (cached) return cached
+  const dataUrl = await window.electronAPI.resolvePackAssetUrl('sfx', id)
+  if (!dataUrl) return null
+  const blob = dataUrlToBlob(dataUrl)
+  if (!blob) return null
+  const url = URL.createObjectURL(blob)
+  packBlobUrlCache.set(key, url)
+  return url
+}
+
+// Shared playback body: point the single audio element at `url`, wire the
+// end/error handlers, and mark `id` as the currently-playing sound. Used by
+// both vanilla (legend.dat blob) and Hybrasyl (pack blob) playback.
+async function playUrl(url, id, label) {
   const audio = getAudioElement()
   audio.src = url
   audio.onended = () => {
@@ -96,7 +124,7 @@ export async function playSound(clientPath, id) {
     }
   }
   audio.onerror = () => {
-    console.warn(`[soundData] playback error for id ${id}:`, audio.error)
+    console.warn(`[soundData] ${label} playback error for id ${id}:`, audio.error)
     if (currentPlayingId === Number(id)) {
       currentPlayingId = null
       notify()
@@ -108,13 +136,36 @@ export async function playSound(clientPath, id) {
     await audio.play()
     return true
   } catch (err) {
-    console.warn(`[soundData] audio.play() rejected for id ${id}:`, err)
+    console.warn(`[soundData] ${label} audio.play() rejected for id ${id}:`, err)
     if (currentPlayingId === Number(id)) {
       currentPlayingId = null
       notify()
     }
     return false
   }
+}
+
+/**
+ * Play a vanilla sound from legend.dat. Stops any currently-playing sound first.
+ * Returns true if playback started, false otherwise.
+ */
+export async function playSound(clientPath, id) {
+  stopSound()
+  const url = await getSoundBlobUrl(clientPath, id)
+  if (!url) return false
+  return playUrl(url, id, 'vanilla')
+}
+
+/**
+ * Play a Hybrasyl sound-effect override from an active .datf pack, falling back
+ * to the vanilla legend.dat sound if no pack covers this id. Stops any
+ * currently-playing sound first. Returns true if playback started.
+ */
+export async function playPackSound(clientPath, id) {
+  stopSound()
+  const url = await getPackSoundBlobUrl(id)
+  if (!url) return playSound(clientPath, id)
+  return playUrl(url, id, 'pack')
 }
 
 export function stopSound() {
@@ -186,7 +237,15 @@ export function clearSoundCache() {
       /* ignore */
     }
   }
+  for (const url of packBlobUrlCache.values()) {
+    try {
+      URL.revokeObjectURL(url)
+    } catch {
+      /* ignore */
+    }
+  }
   blobUrlCache.clear()
+  packBlobUrlCache.clear()
   indexCache.clear()
 }
 registerCacheClearer(clearSoundCache)

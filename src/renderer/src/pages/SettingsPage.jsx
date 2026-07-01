@@ -16,6 +16,7 @@ import { themeState } from '../recoil/atoms'
 import ManageLibraries from '../components/ManageLibraries'
 import DAClientPathSection from '../components/DAClientPathSection'
 import TaliesinPathSection from '../components/TaliesinPathSection'
+import BrigidAssetsPathSection from '../components/BrigidAssetsPathSection'
 
 const THEMES = [
   { value: 'hybrasyl', label: 'Hybrasyl' },
@@ -63,6 +64,7 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         onRemoveLibrary={onRemoveLibrary}
       />
       <DAClientPathSection />
+      <BrigidAssetsPathSection />
       <TaliesinPathSection />
       <Box sx={{ mt: 4, display: 'flex', gap: 1, alignItems: 'center' }}>
         <Button

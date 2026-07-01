@@ -9,10 +9,14 @@ import {
   dirtyEditorState,
   clientPathState,
   taliesinPathState,
+  brigidAssetsPathState,
   activePacksState,
   packCoverageState,
   iconPickerModeState,
-  nationCrestPickerModeState
+  nationCrestPickerModeState,
+  npcPortraitPickerModeState,
+  soundPickerModeState,
+  creaturePickerModeState
 } from './recoil/atoms' // Import Recoil atoms
 import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
 import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
@@ -38,6 +42,7 @@ function App() {
   const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
   const [clientPath, setClientPath] = useRecoilState(clientPathState)
   const [taliesinPath, setTaliesinPath] = useRecoilState(taliesinPathState)
+  const [brigidAssetsPath, setBrigidAssetsPath] = useRecoilState(brigidAssetsPathState)
   const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState)
   const [, setActivePacks] = useRecoilState(activePacksState)
   const [, setPackCoverage] = useRecoilState(packCoverageState)
@@ -45,6 +50,11 @@ function App() {
   const [nationCrestPickerMode, setNationCrestPickerMode] = useRecoilState(
     nationCrestPickerModeState
   )
+  const [npcPortraitPickerMode, setNpcPortraitPickerMode] = useRecoilState(
+    npcPortraitPickerModeState
+  )
+  const [soundPickerMode, setSoundPickerMode] = useRecoilState(soundPickerModeState)
+  const [creaturePickerMode, setCreaturePickerMode] = useRecoilState(creaturePickerModeState)
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
@@ -64,8 +74,12 @@ function App() {
       setActiveLibrary(settings.activeLibrary || null)
       setClientPath(settings.clientPath || null)
       setTaliesinPath(settings.taliesinPath || null)
+      setBrigidAssetsPath(settings.brigidAssetsPath || null)
       setIconPickerMode(settings.iconPickerMode || 'vanilla')
       setNationCrestPickerMode(settings.nationCrestPickerMode || 'vanilla')
+      setNpcPortraitPickerMode(settings.npcPortraitPickerMode || 'vanilla')
+      setSoundPickerMode(settings.soundPickerMode || 'vanilla')
+      setCreaturePickerMode(settings.creaturePickerMode || 'vanilla')
       setSettingsLoaded(true)
     }
 
@@ -76,14 +90,19 @@ function App() {
     setActiveLibrary,
     setClientPath,
     setTaliesinPath,
+    setBrigidAssetsPath,
     setIconPickerMode,
-    setNationCrestPickerMode
+    setNationCrestPickerMode,
+    setNpcPortraitPickerMode,
+    setSoundPickerMode,
+    setCreaturePickerMode
   ])
 
-  // Refresh active asset packs whenever clientPath changes — main reloads the
-  // .datf bundles on its side; we sync the renderer's view of what's present.
-  // Also pre-fetches per-subtype covered-id sets so DualIconView can do O(1)
-  // membership checks without per-render IPC.
+  // Refresh active asset packs whenever a .datf source path changes
+  // (brigidAssetsPath or clientPath) — main reloads the .datf bundles on its
+  // side; we sync the renderer's view of what's present. Also pre-fetches
+  // per-subtype covered-id sets so the sprite canvases can do O(1) coverage
+  // checks (self-deriving Vanilla vs Hybrasyl) without per-render IPC.
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -112,7 +131,7 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [clientPath, setActivePacks, setPackCoverage])
+  }, [clientPath, brigidAssetsPath, setActivePacks, setPackCoverage])
 
   // Load persisted index from disk whenever active library changes. The index
   // is a rebuildable cache that now lives outside the (git) world folder, so a
@@ -150,8 +169,12 @@ function App() {
       theme,
       clientPath,
       taliesinPath,
+      brigidAssetsPath,
       iconPickerMode,
-      nationCrestPickerMode
+      nationCrestPickerMode,
+      npcPortraitPickerMode,
+      soundPickerMode,
+      creaturePickerMode
     })
   }, [
     settingsLoaded,
@@ -160,8 +183,12 @@ function App() {
     activeLibrary,
     clientPath,
     taliesinPath,
+    brigidAssetsPath,
     iconPickerMode,
-    nationCrestPickerMode
+    nationCrestPickerMode,
+    npcPortraitPickerMode,
+    soundPickerMode,
+    creaturePickerMode
   ])
 
   // Stop any sound preview on page navigation — keeps playback from bleeding
