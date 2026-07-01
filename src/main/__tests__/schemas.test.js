@@ -19,7 +19,8 @@ describe('settingsSchema', () => {
     iconPickerMode: 'vanilla',
     nationCrestPickerMode: 'vanilla',
     npcPortraitPickerMode: 'vanilla',
-    soundPickerMode: 'vanilla'
+    soundPickerMode: 'vanilla',
+    creaturePickerMode: 'vanilla'
   }
 
   it('accepts a fully-populated valid payload', () => {

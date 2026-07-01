@@ -344,16 +344,43 @@ describe('content_type dispatch', () => {
     expect(await resolveAssetUrl('sfx', 999)).toBeNull()
   })
 
+  it('loads a creature_sprites pack from the directory layout (representative = East master)', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['creatures.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({
+        manifest: manifest({
+          pack_id: 'creatures',
+          content_type: 'creature_sprites',
+          covers: { creature_sprites: {} }
+        }),
+        entries: {
+          'creature_sprites/creature_01000/stand/n_001.png': Buffer.from('c1000-north'),
+          'creature_sprites/creature_01000/stand/e_001.png': Buffer.from('c1000-east'),
+          'creature_sprites/creature_02000/stand/n_001.png': Buffer.from('c2000-north')
+        }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+
+    expect(await listCoveredIds('creature')).toEqual([1000, 2000])
+    // Both masters present → representative is the East one.
+    expect((await resolveAsset('creature', 1000))?.toString()).toBe('c1000-east')
+    // Only the North master present → that's the representative.
+    expect((await resolveAsset('creature', 2000))?.toString()).toBe('c2000-north')
+    expect(await resolveAsset('creature', 9999)).toBeNull()
+  })
+
   it('skips packs whose content_type is registered but planned (not yet implemented)', async () => {
     mockFs.readdir.mockResolvedValueOnce(['future.datf'])
     mockUnzipper.Open.file.mockResolvedValueOnce(
       fakeDirectory({
         manifest: manifest({
-          pack_id: 'future-creatures',
-          content_type: 'creature_sprites',
-          covers: { creature_sprites: {} }
+          pack_id: 'future-display',
+          content_type: 'display_sprites',
+          covers: { display_sprites: {} }
         }),
-        entries: { 'creature00001.png': Buffer.from('placeholder') }
+        entries: { 'display00001.png': Buffer.from('placeholder') }
       })
     )
     await loadPacksForClientPath('/fake/client')

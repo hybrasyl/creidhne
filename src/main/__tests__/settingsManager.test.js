@@ -28,7 +28,8 @@ const VALID = {
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla',
   npcPortraitPickerMode: 'vanilla',
-  soundPickerMode: 'vanilla'
+  soundPickerMode: 'vanilla',
+  creaturePickerMode: 'vanilla'
 }
 
 const DEFAULTS = {
@@ -41,7 +42,8 @@ const DEFAULTS = {
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla',
   npcPortraitPickerMode: 'vanilla',
-  soundPickerMode: 'vanilla'
+  soundPickerMode: 'vanilla',
+  creaturePickerMode: 'vanilla'
 }
 
 describe('settingsManager', () => {
@@ -204,7 +206,8 @@ describe('settingsManager', () => {
       iconPickerMode: 'hybrasyl',
       nationCrestPickerMode: 'hybrasyl',
       npcPortraitPickerMode: 'hybrasyl',
-      soundPickerMode: 'hybrasyl'
+      soundPickerMode: 'hybrasyl',
+      creaturePickerMode: 'hybrasyl'
     }
 
     it('preserves every field through save → load', async () => {

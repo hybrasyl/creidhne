@@ -15,7 +15,8 @@ import {
   iconPickerModeState,
   nationCrestPickerModeState,
   npcPortraitPickerModeState,
-  soundPickerModeState
+  soundPickerModeState,
+  creaturePickerModeState
 } from './recoil/atoms' // Import Recoil atoms
 import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
 import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
@@ -53,6 +54,7 @@ function App() {
     npcPortraitPickerModeState
   )
   const [soundPickerMode, setSoundPickerMode] = useRecoilState(soundPickerModeState)
+  const [creaturePickerMode, setCreaturePickerMode] = useRecoilState(creaturePickerModeState)
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
@@ -77,6 +79,7 @@ function App() {
       setNationCrestPickerMode(settings.nationCrestPickerMode || 'vanilla')
       setNpcPortraitPickerMode(settings.npcPortraitPickerMode || 'vanilla')
       setSoundPickerMode(settings.soundPickerMode || 'vanilla')
+      setCreaturePickerMode(settings.creaturePickerMode || 'vanilla')
       setSettingsLoaded(true)
     }
 
@@ -91,7 +94,8 @@ function App() {
     setIconPickerMode,
     setNationCrestPickerMode,
     setNpcPortraitPickerMode,
-    setSoundPickerMode
+    setSoundPickerMode,
+    setCreaturePickerMode
   ])
 
   // Refresh active asset packs whenever a .datf source path changes
@@ -169,7 +173,8 @@ function App() {
       iconPickerMode,
       nationCrestPickerMode,
       npcPortraitPickerMode,
-      soundPickerMode
+      soundPickerMode,
+      creaturePickerMode
     })
   }, [
     settingsLoaded,
@@ -182,7 +187,8 @@ function App() {
     iconPickerMode,
     nationCrestPickerMode,
     npcPortraitPickerMode,
-    soundPickerMode
+    soundPickerMode,
+    creaturePickerMode
   ])
 
   // Stop any sound preview on page navigation — keeps playback from bleeding

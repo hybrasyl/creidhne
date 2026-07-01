@@ -47,6 +47,11 @@ export const soundPickerModeState = atom({
   default: 'vanilla' // 'vanilla' | 'hybrasyl' — sound-effect picker asset source
 })
 
+export const creaturePickerModeState = atom({
+  key: 'creaturePickerModeState',
+  default: 'vanilla' // 'vanilla' | 'hybrasyl' — creature-sprite picker asset source
+})
+
 export const librariesState = atom({
   key: 'librariesState',
   default: []

@@ -17,5 +17,6 @@ export const settingsSchema = z.object({
   iconPickerMode: PickerMode,
   nationCrestPickerMode: PickerMode,
   npcPortraitPickerMode: PickerMode,
-  soundPickerMode: PickerMode
+  soundPickerMode: PickerMode,
+  creaturePickerMode: PickerMode
 })

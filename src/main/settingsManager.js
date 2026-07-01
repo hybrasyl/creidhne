@@ -11,7 +11,8 @@ const DEFAULTS = {
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla',
   npcPortraitPickerMode: 'vanilla',
-  soundPickerMode: 'vanilla'
+  soundPickerMode: 'vanilla',
+  creaturePickerMode: 'vanilla'
 }
 
 const PICKER_MODES = new Set(['vanilla', 'hybrasyl'])
@@ -45,7 +46,10 @@ function withDefaults(data) {
       : DEFAULTS.npcPortraitPickerMode,
     soundPickerMode: PICKER_MODES.has(data?.soundPickerMode)
       ? data.soundPickerMode
-      : DEFAULTS.soundPickerMode
+      : DEFAULTS.soundPickerMode,
+    creaturePickerMode: PICKER_MODES.has(data?.creaturePickerMode)
+      ? data.creaturePickerMode
+      : DEFAULTS.creaturePickerMode
   }
 }
 
