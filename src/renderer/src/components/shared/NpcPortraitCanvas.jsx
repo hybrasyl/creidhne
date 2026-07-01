@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState, npcPortraitPickerModeState } from '../../recoil/atoms'
 import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
 
 /**
@@ -14,11 +14,19 @@ import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
  *   size       — square canvas edge in CSS px (default 96)
  *   preferPack — when true, try a Hybrasyl .datf pack override (keyed by the
  *                portrait name) first; fall back to the vanilla SPF bitmap if
- *                no pack covers this portrait.
+ *                no pack covers this portrait. When omitted (inline field
+ *                previews), it self-derives from the picker mode + pack
+ *                coverage so the form preview matches the picker dialog.
  */
-export default function NpcPortraitCanvas({ filename, size = 96, preferPack = false }) {
+export default function NpcPortraitCanvas({ filename, size = 96, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
+  const mode = useRecoilValue(npcPortraitPickerModeState)
   const canvasRef = useRef(null)
+
+  // Explicit prop (from the dialog) wins; otherwise derive from mode+coverage.
+  const autoPrefer = mode === 'hybrasyl' && (packCoverage.npcportrait?.length ?? 0) > 0
+  const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {
     let cancelled = false
@@ -49,7 +57,7 @@ export default function NpcPortraitCanvas({ filename, size = 96, preferPack = fa
           /* blank */
         })
 
-    if (preferPack) {
+    if (effectivePreferPack) {
       window.electronAPI
         .resolvePackAsset('npcportrait', filename)
         .then((dataUrl) => {
@@ -70,7 +78,7 @@ export default function NpcPortraitCanvas({ filename, size = 96, preferPack = fa
     return () => {
       cancelled = true
     }
-  }, [clientPath, filename, size, preferPack])
+  }, [clientPath, filename, size, effectivePreferPack])
 
   return (
     <Box

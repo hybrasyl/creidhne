@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState, creaturePickerModeState } from '../../recoil/atoms'
 import { getCreatureMeta, getCreatureFrameBitmap } from '../../data/creatureSpriteData'
 
 const FRAME_INTERVAL_MS = 200
@@ -16,13 +16,21 @@ const FRAME_INTERVAL_MS = 200
  * pack covers this id, its static master PNG is drawn instead (phase-1 packs are
  * static, so there's no animation); otherwise it falls back to the MPF path. If
  * clientPath isn't set or the sprite can't be rendered, the canvas stays blank
- * (caller provides the placeholder chrome).
+ * (caller provides the placeholder chrome). When `preferPack` is omitted (inline
+ * field previews), it self-derives from the picker mode + pack coverage so the
+ * form preview matches the picker dialog.
  */
-export default function CreatureSpriteCanvas({ value, size, animate = false, preferPack = false }) {
+export default function CreatureSpriteCanvas({ value, size, animate = false, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
+  const mode = useRecoilValue(creaturePickerModeState)
   const canvasRef = useRef(null)
   const [hovered, setHovered] = useState(false)
   const id = Number(value)
+
+  // Explicit prop (from the dialog) wins; otherwise derive from mode+coverage.
+  const autoPrefer = mode === 'hybrasyl' && (packCoverage.creature?.length ?? 0) > 0
+  const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {
     let cancelled = false
@@ -88,7 +96,7 @@ export default function CreatureSpriteCanvas({ value, size, animate = false, pre
     }
 
     ;(async () => {
-      if (preferPack) {
+      if (effectivePreferPack) {
         const dataUrl = await window.electronAPI.resolvePackAsset('creature', id)
         if (cancelled) return
         if (dataUrl) {
@@ -108,7 +116,7 @@ export default function CreatureSpriteCanvas({ value, size, animate = false, pre
       cancelled = true
       if (timer) clearInterval(timer)
     }
-  }, [clientPath, id, size, animate, hovered, preferPack])
+  }, [clientPath, id, size, animate, hovered, effectivePreferPack])
 
   return (
     <Box
