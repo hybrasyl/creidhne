@@ -444,9 +444,12 @@ function CastableEditor({
                 size="small"
                 sx={{ flex: 1, minWidth: 220 }}
                 renderValue={(value, getItemProps) =>
-                  value.map((option, index) => (
-                    <Chip key={option} label={option} size="small" {...getItemProps({ index })} />
-                  ))
+                  value.map((option, index) => {
+                    // MUI v7's getItemProps returns a `key`; pull it out so it's
+                    // passed to JSX directly rather than spread (React warning).
+                    const { key, ...itemProps } = getItemProps({ index })
+                    return <Chip key={key} label={option} size="small" {...itemProps} />
+                  })
                 }
                 renderInput={(params) => <TextField {...params} label="Class" />}
               />
