@@ -44,7 +44,7 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ color: 'text.button', fontWeight: 'bold' }}>
         Settings
       </Typography>
