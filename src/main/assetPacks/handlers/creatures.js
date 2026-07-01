@@ -1,22 +1,23 @@
-// content_type: 'creatures'
-// Spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#future-content-types (planned)
+// content_type: 'creature_sprites' (brigid's canonical name; see
+// brigid Brigid.Data/AssetPacks/AssetPackRegistry.cs + CreaturePack.cs)
 //
-// Will replace legacy MPF creature/NPC sprites. Per the future-types table
-// in the format spec, creature packs ship multi-frame animations (walk,
-// standing, attack) — meaning the filename schema is compound (id + frame
-// or id + animation tag), NOT the flat schema used by ability_icons.
+// Replaces legacy MPF creature/NPC sprites. Brigid ships a directory-
+// structured, directional frame layout: creature_{id:D5}/stand/n_001.png,
+// e_001.png (engine flips N→W and E→S). This is a compound key
+// (creatureId + direction + frame), NOT the flat schema used by
+// ability_icons.
 //
 // When this lands, build a new handler factory (handlers/framePattern.js
-// or similar) for the {id}/{frame:D4}.png shape, plus per-pack metadata
-// for animation tags and anchor points. Don't shoehorn it into
-// flatPattern — the entry-cache key needs to encode (creatureId, frame)
+// or similar) for the directory layout, plus per-pack metadata for
+// direction pairs and auto-trim bounds. Don't shoehorn it into
+// flatPattern — the entry-cache key needs to encode (creatureId, dir, frame)
 // not just (subtype, id).
 
 export default {
-  contentType: 'creatures',
+  contentType: 'creature_sprites',
   status: 'planned',
   subtypes: [],
-  spec: 'asset-pack-format.md#future-content-types',
+  spec: 'brigid CreaturePack.cs (directory-structured directional frames)',
   parseEntry() {
     return null
   },
