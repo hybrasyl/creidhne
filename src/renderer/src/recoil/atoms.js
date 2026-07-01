@@ -87,8 +87,8 @@ export const activePacksState = atom({
 
 // Per-subtype covered-id set, derived from activePacks. Populated by App
 // whenever activePacks changes. Example: { skill: Set<number>, spell: Set<number>, nation: Set<number> }.
-// Consumed by DualIconView / picker dialogs to answer "does Hybrasyl cover id X?"
-// in O(1).
+// Consumed by the sprite canvases / picker dialogs to answer "does Hybrasyl
+// cover id X?" in O(1).
 export const packCoverageState = atom({
   key: 'packCoverageState',
   default: {}

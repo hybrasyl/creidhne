@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState, packCoverageState, npcPortraitPickerModeState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
 
 /**
@@ -15,17 +15,19 @@ import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
  *   preferPack — when true, try a Hybrasyl .datf pack override (keyed by the
  *                portrait name) first; fall back to the vanilla SPF bitmap if
  *                no pack covers this portrait. When omitted (inline field
- *                previews), it self-derives from the picker mode + pack
- *                coverage so the form preview matches the picker dialog.
+ *                previews), it self-derives from pack coverage: the pack asset
+ *                is always preferred when a pack covers this portrait, so the
+ *                form shows what the player actually sees.
  */
 export default function NpcPortraitCanvas({ filename, size = 96, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
   const packCoverage = useRecoilValue(packCoverageState)
-  const mode = useRecoilValue(npcPortraitPickerModeState)
   const canvasRef = useRef(null)
 
-  // Explicit prop (from the dialog) wins; otherwise derive from mode+coverage.
-  const autoPrefer = mode === 'hybrasyl' && (packCoverage.npcportrait?.length ?? 0) > 0
+  // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
+  // whenever a pack covers this portrait key (case-insensitive).
+  const nameLc = String(filename || '').toLowerCase()
+  const autoPrefer = (packCoverage.npcportrait || []).some((k) => k.toLowerCase() === nameLc)
   const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {

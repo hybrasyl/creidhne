@@ -101,8 +101,8 @@ function App() {
   // Refresh active asset packs whenever a .datf source path changes
   // (brigidAssetsPath or clientPath) — main reloads the .datf bundles on its
   // side; we sync the renderer's view of what's present. Also pre-fetches
-  // per-subtype covered-id sets so DualIconView can do O(1) membership checks
-  // without per-render IPC.
+  // per-subtype covered-id sets so the sprite canvases can do O(1) coverage
+  // checks (self-deriving Vanilla vs Hybrasyl) without per-render IPC.
   useEffect(() => {
     let cancelled = false
     ;(async () => {

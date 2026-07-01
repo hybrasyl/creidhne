@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState, packCoverageState, creaturePickerModeState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getCreatureMeta, getCreatureFrameBitmap } from '../../data/creatureSpriteData'
 
 const FRAME_INTERVAL_MS = 200
@@ -17,19 +17,20 @@ const FRAME_INTERVAL_MS = 200
  * static, so there's no animation); otherwise it falls back to the MPF path. If
  * clientPath isn't set or the sprite can't be rendered, the canvas stays blank
  * (caller provides the placeholder chrome). When `preferPack` is omitted (inline
- * field previews), it self-derives from the picker mode + pack coverage so the
- * form preview matches the picker dialog.
+ * field previews), it self-derives from pack coverage: the pack asset is always
+ * preferred when a pack covers this creature, so the form shows what the player
+ * actually sees.
  */
 export default function CreatureSpriteCanvas({ value, size, animate = false, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
   const packCoverage = useRecoilValue(packCoverageState)
-  const mode = useRecoilValue(creaturePickerModeState)
   const canvasRef = useRef(null)
   const [hovered, setHovered] = useState(false)
   const id = Number(value)
 
-  // Explicit prop (from the dialog) wins; otherwise derive from mode+coverage.
-  const autoPrefer = mode === 'hybrasyl' && (packCoverage.creature?.length ?? 0) > 0
+  // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
+  // whenever a pack covers this specific creature id.
+  const autoPrefer = (packCoverage.creature || []).includes(id)
   const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {

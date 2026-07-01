@@ -4,7 +4,7 @@ import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'
-import { DualIconView } from './DualIconView'
+import IconCanvas from './IconCanvas'
 import IconPickerDialog from './IconPickerDialog'
 
 const PREVIEW_SIZE = 48
@@ -32,7 +32,7 @@ export default function IconPicker({ type, value, onChange, label = 'Icon', help
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <DualIconView type={type} id={value} size={PREVIEW_SIZE} />
+      <IconCanvas type={type} id={value} size={PREVIEW_SIZE} />
       <TextField
         label={label}
         size="small"

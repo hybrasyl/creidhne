@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getNationCrestBitmap } from '../../data/nationCrestData'
 
 /**
@@ -14,15 +14,20 @@ import { getNationCrestBitmap } from '../../data/nationCrestData'
  *   paletteOverride — optional { pattern, number } passed from the palette picker
  *   preferPack      — when true, try a Hybrasyl .datf pack override first; fall
  *                     back to the vanilla EPF bitmap if no pack covers this id.
+ *                     When omitted (inline form previews), it self-derives from
+ *                     pack coverage: the pack asset is always preferred when a
+ *                     pack covers this flag, so the form shows what the player
+ *                     actually sees.
  */
-export default function NationCrestCanvas({
-  flagNum,
-  size = 80,
-  paletteOverride,
-  preferPack = false
-}) {
+export default function NationCrestCanvas({ flagNum, size = 80, paletteOverride, preferPack }) {
   const clientPath = useRecoilValue(clientPathState)
+  const packCoverage = useRecoilValue(packCoverageState)
   const canvasRef = useRef(null)
+
+  // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
+  // whenever a pack covers this specific flag.
+  const autoPrefer = (packCoverage.nation || []).includes(Number(flagNum))
+  const effectivePreferPack = preferPack ?? autoPrefer
 
   useEffect(() => {
     let cancelled = false
@@ -53,7 +58,7 @@ export default function NationCrestCanvas({
           /* blank */
         })
 
-    if (preferPack) {
+    if (effectivePreferPack) {
       window.electronAPI
         .resolvePackAsset('nation', Number(flagNum))
         .then((dataUrl) => {
@@ -74,7 +79,7 @@ export default function NationCrestCanvas({
     return () => {
       cancelled = true
     }
-  }, [clientPath, flagNum, size, paletteOverride, preferPack])
+  }, [clientPath, flagNum, size, paletteOverride, effectivePreferPack])
 
   return (
     <Box
