@@ -1,16 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import CastableEditor from '../components/castables/CastableEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -18,7 +8,7 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { DEFAULT_CASTABLE, derivePrefix, computeCastableFilename } from '../data/castableConstants'
+import { DEFAULT_CASTABLE } from '../data/castableConstants'
 
 const SUBDIR = 'castables'
 const IGNORE_SUBDIR = 'castables/.ignore'

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, Typography, Chip, Stack } from '@mui/material'
 import IconCanvas from '../shared/IconCanvas'
 import { typeFromBook } from '../../data/iconData'

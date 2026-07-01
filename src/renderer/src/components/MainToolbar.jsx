@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import creidhneLogo from '../assets/creidhne.svg'
 import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'

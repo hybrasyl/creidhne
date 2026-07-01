@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Alert,
-  Snackbar
-} from '@mui/material'
+import { Box, Typography, Alert, Snackbar } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box,
   Button,
@@ -26,10 +26,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
 import CommentField from '../shared/CommentField'
-import StatBlockBuilder, { statBlockToExpression } from './StatBlockBuilder'
+import StatBlockBuilder from './StatBlockBuilder'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
 import { RAND_VARIABLES } from '../../data/formulaVariables'
-import { COEFFICIENT_GROUPS } from '../../data/formulaConstants'
 import { assembleFormula } from '../../utils/formulaAssembly'
 
 const CATEGORIES = ['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general']

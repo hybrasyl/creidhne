@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Box, Typography } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'

@@ -1,5 +1,5 @@
 import xml2js from 'xml2js'
-import { extractComment, injectComment, extractMeta, injectMeta } from './xmlCommentUtils.js'
+import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js'
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 

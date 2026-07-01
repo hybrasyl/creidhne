@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, FormControl, InputLabel, Select, MenuItem, TextField } from '@mui/material'
 import FormulaRow from './FormulaRow'
 

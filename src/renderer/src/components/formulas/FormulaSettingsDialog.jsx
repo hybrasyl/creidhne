@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -20,7 +20,6 @@ import {
   AccordionSummary,
   AccordionDetails,
   IconButton,
-  InputAdornment,
   Table,
   TableHead,
   TableBody,
@@ -37,7 +36,6 @@ import {
   BUDGET_APPLICATIONS,
   DEFAULT_BUDGET_MODIFIER,
   COEFFICIENT_GROUPS,
-  DEFAULT_SETTINGS,
   FORMULA_CONSTANTS,
   FORMULA_CONSTANT_KEYS
 } from '../../data/formulaConstants'

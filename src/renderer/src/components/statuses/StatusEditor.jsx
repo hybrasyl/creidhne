@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box,
   Button,
   Typography,
   Divider,
   TextField,
-  Tooltip,
   IconButton,
   Paper,
   Switch,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box,
   Button,
@@ -6,7 +6,6 @@ import {
   Divider,
   TextField,
   IconButton,
-  Tooltip,
   Paper,
   Collapse,
   Checkbox,
@@ -31,7 +30,6 @@ import ItemSpritePicker from '../shared/ItemSpritePicker'
 import DisplaySpritePicker from '../shared/DisplaySpritePicker'
 import ColorSwatch from '../shared/ColorSwatch'
 import { useItemColorSwatches } from '../../data/itemColorData'
-import HelpIcon from '@mui/icons-material/Help'
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Box,
   TextField,
@@ -13,11 +12,7 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import {
-  VARIABLE_PREFIXES,
-  getStatGroupsForPrefix,
-  getStatsForPrefix
-} from '../../data/formulaVariables'
+import { VARIABLE_PREFIXES, getStatsForPrefix } from '../../data/formulaVariables'
 
 /**
  * Builds a weighted stat expression for formula patterns.

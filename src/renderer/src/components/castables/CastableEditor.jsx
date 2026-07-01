@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
@@ -12,7 +12,6 @@ import {
   Typography,
   Divider,
   TextField,
-  Tooltip,
   IconButton,
   Paper,
   Select,

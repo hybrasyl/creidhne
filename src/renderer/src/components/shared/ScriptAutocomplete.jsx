@@ -1,4 +1,3 @@
-import React from 'react'
 import { Autocomplete, TextField, IconButton, Tooltip, InputAdornment } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useRecoilValue } from 'recoil'

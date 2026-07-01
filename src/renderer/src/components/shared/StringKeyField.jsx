@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, Autocomplete, TextField, Typography } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'

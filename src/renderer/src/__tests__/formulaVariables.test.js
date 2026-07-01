@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   VARIABLE_PREFIXES,
-  STAT_GROUPS,
   getStatsForPrefix,
   getStatGroupsForPrefix,
   ALL_STAT_BLOCK_STATS,
