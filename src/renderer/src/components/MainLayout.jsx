@@ -1,4 +1,3 @@
-import React from 'react'
 import { AppBar, Box } from '@mui/material'
 import MainToolbar from '../components/MainToolbar'
 import IndexBuildProgress from './IndexBuildProgress'

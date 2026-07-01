@@ -1,17 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  TextField,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import ItemEditor from '../components/items/ItemEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -241,9 +230,12 @@ function ItemsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select an item or create a new one.
             </Typography>
           </Box>
@@ -272,7 +264,7 @@ function ItemsPage() {
         onCancel={handleDialogCancel}
       />
     </Box>
-  );
+  )
 }
 
 export default ItemsPage

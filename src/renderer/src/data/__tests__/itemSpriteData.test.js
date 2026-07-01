@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  resolveItemSprite,
-  isFrameBlank,
-  buildItemSpriteCacheKey
-} from '../itemSpriteData.js'
+import { resolveItemSprite, isFrameBlank, buildItemSpriteCacheKey } from '../itemSpriteData.js'
 
 describe('resolveItemSprite', () => {
   it('maps id 1 to item001.epf frame 0', () => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -152,5 +152,5 @@ export default function EffectPickerDialog({ open, value, speed, onClose, onChan
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

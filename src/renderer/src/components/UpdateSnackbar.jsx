@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Snackbar, Alert, Button, Link } from '@mui/material'
 
 const DISMISS_KEY = 'creidhne:updateDismissedVersion'

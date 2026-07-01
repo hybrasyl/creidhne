@@ -1,16 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import StatusEditor from '../components/statuses/StatusEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -108,7 +98,7 @@ function StatusesPage() {
     Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
       setLoading(false)
     )
-  }, [activeLibrary]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeLibrary])
 
   const handleToggleArchived = async () => {
     const next = !showArchived
@@ -266,9 +256,12 @@ function StatusesPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a status or create a new one.
             </Typography>
           </Box>
@@ -297,7 +290,7 @@ function StatusesPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default StatusesPage

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, CircularProgress } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState } from '../../recoil/atoms'

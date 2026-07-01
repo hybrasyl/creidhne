@@ -103,10 +103,7 @@ export function useBulkFileActions({
     async (selected) => {
       if (!activeLibrary || !selected || selected.length === 0) return
       const paths = selected.map((f) => f.path)
-      const result = await window.electronAPI.unarchiveFiles(
-        paths,
-        `${activeLibrary}/${subdir}`
-      )
+      const result = await window.electronAPI.unarchiveFiles(paths, `${activeLibrary}/${subdir}`)
       await refreshAfterBulk(paths)
       reportBulkResult(result, 'Unarchived')
     },

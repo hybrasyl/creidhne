@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Box,
   Typography,
@@ -38,30 +38,44 @@ export default function HelpersPage() {
         Lua Helpers
       </Typography>
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>Set up Lua IntelliSense</Typography>
+        <Typography variant="h6" gutterBottom>
+          Set up Lua IntelliSense
+        </Typography>
         <Typography
           variant="body2"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             mb: 2
-          }}>
-          Copies the Hybrasyl Lua type stubs and a <code>.luarc.json</code> config into your
-          active library's <code>world/scripts/</code> directory. Once installed, the{' '}
+          }}
+        >
+          Copies the Hybrasyl Lua type stubs and a <code>.luarc.json</code> config into your active
+          library's <code>world/scripts/</code> directory. Once installed, the{' '}
           <strong>sumneko Lua language server</strong> (used by VS Code's Lua extension) will
           provide IntelliSense, autocomplete, and type checking for the Hybrasyl API — including
-          methods on <code>world</code>, <code>source</code>, <code>target</code>, dialog
-          builders, and more.
+          methods on <code>world</code>, <code>source</code>, <code>target</code>, dialog builders,
+          and more.
         </Typography>
 
         <Typography
           variant="body2"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             mb: 2
-          }}>
+          }}
+        >
           <strong>What gets written:</strong>
         </Typography>
-        <Box component="pre" sx={{ fontFamily: 'monospace', fontSize: 12, bgcolor: 'action.hover', p: 1.5, borderRadius: 1, mb: 2 }}>
+        <Box
+          component="pre"
+          sx={{
+            fontFamily: 'monospace',
+            fontSize: 12,
+            bgcolor: 'action.hover',
+            p: 1.5,
+            borderRadius: 1,
+            mb: 2
+          }}
+        >
           {`world/scripts/
 ├── .luarc.json              ← sumneko config (runtime, globals, library path)
 └── .hybrasyl-types/         ← Lua annotation stubs (auto-generated from server C#)
@@ -73,15 +87,21 @@ export default function HelpersPage() {
         <Typography
           variant="body2"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             mb: 2
-          }}>
-          Safe to re-run — overwrites stubs with the latest bundled version. Your scripts are never touched.
+          }}
+        >
+          Safe to re-run — overwrites stubs with the latest bundled version. Your scripts are never
+          touched.
         </Typography>
 
-        <Stack direction="row" spacing={2} sx={{
-          alignItems: "center"
-        }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: 'center'
+          }}
+        >
           <Button
             variant="contained"
             startIcon={installing ? <CircularProgress size={14} color="inherit" /> : <BuildIcon />}
@@ -91,9 +111,12 @@ export default function HelpersPage() {
             {installing ? 'Installing…' : 'Install Lua types + .luarc.json'}
           </Button>
           {!activeLibrary && (
-            <Typography variant="caption" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select an active library in Settings first.
             </Typography>
           )}
@@ -104,8 +127,8 @@ export default function HelpersPage() {
             {result.ok ? (
               <Alert severity="success">
                 Installed {result.stubsCopied} type stubs to <code>{result.typesDir}</code> and
-                wrote <code>{result.luarcDest}</code>.
-                Open <code>world/scripts/</code> in VS Code and the Lua extension will pick them up.
+                wrote <code>{result.luarcDest}</code>. Open <code>world/scripts/</code> in VS Code
+                and the Lua extension will pick them up.
               </Alert>
             ) : (
               <Alert severity="error">Failed: {result.error}</Alert>
@@ -114,7 +137,9 @@ export default function HelpersPage() {
         )}
       </Paper>
       <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>VS Code setup tips</Typography>
+        <Typography variant="h6" gutterBottom>
+          VS Code setup tips
+        </Typography>
         <Stack spacing={1.5}>
           <Typography variant="body2">
             <strong>1.</strong> Install the{' '}
@@ -127,21 +152,27 @@ export default function HelpersPage() {
             <strong>2.</strong> Click "Install Lua types" above to deploy the stubs + config.
           </Typography>
           <Typography variant="body2">
-            <strong>3.</strong> Open <code>world/scripts/</code> as a VS Code workspace (or add it to your existing workspace).
+            <strong>3.</strong> Open <code>world/scripts/</code> as a VS Code workspace (or add it
+            to your existing workspace).
           </Typography>
           <Typography variant="body2">
-            <strong>4.</strong> Start typing — IntelliSense for <code>world:</code>, <code>source:</code>, <code>target:</code>, dialog
-            sequences, and all Hybrasyl-exposed types should appear.
+            <strong>4.</strong> Start typing — IntelliSense for <code>world:</code>,{' '}
+            <code>source:</code>, <code>target:</code>, dialog sequences, and all Hybrasyl-exposed
+            types should appear.
           </Typography>
           <Divider />
-          <Typography variant="caption" sx={{
-            color: "text.secondary"
-          }}>
-            The stubs are auto-generated from the Hybrasyl C# server source via <code>scripts/generate-lua-stubs.js</code>.
-            Re-run that script if the server API changes, then click "Install Lua types" again to push the updates.
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary'
+            }}
+          >
+            The stubs are auto-generated from the Hybrasyl C# server source via{' '}
+            <code>scripts/generate-lua-stubs.js</code>. Re-run that script if the server API
+            changes, then click "Install Lua types" again to push the updates.
           </Typography>
         </Stack>
       </Paper>
     </Box>
-  );
+  )
 }

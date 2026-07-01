@@ -1,4 +1,3 @@
-import React from 'react'
 import { useRecoilValue } from 'recoil'
 import { currentPageState } from '../recoil/atoms'
 import DashboardPage from '../pages/DashboardPage'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import {
@@ -167,13 +167,12 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 // ── Casting set accordion ─────────────────────────────────────────────────────
 
 function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
   const [open, setOpen] = useState(true)
   const title = `Casting Set ${index + 1} — ${cs.type || 'Unset'}`
 
@@ -366,7 +365,7 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -386,7 +385,7 @@ function BehaviorSetEditor({
   const [prefix, setPrefix] = useState(() =>
     deriveBehaviorSetPrefix(initialFileName, behaviorSet.name)
   )
-  const [prefixEdited, setPrefixEdited] = useState(false)
+  const [, setPrefixEdited] = useState(false)
   const [fileName, setFileName] = useState(
     () => initialFileName || computeBehaviorSetFilename(DEFAULT_PREFIX, behaviorSet.name)
   )
@@ -906,7 +905,7 @@ function BehaviorSetEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default BehaviorSetEditor

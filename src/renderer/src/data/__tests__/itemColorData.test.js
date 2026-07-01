@@ -24,11 +24,8 @@ vi.mock('recoil', () => ({
 }))
 vi.mock('../../recoil/atoms', () => ({ clientPathState: {} }))
 
-const {
-  getItemColorEntry,
-  loadItemColorSwatches,
-  clearItemColorCache
-} = await import('../itemColorData.js')
+const { getItemColorEntry, loadItemColorSwatches, clearItemColorCache } =
+  await import('../itemColorData.js')
 
 beforeEach(() => {
   clearItemColorCache()

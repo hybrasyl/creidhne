@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -181,5 +181,5 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

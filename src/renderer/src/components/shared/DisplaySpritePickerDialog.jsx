@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -33,7 +33,18 @@ const CELL_SIZE = 132
 const IMAGE_SIZE = 96
 const GRID_H = 520
 
-function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, category, gender, pose, frameIdx }) {
+function Cell({
+  columnIndex,
+  rowIndex,
+  style,
+  ids,
+  selectedId,
+  onSelect,
+  category,
+  gender,
+  pose,
+  frameIdx
+}) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
@@ -237,5 +248,5 @@ export default function DisplaySpritePickerDialog({ open, category, value, onClo
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

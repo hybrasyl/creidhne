@@ -1,16 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import LocalizationEditor from '../components/localizations/LocalizationEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -252,9 +242,12 @@ function StringsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a localization or create a new one.
             </Typography>
           </Box>
@@ -283,7 +276,7 @@ function StringsPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default StringsPage

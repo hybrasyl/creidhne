@@ -155,9 +155,7 @@ describe('settingsManager', () => {
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       // First save fails at writeFile; second save's writeFile succeeds.
-      mockFs.writeFile
-        .mockRejectedValueOnce(new Error('disk full'))
-        .mockResolvedValue(undefined)
+      mockFs.writeFile.mockRejectedValueOnce(new Error('disk full')).mockResolvedValue(undefined)
 
       await expect(manager.save(VALID)).rejects.toThrow('disk full')
       await expect(manager.save(VALID)).resolves.not.toThrow()

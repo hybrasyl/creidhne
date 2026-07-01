@@ -1,4 +1,3 @@
-import React from 'react'
 import { Autocomplete, TextField, createFilterOptions } from '@mui/material'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { activeLibraryState, libraryIndexState } from '../../recoil/atoms'
@@ -91,7 +90,7 @@ function ConstantAutocomplete({
         )}
         {...rest}
       />
-    );
+    )
   }
 
   return (
@@ -124,14 +123,18 @@ function ConstantAutocomplete({
       )}
       isOptionEqualToValue={(opt, val) => opt === val}
       renderInput={(params) => (
-        <TextField {...params} label={label} slotProps={{
-          ...params.slotProps,
-          htmlInput: { ...params.slotProps.htmlInput, ...inputProps }
-        }} />
+        <TextField
+          {...params}
+          label={label}
+          slotProps={{
+            ...params.slotProps,
+            htmlInput: { ...params.slotProps.htmlInput, ...inputProps }
+          }}
+        />
       )}
       {...rest}
     />
-  );
+  )
 }
 
 export default ConstantAutocomplete

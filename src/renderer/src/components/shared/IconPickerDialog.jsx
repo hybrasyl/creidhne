@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -20,11 +20,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  clientPathState,
-  packCoverageState,
-  iconPickerModeState
-} from '../../recoil/atoms'
+import { clientPathState, packCoverageState, iconPickerModeState } from '../../recoil/atoms'
 import {
   useIconIndex,
   getAvailableIconPaletteNumbers,
@@ -249,5 +245,5 @@ export default function IconPickerDialog({ open, type, value, onClose, onChange 
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

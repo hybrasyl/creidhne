@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box,
   Button,
@@ -186,7 +186,7 @@ function LootContent({ loot, onChange }) {
         Add Loot Set
       </Button>
     </>
-  );
+  )
 }
 
 // ── Hostility section content ─────────────────────────────────────────────────
@@ -305,7 +305,7 @@ function CookiesContent({ cookies, onChange }) {
         Add Cookie
       </Button>
     </>
-  );
+  )
 }
 
 // ── Subtype accordion ─────────────────────────────────────────────────────────
@@ -401,11 +401,17 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
                     onChange={(e) => set('name', e.target.value)}
                     slotProps={{
                       input: {
-                        endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open subtype script" />,
+                        endAdornment: (
+                          <OpenScriptByNameButton
+                            name={data.name}
+                            tooltipPrefix="Open subtype script"
+                          />
+                        )
                       },
 
                       htmlInput: { maxLength: 255 }
-                    }} />
+                    }}
+                  />
                   <BehaviorSetPicker
                     value={data.behaviorSet}
                     onChange={(val) => set('behaviorSet', val)}
@@ -487,7 +493,7 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -703,11 +709,17 @@ function CreatureEditor({
                     onBlur={handleNameBlur}
                     slotProps={{
                       input: {
-                        endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open creature script" />,
+                        endAdornment: (
+                          <OpenScriptByNameButton
+                            name={data.name}
+                            tooltipPrefix="Open creature script"
+                          />
+                        )
                       },
 
                       htmlInput: { maxLength: 255 }
-                    }} />
+                    }}
+                  />
                   <BehaviorSetPicker
                     value={data.behaviorSet}
                     onChange={(val) => updateData((d) => ({ ...d, behaviorSet: val }))}
@@ -839,7 +851,7 @@ function CreatureEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default CreatureEditor

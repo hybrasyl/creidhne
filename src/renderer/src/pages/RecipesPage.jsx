@@ -1,16 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import RecipeEditor from '../components/recipes/RecipeEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -241,9 +231,12 @@ function RecipesPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a recipe or create a new one.
             </Typography>
           </Box>
@@ -272,7 +265,7 @@ function RecipesPage() {
         onCancel={handleDialogCancel}
       />
     </Box>
-  );
+  )
 }
 
 export default RecipesPage

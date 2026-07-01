@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Button, TextField, Tooltip, IconButton, Typography } from '@mui/material'
 import ClearIcon from '@mui/icons-material/Clear'
 import { useRecoilValue } from 'recoil'
@@ -208,7 +208,7 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
         category={category}
       />
     </Box>
-  );
+  )
 }
 
 export default FormulaRow

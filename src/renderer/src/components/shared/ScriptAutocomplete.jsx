@@ -1,11 +1,10 @@
-import React from 'react'
 import { Autocomplete, TextField, IconButton, Tooltip, InputAdornment } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
 
 function stripPath(s) {
-  return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '');
+  return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '')
 }
 
 /**
@@ -89,13 +88,13 @@ function ScriptAutocomplete({
                   {params.slotProps.input.endAdornment}
                   {endAdornment}
                 </>
-              ),
+              )
             }
           }}
         />
       )}
     />
-  );
+  )
 }
 
 export default ScriptAutocomplete

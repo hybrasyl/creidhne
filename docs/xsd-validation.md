@@ -1,8 +1,8 @@
 # Manually validating XML against the Hybrasyl XSDs
 
 When something looks wrong with a save / round-trip / fixture, the first
-question is usually: *is the file actually invalid, or is the bundled XSD
-out of date?* This doc captures the workflow and the cases we already know
+question is usually: _is the file actually invalid, or is the bundled XSD
+out of date?_ This doc captures the workflow and the cases we already know
 the answer for.
 
 ## Quick start
@@ -41,12 +41,12 @@ Three things to check, in order:
    upstream hasn't landed it).
 2. **Is the XSD using `<xs:sequence>`?** `<xs:sequence>` enforces strict
    element order; `<xs:all>` allows any order. The error message lists what
-   `xmllint` was *expecting at that position* — if your element is real but
+   `xmllint` was _expecting at that position_ — if your element is real but
    it's expected in a different slot, this is an ordering issue.
 3. **Is a count or length restriction firing?** Look for `minOccurs` /
    `maxOccurs` on the parent type, or `<xs:maxLength>` on a list type.
 
-A run on the whole fixture set against the *unpatched* upstream XSDs
+A run on the whole fixture set against the _unpatched_ upstream XSDs
 currently produces 7 known failures — see the catalog below.
 
 ## Why we don't validate XML on save (yet)
@@ -109,10 +109,10 @@ XSD ([Common.xsd:1129-1130](../xsd/src/XSD/Common.xsd#L1129-L1130)) marks
 used in two places:
 
 - **Standalone NPC files** (`world/xml/npcs/*.xml`) — these define an NPC
-  *template* (name, dialogue, roles). Hundreds of these files exist with
+  _template_ (name, dialogue, roles). Hundreds of these files exist with
   no `X`/`Y`; the server accepts them.
 - **`<Map><Npcs>` placements** — these put a previously-defined NPC on a
-  specific tile and *do* need `X`/`Y`.
+  specific tile and _do_ need `X`/`Y`.
 
 **Fix:** upstream XSD edit — make `X`/`Y` `use="optional"`, or split the
 type into `NpcTemplate` + `NpcPlacement`.
@@ -168,7 +168,7 @@ Descriptions: This element is not expected. Expected is one of (
 ```
 
 XSD ([Castable.xsd:344-356](../xsd/src/XSD/Castable.xsd#L344-L356)) lists
-`Descriptions` as the *first* child of `Castable`, before `Name`. Real
+`Descriptions` as the _first_ child of `Castable`, before `Name`. Real
 files (and our serializer) put `Name` first. The XSD's expected-at-this-
 position list excludes both `Name` and `Descriptions` because the parser
 has already moved past them looking for `Categories`.
@@ -191,7 +191,7 @@ this exceeds the allowed maximum length of '3'.
 XSD ([Spawns.xsd:112-127](../xsd/src/XSD/Spawns.xsd#L112-L127)) defines
 `SpawnFlags` as an `<xs:list>` of 4 enumerated values
 (`Active`, `MovementDisabled`, `AiDisabled`, `DeathDisabled`) with
-`<xs:maxLength value="3"/>` constraining the *list length*.
+`<xs:maxLength value="3"/>` constraining the _list length_.
 
 **The intent is unclear.** Possible readings:
 

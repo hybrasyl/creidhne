@@ -1,16 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import ElementTableEditor from '../components/elementTables/ElementTableEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -237,9 +227,12 @@ function ElementsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select an element table or create a new one.
             </Typography>
           </Box>
@@ -268,7 +261,7 @@ function ElementsPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default ElementsPage

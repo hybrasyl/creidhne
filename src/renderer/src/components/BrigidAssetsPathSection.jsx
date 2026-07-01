@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, Typography, Button, Tooltip, IconButton, Paper } from '@mui/material'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -47,12 +46,7 @@ const BrigidAssetsPathSection = () => {
           Use Default
         </Button>
         {brigidAssetsPath && (
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<ClearIcon />}
-            onClick={handleClear}
-          >
+          <Button variant="outlined" color="error" startIcon={<ClearIcon />} onClick={handleClear}>
             Clear
           </Button>
         )}

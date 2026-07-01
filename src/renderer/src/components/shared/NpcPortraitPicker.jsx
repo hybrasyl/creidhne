@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
@@ -67,5 +67,5 @@ export default function NpcPortraitPicker({ value, onChange, label = 'Portrait',
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

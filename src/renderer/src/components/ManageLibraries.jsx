@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Typography,
@@ -6,7 +6,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -30,13 +29,16 @@ function IndexStatus({ status, building, onBuild }) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <CircularProgress size={14} />
-        <Typography variant="caption" sx={{
-          color: "text.secondary"
-        }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary'
+          }}
+        >
           Building...
         </Typography>
       </Box>
-    );
+    )
   }
 
   if (!status) return null
@@ -176,9 +178,12 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           <ListItem>
             <ListItemText
               primary={
-                <Typography variant="body2" sx={{
-                  color: "text.secondary"
-                }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary'
+                  }}
+                >
                   No libraries added yet.
                 </Typography>
               }
@@ -223,9 +228,10 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           <Typography
             variant="body2"
             sx={{
-              color: "text.secondary",
+              color: 'text.secondary',
               mt: 1
-            }}>
+            }}
+          >
             Its index file will also be deleted.
           </Typography>
         </DialogContent>
@@ -237,7 +243,7 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         </DialogActions>
       </Dialog>
     </Box>
-  );
+  )
 }
 
 export default ManageLibraries

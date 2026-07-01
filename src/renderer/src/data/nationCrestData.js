@@ -55,7 +55,6 @@ async function getAllPalettes(clientPath) {
     const m = name.match(/^([a-z_]+)(\d+)$/)
     if (!m) continue
     const pattern = m[1]
-    const number = parseInt(m[2], 10)
     if (!byPrefix.has(pattern)) byPrefix.set(pattern, Palette.fromArchive(pattern, archive))
   }
   const all = []

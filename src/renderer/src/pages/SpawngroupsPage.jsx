@@ -1,16 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress
-} from '@mui/material'
+import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import SpawngroupEditor from '../components/spawngroups/SpawngroupEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -224,9 +214,12 @@ function SpawngroupsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a spawn group or create a new one.
             </Typography>
           </Box>
@@ -255,7 +248,7 @@ function SpawngroupsPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default SpawngroupsPage

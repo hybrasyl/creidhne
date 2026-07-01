@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import creidhneLogo from '../assets/creidhne.svg'
 import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
@@ -222,7 +222,10 @@ const MainToolbar = ({ navigate }) => {
           </IconButton>
         </Tooltip>
         <Tooltip title="Damage Calculator">
-          <IconButton onClick={() => navigate('damage-calculator')} sx={pageSx('damage-calculator')}>
+          <IconButton
+            onClick={() => navigate('damage-calculator')}
+            sx={pageSx('damage-calculator')}
+          >
             <GiCalculator />
           </IconButton>
         </Tooltip>

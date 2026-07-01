@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, Typography, Chip, Stack } from '@mui/material'
 import IconCanvas from '../shared/IconCanvas'
 import { typeFromBook } from '../../data/iconData'
@@ -34,14 +33,19 @@ function Row({ label, children }) {
 function ChipList({ items }) {
   if (!items || items.length === 0) return null
   return (
-    <Stack direction="row" spacing={0.5} useFlexGap sx={{
-      flexWrap: "wrap"
-    }}>
+    <Stack
+      direction="row"
+      spacing={0.5}
+      useFlexGap
+      sx={{
+        flexWrap: 'wrap'
+      }}
+    >
       {items.map((v) => (
         <Chip key={v} label={v} size="small" variant="outlined" />
       ))}
     </Stack>
-  );
+  )
 }
 
 function SectionHeading({ children }) {
@@ -72,9 +76,12 @@ export function CastableReferenceView({ data }) {
           <Typography variant="h6" noWrap>
             {data.name}
           </Typography>
-          <Typography variant="caption" sx={{
-            color: "text.secondary"
-          }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary'
+            }}
+          >
             {data.book || 'Unknown book'}
           </Typography>
         </Box>
@@ -96,9 +103,12 @@ export function CastableReferenceView({ data }) {
           <SectionHeading>Descriptions</SectionHeading>
           {descriptions.map((d, i) => (
             <Box key={i} sx={{ mb: 1 }}>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 {d.class || 'All'}
               </Typography>
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -117,7 +127,7 @@ export function CastableReferenceView({ data }) {
         </>
       ) : null}
     </Box>
-  );
+  )
 }
 
 // ─── Status ──────────────────────────────────────────────────────────────────
@@ -178,10 +188,11 @@ export function ItemReferenceView({ data }) {
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             display: 'block',
             mb: 1
-          }}>
+          }}
+        >
           Unidentified: {data.unidentifiedName}
         </Typography>
       )}
@@ -211,7 +222,7 @@ export function ItemReferenceView({ data }) {
         <ChipList items={flags} />
       </Row>
     </Box>
-  );
+  )
 }
 
 // ─── Creature ────────────────────────────────────────────────────────────────
@@ -245,9 +256,12 @@ export function CreatureReferenceView({ data }) {
               <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap>
                 {entry.name}
               </Typography>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 {entry.rolls} × {entry.chance}
               </Typography>
             </Box>
@@ -255,7 +269,7 @@ export function CreatureReferenceView({ data }) {
         </>
       )}
     </Box>
-  );
+  )
 }
 
 // ─── Raw XML ─────────────────────────────────────────────────────────────────

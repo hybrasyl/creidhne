@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box,
   Button,
@@ -31,7 +31,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import HelpIcon from '@mui/icons-material/Help'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import StatsTab from '../shared/StatsTab'
@@ -71,7 +70,13 @@ const DEFAULT_OP = { match: '', amount: '0', min: '', max: '' }
 // Five flags whose primary toggle lives in another section (Use Effect or
 // Variants). They still appear in the Flags grid for visibility but are
 // rendered read-only there with a tooltip pointing to the real toggle.
-const LINKED_FLAGS = new Set(['Consumable', 'Tailorable', 'Smithable', 'Enchantable', 'Consecratable'])
+const LINKED_FLAGS = new Set([
+  'Consumable',
+  'Tailorable',
+  'Smithable',
+  'Enchantable',
+  'Consecratable'
+])
 const LINKED_FLAG_HINT = {
   Consumable: 'Toggle in the Use Effect section',
   Tailorable: 'Toggle in the Variants section',
@@ -346,7 +351,8 @@ function ItemEditor({
                 slotProps={{
                   htmlInput: { readOnly: true },
                   inputLabel: { shrink: true }
-                }} />
+                }}
+              />
               <TextField
                 label="Name"
                 required
@@ -412,7 +418,8 @@ function ItemEditor({
                 slotProps={{
                   htmlInput: { readOnly: true },
                   inputLabel: { shrink: true }
-                }} />
+                }}
+              />
               <TextField
                 label="Found In"
                 size="small"
@@ -424,7 +431,8 @@ function ItemEditor({
                 slotProps={{
                   htmlInput: { readOnly: true },
                   inputLabel: { shrink: true }
-                }} />
+                }}
+              />
             </Box>
             {/* Row 3: Comment */}
             <TextField
@@ -606,7 +614,11 @@ function ItemEditor({
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <InputLabel>Slot</InputLabel>
-                <Select value={p.equipment?.slot ?? 'None'} label="Slot" onChange={handleSlotChange}>
+                <Select
+                  value={p.equipment?.slot ?? 'None'}
+                  label="Slot"
+                  onChange={handleSlotChange}
+                >
                   {EQUIPMENT_SLOTS.map((s) => (
                     <MenuItem key={s} value={s}>
                       {s}
@@ -696,9 +708,12 @@ function ItemEditor({
               />
             </Box>
             {p.physical.value ? (
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Suggested sell price: {Math.round(Number(p.physical.value) / 5)} gold
               </Typography>
             ) : null}
@@ -775,9 +790,12 @@ function ItemEditor({
                         }}
                       />
                     </Box>
-                    <Typography variant="caption" sx={{
-                      color: "text.secondary"
-                    }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary'
+                      }}
+                    >
                       Average damage — Small:{' '}
                       {((Number(p.damage.smallMin) + Number(p.damage.smallMax)) / 2).toFixed(1)} /
                       Large:{' '}
@@ -867,9 +885,10 @@ function ItemEditor({
                           <Typography
                             variant="caption"
                             sx={{
-                              color: "text.secondary",
+                              color: 'text.secondary',
                               textTransform: 'capitalize'
-                            }}>
+                            }}
+                          >
                             {field}
                           </Typography>
                           {cm[field].map((op, opIdx) => (
@@ -934,7 +953,7 @@ function ItemEditor({
                         </Box>
                       ))}
                     </Box>
-                  );
+                  )
                 })}
                 <Button startIcon={<AddIcon />} size="small" onClick={addCastModifier}>
                   Add Match
@@ -985,11 +1004,7 @@ function ItemEditor({
         </Section>
 
         {/* ── Variants ── */}
-        <Section
-          title="Variants"
-          open={openVariants}
-          onToggle={() => setOpenVariants((v) => !v)}
-        >
+        <Section title="Variants" open={openVariants} onToggle={() => setOpenVariants((v) => !v)}>
           {/* Linked flag toggles — read-only mirrors live in Flags section. */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 2 }}>
             {VARIANT_FLAGS.map((flag) => (
@@ -1033,9 +1048,12 @@ function ItemEditor({
         {/* ── Vendor ── */}
         <Section title="Vendor" open={openVendor} onToggle={() => setOpenVendor((v) => !v)}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="caption" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Shop Tab also determines the bank tab name for this item.
             </Typography>
             <ConstantAutocomplete
@@ -1083,7 +1101,7 @@ function ItemEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default ItemEditor

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
@@ -12,7 +12,6 @@ import {
   Typography,
   Divider,
   TextField,
-  Tooltip,
   IconButton,
   Paper,
   Select,
@@ -590,8 +589,9 @@ function CastableEditor({
                     slotProps={{
                       htmlInput: { readOnly: true },
                       inputLabel: { shrink: true }
-                    }} />
-                );
+                    }}
+                  />
+                )
               })()}
             </Box>
 
@@ -798,7 +798,7 @@ function CastableEditor({
                   ))}
                 </Box>
               </Box>
-            );
+            )
           })()}
         </Section>
 
@@ -940,7 +940,7 @@ function CastableEditor({
                   sx={{ m: 0 }}
                 />
               </Box>
-            );
+            )
           })()}
         </Section>
       </Box>
@@ -961,7 +961,7 @@ function CastableEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default CastableEditor

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Box,
   Button,
@@ -466,7 +466,7 @@ function NationEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default NationEditor

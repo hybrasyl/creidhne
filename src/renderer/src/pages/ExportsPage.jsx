@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Box, Typography, Button, Alert, CircularProgress, Paper, Divider } from '@mui/material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import { useRecoilValue } from 'recoil'
@@ -74,17 +74,22 @@ function ExportsPage() {
       </Typography>
       <Divider sx={{ mb: 3 }} />
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" gutterBottom sx={{
-          fontWeight: "bold"
-        }}>
+        <Typography
+          variant="subtitle1"
+          gutterBottom
+          sx={{
+            fontWeight: 'bold'
+          }}
+        >
           Castables Excel CSV
         </Typography>
         <Typography
           variant="body2"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             mb: 2
-          }}>
+          }}
+        >
           Exports all castables to a CSV matching the Excel workbook column structure. Open directly
           in Excel.
         </Typography>
@@ -100,17 +105,22 @@ function ExportsPage() {
         </Button>
       </Paper>
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" gutterBottom sx={{
-          fontWeight: "bold"
-        }}>
+        <Typography
+          variant="subtitle1"
+          gutterBottom
+          sx={{
+            fontWeight: 'bold'
+          }}
+        >
           Castables CSV
         </Typography>
         <Typography
           variant="body2"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             mb: 2
-          }}>
+          }}
+        >
           Exports all castables (excluding test and GM abilities) to a CSV for the Hybrasyl website
           ability browser. Includes name, icon, description, class, subclass, trainer location, stat
           requirements, materials, cast cost, and cooldown.
@@ -132,7 +142,7 @@ function ExportsPage() {
         </Alert>
       )}
     </Box>
-  );
+  )
 }
 
 export default ExportsPage

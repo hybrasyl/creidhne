@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, CircularProgress, Typography } from '@mui/material'
 
 const FADE_DELAY_MS = 800

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, Typography, Button, Tooltip, IconButton, Paper } from '@mui/material'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -45,11 +44,7 @@ const TaliesinPathSection = () => {
         </Button>
         {taliesinPath && (
           <>
-            <Button
-              variant="outlined"
-              startIcon={<RocketLaunchIcon />}
-              onClick={handleLaunch}
-            >
+            <Button variant="outlined" startIcon={<RocketLaunchIcon />} onClick={handleLaunch}>
               Launch Taliesin
             </Button>
             <Button

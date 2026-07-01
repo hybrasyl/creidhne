@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  Box,
-  Typography,
-  Divider,
-  Button,
-  Tooltip,
-  IconButton,
-  Alert,
-  Snackbar
-} from '@mui/material'
+import { Box, Typography, Alert, Snackbar } from '@mui/material'
 import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
 import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
@@ -260,9 +251,12 @@ function ServerConfigPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a config or create a new one.
             </Typography>
           </Box>
@@ -291,7 +285,7 @@ function ServerConfigPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default ServerConfigPage

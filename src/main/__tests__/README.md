@@ -12,31 +12,31 @@ npm test
 
 Each schema gets a test file with four standard blocks:
 
-| Block | What it checks |
-| --- | --- |
-| **Parse round-trip** | `parseX(xml)` → `serializeX()` → `parseX()` → deep equal to first parse |
-| **All fields** | Full fixture with every optional field populated; one assertion per field |
-| **Minimal** | Required-only fixture; every optional field defaults to the right empty value |
+| Block                | What it checks                                                                                                                                                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Parse round-trip** | `parseX(xml)` → `serializeX()` → `parseX()` → deep equal to first parse                                                                                                                                                                 |
+| **All fields**       | Full fixture with every optional field populated; one assertion per field                                                                                                                                                               |
+| **Minimal**          | Required-only fixture; every optional field defaults to the right empty value                                                                                                                                                           |
 | **Output structure** | Serialize a JS object → re-parse with xml2js → assert elements, attributes, and nesting are correct. Structural assertions only — does **not** perform real XSD validation and will not catch divergences between creidhne and the XSD. |
 
 ## Coverage
 
-| Schema | Test file | Tests |
-| --- | --- | --- |
-| Nation | `nationXml.test.js` | 21 |
-| BehaviorSet | `behaviorSetXml.test.js` | 32 |
-| Creature | `creatureXml.test.js` | 33 |
-| NPC | `npcXml.test.js` | 38 |
-| Recipe | `recipeXml.test.js` | 20 |
-| Variant | `variantXml.test.js` | 32 |
-| ElementTable | `elementTableXml.test.js` | 22 |
-| Loot | `lootXml.test.js` | 35 |
-| Localization | `localizationXml.test.js` | 25 |
-| ServerConfig | `serverConfigXml.test.js` | 54 |
-| Spawns | `spawngroupXml.test.js` | 37 |
-| Status | `statusXml.test.js` | 42 |
-| Item | `itemXml.test.js` | 70 |
-| Castable | `castableXml.test.js` | 138 |
+| Schema       | Test file                 | Tests |
+| ------------ | ------------------------- | ----- |
+| Nation       | `nationXml.test.js`       | 21    |
+| BehaviorSet  | `behaviorSetXml.test.js`  | 32    |
+| Creature     | `creatureXml.test.js`     | 33    |
+| NPC          | `npcXml.test.js`          | 38    |
+| Recipe       | `recipeXml.test.js`       | 20    |
+| Variant      | `variantXml.test.js`      | 32    |
+| ElementTable | `elementTableXml.test.js` | 22    |
+| Loot         | `lootXml.test.js`         | 35    |
+| Localization | `localizationXml.test.js` | 25    |
+| ServerConfig | `serverConfigXml.test.js` | 54    |
+| Spawns       | `spawngroupXml.test.js`   | 37    |
+| Status       | `statusXml.test.js`       | 42    |
+| Item         | `itemXml.test.js`         | 70    |
+| Castable     | `castableXml.test.js`     | 138   |
 
 ## Assumptions and conventions
 

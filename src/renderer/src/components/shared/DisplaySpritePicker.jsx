@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
@@ -34,7 +34,6 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
 
   const categories = categoriesFor(slot)
   const category = categories.length ? categories : null
-  const mapped = Boolean(category)
   const previewColor = slot === 'Helmet' ? '' : color
 
   const handleSelect = (id) => {
@@ -99,5 +98,5 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

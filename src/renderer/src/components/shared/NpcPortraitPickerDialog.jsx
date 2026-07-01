@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -190,5 +190,5 @@ export default function NpcPortraitPickerDialog({ open, value, onClose, onChange
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }
