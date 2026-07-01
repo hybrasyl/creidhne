@@ -92,5 +92,5 @@ export default function SoundPicker({
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

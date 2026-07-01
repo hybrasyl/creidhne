@@ -20,11 +20,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
 import { useRecoilValue, useRecoilState } from 'recoil'
-import {
-  clientPathState,
-  packCoverageState,
-  nationCrestPickerModeState
-} from '../../recoil/atoms'
+import { clientPathState, packCoverageState, nationCrestPickerModeState } from '../../recoil/atoms'
 import {
   useNationCrestIndex,
   getAvailableCrestPalettes,
@@ -252,5 +248,5 @@ export default function NationCrestPickerDialog({ open, value, onClose, onChange
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

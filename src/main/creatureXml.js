@@ -25,10 +25,7 @@ function injectCreatureMeta(xml, meta) {
   const payload = {}
   if (meta.family) payload.family = meta.family
   if (meta.weapon) payload.weapon = meta.weapon
-  return xml.replace(
-    /(<Creature[^>]*>)/,
-    `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`
-  )
+  return xml.replace(/(<Creature[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`)
 }
 
 const SUBTYPE_META_DEFAULTS = { weapon: '' }

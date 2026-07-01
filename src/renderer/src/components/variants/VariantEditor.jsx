@@ -221,7 +221,12 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
               onChange={(_, val) => updateProp('tags', val)}
               renderValue={(value, getItemProps) =>
                 value.map((option, idx) => (
-                  <Chip key={option} label={option} size="small" {...getItemProps({ index: idx })} />
+                  <Chip
+                    key={option}
+                    label={option}
+                    size="small"
+                    {...getItemProps({ index: idx })}
+                  />
                 ))
               }
               renderInput={(params) => <TextField {...params} size="small" label="Tags" />}
@@ -393,7 +398,7 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -613,7 +618,7 @@ function VariantEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default VariantEditor

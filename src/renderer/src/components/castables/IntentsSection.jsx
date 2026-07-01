@@ -101,7 +101,7 @@ function CrossRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function ConeRow({ shape, onChange, onRemove }) {
@@ -130,7 +130,7 @@ function ConeRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function SquareRow({ shape, onChange, onRemove }) {
@@ -155,7 +155,7 @@ function SquareRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function LineRow({ shape, onChange, onRemove }) {
@@ -184,7 +184,7 @@ function LineRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function TileRow({ shape, onChange, onRemove }) {
@@ -223,7 +223,7 @@ function TileRow({ shape, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 // ── Single intent ─────────────────────────────────────────────────────────────
@@ -333,9 +333,12 @@ function IntentItem({ intent, index, onChange, onRemove }) {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
               <InfoOutlinedIcon fontSize="small" sx={{ color: 'text.secondary', fontSize: 15 }} />
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 For self-target effects, use NoTarget with no shapes.
               </Typography>
             </Box>
@@ -462,9 +465,10 @@ function IntentItem({ intent, index, onChange, onRemove }) {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "text.secondary",
+                      color: 'text.secondary',
                       mt: 0.5
-                    }}>
+                    }}
+                  >
                     No shapes added.
                   </Typography>
                 )}
@@ -473,7 +477,7 @@ function IntentItem({ intent, index, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Exported section ─────────────────────────────────────────────────────────

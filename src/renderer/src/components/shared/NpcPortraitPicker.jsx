@@ -67,5 +67,5 @@ export default function NpcPortraitPicker({ value, onChange, label = 'Portrait',
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

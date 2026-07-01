@@ -227,9 +227,12 @@ export default function ReferencePanel() {
           </Alert>
         )}
         {activeLibrary && !name && (
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary'
+            }}
+          >
             Pick a type and entity to view.
           </Typography>
         )}
@@ -249,5 +252,5 @@ export default function ReferencePanel() {
         )}
       </Box>
     </Paper>
-  );
+  )
 }

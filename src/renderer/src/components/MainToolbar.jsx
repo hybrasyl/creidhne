@@ -222,7 +222,10 @@ const MainToolbar = ({ navigate }) => {
           </IconButton>
         </Tooltip>
         <Tooltip title="Damage Calculator">
-          <IconButton onClick={() => navigate('damage-calculator')} sx={pageSx('damage-calculator')}>
+          <IconButton
+            onClick={() => navigate('damage-calculator')}
+            sx={pageSx('damage-calculator')}
+          >
             <GiCalculator />
           </IconButton>
         </Tooltip>

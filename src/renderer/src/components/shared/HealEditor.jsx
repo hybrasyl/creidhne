@@ -77,7 +77,7 @@ function HealEditor({ value, onChange }) {
         />
       )}
     </Box>
-  );
+  )
 }
 
 export default HealEditor

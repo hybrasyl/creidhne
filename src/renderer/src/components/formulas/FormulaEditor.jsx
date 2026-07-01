@@ -135,9 +135,12 @@ function RandParam({ value, onChange }) {
           ))}
         </Select>
       </FormControl>
-      <Typography variant="body2" sx={{
-        color: "text.secondary"
-      }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary'
+        }}
+      >
         ×
       </Typography>
       <TextField
@@ -153,14 +156,15 @@ function RandParam({ value, onChange }) {
       <Typography
         variant="caption"
         sx={{
-          color: "text.secondary",
+          color: 'text.secondary',
           fontFamily: 'monospace'
-        }}>
+        }}
+      >
         = {v.variable}
         {v.multiplier && v.multiplier !== 1 ? ` * ${v.multiplier}` : ''}
       </Typography>
     </Box>
-  );
+  )
 }
 
 function SettingParam({ paramDef, settings }) {
@@ -174,13 +178,16 @@ function SettingParam({ paramDef, settings }) {
         disabled
         sx={{ width: 120 }}
       />
-      <Typography variant="caption" sx={{
-        color: "text.secondary"
-      }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary'
+        }}
+      >
         (from Formula Settings)
       </Typography>
     </Box>
-  );
+  )
 }
 
 function CoefficientParam({ value, coeffKey, spellOrSkill }) {
@@ -196,13 +203,16 @@ function CoefficientParam({ value, coeffKey, spellOrSkill }) {
           htmlInput: { style: { fontFamily: 'monospace' } }
         }}
       />
-      <Typography variant="caption" sx={{
-        color: "text.secondary"
-      }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary'
+        }}
+      >
         {coeffKey ? `${coeffKey} (${spellOrSkill})` : 'Select targeting + delivery below'}
       </Typography>
     </Box>
-  );
+  )
 }
 
 // ── Used-by panel ───────────────────────────────────────────────────────────
@@ -217,19 +227,21 @@ function UsedByPanel({ formulaName, libraryIndex }) {
       <Typography
         variant="caption"
         sx={{
-          color: "text.secondary",
+          color: 'text.secondary',
           display: 'block',
           mb: 0.5
-        }}>
+        }}
+      >
         Used by {total > 0 ? `(${total})` : ''}
       </Typography>
       {total === 0 ? (
         <Typography
           variant="body2"
           sx={{
-            color: "text.disabled",
+            color: 'text.disabled',
             fontStyle: 'italic'
-          }}>
+          }}
+        >
           Not referenced by any castable or status.
         </Typography>
       ) : (
@@ -243,7 +255,7 @@ function UsedByPanel({ formulaName, libraryIndex }) {
         </Box>
       )}
     </Paper>
-  );
+  )
 }
 
 // ── Main Editor ──────────────────────────────────────────────────────────────
@@ -403,7 +415,7 @@ function FormulaEditor({
   const resolvedAssembledFormula = useMemo(() => {
     if (!assembledFormula || effectiveAcquiredLevel == null || !patternUsesAcquiredLevel)
       return null
-    return assembledFormula.replace(/\bACQUIREDLEVEL\b/g, String(effectiveAcquiredLevel));
+    return assembledFormula.replace(/\bACQUIREDLEVEL\b/g, String(effectiveAcquiredLevel))
   }, [assembledFormula, effectiveAcquiredLevel, patternUsesAcquiredLevel])
 
   // ── Duplicate detection ───────────────────────────────────────────────────
@@ -668,10 +680,11 @@ function FormulaEditor({
             <Typography
               variant="caption"
               sx={{
-                color: "warning.main",
+                color: 'warning.main',
                 display: 'block',
                 mt: 1
-              }}>
+              }}
+            >
               Status formulas represent damage/healing for a single tick. The castable that applies
               the status controls total duration and tick interval.
             </Typography>
@@ -889,9 +902,10 @@ function FormulaEditor({
                                       <Typography
                                         variant="body2"
                                         sx={{
-                                          color: "text.secondary",
+                                          color: 'text.secondary',
                                           alignSelf: 'center'
-                                        }}>
+                                        }}
+                                      >
                                         ×
                                       </Typography>
                                       <TextField
@@ -912,10 +926,11 @@ function FormulaEditor({
                                       <Typography
                                         variant="caption"
                                         sx={{
-                                          color: "text.secondary",
+                                          color: 'text.secondary',
                                           alignSelf: 'center',
                                           fontFamily: 'monospace'
-                                        }}>
+                                        }}
+                                      >
                                         = {rv.variable}
                                         {rv.multiplier && rv.multiplier !== 1
                                           ? ` * ${rv.multiplier}`
@@ -924,7 +939,7 @@ function FormulaEditor({
                                     </>
                                   )}
                                 </>
-                              );
+                              )
                             })()}
                         </Box>
                       </Box>
@@ -958,9 +973,12 @@ function FormulaEditor({
                           />
                           {(paramValues._weaponEnabled ?? false) && (
                             <>
-                              <Typography variant="body2" sx={{
-                                color: "text.secondary"
-                              }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: 'text.secondary'
+                                }}
+                              >
                                 ×
                               </Typography>
                               <NumberParam
@@ -1001,10 +1019,11 @@ function FormulaEditor({
                         <Typography
                           variant="caption"
                           sx={{
-                            color: "text.secondary",
+                            color: 'text.secondary',
                             display: 'block',
                             mt: 0.5
-                          }}>
+                          }}
+                        >
                           Enter the castable's static MP cost. Percentage-based costs are not
                           supported.
                         </Typography>
@@ -1072,14 +1091,17 @@ function FormulaEditor({
                                   />
                                 )}
                                 {isOverridden && (
-                                  <Typography variant="caption" sx={{
-                                    color: "warning.main"
-                                  }}>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: 'warning.main'
+                                    }}
+                                  >
                                     overrides global ({globalVal ?? '—'})
                                   </Typography>
                                 )}
                               </Box>
-                            );
+                            )
                           })}
                           {coeffParam &&
                             (() => {
@@ -1135,9 +1157,12 @@ function FormulaEditor({
                                     />
                                   )}
                                   {isOverridden && (
-                                    <Typography variant="caption" sx={{
-                                      color: "warning.main"
-                                    }}>
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: 'warning.main'
+                                      }}
+                                    >
                                       overrides calculated ({resolvedCoefficient ?? '—'})
                                     </Typography>
                                   )}
@@ -1148,7 +1173,7 @@ function FormulaEditor({
                                     sx={{ fontFamily: 'monospace' }}
                                   />
                                 </Box>
-                              );
+                              )
                             })()}
                           {patternUsesAcquiredLevel && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1198,9 +1223,12 @@ function FormulaEditor({
                                   }}
                                 />
                               )}
-                              <Typography variant="caption" sx={{
-                                color: "text.secondary"
-                              }}>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'text.secondary'
+                                }}
+                              >
                                 {acquiredLevelOverride != null
                                   ? `preview only — not saved; ACQUIREDLEVEL stays symbolic in formulas.json`
                                   : castableAcquiredLevel != null
@@ -1225,9 +1253,10 @@ function FormulaEditor({
                               <Typography
                                 variant="body2"
                                 sx={{
-                                  color: "text.secondary",
+                                  color: 'text.secondary',
                                   mb: 0.5
-                                }}>
+                                }}
+                              >
                                 {p.label}
                               </Typography>
                               <NumberParam
@@ -1241,7 +1270,7 @@ function FormulaEditor({
                         </Box>
                       </Box>
                     )
-                  ].filter(Boolean);
+                  ].filter(Boolean)
                 })()}
             </Stack>
           </AccordionDetails>
@@ -1272,11 +1301,12 @@ function FormulaEditor({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "text.secondary",
+                    color: 'text.secondary',
                     display: 'block',
                     mt: 1.5,
                     mb: 0.5
-                  }}>
+                  }}
+                >
                   Resolved preview (ACQUIREDLEVEL = {effectiveAcquiredLevel})
                   {acquiredLevelOverride == null && refName
                     ? ` from referenced ${refType} "${refName}"`
@@ -1351,7 +1381,7 @@ function FormulaEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default FormulaEditor

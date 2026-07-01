@@ -234,9 +234,7 @@ describe('archiveFiles', () => {
 
   it('records failure without aborting the rest of the batch', async () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT'))
-    mockFs.rename
-      .mockRejectedValueOnce(new Error('boom on first'))
-      .mockResolvedValueOnce(undefined)
+    mockFs.rename.mockRejectedValueOnce(new Error('boom on first')).mockResolvedValueOnce(undefined)
     const result = await archiveFiles(
       ['/world/items/a.xml', '/world/items/b.xml'],
       '/world/_archive'

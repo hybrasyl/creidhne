@@ -181,5 +181,5 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

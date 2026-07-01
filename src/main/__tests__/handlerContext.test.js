@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { normalize } from 'path'
-import {
-  applySettingsRoots,
-  bless,
-  allRoots,
-  _resetRootsForTests
-} from '../handlerContext.js'
+import { applySettingsRoots, bless, allRoots, _resetRootsForTests } from '../handlerContext.js'
 
 const norm = (p) => normalize(p)
 
@@ -111,4 +106,3 @@ describe('allRoots ordering', () => {
     expect(settingsIdx).toBeLessThan(blessedIdx)
   })
 })
-

@@ -590,8 +590,9 @@ function CastableEditor({
                     slotProps={{
                       htmlInput: { readOnly: true },
                       inputLabel: { shrink: true }
-                    }} />
-                );
+                    }}
+                  />
+                )
               })()}
             </Box>
 
@@ -798,7 +799,7 @@ function CastableEditor({
                   ))}
                 </Box>
               </Box>
-            );
+            )
           })()}
         </Section>
 
@@ -940,7 +941,7 @@ function CastableEditor({
                   sx={{ m: 0 }}
                 />
               </Box>
-            );
+            )
           })()}
         </Section>
       </Box>
@@ -961,7 +962,7 @@ function CastableEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default CastableEditor

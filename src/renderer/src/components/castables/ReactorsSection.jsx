@@ -147,7 +147,7 @@ function ReactorRow({ reactor, index, statusNames, onChange, onRemove }) {
         />
       </Box>
     </Box>
-  );
+  )
 }
 
 function ReactorsSection({ reactors, libraryIndex, onChange }) {

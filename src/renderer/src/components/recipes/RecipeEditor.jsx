@@ -303,7 +303,7 @@ function RecipeEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default RecipeEditor

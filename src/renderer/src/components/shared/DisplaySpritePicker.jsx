@@ -99,5 +99,5 @@ export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

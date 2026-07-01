@@ -280,16 +280,17 @@ function RestrictionsTab({ data, onChange }) {
                 slotProps={{
                   htmlInput: { readOnly: true },
                   inputLabel: { shrink: true }
-                }} />
+                }}
+              />
             )}
           </Box>
-        );
+        )
       })}
       <Button startIcon={<AddIcon />} size="small" onClick={addSlotRestriction}>
         Add Slot Restriction
       </Button>
     </Box>
-  );
+  )
 }
 
 export default RestrictionsTab

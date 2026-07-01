@@ -167,7 +167,7 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 // ── Casting set accordion ─────────────────────────────────────────────────────
@@ -366,7 +366,7 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -906,7 +906,7 @@ function BehaviorSetEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default BehaviorSetEditor

@@ -86,7 +86,7 @@ function StringRow({ keyVal, message, onChangeKey, onChangeMessage, onDelete }) 
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 // ── Call + Response row ───────────────────────────────────────────────────────
@@ -476,10 +476,11 @@ function LocalizationEditor({
           <Typography
             variant="caption"
             sx={{
-              color: "text.secondary",
+              color: 'text.secondary',
               mb: 1,
               display: 'block'
-            }}>
+            }}
+          >
             TODO: fill in variable descriptions
           </Typography>
           <Divider sx={{ mb: 1 }} />
@@ -492,14 +493,15 @@ function LocalizationEditor({
                   slotProps={{
                     primary: { variant: 'body2', fontFamily: 'monospace' },
                     secondary: { variant: 'caption' }
-                  }} />
+                  }}
+                />
               </ListItem>
             ))}
           </List>
         </Box>
       </Drawer>
     </Box>
-  );
+  )
 }
 
 export default LocalizationEditor

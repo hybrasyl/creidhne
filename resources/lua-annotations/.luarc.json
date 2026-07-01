@@ -7,26 +7,13 @@
     }
   },
   "workspace": {
-    "library": [
-      ".hybrasyl-types"
-    ],
-    "ignoreDir": [
-      ".hybrasyl-types"
-    ],
+    "library": [".hybrasyl-types"],
+    "ignoreDir": [".hybrasyl-types"],
     "checkThirdParty": false
   },
   "diagnostics": {
-    "globals": [
-      "world",
-      "origin",
-      "source",
-      "target",
-      "player_response",
-      "this_script"
-    ],
-    "disable": [
-      "lowercase-global"
-    ]
+    "globals": ["world", "origin", "source", "target", "player_response", "this_script"],
+    "disable": ["lowercase-global"]
   },
   "hint": {
     "enable": true,

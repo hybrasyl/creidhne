@@ -99,7 +99,8 @@ function EditorHeader({
           slotProps={{
             htmlInput: { spellCheck: false },
             formHelperText: { sx: { mx: 0 } }
-          }} />
+          }}
+        />
         <Tooltip title={recycleTooltip}>
           <span>
             <IconButton size="small" onClick={onRegenerate} disabled={recycleDisabled}>
@@ -109,7 +110,7 @@ function EditorHeader({
         </Tooltip>
       </Box>
     </Box>
-  );
+  )
 }
 
 export default EditorHeader

@@ -22,20 +22,20 @@ commit beyond the fix above.
 
 ## Per-type comparison
 
-| Type | Tier-1 error (fixture vs XSD) | Tier-2 error (serializer output vs XSD) | Verdict |
-| --- | --- | --- | --- |
-| items | `Vendor: Missing child Description` | `Vendor: Missing child Description` | downstream of drift — same error |
-| npcs | `Npc: X / Y required` | `Npc: X / Y required` | downstream of drift — same error |
-| localizations | `MonsterSpeak: not expected, expected NpcSpeak` | `MonsterSpeak: not expected, expected NpcSpeak` | downstream of drift — same error |
-| elementtables | `Target: not expected` (after 9) | `Target: not expected` (after 9) | downstream of drift — same error |
-| castables | `Descriptions: not expected. Expected Categories…` | `Descriptions: not expected. Expected Categories…` | downstream of drift — same error |
-| spawngroups | `Flags: maxLength=3 exceeded by 4` | `Flags: maxLength=3 exceeded by 4` | downstream of drift — same error |
-| serverconfigs | `WorldDataDir: not expected. Expected DataStore` | `WorldDataDir: not expected. Expected DataStore` *(after fix)* | **was real regression, now downstream of drift** — see "Fixed regression" below |
+| Type          | Tier-1 error (fixture vs XSD)                      | Tier-2 error (serializer output vs XSD)                        | Verdict                                                                         |
+| ------------- | -------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| items         | `Vendor: Missing child Description`                | `Vendor: Missing child Description`                            | downstream of drift — same error                                                |
+| npcs          | `Npc: X / Y required`                              | `Npc: X / Y required`                                          | downstream of drift — same error                                                |
+| localizations | `MonsterSpeak: not expected, expected NpcSpeak`    | `MonsterSpeak: not expected, expected NpcSpeak`                | downstream of drift — same error                                                |
+| elementtables | `Target: not expected` (after 9)                   | `Target: not expected` (after 9)                               | downstream of drift — same error                                                |
+| castables     | `Descriptions: not expected. Expected Categories…` | `Descriptions: not expected. Expected Categories…`             | downstream of drift — same error                                                |
+| spawngroups   | `Flags: maxLength=3 exceeded by 4`                 | `Flags: maxLength=3 exceeded by 4`                             | downstream of drift — same error                                                |
+| serverconfigs | `WorldDataDir: not expected. Expected DataStore`   | `WorldDataDir: not expected. Expected DataStore` _(after fix)_ | **was real regression, now downstream of drift** — see "Fixed regression" below |
 
 ## Fixed regression
 
-**serverconfigs — `Motd` reorders to the front.** *(Fixed in
-`chore/fix-serverconfig-motd-order`, commit `13123e7`.)*
+**serverconfigs — `Motd` reorders to the front.** _(Fixed in
+`chore/fix-serverconfig-motd-order`, commit `13123e7`.)_
 
 Before the fix, our serializer put `<Motd>` at position 1:
 

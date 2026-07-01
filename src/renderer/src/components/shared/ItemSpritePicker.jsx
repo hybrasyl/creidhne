@@ -83,5 +83,5 @@ export default function ItemSpritePicker({
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

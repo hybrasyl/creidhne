@@ -466,7 +466,7 @@ function NationEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default NationEditor

@@ -241,9 +241,12 @@ function RecipesPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a recipe or create a new one.
             </Typography>
           </Box>
@@ -272,7 +275,7 @@ function RecipesPage() {
         onCancel={handleDialogCancel}
       />
     </Box>
-  );
+  )
 }
 
 export default RecipesPage

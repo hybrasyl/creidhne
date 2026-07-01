@@ -225,7 +225,7 @@ function UserFeedbackContent({ anim, onChange }) {
         onChange={(val) => set('soundId')({ target: { value: String(val).replace(/\D/g, '') } })}
       />
     </Box>
-  );
+  )
 }
 
 function MessagesContent({ msgs, onChange }) {
@@ -457,17 +457,24 @@ function StatusStatModContent({ sm, onChange }) {
 function StatusStatModReadOnly({ sm }) {
   if (!sm || (!sm.rows?.length && !sm.elementalModifiers?.length)) {
     return (
-      <Typography variant="body2" sx={{
-        color: "text.secondary"
-      }}>No stat modifiers required.
-              </Typography>
-    );
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary'
+        }}
+      >
+        No stat modifiers required.
+      </Typography>
+    )
   }
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography variant="caption" sx={{
-        color: "text.secondary"
-      }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary'
+        }}
+      >
         Computed: -(OnApply + OnTick × Duration/Tick). Read-only.
       </Typography>
       {sm.rows?.length > 0 && (
@@ -498,7 +505,7 @@ function StatusStatModReadOnly({ sm }) {
                   }}
                 />
               </Box>
-            );
+            )
           })}
         </Paper>
       )}
@@ -544,7 +551,7 @@ function StatusStatModReadOnly({ sm }) {
         </Paper>
       )}
     </Box>
-  );
+  )
 }
 
 // ── Conditions ─────────────────────────────────────────────────────────────────
@@ -621,11 +628,15 @@ function ConditionsContent({ conds, onChange }) {
 function ConditionsReadOnly({ conds }) {
   if (!conds || (!conds.set?.length && !conds.unset?.length)) {
     return (
-      <Typography variant="body2" sx={{
-        color: "text.secondary"
-      }}>No conditions to unset.
-              </Typography>
-    );
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary'
+        }}
+      >
+        No conditions to unset.
+      </Typography>
+    )
   }
   const rows = [
     ...(conds.set || []).map((v) => ({ op: 'Set', value: v })),
@@ -636,10 +647,11 @@ function ConditionsReadOnly({ conds }) {
       <Typography
         variant="caption"
         sx={{
-          color: "text.secondary",
+          color: 'text.secondary',
           display: 'block',
           mb: 1
-        }}>
+        }}
+      >
         Auto-unsets all conditions set by OnApply + OnTick
       </Typography>
       {rows.map((row, i) => (
@@ -665,7 +677,7 @@ function ConditionsReadOnly({ conds }) {
         </Box>
       ))}
     </Box>
-  );
+  )
 }
 
 // ── Effect accordion ───────────────────────────────────────────────────────────
@@ -762,9 +774,12 @@ function EffectAccordion({
             {data.animations ? (
               <UserFeedbackContent anim={data.animations} onChange={(v) => upd('animations', v)} />
             ) : (
-              <Typography variant="body2" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Enable to add animations and sound.
               </Typography>
             )}
@@ -780,9 +795,12 @@ function EffectAccordion({
             {data.messages ? (
               <MessagesContent msgs={data.messages} onChange={(v) => upd('messages', v)} />
             ) : (
-              <Typography variant="body2" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Enable to add messages.
               </Typography>
             )}
@@ -798,9 +816,12 @@ function EffectAccordion({
             {data.heal ? (
               <HealEditor value={data.heal} onChange={(v) => upd('heal', v)} />
             ) : (
-              <Typography variant="body2" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Enable to add a heal formula.
               </Typography>
             )}
@@ -816,9 +837,12 @@ function EffectAccordion({
             {data.damage ? (
               <DamageEditor value={data.damage} onChange={(v) => upd('damage', v)} showElement />
             ) : (
-              <Typography variant="body2" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Enable to add a damage formula.
               </Typography>
             )}
@@ -840,9 +864,12 @@ function EffectAccordion({
                   onChange={(v) => upd('statModifiers', v)}
                 />
               ) : (
-                <Typography variant="body2" sx={{
-                  color: "text.secondary"
-                }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary'
+                  }}
+                >
                   Enable to add stat modifiers.
                 </Typography>
               )}
@@ -862,9 +889,12 @@ function EffectAccordion({
               ) : data.conditions ? (
                 <ConditionsContent conds={data.conditions} onChange={(v) => upd('conditions', v)} />
               ) : (
-                <Typography variant="body2" sx={{
-                  color: "text.secondary"
-                }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary'
+                  }}
+                >
                   Enable to add condition events.
                 </Typography>
               )}
@@ -878,16 +908,19 @@ function EffectAccordion({
             open={openScript}
             onToggle={() => setOpenScript((v) => !v)}
           >
-            <Typography variant="body2" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Script handlers are not yet implemented in the editor.
             </Typography>
           </SubSection>
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ────────────────────────────────────────────────────────────────
@@ -1240,7 +1273,8 @@ function StatusEditor({
               slotProps={{
                 htmlInput: { readOnly: true },
                 inputLabel: { shrink: true }
-              }} />
+              }}
+            />
           </Box>
         </Paper>
 
@@ -1382,25 +1416,30 @@ function StatusEditor({
           </DialogContentText>
           {(mismatchDialog || []).map((mm, i) => (
             <Box key={i} sx={{ mb: 1.5 }}>
-              <Typography variant="body2" sx={{
-                fontWeight: 500
-              }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500
+                }}
+              >
                 {mm.field} — <code>{mm.key}</code>
               </Typography>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "text.secondary",
-                  display: "block"
-                }}>
+                  color: 'text.secondary',
+                  display: 'block'
+                }}
+              >
                 Stored: {mm.storedText}
               </Typography>
               <Typography
                 variant="caption"
                 sx={{
-                  color: "text.secondary",
-                  display: "block"
-                }}>
+                  color: 'text.secondary',
+                  display: 'block'
+                }}
+              >
                 Current: {mm.currentText}
               </Typography>
             </Box>
@@ -1414,7 +1453,7 @@ function StatusEditor({
         </DialogActions>
       </Dialog>
     </Box>
-  );
+  )
 }
 
 export default StatusEditor

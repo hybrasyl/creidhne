@@ -34,12 +34,12 @@ Node.js is only required if you are building from source. Any recent Node.js ver
 
 ## Project structure
 
-| Path | Purpose |
-| --- | --- |
-| `src/main/` | Electron main process — IPC handlers, XML parse/serialize, file I/O |
-| `src/renderer/src/pages/` | One page component per editor |
-| `src/renderer/src/components/` | Shared and editor-specific components |
-| `xsd/` | XSD schemas for all Hybrasyl XML types |
+| Path                           | Purpose                                                             |
+| ------------------------------ | ------------------------------------------------------------------- |
+| `src/main/`                    | Electron main process — IPC handlers, XML parse/serialize, file I/O |
+| `src/renderer/src/pages/`      | One page component per editor                                       |
+| `src/renderer/src/components/` | Shared and editor-specific components                               |
+| `xsd/`                         | XSD schemas for all Hybrasyl XML types                              |
 
 ## Contributing
 

@@ -69,7 +69,7 @@ function AddStatusRow({ entry, statusNames, onChange, onRemove }) {
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function RemoveStatusRow({ entry, statusNames, categoryNames, onChange, onRemove }) {
@@ -132,7 +132,7 @@ function RemoveStatusRow({ entry, statusNames, categoryNames, onChange, onRemove
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function StatusesSection({ statuses, libraryIndex, onChange }) {

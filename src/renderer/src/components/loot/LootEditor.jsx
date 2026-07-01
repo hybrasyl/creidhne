@@ -483,7 +483,7 @@ function LootEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default LootEditor

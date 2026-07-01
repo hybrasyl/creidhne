@@ -153,9 +153,10 @@ function StatsTab({ data, onChange, elementOptions }) {
           <Typography
             variant="body2"
             sx={{
-              color: "text.secondary",
+              color: 'text.secondary',
               mb: 1
-            }}>
+            }}
+          >
             No stat modifiers defined.
           </Typography>
         )}
@@ -229,7 +230,7 @@ function StatsTab({ data, onChange, elementOptions }) {
         </Button>
       </Paper>
     </Box>
-  );
+  )
 }
 
 export default StatsTab

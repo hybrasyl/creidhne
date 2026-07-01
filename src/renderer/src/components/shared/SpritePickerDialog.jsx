@@ -52,7 +52,12 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, p
           '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <CreatureSpriteCanvas value={id} size={IMAGE_SIZE} animate={!preferPack} preferPack={preferPack} />
+        <CreatureSpriteCanvas
+          value={id}
+          size={IMAGE_SIZE}
+          animate={!preferPack}
+          preferPack={preferPack}
+        />
         <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', lineHeight: 1 }}>
           {id}
         </Typography>
@@ -216,5 +221,5 @@ export default function SpritePickerDialog({ open, value, onClose, onChange }) {
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

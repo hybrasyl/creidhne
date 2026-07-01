@@ -180,10 +180,11 @@ function RequirementAccordion({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "text.secondary",
+                    color: 'text.secondary',
                     alignSelf: 'center',
                     whiteSpace: 'nowrap'
-                  }}>
+                  }}
+                >
                   Suggested: {750 + Number(req.levelMin) * 135}
                 </Typography>
               </Tooltip>
@@ -259,10 +260,11 @@ function RequirementAccordion({
             <Typography
               variant="caption"
               sx={{
-                color: "text.secondary",
+                color: 'text.secondary',
                 display: 'block',
                 mb: 1
-              }}>
+              }}
+            >
               Prerequisites
             </Typography>
             <FormControlLabel
@@ -357,10 +359,11 @@ function RequirementAccordion({
             <Typography
               variant="caption"
               sx={{
-                color: "text.secondary",
+                color: 'text.secondary',
                 display: 'block',
                 mb: 1
-              }}>
+              }}
+            >
               Required Items
             </Typography>
             {(req.items || []).map((item, i) => (
@@ -401,7 +404,7 @@ function RequirementAccordion({
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 function RequirementsSection({ requirements, libraryIndex, onChange }) {

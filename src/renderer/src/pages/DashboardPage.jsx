@@ -195,7 +195,11 @@ function DashboardPage() {
         size="small"
         variant="outlined"
         startIcon={
-          rebuilding ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon fontSize="small" />
+          rebuilding ? (
+            <CircularProgress size={14} color="inherit" />
+          ) : (
+            <RefreshIcon fontSize="small" />
+          )
         }
         onClick={handleRebuildIndex}
         disabled={rebuilding}

@@ -152,5 +152,5 @@ export default function EffectPickerDialog({ open, value, speed, onClose, onChan
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

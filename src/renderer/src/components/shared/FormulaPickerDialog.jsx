@@ -112,7 +112,8 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
             slotProps={{
               select: { native: false, displayEmpty: true },
               inputLabel: { shrink: true }
-            }}>
+            }}
+          >
             <option value="">All</option>
             {['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general'].map((c) => (
               <option key={c} value={c}>
@@ -145,9 +146,10 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
           <Typography
             variant="body2"
             sx={{
-              color: "text.secondary",
+              color: 'text.secondary',
               p: 2
-            }}>
+            }}
+          >
             No formulas found.
           </Typography>
         ) : (
@@ -210,7 +212,7 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
         </Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 export default FormulaPickerDialog

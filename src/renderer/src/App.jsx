@@ -113,8 +113,7 @@ function App() {
         setActivePacks(packList)
 
         const subtypes = new Set()
-        for (const p of packList)
-          for (const s of p.coveredSubtypes || []) subtypes.add(s)
+        for (const p of packList) for (const s of p.coveredSubtypes || []) subtypes.add(s)
         const coverage = {}
         for (const s of subtypes) {
           const ids = await window.electronAPI.listPackCoveredIds(s)

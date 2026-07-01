@@ -64,9 +64,10 @@ function StatBlockBuilder({ rows = [], onChange }) {
         <Typography
           variant="body2"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             mb: 1
-          }}>
+          }}
+        >
           No stats selected. Add stats to build the weighted expression.
         </Typography>
       )}
@@ -83,10 +84,11 @@ function StatBlockBuilder({ rows = [], onChange }) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   width: 16,
                   textAlign: 'center'
-                }}>
+                }}
+              >
                 +
               </Typography>
             )}
@@ -119,9 +121,12 @@ function StatBlockBuilder({ rows = [], onChange }) {
               renderInput={(params) => <TextField {...params} label="Stat" />}
               disableClearable
             />
-            <Typography variant="body2" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               ×
             </Typography>
             <TextField
@@ -137,7 +142,7 @@ function StatBlockBuilder({ rows = [], onChange }) {
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
-        );
+        )
       })}
       <Button size="small" startIcon={<AddIcon />} onClick={addRow} sx={{ mt: 0.5 }}>
         Add Stat
@@ -147,16 +152,17 @@ function StatBlockBuilder({ rows = [], onChange }) {
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             display: 'block',
             mt: 1,
             fontFamily: 'monospace'
-          }}>
+          }}
+        >
           {rows.map((r) => `${r.stat} * ${r.weight}`).join(' + ')}
         </Typography>
       )}
     </Box>
-  );
+  )
 }
 
 /** Convert rows array to NCalc expression string */

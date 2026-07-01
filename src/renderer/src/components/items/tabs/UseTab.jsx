@@ -438,13 +438,13 @@ function UseTab({ data, onChange }) {
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
-        );
+        )
       })}
       <Button startIcon={<AddIcon />} size="small" onClick={addProc}>
         Add Proc
       </Button>
     </Box>
-  );
+  )
 }
 
 export default UseTab

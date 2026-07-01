@@ -327,10 +327,13 @@ export default function EditorFileListPanel({
   const canUnarchive = !!onUnarchive && selectionLocation === 'archived'
   const canArchiveOrUnarchive = !!(onArchive || onUnarchive)
   const archiveBtnEnabled = canArchive || canUnarchive
-  const archiveBtnLabel =
-    selectionLocation === 'archived' ? 'Unarchive' : 'Archive'
+  const archiveBtnLabel = selectionLocation === 'archived' ? 'Unarchive' : 'Archive'
   const archiveBtnIcon =
-    selectionLocation === 'archived' ? <UnarchiveIcon fontSize="small" /> : <ArchiveIcon fontSize="small" />
+    selectionLocation === 'archived' ? (
+      <UnarchiveIcon fontSize="small" />
+    ) : (
+      <ArchiveIcon fontSize="small" />
+    )
   const archiveBtnTooltip =
     selectionLocation === 'mixed'
       ? 'Mixed selection — archive and unarchive disabled'
@@ -454,11 +457,7 @@ export default function EditorFileListPanel({
           {(extraActions || []).map((action, idx) => (
             <Tooltip key={idx} title={action.tooltip || ''}>
               <span>
-                <IconButton
-                  size="small"
-                  onClick={action.onClick}
-                  disabled={!!action.disabled}
-                >
+                <IconButton size="small" onClick={action.onClick} disabled={!!action.disabled}>
                   {action.icon}
                 </IconButton>
               </span>

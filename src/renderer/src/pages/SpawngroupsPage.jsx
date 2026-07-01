@@ -224,9 +224,12 @@ function SpawngroupsPage() {
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
           >
-            <Typography variant="body1" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Select a spawn group or create a new one.
             </Typography>
           </Box>
@@ -255,7 +258,7 @@ function SpawngroupsPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default SpawngroupsPage

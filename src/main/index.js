@@ -208,9 +208,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('dialog:openFile', handleFileOpen)
   ipcMain.handle('dialog:openExeFile', handleExeFileOpen)
   ipcMain.handle('open-directory', handleDirectoryOpen)
-  ipcMain.handle('app:launchCompanion', (_, exePath) =>
-    launchCompanion(settingsManager, exePath)
-  )
+  ipcMain.handle('app:launchCompanion', (_, exePath) => launchCompanion(settingsManager, exePath))
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
@@ -231,9 +229,7 @@ app.whenReady().then(async () => {
     writeFile(validatePath(filePath), content)
   )
   ipcMain.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
-  ipcMain.handle('fs:checkClientPath', (_, clientPath) =>
-    checkClientPath(validatePath(clientPath))
-  )
+  ipcMain.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(validatePath(clientPath)))
 
   ipcMain.handle('xml:loadItem', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
@@ -375,9 +371,7 @@ app.whenReady().then(async () => {
     await fs.writeFile(validatePath(filePath), xml, 'utf-8')
   })
 
-  ipcMain.handle('fs:moveFile', (_, src, dest) =>
-    moveFile(validatePath(src), validatePath(dest))
-  )
+  ipcMain.handle('fs:moveFile', (_, src, dest) => moveFile(validatePath(src), validatePath(dest)))
   ipcMain.handle('fs:archiveFile', (_, src, archiveDir) =>
     archiveFile(validatePath(src), validatePath(archiveDir))
   )

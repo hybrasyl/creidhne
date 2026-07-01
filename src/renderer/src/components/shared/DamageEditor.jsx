@@ -138,7 +138,7 @@ function DamageEditor({ value, onChange, showElement = false }) {
         />
       )}
     </Box>
-  );
+  )
 }
 
 export default DamageEditor

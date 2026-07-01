@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  getHandler,
-  listHandlers,
-  listImplementedHandlers
-} from '../handlers/index.js'
+import { getHandler, listHandlers, listImplementedHandlers } from '../handlers/index.js'
 
 describe('handler registry', () => {
   it('returns null for unknown content_types', () => {
@@ -38,9 +34,13 @@ describe('handler registry', () => {
     const { entries, coverage } = h.buildIndex({}, files)
     expect([...coverage.get('creature')].sort((a, b) => a - b)).toEqual([1000, 2000])
     // Creature 1000 has both masters → representative is the East one.
-    expect(entries.get('creature:1000')?.path).toBe('creature_sprites/creature_01000/stand/e_001.png')
+    expect(entries.get('creature:1000')?.path).toBe(
+      'creature_sprites/creature_01000/stand/e_001.png'
+    )
     // Creature 2000 has only the North master → that's the representative.
-    expect(entries.get('creature:2000')?.path).toBe('creature_sprites/creature_02000/stand/n_001.png')
+    expect(entries.get('creature:2000')?.path).toBe(
+      'creature_sprites/creature_02000/stand/n_001.png'
+    )
     expect(entries.has('creature:3000')).toBe(false)
   })
 
@@ -121,7 +121,11 @@ describe('handler registry', () => {
   })
 
   it('listHandlers returns all 13 registered handlers', () => {
-    expect(listHandlers().map((h) => h.contentType).sort()).toEqual([
+    expect(
+      listHandlers()
+        .map((h) => h.contentType)
+        .sort()
+    ).toEqual([
       'ability_icons',
       'creature_sprites',
       'display_sprites',
@@ -148,7 +152,11 @@ describe('handler registry', () => {
   })
 
   it('listImplementedHandlers omits planned stubs', () => {
-    expect(listImplementedHandlers().map((h) => h.contentType).sort()).toEqual([
+    expect(
+      listImplementedHandlers()
+        .map((h) => h.contentType)
+        .sort()
+    ).toEqual([
       'ability_icons',
       'creature_sprites',
       'item_icons',
@@ -169,7 +177,10 @@ describe('handler registry', () => {
     const seen = new Map()
     for (const h of listImplementedHandlers()) {
       for (const s of h.subtypes) {
-        expect(seen.has(s), `subtype ${s} claimed by both ${seen.get(s)} and ${h.contentType}`).toBe(false)
+        expect(
+          seen.has(s),
+          `subtype ${s} claimed by both ${seen.get(s)} and ${h.contentType}`
+        ).toBe(false)
         seen.set(s, h.contentType)
       }
     }

@@ -13,6 +13,7 @@ export default function CommentField({ value, onChange, ...props }) {
       {...props}
       slotProps={{
         htmlInput: { maxLength: 500 }
-      }} />
-  );
+      }}
+    />
+  )
 }

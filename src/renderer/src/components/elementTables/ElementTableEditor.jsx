@@ -353,9 +353,12 @@ function ElementTableEditor({
             <Box sx={{ p: 2, flexShrink: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
                 <InfoOutlinedIcon fontSize="small" color="action" />
-                <Typography variant="caption" sx={{
-                  color: "text.secondary"
-                }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary'
+                  }}
+                >
                   Enter values as whole-number percentages — 80 = 80% (×0.8), 100 = no change
                   (×1.0), 150 = 150% (×1.5). Row = source element (attacker); column = target
                   element (defender). The highlighted cell shows the reverse interaction.
@@ -480,7 +483,7 @@ function ElementTableEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default ElementTableEditor

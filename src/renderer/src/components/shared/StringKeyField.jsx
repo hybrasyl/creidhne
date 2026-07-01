@@ -68,9 +68,12 @@ function StringKeyField({
             ) : (
               <Box>
                 <Typography variant="body2">{opt.key}</Typography>
-                <Typography variant="caption" sx={{
-                  color: "text.secondary"
-                }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary'
+                  }}
+                >
                   {opt.message}
                 </Typography>
               </Box>
@@ -95,7 +98,7 @@ function StringKeyField({
         <TextField label="Preview" size="small" value={preview} disabled sx={{ flex: 1 }} />
       )}
     </>
-  );
+  )
 }
 
 export default StringKeyField

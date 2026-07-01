@@ -242,7 +242,7 @@ function NetworkInfoRow({ label, value, onChange }) {
         sx={{ width: 90 }}
       />
     </Box>
-  );
+  )
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -313,7 +313,7 @@ function GeneralTab({ data, updateData }) {
         />
       </Box>
     </Paper>
-  );
+  )
 }
 
 function NetworkTab({ data, updateData }) {
@@ -507,7 +507,7 @@ function NetworkTab({ data, updateData }) {
         )}
       </Section>
     </Box>
-  );
+  )
 }
 
 function AccessBoardsTab({ data, updateData }) {
@@ -653,10 +653,11 @@ function AccessBoardsTab({ data, updateData }) {
             <Typography
               variant="caption"
               sx={{
-                color: "text.secondary",
+                color: 'text.secondary',
                 mb: 0.5,
                 display: 'block'
-              }}>
+              }}
+            >
               Access List
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -690,10 +691,11 @@ function AccessBoardsTab({ data, updateData }) {
             <Typography
               variant="caption"
               sx={{
-                color: "text.secondary",
+                color: 'text.secondary',
                 mb: 0.5,
                 display: 'block'
-              }}>
+              }}
+            >
               Moderators
             </Typography>
             {(board.accessList.moderate || []).map((m, mi) => (
@@ -722,7 +724,7 @@ function AccessBoardsTab({ data, updateData }) {
         </Button>
       </Section>
     </Box>
-  );
+  )
 }
 
 function TimeTab({ data, updateData }) {
@@ -840,7 +842,7 @@ function TimeTab({ data, updateData }) {
         </Box>
       </Section>
     </Box>
-  );
+  )
 }
 
 function HandlersTab({ data, updateData }) {
@@ -975,9 +977,12 @@ function HandlersTab({ data, updateData }) {
               />
             </Box>
             <Box>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Death Map
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -1005,9 +1010,12 @@ function HandlersTab({ data, updateData }) {
               </Box>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Coma
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -1036,9 +1044,12 @@ function HandlersTab({ data, updateData }) {
               </Box>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Penalty
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
@@ -1061,9 +1072,12 @@ function HandlersTab({ data, updateData }) {
               </Box>
             </Box>
             <Box>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Legend Mark
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5, alignItems: 'center' }}>
@@ -1185,7 +1199,7 @@ function HandlersTab({ data, updateData }) {
         )}
       </Section>
     </Box>
-  );
+  )
 }
 
 function LoggingTab({ data, updateData }) {
@@ -1292,7 +1306,7 @@ function LoggingTab({ data, updateData }) {
         </Button>
       </Section>
     </Box>
-  );
+  )
 }
 
 function AdvancedTab({ data, updateData }) {
@@ -1639,9 +1653,12 @@ function AdvancedTab({ data, updateData }) {
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Typography variant="caption" sx={{
-              color: "text.secondary"
-            }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary'
+              }}
+            >
               Configuration
             </Typography>
             {p.configuration.map((c, ci) => (
@@ -1677,10 +1694,11 @@ function AdvancedTab({ data, updateData }) {
             <Typography
               variant="caption"
               sx={{
-                color: "text.secondary",
+                color: 'text.secondary',
                 display: 'block',
                 mt: 1
-              }}>
+              }}
+            >
               Targets
             </Typography>
             {p.targets.map((t, ti) => (
@@ -1714,7 +1732,7 @@ function AdvancedTab({ data, updateData }) {
         </Button>
       </Section>
     </Box>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -1806,7 +1824,7 @@ function ServerConfigEditor({
         <Box sx={{ height: 32 }} />
       </Box>
     </Box>
-  );
+  )
 }
 
 export default ServerConfigEditor

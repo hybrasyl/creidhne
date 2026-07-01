@@ -45,11 +45,7 @@ const TaliesinPathSection = () => {
         </Button>
         {taliesinPath && (
           <>
-            <Button
-              variant="outlined"
-              startIcon={<RocketLaunchIcon />}
-              onClick={handleLaunch}
-            >
+            <Button variant="outlined" startIcon={<RocketLaunchIcon />} onClick={handleLaunch}>
               Launch Taliesin
             </Button>
             <Button

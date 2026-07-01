@@ -180,5 +180,5 @@ export default function SoundPickerDialog({ open, value, onClose, onChange }) {
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

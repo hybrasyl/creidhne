@@ -72,5 +72,5 @@ export default function IconPicker({ type, value, onChange, label = 'Icon', help
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

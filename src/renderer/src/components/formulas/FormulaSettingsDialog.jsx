@@ -146,9 +146,10 @@ function BudgetModifierTab({ settings, onChange }) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   mb: 1
-                }}>
+                }}
+              >
                 Lines (Spells only)
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -205,9 +206,10 @@ function BudgetModifierTab({ settings, onChange }) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   mb: 1
-                }}>
+                }}
+              >
                 Cooldown
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -268,9 +270,10 @@ function BudgetModifierTab({ settings, onChange }) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   mb: 1
-                }}>
+                }}
+              >
                 Lines (Spells only)
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -328,9 +331,10 @@ function BudgetModifierTab({ settings, onChange }) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   mb: 1
-                }}>
+                }}
+              >
                 Cooldown
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -388,17 +392,23 @@ function BudgetModifierTab({ settings, onChange }) {
         )}
 
         {bm.mode === 'none' && (
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary'
+            }}
+          >
             No budget modifier applied. Coefficients are used as-is.
           </Typography>
         )}
 
         {bm.mode === 'steppedTiers' && (
-          <Typography variant="body2" sx={{
-            color: "text.secondary"
-          }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary'
+            }}
+          >
             Stepped tiers configuration coming soon.
           </Typography>
         )}
@@ -412,10 +422,11 @@ function BudgetModifierTab({ settings, onChange }) {
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             display: 'block',
             mb: 1
-          }}>
+          }}
+        >
           Scalar values referenced by formula patterns. These are stored alongside custom variables.
         </Typography>
         <Table size="small" sx={{ mb: 1 }}>
@@ -448,9 +459,12 @@ function BudgetModifierTab({ settings, onChange }) {
                   />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="caption" sx={{
-                    color: "text.secondary"
-                  }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary'
+                    }}
+                  >
                     {fc.description}
                   </Typography>
                 </TableCell>
@@ -468,10 +482,11 @@ function BudgetModifierTab({ settings, onChange }) {
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             display: 'block',
             mb: 1
-          }}>
+          }}
+        >
           Additional free-form constants available to patterns and formulas.
         </Typography>
         {Object.keys(vars).filter((k) => !FORMULA_CONSTANT_KEYS.includes(k)).length > 0 && (
@@ -539,7 +554,7 @@ function BudgetModifierTab({ settings, onChange }) {
         </Box>
       </Box>
     </Box>
-  );
+  )
 }
 
 // ── Coefficients Tab ─────────────────────────────────────────────────────────
@@ -584,9 +599,12 @@ function CoefficientsTab({ settings, onChange }) {
     >
       {/* Bulk apply */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography variant="body2" sx={{
-          color: "text.secondary"
-        }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary'
+          }}
+        >
           Apply Skill = Spell ×
         </Typography>
         <TextField
@@ -648,9 +666,12 @@ function CoefficientsTab({ settings, onChange }) {
                       </TableCell>
                       <TableCell>
                         {c.skillOnly ? (
-                          <Typography variant="body2" sx={{
-                            color: "text.disabled"
-                          }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'text.disabled'
+                            }}
+                          >
                             —
                           </Typography>
                         ) : (
@@ -681,7 +702,7 @@ function CoefficientsTab({ settings, onChange }) {
                         />
                       </TableCell>
                     </TableRow>
-                  );
+                  )
                 })}
               </TableBody>
             </Table>
@@ -689,7 +710,7 @@ function CoefficientsTab({ settings, onChange }) {
         </Accordion>
       ))}
     </Box>
-  );
+  )
 }
 
 // ── Parameter type labels ─────────────────────────────────────────────────────
@@ -726,9 +747,12 @@ function PatternsTab({ settings, onChange }) {
         <Typography variant="subtitle2" gutterBottom>
           Formula Patterns
         </Typography>
-        <Typography variant="body2" sx={{
-          color: "text.secondary"
-        }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary'
+          }}
+        >
           Patterns define the structural shape of a formula. Click the "Default" chip to set which
           pattern is pre-selected when creating new formulas.
         </Typography>
@@ -764,9 +788,10 @@ function PatternsTab({ settings, onChange }) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   mb: 1.5
-                }}>
+                }}
+              >
                 {pattern.description}
               </Typography>
 
@@ -790,10 +815,11 @@ function PatternsTab({ settings, onChange }) {
               <Typography
                 variant="caption"
                 sx={{
-                  color: "text.secondary",
+                  color: 'text.secondary',
                   display: 'block',
                   mb: 0.5
-                }}>
+                }}
+              >
                 Parameters
               </Typography>
               <Table size="small">
@@ -824,23 +850,26 @@ function PatternsTab({ settings, onChange }) {
                           </Box>
                         </TableCell>
                         <TableCell sx={{ py: 0.5 }}>
-                          <Typography variant="caption" sx={{
-                            color: "text.secondary"
-                          }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'text.secondary'
+                            }}
+                          >
                             {p.description}
                           </Typography>
                         </TableCell>
                       </TableRow>
-                    );
+                    )
                   })}
                 </TableBody>
               </Table>
             </AccordionDetails>
           </Accordion>
-        );
+        )
       })}
     </Box>
-  );
+  )
 }
 
 // ── Main Dialog ──────────────────────────────────────────────────────────────
@@ -893,7 +922,7 @@ function FormulaSettingsDialog({ open, onClose, settings: savedSettings, onSave 
         </Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 export default FormulaSettingsDialog

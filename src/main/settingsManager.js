@@ -90,13 +90,20 @@ export function createSettingsManager(userDataPath) {
   // Retry with backoff; if still stuck, unlink target then rename.
   async function renameWithRetry(src, dest, retries = 3, delay = 50) {
     for (let i = 0; i < retries; i++) {
-      try { await fs.rename(src, dest); return } catch (err) {
+      try {
+        await fs.rename(src, dest)
+        return
+      } catch (err) {
         if (err.code !== 'EPERM' && err.code !== 'EACCES') throw err
         await new Promise((r) => setTimeout(r, delay * (i + 1)))
       }
     }
     // Final attempt: remove target first, then rename
-    try { await fs.unlink(dest) } catch { /* target may not exist */ }
+    try {
+      await fs.unlink(dest)
+    } catch {
+      /* target may not exist */
+    }
     await fs.rename(src, dest)
   }
 
@@ -122,7 +129,10 @@ export function createSettingsManager(userDataPath) {
   let saveQueue = Promise.resolve()
 
   function save(data) {
-    const op = saveQueue.then(() => doSave(data), () => doSave(data))
+    const op = saveQueue.then(
+      () => doSave(data),
+      () => doSave(data)
+    )
     op.catch((err) => console.error('[settings] save failed:', err))
     saveQueue = op.catch(() => {})
     return op

@@ -106,7 +106,7 @@ function MotionRow({ label, motion, onChange }) {
         }}
       />
     </Box>
-  );
+  )
 }
 
 function AnimationGroup({ group, onChange }) {
@@ -119,10 +119,11 @@ function AnimationGroup({ group, onChange }) {
       <Typography
         variant="caption"
         sx={{
-          color: "text.secondary",
+          color: 'text.secondary',
           display: 'block',
           mb: 0.75
-        }}>
+        }}
+      >
         Player
       </Typography>
       {PLAYER_CLASSES.map(({ key, label }) => (
@@ -137,10 +138,11 @@ function AnimationGroup({ group, onChange }) {
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             display: 'block',
             mb: 0.75
-          }}>
+          }}
+        >
           Spell Effect
         </Typography>
         <EffectPicker
@@ -160,10 +162,11 @@ function AnimationGroup({ group, onChange }) {
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             display: 'block',
             mb: 0.75
-          }}>
+          }}
+        >
           Target
         </Typography>
         <EffectPicker
@@ -176,7 +179,7 @@ function AnimationGroup({ group, onChange }) {
         />
       </Box>
     </Box>
-  );
+  )
 }
 
 function AnimationGroupSection({ label, group, motions, onToggle, onChange }) {
@@ -263,7 +266,7 @@ function AnimationsSection({ sound, animations, motions, onSoundChange, onAnimat
         onChange={(val) => onAnimationsChange({ onCast, onEnd: val })}
       />
     </Box>
-  );
+  )
 }
 
 export default AnimationsSection

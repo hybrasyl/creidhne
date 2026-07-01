@@ -97,5 +97,5 @@ export default function EffectPicker({
         onChange={handleSelect}
       />
     </Box>
-  );
+  )
 }

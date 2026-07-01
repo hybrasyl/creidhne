@@ -38,7 +38,7 @@ import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
 
 function deriveNpcPrefix(job) {
   if (!job) return 'npc'
-  return job.toLowerCase().replace(/\s+/g, '_');
+  return job.toLowerCase().replace(/\s+/g, '_')
 }
 
 function computeNpcFilename(prefix, name) {
@@ -515,11 +515,14 @@ function NPCEditor({
                   }}
                   slotProps={{
                     input: {
-                      endAdornment: <OpenScriptByNameButton name={data.name} tooltipPrefix="Open NPC script" />,
+                      endAdornment: (
+                        <OpenScriptByNameButton name={data.name} tooltipPrefix="Open NPC script" />
+                      )
                     },
 
                     htmlInput: { maxLength: 255 }
-                  }} />
+                  }}
+                />
                 <TextField
                   label="Display Name"
                   value={data.displayName}
@@ -711,9 +714,12 @@ function NPCEditor({
                 onChangeExcept={(val) => setRoleField('bank', 'exceptCookie', val)}
                 onChangeOnly={(val) => setRoleField('bank', 'onlyCookie', val)}
               />
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Cost Adjustments
               </Typography>
               {data.roles.bank.adjustments.map((adj, i) => (
@@ -789,9 +795,12 @@ function NPCEditor({
                   inputProps={{ maxLength: 128 }}
                 />
               </Box>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Cost Adjustments
               </Typography>
               {data.roles.post.adjustments.map((adj, i) => (
@@ -874,9 +883,12 @@ function NPCEditor({
                   inputProps={{ maxLength: 128 }}
                 />
               </Box>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Cost Adjustments
               </Typography>
               {data.roles.repair.adjustments.map((adj, i) => (
@@ -978,9 +990,12 @@ function NPCEditor({
               <Button size="small" startIcon={<AddIcon />} onClick={addVendItem}>
                 Add Item
               </Button>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Cost Adjustments
               </Typography>
               {data.roles.vend.adjustments.map((adj, i) => (
@@ -1103,9 +1118,12 @@ function NPCEditor({
               <Button size="small" startIcon={<AddIcon />} onClick={addTrainCastable}>
                 Add Castable
               </Button>
-              <Typography variant="caption" sx={{
-                color: "text.secondary"
-              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Cost Adjustments
               </Typography>
               {data.roles.train.adjustments.map((adj, i) => (
@@ -1161,7 +1179,7 @@ function NPCEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default NPCEditor

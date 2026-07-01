@@ -208,7 +208,7 @@ function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
         category={category}
       />
     </Box>
-  );
+  )
 }
 
 export default FormulaRow

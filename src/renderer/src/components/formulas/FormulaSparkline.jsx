@@ -76,17 +76,19 @@ export default function FormulaSparkline({ lines, width = 240, height = 80, xLab
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             fontSize: 10
-          }}>
+          }}
+        >
           {xLabel || `x ${xRange[0]}…${xRange[1]}`}
         </Typography>
         <Typography
           variant="caption"
           sx={{
-            color: "text.secondary",
+            color: 'text.secondary',
             fontSize: 10
-          }}>
+          }}
+        >
           y {yRange[0].toFixed(0)}…{yRange[1].toFixed(0)}
         </Typography>
       </Box>
@@ -103,5 +105,5 @@ export default function FormulaSparkline({ lines, width = 240, height = 80, xLab
         </Box>
       )}
     </Box>
-  );
+  )
 }

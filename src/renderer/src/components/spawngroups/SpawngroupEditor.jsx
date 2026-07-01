@@ -220,7 +220,7 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
-  );
+  )
 }
 
 function LootContent({ loot, lootsetOptions, onChange }) {
@@ -277,7 +277,7 @@ function LootContent({ loot, lootsetOptions, onChange }) {
         Add Loot
       </Button>
     </>
-  );
+  )
 }
 
 function HostilityContent({ hostility, onChange }) {
@@ -374,7 +374,7 @@ function CookiesContent({ cookies, onChange }) {
         Add Cookie
       </Button>
     </>
-  );
+  )
 }
 
 // ── Spawn accordion ───────────────────────────────────────────────────────────
@@ -850,7 +850,7 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
         </Box>
       </Collapse>
     </Paper>
-  );
+  )
 }
 
 // ── Main editor ───────────────────────────────────────────────────────────────
@@ -1152,7 +1152,7 @@ function SpawngroupEditor({
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
 
 export default SpawngroupEditor

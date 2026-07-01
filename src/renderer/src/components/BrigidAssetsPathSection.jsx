@@ -47,12 +47,7 @@ const BrigidAssetsPathSection = () => {
           Use Default
         </Button>
         {brigidAssetsPath && (
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<ClearIcon />}
-            onClick={handleClear}
-          >
+          <Button variant="outlined" color="error" startIcon={<ClearIcon />} onClick={handleClear}>
             Clear
           </Button>
         )}

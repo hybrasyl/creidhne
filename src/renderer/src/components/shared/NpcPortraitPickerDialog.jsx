@@ -190,5 +190,5 @@ export default function NpcPortraitPickerDialog({ open, value, onClose, onChange
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }
