@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRecoilValue } from 'recoil'
 import { libraryIndexState } from '../../recoil/atoms'
 import {
@@ -379,7 +379,13 @@ function CookiesContent({ cookies, onChange }) {
 
 // ── Spawn accordion ───────────────────────────────────────────────────────────
 
-function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
+const SpawnAccordion = memo(function SpawnAccordion({
+  spawn,
+  index,
+  libraryIndex,
+  onChange,
+  onRemove
+}) {
   const [open, setOpen] = useState(true)
   const [openImmunities, setOpenImmunities] = useState(false)
   const [openLoot, setOpenLoot] = useState(false)
@@ -390,13 +396,16 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
   const [openHostility, setOpenHostility] = useState(false)
   const [openCookies, setOpenCookies] = useState(false)
 
-  const set = (field, val) => onChange({ ...spawn, [field]: val })
+  const set = (field, val) => onChange(index, { ...spawn, [field]: val })
   const setNested = (section, field, val) =>
-    onChange({ ...spawn, [section]: { ...spawn[section], [field]: val } })
+    onChange(index, { ...spawn, [section]: { ...spawn[section], [field]: val } })
 
   const title = `Spawn ${index + 1}${spawn.name ? ` — ${spawn.name}` : ''}`
 
-  const creatureOptions = [...(libraryIndex.creatures || []), ...(libraryIndex.creatureTypes || [])]
+  const creatureOptions = useMemo(
+    () => [...(libraryIndex.creatures || []), ...(libraryIndex.creatureTypes || [])],
+    [libraryIndex.creatures, libraryIndex.creatureTypes]
+  )
   const lootsetOptions = libraryIndex.lootsets || []
 
   const negInt = (val) => val.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
@@ -416,7 +425,7 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
           </Typography>
           {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
         </Box>
-        <IconButton size="small" color="error" sx={{ ml: 1 }} onClick={onRemove}>
+        <IconButton size="small" color="error" sx={{ ml: 1 }} onClick={() => onRemove(index)}>
           <DeleteIcon fontSize="small" />
         </IconButton>
       </Box>
@@ -851,7 +860,7 @@ function SpawnAccordion({ spawn, index, libraryIndex, onChange, onRemove }) {
       </Collapse>
     </Paper>
   )
-}
+})
 
 // ── Main editor ───────────────────────────────────────────────────────────────
 
@@ -959,11 +968,18 @@ function SpawngroupEditor({
   const addSpawn = () =>
     updateData((d) => ({ ...d, spawns: [...(d.spawns || []), makeDefaultSpawn()] }))
 
-  const updateSpawn = (i, updated) =>
-    updateData((d) => ({ ...d, spawns: d.spawns.map((s, idx) => (idx === i ? updated : s)) }))
+  // Stable identities so the memoized SpawnAccordions only re-render when their
+  // own spawn/index changes, not on every keystroke in a sibling spawn.
+  const updateSpawn = useCallback(
+    (i, updated) =>
+      updateData((d) => ({ ...d, spawns: d.spawns.map((s, idx) => (idx === i ? updated : s)) })),
+    [updateData]
+  )
 
-  const removeSpawn = (i) =>
-    updateData((d) => ({ ...d, spawns: d.spawns.filter((_, idx) => idx !== i) }))
+  const removeSpawn = useCallback(
+    (i) => updateData((d) => ({ ...d, spawns: d.spawns.filter((_, idx) => idx !== i) })),
+    [updateData]
+  )
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -1129,8 +1145,8 @@ function SpawngroupEditor({
               spawn={spawn}
               index={i}
               libraryIndex={libraryIndex}
-              onChange={(updated) => updateSpawn(i, updated)}
-              onRemove={() => removeSpawn(i)}
+              onChange={updateSpawn}
+              onRemove={removeSpawn}
             />
           ))}
         </Section>

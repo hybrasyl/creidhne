@@ -58,6 +58,11 @@ const KNOWN_VARIABLES = new Set([
   ...AUTHORING_VARIABLES.map((a) => a.key)
 ])
 
+// Sorted once at module load — the override-name Autocompletes reused this on
+// every render (3 rows × Set-materialize + sort), yielding fresh options refs
+// that defeat Autocomplete's own memoization.
+const KNOWN_VARIABLE_OPTIONS = [...KNOWN_VARIABLES].sort()
+
 const DEFAULT_STATS = { str: 10, int: 10, wis: 10, con: 10, dex: 10 }
 const DEFAULT_PLAYER = () => ({
   id: crypto.randomUUID(),
@@ -350,6 +355,13 @@ function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
 export default function DamageCalculatorPage() {
   const activeLibrary = useRecoilValue(activeLibraryState)
   const libraryIndex = useRecoilValue(libraryIndexState)
+
+  // Enumerate + sort the world's weapon items once per index change (the weapon
+  // Autocomplete rebuilt this inline on every render / keystroke).
+  const weaponOptions = useMemo(
+    () => Object.keys(libraryIndex?.itemWeaponDamage || {}).sort(),
+    [libraryIndex?.itemWeaponDamage]
+  )
 
   const [testPlayers, setTestPlayers] = useState([])
   const [formulas, setFormulas] = useState([])
@@ -790,7 +802,7 @@ export default function DamageCalculatorPage() {
                 >
                   <Autocomplete
                     size="small"
-                    options={Object.keys(libraryIndex?.itemWeaponDamage || {}).sort()}
+                    options={weaponOptions}
                     value={null}
                     onChange={(_, value) => {
                       if (!value) return
@@ -865,7 +877,7 @@ export default function DamageCalculatorPage() {
                       <Autocomplete
                         size="small"
                         freeSolo
-                        options={[...KNOWN_VARIABLES].sort()}
+                        options={KNOWN_VARIABLE_OPTIONS}
                         value={row.name}
                         onChange={(_, v) =>
                           setOverrides((prev) =>
