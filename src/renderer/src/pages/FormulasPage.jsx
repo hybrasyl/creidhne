@@ -3,13 +3,16 @@ import { useRecoilValue } from 'recoil'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
 import SettingsIcon from '@mui/icons-material/Settings'
+import CallSplitIcon from '@mui/icons-material/CallSplit'
 import { activeLibraryState } from '../recoil/atoms'
 import FormulaEditor from '../components/formulas/FormulaEditor'
 import FormulaSettingsDialog from '../components/formulas/FormulaSettingsDialog'
+import HybridGeneratorDialog from '../components/formulas/HybridGeneratorDialog'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { buildFormulaString } from '../utils/formulaBuild'
 
 const DEFAULT_FORMULA = {
   id: null,
@@ -36,6 +39,7 @@ function FormulasPage() {
   const [loading, setLoading] = useState(false)
   const [snackbar, setSnackbar] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [hybridOpen, setHybridOpen] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [selectionCount, setSelectionCount] = useState(0)
 
@@ -90,6 +94,40 @@ function FormulasPage() {
     [formulasData.formulas]
   )
 
+  const existingNames = useMemo(
+    () => new Set(formulasData.formulas.map((f) => (f.name || '').toLowerCase())),
+    [formulasData.formulas]
+  )
+
+  // Hybrid halves are archived/deleted together — expand a set of ids to pull in
+  // any pair partners. Returns the full id list and how many partners were added.
+  const expandWithPartners = useCallback(
+    (ids) => {
+      const idSet = new Set(ids)
+      const idsByPair = new Map()
+      for (const f of formulasData.formulas) {
+        if (!f.pairId) continue
+        if (!idsByPair.has(f.pairId)) idsByPair.set(f.pairId, [])
+        idsByPair.get(f.pairId).push(f.id)
+      }
+      let added = 0
+      for (const f of formulasData.formulas) {
+        if (!f.pairId || !idSet.has(f.id)) continue
+        for (const pid of idsByPair.get(f.pairId) || []) {
+          if (!idSet.has(pid)) {
+            idSet.add(pid)
+            added++
+          }
+        }
+      }
+      return { ids: [...idSet], added }
+    },
+    [formulasData.formulas]
+  )
+
+  const partnerNote = (added) =>
+    added ? ` (incl. ${added} hybrid partner${added === 1 ? '' : 's'})` : ''
+
   // ── Selection / new / save ──────────────────────────────────────────────────
   const doNew = () => {
     setSelectedFile(null)
@@ -112,9 +150,22 @@ function FormulasPage() {
   const handleSave = async (data) => {
     try {
       const isNew = !formulasData.formulas.some((f) => f.id === data.id)
-      const nextFormulas = isNew
+      let nextFormulas = isNew
         ? [...formulasData.formulas, data]
         : formulasData.formulas.map((f) => (f.id === data.id ? data : f))
+      // Keep a hybrid partner's split complementary: editing one half's split
+      // re-derives the other's (100 − x) and re-assembles it (unless hand-edited).
+      if (data.pairId && typeof data.hybridSplit === 'number') {
+        const partnerSplit = 100 - data.hybridSplit
+        nextFormulas = nextFormulas.map((f) => {
+          if (f.pairId !== data.pairId || f.id === data.id) return f
+          if (f.hybridSplit === partnerSplit) return f
+          const updated = { ...f, hybridSplit: partnerSplit }
+          if (!updated.handEdit)
+            updated.formula = buildFormulaString(updated, formulasData.settings)
+          return updated
+        })
+      }
       const next = { ...formulasData, formulas: nextFormulas }
       await window.electronAPI.saveFormulas(activeLibrary, next)
       setFormulasData(next)
@@ -125,6 +176,29 @@ function FormulasPage() {
     } catch (err) {
       setSnackbar({
         message: `Failed to save: ${err?.message ?? 'Unknown error'}`,
+        severity: 'error'
+      })
+    }
+  }
+
+  // ── Hybrid generator ────────────────────────────────────────────────────────
+  const handleGenerateHybrid = async ([direct, overtime]) => {
+    setHybridOpen(false)
+    const nextFormulas = [...formulasData.formulas, direct, overtime]
+    const next = { ...formulasData, formulas: nextFormulas }
+    try {
+      await window.electronAPI.saveFormulas(activeLibrary, next)
+      setFormulasData(next)
+      setSelectedFile(toPseudoFile(direct, false))
+      setEditingFormula(direct)
+      markClean()
+      setSnackbar({
+        message: `Created hybrid pair "${direct.name}" + "${overtime.name}".`,
+        severity: 'success'
+      })
+    } catch (err) {
+      setSnackbar({
+        message: `Failed to create hybrid: ${err?.message ?? 'Unknown error'}`,
         severity: 'error'
       })
     }
@@ -159,47 +233,47 @@ function FormulasPage() {
   const handleBulkArchive = useCallback(
     async (files) => {
       if (!activeLibrary || files.length === 0) return
-      const ids = files.map((f) => f.path)
+      const { ids, added } = expandWithPartners(files.map((f) => f.path))
       const next = formulasData.formulas.map((f) =>
         ids.includes(f.id) ? { ...f, isArchived: true } : f
       )
       await persistFormulas(next, ids)
       setSnackbar({
-        message: `Archived ${ids.length} formula${ids.length === 1 ? '' : 's'}.`,
+        message: `Archived ${ids.length} formula${ids.length === 1 ? '' : 's'}${partnerNote(added)}.`,
         severity: 'success'
       })
     },
-    [activeLibrary, formulasData.formulas, persistFormulas]
+    [activeLibrary, formulasData.formulas, persistFormulas, expandWithPartners]
   )
 
   const handleBulkUnarchive = useCallback(
     async (files) => {
       if (!activeLibrary || files.length === 0) return
-      const ids = files.map((f) => f.path)
+      const { ids, added } = expandWithPartners(files.map((f) => f.path))
       const next = formulasData.formulas.map((f) =>
         ids.includes(f.id) ? { ...f, isArchived: false } : f
       )
       await persistFormulas(next, ids)
       setSnackbar({
-        message: `Unarchived ${ids.length} formula${ids.length === 1 ? '' : 's'}.`,
+        message: `Unarchived ${ids.length} formula${ids.length === 1 ? '' : 's'}${partnerNote(added)}.`,
         severity: 'success'
       })
     },
-    [activeLibrary, formulasData.formulas, persistFormulas]
+    [activeLibrary, formulasData.formulas, persistFormulas, expandWithPartners]
   )
 
   const handleBulkDelete = useCallback(
     async (files) => {
       if (!activeLibrary || files.length === 0) return
-      const ids = files.map((f) => f.path)
+      const { ids, added } = expandWithPartners(files.map((f) => f.path))
       const next = formulasData.formulas.filter((f) => !ids.includes(f.id))
       await persistFormulas(next, ids)
       setSnackbar({
-        message: `Deleted ${ids.length} formula${ids.length === 1 ? '' : 's'}.`,
+        message: `Deleted ${ids.length} formula${ids.length === 1 ? '' : 's'}${partnerNote(added)}.`,
         severity: 'success'
       })
     },
-    [activeLibrary, formulasData.formulas, persistFormulas]
+    [activeLibrary, formulasData.formulas, persistFormulas, expandWithPartners]
   )
 
   // Single-only: copy with a new id and " (Copy)" / " (Copy 2)" name suffix.
@@ -291,6 +365,11 @@ function FormulasPage() {
   const extraActions = useMemo(
     () => [
       {
+        icon: <CallSplitIcon fontSize="small" />,
+        tooltip: 'New Hybrid (direct + over-time pair)',
+        onClick: () => guard(() => setHybridOpen(true))
+      },
+      {
         icon: <FileUploadIcon fontSize="small" />,
         tooltip: 'Import from Lua',
         onClick: () => guard(doImport)
@@ -365,6 +444,14 @@ function FormulasPage() {
         onClose={() => setSettingsOpen(false)}
         settings={formulasData.settings}
         onSave={handleSettingsSave}
+      />
+      <HybridGeneratorDialog
+        open={hybridOpen}
+        onClose={() => setHybridOpen(false)}
+        settings={formulasData.settings}
+        existingNames={existingNames}
+        defaultPatternId={formulasData.settings?.defaultPatternId || ''}
+        onGenerate={handleGenerateHybrid}
       />
       <UnsavedChangesDialog
         open={dialogOpen}

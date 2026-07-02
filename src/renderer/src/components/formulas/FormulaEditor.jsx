@@ -29,7 +29,7 @@ import CommentField from '../shared/CommentField'
 import StatBlockBuilder from './StatBlockBuilder'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
 import { RAND_VARIABLES } from '../../data/formulaVariables'
-import { assembleFormula } from '../../utils/formulaAssembly'
+import { buildFormulaString } from '../../utils/formulaBuild'
 import {
   ASSAIL_KEY,
   buildCoefficientKey,
@@ -251,28 +251,47 @@ function FormulaEditor({
     [resolvedCoefficient, coeffDelivery, hybridSplit]
   )
 
+  // The other half of a generated hybrid pair, if this formula is part of one.
+  const hybridPartner = useMemo(
+    () =>
+      data.pairId ? allFormulas.find((f) => f.pairId === data.pairId && f.id !== data.id) : null,
+    [data.pairId, data.id, allFormulas]
+  )
+
   // ── Assembled formula ─────────────────────────────────────────────────────
-  const assembledFormula = useMemo(() => {
-    if (!selectedPattern) return ''
-    // Build resolved param values with settings and coefficient injected
-    // Per-formula overrides take precedence over global values
-    const resolved = { ...paramValues }
-    for (const p of selectedPattern.parameters) {
-      if (p.type === 'setting' && p.settingKey) {
-        const overrideKey = `_override_${p.key}`
-        resolved[p.key] =
-          paramValues[overrideKey] != null
-            ? paramValues[overrideKey]
-            : (settings?.customVariables?.[p.settingKey] ?? 0)
-      }
-      if (p.type === 'coefficient') {
-        const overrideKey = '_override_Coefficient'
-        resolved[p.key] =
-          paramValues[overrideKey] != null ? paramValues[overrideKey] : (splitCoefficient ?? 0)
-      }
-    }
-    return assembleFormula(selectedPattern.ncalc, resolved, selectedPattern.parameters)
-  }, [selectedPattern, paramValues, settings, splitCoefficient])
+  // Delegate to the shared record-based builder so the editor's live preview,
+  // the hybrid generator, and pair re-assembly can never diverge.
+  const assembledFormula = useMemo(
+    () =>
+      buildFormulaString(
+        {
+          patternId: data.patternId,
+          paramValues,
+          coeffEffect,
+          coeffTargeting,
+          coeffDelivery,
+          spellOrSkill,
+          hybridSplit,
+          budgetDimension,
+          castableLines,
+          castableCooldown
+        },
+        settings
+      ),
+    [
+      data.patternId,
+      paramValues,
+      coeffEffect,
+      coeffTargeting,
+      coeffDelivery,
+      spellOrSkill,
+      hybridSplit,
+      budgetDimension,
+      castableLines,
+      castableCooldown,
+      settings
+    ]
+  )
 
   // Preview-only: substitute ACQUIREDLEVEL with the resolved value. The
   // assembledFormula above stays symbolic — that's what gets saved.
@@ -714,6 +733,16 @@ function FormulaEditor({
                     )}
                   </Box>
                 </Box>
+                {hybridPartner && (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'info.main', display: 'block', mt: 1 }}
+                  >
+                    Hybrid pair — linked to <strong>{hybridPartner.name}</strong> (
+                    {hybridPartner.refType || 'status'}). Saving updates its split to{' '}
+                    {100 - (hybridSplit === '' ? 0 : Number(hybridSplit))}%.
+                  </Typography>
+                )}
               </Box>
 
               {/* Pattern Parameters */}
