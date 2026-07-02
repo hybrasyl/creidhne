@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
 import { useRecoilValue, useRecoilState } from 'recoil'
 import { clientPathState, packCoverageState, creaturePickerModeState } from '../../recoil/atoms'
@@ -69,6 +70,7 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, p
 // ── Dialog ────────────────────────────────────────────────────────────────────
 
 export default function SpritePickerDialog({ open, value, onClose, onChange }) {
+  useRescanPacksOnOpen(open)
   const clientPath = useRecoilValue(clientPathState)
   const packCoverage = useRecoilValue(packCoverageState)
   const [mode, setMode] = useRecoilState(creaturePickerModeState)

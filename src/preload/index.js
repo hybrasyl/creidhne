@@ -112,6 +112,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listPackCoveredIds: (subtype) => ipcRenderer.invoke('pack:listCoveredIds', subtype),
   resolvePackAsset: (subtype, id) => ipcRenderer.invoke('pack:resolveAsset', subtype, id),
   resolvePackAssetUrl: (subtype, id) => ipcRenderer.invoke('pack:resolveAssetUrl', subtype, id),
+  reloadPacks: () => ipcRenderer.invoke('pack:reload'),
   getSuggestedBrigidAssetsPath: () => ipcRenderer.invoke('pack:suggestedBrigidAssetsPath')
 })
 

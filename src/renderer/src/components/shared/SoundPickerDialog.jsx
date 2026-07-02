@@ -15,6 +15,7 @@ import {
 import { List } from 'react-window'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
 import { useRecoilValue, useRecoilState } from 'recoil'
@@ -70,6 +71,7 @@ function Row({ index, style, ids, selectedId, onSelect, clientPath, playingId, p
 }
 
 export default function SoundPickerDialog({ open, value, onClose, onChange }) {
+  useRescanPacksOnOpen(open)
   const clientPath = useRecoilValue(clientPathState)
   const ids = useSoundIndex()
   const playingId = useCurrentlyPlayingSound()
