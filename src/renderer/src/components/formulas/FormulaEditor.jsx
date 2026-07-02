@@ -30,6 +30,11 @@ import StatBlockBuilder from './StatBlockBuilder'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
 import { RAND_VARIABLES } from '../../data/formulaVariables'
 import { assembleFormula } from '../../utils/formulaAssembly'
+import {
+  ASSAIL_KEY,
+  buildCoefficientKey,
+  resolveCoefficient
+} from '../../utils/formulaCoefficients'
 
 const CATEGORIES = ['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general']
 
@@ -46,61 +51,6 @@ const TARGETING_TYPES = [
   { key: 'AOE', label: 'AOE' }
 ]
 
-const DELIVERY_TYPES = [
-  { key: 'DIRECT', label: 'Direct' },
-  { key: 'DOT', label: 'Over Time (DOT/HOT)' },
-  { key: 'HDIR', label: 'Hybrid — Direct portion' },
-  { key: 'HDOT', label: 'Hybrid — Over Time portion' }
-]
-
-const ASSAIL_KEY = 'DMG_ASSAIL'
-
-function buildCoefficientKey(effect, targeting, delivery) {
-  if (effect === 'DMG' && targeting === 'ASSAIL') return ASSAIL_KEY
-  const parts = [effect, targeting]
-  if (delivery && delivery !== 'DIRECT') parts.push(delivery)
-  return parts.join('_')
-}
-
-// ── Coefficient resolver ─────────────────────────────────────────────────────
-function resolveCoefficient(coefficients, coeffKey, spellOrSkill, budgetModifier, castableRef) {
-  const entry = coefficients?.[coeffKey]
-  if (!entry) return null
-
-  const base = spellOrSkill === 'skill' ? entry.skill : entry.spell
-  if (base == null) return null
-
-  // Apply budget modifier if configured
-  if (!budgetModifier || budgetModifier.mode === 'none' || !castableRef) return base
-
-  const bm = budgetModifier
-  if (bm.mode === 'linearStep') {
-    // Determine which dimension to use (lines or cooldown)
-    const dim = castableRef.budgetDimension === 'line' ? bm.lines : bm.cooldown
-    const actual = castableRef.budgetDimension === 'line' ? castableRef.lines : castableRef.cooldown
-    if (dim?.baseline == null || actual == null) return base
-
-    let delta = (actual - dim.baseline) * (dim.step || 0)
-    if (dim.cap != null) delta = Math.min(delta, dim.cap)
-
-    if (bm.application === 'multiplicative') {
-      return Math.round(base * (1 + delta) * 10000) / 10000
-    }
-    return Math.round((base + delta) * 10000) / 10000
-  }
-
-  if (bm.mode === 'binary') {
-    const dim = castableRef.budgetDimension === 'line' ? bm.lines : bm.cooldown
-    const actual = castableRef.budgetDimension === 'line' ? castableRef.lines : castableRef.cooldown
-    if (dim?.baseline == null || actual == null) return base
-
-    const mod = actual >= dim.baseline ? dim.bonus || 0 : -(dim.penalty || 0)
-    return Math.round((base + mod) * 10000) / 10000
-  }
-
-  return base
-}
-
 // ── Parameter field renderers ────────────────────────────────────────────────
 function NumberParam({ value, onChange, label, optional }) {
   return (
@@ -113,104 +63,6 @@ function NumberParam({ value, onChange, label, optional }) {
       placeholder={optional ? 'optional' : ''}
       onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
     />
-  )
-}
-
-function RandParam({ value, onChange }) {
-  const v = value || { variable: 'RAND_10', multiplier: 1 }
-  return (
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      <FormControl size="small" sx={{ minWidth: 130 }}>
-        <InputLabel>Variable</InputLabel>
-        <Select
-          value={v.variable}
-          label="Variable"
-          onChange={(e) => onChange({ ...v, variable: e.target.value })}
-        >
-          {RAND_VARIABLES.map((r) => (
-            <MenuItem key={r.key} value={r.key}>
-              {r.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <Typography
-        variant="body2"
-        sx={{
-          color: 'text.secondary'
-        }}
-      >
-        ×
-      </Typography>
-      <TextField
-        size="small"
-        type="number"
-        label="Multiplier"
-        sx={{ width: 100 }}
-        value={v.multiplier ?? 1}
-        onChange={(e) =>
-          onChange({ ...v, multiplier: e.target.value === '' ? 1 : Number(e.target.value) })
-        }
-      />
-      <Typography
-        variant="caption"
-        sx={{
-          color: 'text.secondary',
-          fontFamily: 'monospace'
-        }}
-      >
-        = {v.variable}
-        {v.multiplier && v.multiplier !== 1 ? ` * ${v.multiplier}` : ''}
-      </Typography>
-    </Box>
-  )
-}
-
-function SettingParam({ paramDef, settings }) {
-  const val = settings?.customVariables?.[paramDef.settingKey]
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <TextField
-        size="small"
-        label={paramDef.label}
-        value={val ?? ''}
-        disabled
-        sx={{ width: 120 }}
-      />
-      <Typography
-        variant="caption"
-        sx={{
-          color: 'text.secondary'
-        }}
-      >
-        (from Formula Settings)
-      </Typography>
-    </Box>
-  )
-}
-
-function CoefficientParam({ value, coeffKey, spellOrSkill }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <TextField
-        size="small"
-        label="Coefficient"
-        value={value ?? '—'}
-        disabled
-        sx={{ width: 120 }}
-        slotProps={{
-          htmlInput: { style: { fontFamily: 'monospace' } }
-        }}
-      />
-      <Typography
-        variant="caption"
-        sx={{
-          color: 'text.secondary'
-        }}
-      >
-        {coeffKey ? `${coeffKey} (${spellOrSkill})` : 'Select targeting + delivery below'}
-      </Typography>
-    </Box>
   )
 }
 
