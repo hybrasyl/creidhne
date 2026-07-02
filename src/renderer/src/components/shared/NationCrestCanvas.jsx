@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getNationCrestBitmap } from '../../data/nationCrestData'
+import { getPackAssetUrl } from '../../data/packAssetCache'
 
 /**
  * Renders a nation crest (1-based flag number) to a fixed-size canvas,
@@ -59,8 +60,7 @@ export default function NationCrestCanvas({ flagNum, size = 80, paletteOverride,
         })
 
     if (effectivePreferPack) {
-      window.electronAPI
-        .resolvePackAsset('nation', Number(flagNum))
+      getPackAssetUrl('nation', Number(flagNum))
         .then((dataUrl) => {
           if (cancelled) return
           if (!dataUrl) return drawVanilla()

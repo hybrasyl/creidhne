@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getIconBitmap } from '../../data/iconData'
+import { getPackAssetUrl } from '../../data/packAssetCache'
 
 /**
  * Renders a single spell/skill icon to a fixed-size canvas. Icons are 31×31
@@ -51,8 +52,7 @@ export default function IconCanvas({ type, id, size = 48, paletteNumber, preferP
         })
 
     if (effectivePreferPack) {
-      window.electronAPI
-        .resolvePackAsset(type, Number(id))
+      getPackAssetUrl(type, Number(id))
         .then((dataUrl) => {
           if (cancelled) return
           if (!dataUrl) return drawVanilla()

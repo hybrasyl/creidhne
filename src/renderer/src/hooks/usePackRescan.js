@@ -1,11 +1,15 @@
 import { useEffect } from 'react'
 import { useSetRecoilState } from 'recoil'
 import { activePacksState, packCoverageState } from '../recoil/atoms'
+import { clearPackAssetCache } from '../data/packAssetCache'
 
 // Fetch the active .datf packs + their per-subtype covered-id sets from main.
 // Shared by App bootstrap and the on-open picker rescan so the coverage logic
 // lives in one place. Returns { packs, coverage }; never throws.
 export async function loadPackState() {
+  // Coverage is being refreshed (bootstrap, source-path change, or picker-open
+  // rescan) — drop cached pack URLs so newly added/replaced overrides are seen.
+  clearPackAssetCache()
   try {
     const packs = await window.electronAPI.listActivePacks()
     const packList = Array.isArray(packs) ? packs : []
