@@ -235,7 +235,7 @@ function FormulasPage() {
   const onSelectionChange = useCallback((set) => setSelectionCount(set.size), [])
 
   // ── Import / settings ───────────────────────────────────────────────────────
-  const doImport = async () => {
+  const doImport = useCallback(async () => {
     if (!activeLibrary) {
       setSnackbar({
         message: 'No library selected. Open a library from Settings first.',
@@ -266,9 +266,7 @@ function FormulasPage() {
         severity: 'error'
       })
     }
-  }
-  const handleImport = () => guard(doImport)
-
+  }, [activeLibrary, markClean])
   const handleSettingsSave = async (newSettings) => {
     const next = { ...formulasData, settings: newSettings }
     try {
@@ -295,7 +293,7 @@ function FormulasPage() {
       {
         icon: <FileUploadIcon fontSize="small" />,
         tooltip: 'Import from Lua',
-        onClick: handleImport
+        onClick: () => guard(doImport)
       },
       {
         icon: <SettingsIcon fontSize="small" />,
@@ -303,7 +301,7 @@ function FormulasPage() {
         onClick: () => setSettingsOpen(true)
       }
     ],
-    [handleImport]
+    [guard, doImport]
   )
 
   return (

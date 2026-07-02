@@ -148,7 +148,10 @@ function NPCEditor({
   const itemNames = libraryIndex.items || []
   const castableNames = libraryIndex.castables || []
   const castableClasses = libraryIndex.castableClasses || {}
-  const npcResponseCalls = libraryIndex.npcResponseCalls || {}
+  const npcResponseCalls = useMemo(
+    () => libraryIndex.npcResponseCalls || {},
+    [libraryIndex.npcResponseCalls]
+  )
   const npcStringKeys = libraryIndex.npcStringKeys || []
   const responseCallOptions = useMemo(
     () =>

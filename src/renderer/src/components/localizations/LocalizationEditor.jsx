@@ -116,12 +116,6 @@ function ResponseRow({ call, response, onChangeCall, onChangeResponse, onDelete 
   )
 }
 
-// ── Tab panel wrapper ─────────────────────────────────────────────────────────
-function TabPanel({ active, children }) {
-  if (!active) return null
-  return <Box sx={{ p: 2 }}>{children}</Box>
-}
-
 // ── Main editor ───────────────────────────────────────────────────────────────
 function LocalizationEditor({
   localization,

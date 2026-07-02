@@ -51,7 +51,6 @@ const DEFAULT_ANIMATIONS = {
   spellEffectSpeed: '',
   soundId: ''
 }
-const DEFAULT_MESSAGES = []
 const MESSAGE_TYPES = [
   { value: 'target', label: 'Target System' },
   { value: 'source', label: 'Source System' },
