@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState, packCoverageState } from '../../recoil/atoms'
@@ -28,8 +28,13 @@ export default function NpcPortraitCanvas({ filename, size = 96, preferPack }) {
   // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
   // whenever a pack covers this portrait key (case-insensitive).
   const nameLc = String(filename || '').toLowerCase()
-  const autoPrefer = (packCoverage.npcportrait || []).some((k) => k.toLowerCase() === nameLc)
-  const effectivePreferPack = preferPack ?? autoPrefer
+  // Pre-lowercase coverage keys once per coverage change (not per render) for an
+  // O(1) membership test; only consulted when preferPack isn't explicit.
+  const coverageLc = useMemo(
+    () => new Set((packCoverage.npcportrait || []).map((k) => k.toLowerCase())),
+    [packCoverage.npcportrait]
+  )
+  const effectivePreferPack = preferPack ?? coverageLc.has(nameLc)
 
   useEffect(() => {
     let cancelled = false
