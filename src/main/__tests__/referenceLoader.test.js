@@ -8,11 +8,17 @@ const mockFs = {
 
 vi.mock('fs', () => ({ promises: mockFs }))
 
+// loadIndex is consulted between the filename guess and the full-dir scan.
+// Default: no index (returns null) so the existing scan tests are unaffected.
+const mockLoadIndex = vi.fn()
+vi.mock('../indexService.js', () => ({ loadIndex: (...a) => mockLoadIndex(...a) }))
+
 const { loadReference, SUPPORTED_REFERENCE_TYPES, REFERENCE_TYPE_LABELS } =
   await import('../referenceLoader.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockLoadIndex.mockResolvedValue(null)
 })
 
 const castableXml = (name) => `<?xml version="1.0" encoding="utf-8"?>
@@ -83,6 +89,40 @@ describe('loadReference: fallback scan', () => {
     const result = await loadReference('/world', 'castables', 'Wanted')
     expect(result.ok).toBe(true)
     expect(result.parsed.name).toBe('Wanted')
+  })
+})
+
+// ─── Index name→filename map (avoids the full scan) ──────────────────────────
+
+describe('loadReference: index filename map', () => {
+  it('resolves via the index name→filename map without scanning the directory', async () => {
+    // Filename guess (Beag Srad.xml) returns a non-matching entity.
+    mockFs.readFile.mockResolvedValueOnce(castableXml('Other Spell'))
+    mockLoadIndex.mockResolvedValue({
+      castablesNamesByFilename: { '1test_beag.xml': 'Beag Srad' }
+    })
+    // Only the single indexed file is read.
+    mockFs.readFile.mockResolvedValueOnce(castableXml('Beag Srad'))
+
+    const result = await loadReference('/world', 'castables', 'Beag Srad')
+    expect(result.ok).toBe(true)
+    expect(result.parsed.name).toBe('Beag Srad')
+    expect(result.path).toBe(join('/world', 'castables', '1test_beag.xml'))
+    expect(mockFs.readdir).not.toHaveBeenCalled() // no directory scan
+  })
+
+  it('falls back to the scan when the indexed file no longer matches (stale index)', async () => {
+    mockFs.readFile.mockResolvedValueOnce(castableXml('Other Spell')) // guess
+    mockLoadIndex.mockResolvedValue({
+      castablesNamesByFilename: { 'stale.xml': 'Beag Srad' }
+    })
+    mockFs.readFile.mockResolvedValueOnce(castableXml('Renamed Away')) // indexed file — no match
+    mockFs.readdir.mockResolvedValueOnce([{ isFile: () => true, name: 'real.xml' }])
+    mockFs.readFile.mockResolvedValueOnce(castableXml('Beag Srad')) // scan hit
+
+    const result = await loadReference('/world', 'castables', 'Beag Srad')
+    expect(result.ok).toBe(true)
+    expect(result.path).toBe(join('/world', 'castables', 'real.xml'))
   })
 })
 

@@ -106,10 +106,11 @@ async function loadPack(filePath) {
   }
 }
 
-// Scan one directory (top-level) for *.datf files and load each. Mirrors
-// brigid's own TopDirectoryOnly discovery. Returns loaded packs; missing or
-// unreadable dirs yield an empty list.
-async function loadPacksFromDir(dir) {
+// List one directory's *.datf files (top-level, sorted) with their stat info.
+// Mirrors brigid's TopDirectoryOnly discovery. Missing/unreadable dirs yield an
+// empty list. The readdir happens once here and is reused for both the change
+// signature and the actual load, so we never scan a dir twice per loadPacks.
+async function listDatfFiles(dir) {
   if (!dir) return []
   let files = []
   try {
@@ -117,29 +118,53 @@ async function loadPacksFromDir(dir) {
   } catch {
     return []
   }
-  const packs = []
-  const datfFiles = files.filter((f) => f.toLowerCase().endsWith('.datf'))
-  for (const f of datfFiles) {
-    const pack = await loadPack(join(dir, f))
-    if (pack) packs.push(pack)
+  const datf = files.filter((f) => f.toLowerCase().endsWith('.datf')).sort()
+  const out = []
+  for (const f of datf) {
+    const filePath = join(dir, f)
+    let sig = `${f}:?`
+    try {
+      const st = await fs.stat(filePath)
+      sig = `${f}:${st.mtimeMs}:${st.size}`
+    } catch {
+      /* keep the '?' marker — still a stable per-file signature */
+    }
+    out.push({ filePath, sig: `${dir}|${sig}` })
   }
-  return packs
+  return out
 }
 
 // Scan every configured source directory for *.datf files and load each into
-// one merged set. Called on app start + whenever a source path changes.
+// one merged set. Called on app start + whenever a source path changes, and on
+// every picker-open rescan — so it short-circuits (a cheap readdir+stat) when
+// the .datf set is unchanged, skipping the expensive re-open/unzip of every
+// pack. Packs are otherwise not watched for changes within a session.
 // Sources are scanned in order (brigid assets dir first, then the DA client
 // dir); ties in priority resolve to the first source scanned.
 export function loadPacks({ brigidAssetsPath = null, clientPath = null } = {}) {
   pendingLoad = (async () => {
     const sources = [brigidAssetsPath, clientPath].filter(Boolean)
-    state = { sources, packs: [] }
-    for (const dir of sources) {
-      const packs = await loadPacksFromDir(dir)
-      state.packs.push(...packs)
+    const listings = []
+    for (const dir of sources) listings.push(await listDatfFiles(dir))
+
+    const signature = listings
+      .flat()
+      .map((e) => e.sig)
+      .join('\n')
+    // Nothing changed since the last load — keep the already-parsed packs and
+    // skip re-opening/unzipping every .datf.
+    if (state.signature != null && signature === state.signature) return
+
+    const packs = []
+    for (const listing of listings) {
+      for (const { filePath } of listing) {
+        const pack = await loadPack(filePath)
+        if (pack) packs.push(pack)
+      }
     }
     // Higher priority resolves first. Stable sort preserves source order for ties.
-    state.packs.sort((a, b) => (b.manifest.priority ?? 0) - (a.manifest.priority ?? 0))
+    packs.sort((a, b) => (b.manifest.priority ?? 0) - (a.manifest.priority ?? 0))
+    state = { sources, packs, signature }
   })()
   return pendingLoad
 }

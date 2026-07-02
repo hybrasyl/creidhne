@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import { join } from 'path'
 import { assertInside } from './pathSafety.js'
+import { loadIndex } from './indexService.js'
 import { parseCastableXml } from './castableXml'
 import { parseStatusXml } from './statusXml'
 import { parseItemXml } from './itemXml'
@@ -72,6 +73,42 @@ export async function loadReference(libraryPath, type, name) {
     } catch {
       /* fall through to full scan */
     }
+  }
+
+  // Filename guess missed (e.g. a prefixed/renamed file). Use the world index's
+  // filename→name map to parse just the one matching file instead of reading and
+  // parsing the entire directory. Falls through to the full scan if the index is
+  // unavailable or has no match.
+  try {
+    const index = await loadIndex(libraryPath)
+    const namesByFilename = index?.[`${type}NamesByFilename`]
+    if (namesByFilename) {
+      const target = String(name).toLowerCase()
+      const hit = Object.entries(namesByFilename).find(
+        ([, nm]) => String(nm).toLowerCase() === target
+      )
+      if (hit) {
+        let filePath = null
+        try {
+          filePath = assertInside(dir, hit[0])
+        } catch {
+          filePath = null
+        }
+        if (filePath) {
+          try {
+            const raw = await fs.readFile(filePath, 'utf-8')
+            const parsed = await cfg.parse(raw)
+            if (valueMatches(parsed, cfg.idField, name)) {
+              return { ok: true, parsed, raw, path: filePath }
+            }
+          } catch {
+            /* fall through to full scan */
+          }
+        }
+      }
+    }
+  } catch {
+    /* index unavailable — fall through to full scan */
   }
 
   let entries
