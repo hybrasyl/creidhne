@@ -1,6 +1,10 @@
 import { useState } from 'react'
-import creidhneLogo from '../assets/creidhne.svg'
 import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
+
+// Branded logo lives in resources/ (Vite publicDir) and is shared with the
+// splash screen; referenced as a public asset (base is './') rather than a
+// bundled import so we don't ship a second copy of the artwork.
+const creidhneLogo = './creidhne-logo.png'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   GiRadialBalance,
