@@ -98,4 +98,49 @@ describe('generateHybridPair', () => {
     expect(direct.formula).toContain('* 0.6)')
     expect(overtime.formula).toContain('* 0.4)')
   })
+
+  it('uses the "damage" category and _dot suffix for a non-heal/conv effect', () => {
+    const [direct, overtime] = generateHybridPair(
+      { baseName: 'ward', effect: 'SHIELD', directPct: 50, ...ids },
+      settings
+    )
+    expect(direct.category).toBe('damage')
+    expect(overtime.name).toBe('ward_dot')
+  })
+})
+
+// ── buildFormulaString: injection branches ───────────────────────────────────
+
+describe('buildFormulaString — injection branches', () => {
+  const base = {
+    patternId: 'old-hybrasyl',
+    coeffEffect: 'DMG',
+    coeffTargeting: 'ST',
+    coeffDelivery: 'DIRECT',
+    spellOrSkill: 'spell'
+  }
+
+  it('resolves the Assail key for ASSAIL targeting', () => {
+    const out = buildFormulaString(
+      { ...base, coeffTargeting: 'ASSAIL', spellOrSkill: 'skill' },
+      { coefficients: { DMG_ASSAIL: { skill: 7 } } }
+    )
+    expect(out).toContain('* 7)')
+  })
+
+  it('applies a per-formula setting override over the global value', () => {
+    const out = buildFormulaString({ ...base, paramValues: { _override_LevelDiv: 99 } }, settings)
+    expect(out).toContain('/ 99)')
+  })
+
+  it('applies a per-formula coefficient override over the resolved value', () => {
+    const out = buildFormulaString({ ...base, paramValues: { _override_Coefficient: 5 } }, settings)
+    expect(out).toContain('* 5)')
+  })
+
+  it('falls back to 0 for missing settings + coefficient', () => {
+    const out = buildFormulaString(base, {})
+    expect(out).toContain('/ 0)') // LevelDiv unset
+    expect(out).toContain('* 0)') // coefficient unresolved
+  })
 })
