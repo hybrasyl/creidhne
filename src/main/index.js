@@ -22,6 +22,7 @@ import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXm
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
 import { launchCompanion } from './launchCompanion.js'
+import { createSplashWindow } from './splash.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import { parseOrLog } from './schemaLog.js'
@@ -118,8 +119,26 @@ const schemaCtx = { settingsPath }
 
 let closeConfirmed = false
 
+// Splash + reveal coordination. The main window is created hidden and only
+// shown once the renderer signals it has hydrated its settings ('app:ready'),
+// so the first visible frame is already populated (no flash of empty UI).
+let mainWindow = null
+let splashWindow = null
+let mainWindowRevealed = false
+
+function revealMainWindow() {
+  if (mainWindowRevealed) return
+  mainWindowRevealed = true
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show()
+    mainWindow.focus()
+  }
+  if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy()
+  splashWindow = null
+}
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1024,
     height: 768,
     minWidth: 1024,
@@ -150,7 +169,10 @@ function createWindow() {
   }
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    // First launch is gated on the renderer's 'app:ready' signal (revealed by
+    // revealMainWindow, which also tears down the splash). Only auto-show when
+    // there's no splash — e.g. a window re-created on macOS activate.
+    if (!splashWindow) mainWindow.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -1154,6 +1176,13 @@ app.whenReady().then(async () => {
   ipcMain.handle('export:castablesJSON', async (_, libraryPath) => {
     return exportCastablesExcelCSV(validatePath(libraryPath))
   })
+
+  // Show the splash immediately, then create the (hidden) main window. Reveal
+  // on the renderer's 'app:ready' signal, with a safety timeout so a renderer
+  // that throws before signalling can't leave the app permanently invisible.
+  splashWindow = createSplashWindow()
+  ipcMain.on('app:ready', revealMainWindow)
+  setTimeout(revealMainWindow, 15000)
 
   createWindow()
 

@@ -82,6 +82,9 @@ function App() {
       setSoundPickerMode(settings.soundPickerMode || 'vanilla')
       setCreaturePickerMode(settings.creaturePickerMode || 'vanilla')
       setSettingsLoaded(true)
+      // Tell main the first frame is populated so it can reveal the window and
+      // dismiss the splash (no-op if the API predates this build).
+      window.electronAPI.appReady?.()
     }
 
     fetchSettings()

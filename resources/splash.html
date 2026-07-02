@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Creidhne</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: radial-gradient(circle at 50% 32%, #1b2c48 0%, #0c1524 100%);
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: #cdd8ea;
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: default;
+      }
+      .logo {
+        width: 172px;
+        height: auto;
+        margin-bottom: 16px;
+        filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
+      }
+      .title {
+        font-size: 22px;
+        letter-spacing: 3px;
+        font-weight: 600;
+        color: #e8eefb;
+      }
+      .sub {
+        margin-top: 6px;
+        font-size: 12px;
+        letter-spacing: 1px;
+        color: #7f8fb0;
+      }
+      .spinner {
+        margin-top: 22px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.14);
+        border-top-color: #5b8def;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <img class="logo" src="./creidhne-logo.png" alt="Creidhne" />
+    <div class="title">CREIDHNE</div>
+    <div class="sub">Loading…</div>
+    <div class="spinner"></div>
+  </body>
+</html>

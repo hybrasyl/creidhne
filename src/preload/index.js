@@ -107,6 +107,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
   confirmClose: () => ipcRenderer.send('app:confirm-close'),
+  // Signals the main process that the renderer has hydrated its settings, so
+  // it can reveal the main window and tear down the splash.
+  appReady: () => ipcRenderer.send('app:ready'),
   // Hybrasyl asset packs (*.datf in the brigid assets dir + DA client dir)
   listActivePacks: () => ipcRenderer.invoke('pack:listActive'),
   listPackCoveredIds: (subtype) => ipcRenderer.invoke('pack:listCoveredIds', subtype),
