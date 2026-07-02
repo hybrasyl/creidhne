@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Autocomplete, TextField, Box } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 
 // Sentinel: lets the user explicitly acknowledge "Custom" mode (vs. just
 // leaving the dropdown blank). Picking it is a no-op on min/max.
@@ -36,7 +35,7 @@ export default function WeaponPicker({
   onMinDmgChange,
   onMaxDmgChange
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
 
   // Materialise itemWeaponDamage into a list of { name, minDmg, maxDmg }
   // using only the small-damage column. Sorted by name for predictable UX.

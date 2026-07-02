@@ -8,9 +8,8 @@
 // revoked on cache clear.
 
 import { useState, useEffect } from 'react'
-import { useRecoilValue } from 'recoil'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreValue, clientPathState } from '../store/appStore'
 
 const indexCache = new Map() // clientPath → number[] (sorted ids)
 const blobUrlCache = new Map() // `${clientPath}|${id}` → blob URL
@@ -204,7 +203,7 @@ export function useCurrentlyPlayingSound() {
  * or null while loading / if clientPath is unset.
  */
 export function useSoundIndex() {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [ids, setIds] = useState(() => indexCache.get(clientPath) || null)
 
   useEffect(() => {

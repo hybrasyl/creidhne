@@ -3,11 +3,10 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import ClearIcon from '@mui/icons-material/Clear'
 import HelpIcon from '@mui/icons-material/Help'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
-import { useRecoilState } from 'recoil'
-import { brigidAssetsPathState } from '../recoil/atoms'
+import { useStoreState, brigidAssetsPathState } from '../store/appStore'
 
 const BrigidAssetsPathSection = () => {
-  const [brigidAssetsPath, setBrigidAssetsPath] = useRecoilState(brigidAssetsPathState)
+  const [brigidAssetsPath, setBrigidAssetsPath] = useStoreState(brigidAssetsPathState)
 
   const handleBrowse = async () => {
     const dir = await window.electronAPI.openDirectory()

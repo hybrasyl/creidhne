@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { useRecoilState } from 'recoil'
-import { dirtyEditorState } from '../recoil/atoms'
+import { useStoreState, dirtyEditorState } from '../store/appStore'
 
 /**
  * Provides within-page unsaved-changes guard (file switch / New) and registers
@@ -25,7 +24,7 @@ import { dirtyEditorState } from '../recoil/atoms'
  *     onSave={handleDialogSave} onDiscard={handleDialogDiscard} onCancel={handleDialogCancel} />
  */
 export function useUnsavedGuard(label) {
-  const [, setDirtyEditor] = useRecoilState(dirtyEditorState)
+  const [, setDirtyEditor] = useStoreState(dirtyEditorState)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   // Ref for the pending action to run after Save/Discard in the within-page dialog.

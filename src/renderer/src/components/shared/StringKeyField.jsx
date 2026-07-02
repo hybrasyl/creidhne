@@ -1,6 +1,5 @@
 import { Box, Autocomplete, TextField, Typography } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 
 const STRING_CUSTOM = { key: '__custom__', message: '', category: '' }
 
@@ -31,7 +30,7 @@ function StringKeyField({
   externalOptions,
   warning
 }) {
-  const npcStringKeys = useRecoilValue(libraryIndexState).npcStringKeys || []
+  const npcStringKeys = useStoreValue(libraryIndexState).npcStringKeys || []
   const entries = externalOptions ?? npcStringKeys
   const options = [STRING_CUSTOM, ...entries]
   const isCustom = !stringKey

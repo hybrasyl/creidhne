@@ -36,8 +36,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import { ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants'
 import { CONDITIONS } from '../../data/statusConstants'
 import CommentField from '../shared/CommentField'
@@ -340,7 +339,7 @@ function StatModRow({ row, index, usedKeys, onChange, onRemove }) {
 }
 
 function StatusStatModContent({ sm, onChange }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const elementNames = libraryIndex.elementnames || []
 
   const { rows, elementalModifiers } = sm
@@ -947,7 +946,7 @@ function StatusEditor({
   const [openCategories, setOpenCategories] = useState(false)
   const [openRestrictions, setOpenRestrictions] = useState(false)
 
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const isDirtyRef = useRef(false)
   const [dupSnack, setDupSnack] = useState(null)
   const [mismatchDialog, setMismatchDialog] = useState(null) // null | mismatch[]

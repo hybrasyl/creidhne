@@ -18,8 +18,13 @@ import SearchIcon from '@mui/icons-material/Search'
 import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
-import { useRecoilValue, useRecoilState } from 'recoil'
-import { clientPathState, packCoverageState, soundPickerModeState } from '../../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  clientPathState,
+  packCoverageState,
+  soundPickerModeState
+} from '../../store/appStore'
 import {
   useSoundIndex,
   playSound,
@@ -72,11 +77,11 @@ function Row({ index, style, ids, selectedId, onSelect, clientPath, playingId, p
 
 export default function SoundPickerDialog({ open, value, onClose, onChange }) {
   useRescanPacksOnOpen(open)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const ids = useSoundIndex()
   const playingId = useCurrentlyPlayingSound()
-  const packCoverage = useRecoilValue(packCoverageState)
-  const [mode, setMode] = useRecoilState(soundPickerModeState)
+  const packCoverage = useStoreValue(packCoverageState)
+  const [mode, setMode] = useStoreState(soundPickerModeState)
   const [search, setSearch] = useState('')
   const listRef = useRef(null)
 

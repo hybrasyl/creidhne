@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Box, Typography } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { getDisplaySpriteBitmap } from '../../data/khanData'
 
 /**
@@ -26,7 +25,7 @@ export default function DisplaySpriteCanvas({
   frameIdx,
   color = ''
 }) {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const canvasRef = useRef(null)
 
   useEffect(() => {

@@ -8,11 +8,10 @@
 // so the picker outputs and accepts filenames directly (no id table).
 
 import { useState, useEffect } from 'react'
-import { useRecoilValue } from 'recoil'
 import { SpfFile, SpfFormatType, renderSpfPalettized, renderSpfColorized } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreValue, clientPathState } from '../store/appStore'
 
 const ARCHIVE = 'npc/npcbase.dat'
 
@@ -100,7 +99,7 @@ registerCacheClearer(clearNpcPortraitCache)
 
 /** React hook — sorted portrait filename list for current clientPath. */
 export function useNpcPortraitIndex() {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [names, setNames] = useState(() => filenameIndexCache.get(clientPath) || null)
   useEffect(() => {
     if (!clientPath) {

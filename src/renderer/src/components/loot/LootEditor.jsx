@@ -18,8 +18,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 
@@ -80,7 +79,7 @@ function LootEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const itemNames = libraryIndex.items || []
   const variantNames = libraryIndex.variantgroups || []
 

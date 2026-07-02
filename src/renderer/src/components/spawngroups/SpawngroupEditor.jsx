@@ -1,6 +1,5 @@
 import { memo, useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import {
   Box,
   Button,
@@ -887,7 +886,7 @@ function SpawngroupEditor({
   const [openGroupLoot, setOpenGroupLoot] = useState(true)
   const [openSpawns, setOpenSpawns] = useState(true)
 
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const isDirtyRef = useRef(false)
 
   // ── Duplicate detection ────────────────────────────────────────────────────

@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { categoriesFor } from '../../data/khanData'
 import DisplaySpriteCanvas from './DisplaySpriteCanvas'
 import DisplaySpritePickerDialog from './DisplaySpritePickerDialog'
@@ -30,7 +29,7 @@ const PREVIEW_SIZE = 72
  */
 export default function DisplaySpritePicker({ slot, value, onChange, helpTooltip, color = '' }) {
   const [open, setOpen] = useState(false)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
 
   const categories = categoriesFor(slot)
   const category = categories.length ? categories : null

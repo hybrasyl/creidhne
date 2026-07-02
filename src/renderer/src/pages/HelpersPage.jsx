@@ -10,11 +10,10 @@ import {
   Divider
 } from '@mui/material'
 import BuildIcon from '@mui/icons-material/Build'
-import { useRecoilValue } from 'recoil'
-import { activeLibraryState } from '../recoil/atoms'
+import { useStoreValue, activeLibraryState } from '../store/appStore'
 
 export default function HelpersPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const activeLibrary = useStoreValue(activeLibraryState)
   const [installing, setInstalling] = useState(false)
   const [result, setResult] = useState(null)
 

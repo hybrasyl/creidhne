@@ -31,8 +31,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import StatsTab from '../shared/StatsTab'
 import RestrictionsTab from '../shared/RestrictionsTab'
 import UseTab from './tabs/UseTab'
@@ -150,7 +149,7 @@ function ItemEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const colorSwatches = useItemColorSwatches()
   const castableNames = libraryIndex.castables || []
   const variantGroupNames = libraryIndex.variantgroups || []

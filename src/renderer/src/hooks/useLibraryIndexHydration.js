@@ -1,11 +1,10 @@
 import { useCallback } from 'react'
-import { useSetRecoilState } from 'recoil'
-import { libraryIndexState } from '../recoil/atoms'
+import { useSetStoreValue, libraryIndexState } from '../store/appStore'
 
 const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort()
 
 /**
- * Single source of truth for hydrating the libraryIndex Recoil atom.
+ * Single source of truth for hydrating the libraryIndex store field.
  *
  * libraryIndex is a merge of two sources:
  *  1. The persisted index built by hybindex-ts (loadIndex) — castables,
@@ -19,7 +18,7 @@ const dedup = (a, b) => [...new Set([...(a || []), ...(b || [])])].sort()
  * Routing all callers through this hook keeps the merge consistent.
  */
 export function useLibraryIndexHydration() {
-  const setLibraryIndex = useSetRecoilState(libraryIndexState)
+  const setLibraryIndex = useSetStoreValue(libraryIndexState)
 
   return useCallback(
     async (libraryPath) => {

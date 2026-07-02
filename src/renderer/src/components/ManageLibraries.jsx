@@ -20,8 +20,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import HelpIcon from '@mui/icons-material/Help'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { useRecoilState } from 'recoil'
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import { useStoreState, activeLibraryState, libraryIndexState } from '../store/appStore'
 import { useLibraryIndexHydration } from '../hooks/useLibraryIndexHydration'
 
 function IndexStatus({ status, building, onBuild }) {
@@ -74,8 +73,8 @@ function IndexStatus({ status, building, onBuild }) {
 const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [selectedLibrary, setSelectedLibrary] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
-  const [, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const [activeLibrary, setActiveLibrary] = useStoreState(activeLibraryState)
+  const [, setLibraryIndex] = useStoreState(libraryIndexState)
   const [indexStatuses, setIndexStatuses] = useState({})
   const [building, setBuilding] = useState({})
   const hydrateLibraryIndex = useLibraryIndexHydration()

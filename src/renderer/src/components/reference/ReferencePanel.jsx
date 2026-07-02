@@ -17,13 +17,14 @@ import {
 } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
-import { useRecoilState, useRecoilValue } from 'recoil'
 import {
+  useStoreState,
+  useStoreValue,
   referencePanelOpenState,
   referenceSelectionState,
   libraryIndexState,
   activeLibraryState
-} from '../../recoil/atoms'
+} from '../../store/appStore'
 import { ReferenceViewDispatcher } from './referenceViews'
 
 // Type key → subdir/index field name (matches referenceLoader.js SUPPORTED_REFERENCE_TYPES)
@@ -71,10 +72,10 @@ function ClosedRail({ onOpen }) {
 }
 
 export default function ReferencePanel() {
-  const [open, setOpen] = useRecoilState(referencePanelOpenState)
-  const [selection, setSelection] = useRecoilState(referenceSelectionState)
-  const libraryIndex = useRecoilValue(libraryIndexState)
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const [open, setOpen] = useStoreState(referencePanelOpenState)
+  const [selection, setSelection] = useStoreState(referenceSelectionState)
+  const libraryIndex = useStoreValue(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
 
   const [type, setType] = useState(selection?.type || 'castables')
   const [name, setName] = useState(selection?.name || null)

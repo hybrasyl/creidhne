@@ -6,11 +6,10 @@
 // (offset by 1 to skip the leading blank UI entry).
 
 import { useState, useEffect } from 'react'
-import { useRecoilValue } from 'recoil'
 import { ColorTable } from '@eriscorp/dalib-ts'
 import { ITEM_COLORS } from './itemConstants'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreValue, clientPathState } from '../store/appStore'
 
 // clientPath → Map<colorName, [{r,g,b,a}, ...]>
 const swatchMapCache = new Map()
@@ -80,7 +79,7 @@ registerCacheClearer(clearItemColorCache)
  * while loading / if clientPath is unset. Loads once per clientPath.
  */
 export function useItemColorSwatches() {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [swatches, setSwatches] = useState(() => swatchMapCache.get(clientPath) || null)
 
   useEffect(() => {

@@ -1,7 +1,6 @@
 import { IconButton, Tooltip } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState, activeLibraryState } from '../../store/appStore'
 
 /**
  * Open-script button for entities that reference their script by name rather
@@ -14,8 +13,8 @@ import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
  * and surfaces a tooltip listing the candidates.
  */
 export default function OpenScriptByNameButton({ name, tooltipPrefix = 'Open script' }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const libraryIndex = useStoreValue(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
 
   const trimmed = (name || '').trim()
   const scripts = libraryIndex?.scripts || []

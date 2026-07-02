@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useRecoilValue, useRecoilState } from 'recoil'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  activeLibraryState,
+  libraryIndexState
+} from '../store/appStore'
 import SpawngroupEditor from '../components/spawngroups/SpawngroupEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
@@ -24,8 +28,8 @@ const DEFAULT_SPAWNGROUP = {
 }
 
 function SpawngroupsPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.spawngroupsNamesByFilename
   const [files, setFiles] = useState([])
   const [archivedFiles, setArchivedFiles] = useState([])

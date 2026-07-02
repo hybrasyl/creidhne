@@ -16,8 +16,13 @@ import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
-import { useRecoilValue, useRecoilState } from 'recoil'
-import { clientPathState, packCoverageState, creaturePickerModeState } from '../../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  clientPathState,
+  packCoverageState,
+  creaturePickerModeState
+} from '../../store/appStore'
 import { getCreatureSpriteIndex } from '../../data/creatureSpriteData'
 import CreatureSpriteCanvas from './CreatureSpriteCanvas'
 
@@ -71,9 +76,9 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, p
 
 export default function SpritePickerDialog({ open, value, onClose, onChange }) {
   useRescanPacksOnOpen(open)
-  const clientPath = useRecoilValue(clientPathState)
-  const packCoverage = useRecoilValue(packCoverageState)
-  const [mode, setMode] = useRecoilState(creaturePickerModeState)
+  const clientPath = useStoreValue(clientPathState)
+  const packCoverage = useStoreValue(packCoverageState)
+  const [mode, setMode] = useStoreState(creaturePickerModeState)
   const [search, setSearch] = useState('')
   const [index, setIndex] = useState(null) // null = loading, { ids } = ready
   const [loadError, setLoadError] = useState(null)

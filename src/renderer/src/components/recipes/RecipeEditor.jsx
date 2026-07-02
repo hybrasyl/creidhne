@@ -13,8 +13,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 
@@ -46,7 +45,7 @@ function RecipeEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const itemNames = libraryIndex.items || []
 
   const [data, setData] = useState(recipe)

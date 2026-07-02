@@ -1,7 +1,6 @@
 import { Autocomplete, TextField, IconButton, Tooltip, InputAdornment } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState, activeLibraryState } from '../../store/appStore'
 
 function stripPath(s) {
   return s.replace(/.*[\\/]/, '').replace(/\.lua$/i, '')
@@ -27,8 +26,8 @@ function ScriptAutocomplete({
   size = 'small',
   subfolder
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const libraryIndex = useStoreValue(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
   const options = (libraryIndex.scripts || []).map(stripPath)
   const isUnknown = freeSolo && !!value && !options.includes(value)
 

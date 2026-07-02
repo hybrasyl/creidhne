@@ -15,13 +15,14 @@ import {
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import BuildIcon from '@mui/icons-material/Build'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { useRecoilValue, useRecoilState } from 'recoil'
 import {
+  useStoreValue,
+  useStoreState,
   activeLibraryState,
   libraryIndexState,
   currentPageState,
   taliesinPathState
-} from '../recoil/atoms'
+} from '../store/appStore'
 import { useLibraryIndexHydration } from '../hooks/useLibraryIndexHydration'
 
 const INDEX_TYPES = [
@@ -163,10 +164,10 @@ function StatusCard({ icon, label, primary, secondary, emptyHint, onClick, foote
 }
 
 function DashboardPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const libraryIndex = useRecoilValue(libraryIndexState)
-  const [, setCurrentPage] = useRecoilState(currentPageState)
-  const taliesinPath = useRecoilValue(taliesinPathState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const libraryIndex = useStoreValue(libraryIndexState)
+  const [, setCurrentPage] = useStoreState(currentPageState)
+  const taliesinPath = useStoreValue(taliesinPathState)
   const [rebuilding, setRebuilding] = useState(false)
   const hydrateLibraryIndex = useLibraryIndexHydration()
 

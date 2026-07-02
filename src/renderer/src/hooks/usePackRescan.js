@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import { useSetRecoilState } from 'recoil'
-import { activePacksState, packCoverageState } from '../recoil/atoms'
+import { useSetStoreValue, activePacksState, packCoverageState } from '../store/appStore'
 import { clearPackAssetCache } from '../data/packAssetCache'
 
 // Fetch the active .datf packs + their per-subtype covered-id sets from main.
@@ -33,8 +32,8 @@ export async function loadPackState() {
  * dialog so opening it re-discovers newly-added packs without an app restart.
  */
 export function useRescanPacksOnOpen(open) {
-  const setActivePacks = useSetRecoilState(activePacksState)
-  const setPackCoverage = useSetRecoilState(packCoverageState)
+  const setActivePacks = useSetStoreValue(activePacksState)
+  const setPackCoverage = useSetStoreValue(packCoverageState)
   useEffect(() => {
     if (!open) return undefined
     let cancelled = false

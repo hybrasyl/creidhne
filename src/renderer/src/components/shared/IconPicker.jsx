@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import IconCanvas from './IconCanvas'
 import IconPickerDialog from './IconPickerDialog'
 
@@ -23,7 +22,7 @@ const PREVIEW_SIZE = 48
  */
 export default function IconPicker({ type, value, onChange, label = 'Icon', helpTooltip }) {
   const [open, setOpen] = useState(false)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
 
   const handleSelect = (id) => {
     onChange(String(id))

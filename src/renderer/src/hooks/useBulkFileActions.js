@@ -17,7 +17,7 @@ import { useCallback, useState } from 'react'
  *   selectedFile        — the currently-edited file (or null)
  *   setSelectedFile     — clears the editor when its file is touched by a bulk op
  *   clearEditing        — page-specific editor-state clearer (e.g. setEditingItem(null))
- *   setLibraryIndex     — Recoil setter; merged with rebuilt index section
+ *   setLibraryIndex     — store setter; merged with rebuilt index section
  *   loadActiveFiles     — page reload helpers (already accept an activeLibrary arg)
  *   loadArchivedFiles
  *   setSnackbar         — page snackbar setter; receives { message, severity }

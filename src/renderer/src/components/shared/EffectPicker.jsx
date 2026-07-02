@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import EffectPreview from './EffectPreview'
 import EffectPickerDialog from './EffectPickerDialog'
 
@@ -34,7 +33,7 @@ export default function EffectPicker({
   speedWidth = 90
 }) {
   const [open, setOpen] = useState(false)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
 
   const numericId = Number(effectId)
   const isValid = Number.isFinite(numericId) && numericId >= 1

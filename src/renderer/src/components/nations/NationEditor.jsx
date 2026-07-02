@@ -21,8 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import GridViewIcon from '@mui/icons-material/GridView'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import NationCrestCanvas from '../shared/NationCrestCanvas'
@@ -90,7 +89,7 @@ function Section({ title, open, onToggle, enabled, onEnable, children }) {
 
 // ── Map autocomplete ──────────────────────────────────────────────────────────
 function MapPicker({ label, value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const mapNames = libraryIndex.maps || []
   return (
     <Autocomplete
@@ -120,7 +119,7 @@ function NationEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const [data, setData] = useState(nation)
   const [prefix, setPrefix] = useState(() => deriveNationPrefix(initialFileName, nation.name))
   const [fileName, setFileName] = useState(

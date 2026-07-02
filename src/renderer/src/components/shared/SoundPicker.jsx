@@ -4,8 +4,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
 import ListIcon from '@mui/icons-material/List'
 import HelpIcon from '@mui/icons-material/Help'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { playPackSound, stopSound, useCurrentlyPlayingSound } from '../../data/soundData'
 import SoundPickerDialog from './SoundPickerDialog'
 
@@ -18,7 +17,7 @@ export default function SoundPicker({
   helpTooltip
 }) {
   const [open, setOpen] = useState(false)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const playingId = useCurrentlyPlayingSound()
 
   const numericId = Number(value)

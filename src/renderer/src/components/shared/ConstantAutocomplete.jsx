@@ -1,6 +1,10 @@
 import { Autocomplete, TextField, createFilterOptions } from '@mui/material'
-import { useRecoilState, useRecoilValue } from 'recoil'
-import { activeLibraryState, libraryIndexState } from '../../recoil/atoms'
+import {
+  useStoreState,
+  useStoreValue,
+  activeLibraryState,
+  libraryIndexState
+} from '../../store/appStore'
 
 const filter = createFilterOptions()
 
@@ -24,8 +28,8 @@ function ConstantAutocomplete({
   multiple = false,
   ...rest
 }) {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
 
   const options = libraryIndex[indexKey] || []
 

@@ -20,8 +20,13 @@ import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
-import { useRecoilValue, useRecoilState } from 'recoil'
-import { clientPathState, packCoverageState, iconPickerModeState } from '../../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  clientPathState,
+  packCoverageState,
+  iconPickerModeState
+} from '../../store/appStore'
 import {
   useIconIndex,
   getAvailableIconPaletteNumbers,
@@ -87,9 +92,9 @@ function Cell({
 export default function IconPickerDialog({ open, type, value, onClose, onChange }) {
   useRescanPacksOnOpen(open)
   const index = useIconIndex(type)
-  const clientPath = useRecoilValue(clientPathState)
-  const packCoverage = useRecoilValue(packCoverageState)
-  const [mode, setMode] = useRecoilState(iconPickerModeState)
+  const clientPath = useStoreValue(clientPathState)
+  const packCoverage = useStoreValue(packCoverageState)
+  const [mode, setMode] = useStoreState(iconPickerModeState)
   const [search, setSearch] = useState('')
   const [paletteNumbers, setPaletteNumbers] = useState(null)
   const [paletteNumber, setPaletteNumber] = useState(null) // null = use module default

@@ -22,8 +22,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import CreatureSpriteCanvas from '../shared/CreatureSpriteCanvas'
 import SpritePickerDialog from '../shared/SpritePickerDialog'
@@ -103,7 +102,7 @@ function Section({ title, open, onToggle, onDelete, children }) {
 
 // ── BehaviorSet autocomplete ──────────────────────────────────────────────────
 function BehaviorSetPicker({ value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const options = libraryIndex.creaturebehaviorsets || []
   return (
     <Autocomplete
@@ -123,7 +122,7 @@ function BehaviorSetPicker({ value, onChange, sx }) {
 
 // ── LootSet autocomplete ──────────────────────────────────────────────────────
 function LootSetPicker({ value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const options = libraryIndex.lootsets || []
   return (
     <Autocomplete
@@ -508,7 +507,7 @@ function CreatureEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const [data, setData] = useState(creature)
   const [fileName, setFileName] = useState(
     initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name)

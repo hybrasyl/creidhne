@@ -23,8 +23,7 @@ import {
 } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState, activeLibraryState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState, activeLibraryState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import StatBlockBuilder from './StatBlockBuilder'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
@@ -123,8 +122,8 @@ function FormulaEditor({
 }) {
   const [data, setData] = useState(formula)
   const isDirtyRef = useRef(false)
-  const libraryIndex = useRecoilValue(libraryIndexState)
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const libraryIndex = useStoreValue(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
 
   // Pattern-driven parameter values
   const [paramValues, setParamValues] = useState(formula.paramValues || {})

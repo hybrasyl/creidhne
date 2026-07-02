@@ -10,11 +10,10 @@
 // DEFAULT_PALETTE once confirmed.
 
 import { useState, useEffect } from 'react'
-import { useRecoilValue } from 'recoil'
 import { EpfFile, Palette, renderEpf } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreValue, clientPathState } from '../store/appStore'
 
 const ARCHIVE = 'setoa.dat'
 const EPF_NAME = 'nation.epf'
@@ -163,7 +162,7 @@ registerCacheClearer(clearNationCrestCache)
 
 /** React hook — { total, visibleIds } for current clientPath. */
 export function useNationCrestIndex() {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [result, setResult] = useState(null)
   useEffect(() => {
     if (!clientPath) {
