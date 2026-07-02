@@ -31,8 +31,8 @@ export default function CreatureSpriteCanvas({ value, size, animate = false, pre
 
   // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
   // whenever a pack covers this specific creature id.
-  const autoPrefer = (packCoverage.creature || []).includes(id)
-  const effectivePreferPack = preferPack ?? autoPrefer
+  // Only scan coverage when the caller didn't pass an explicit preferPack.
+  const effectivePreferPack = preferPack ?? (packCoverage.creature || []).includes(id)
 
   useEffect(() => {
     let cancelled = false

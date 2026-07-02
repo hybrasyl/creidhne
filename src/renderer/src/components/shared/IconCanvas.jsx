@@ -27,8 +27,9 @@ export default function IconCanvas({ type, id, size = 48, paletteNumber, preferP
 
   // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
   // whenever a pack covers this specific id.
-  const autoPrefer = (packCoverage[type] || []).includes(Number(id))
-  const effectivePreferPack = preferPack ?? autoPrefer
+  // Only scan coverage when the caller didn't pass an explicit preferPack
+  // (?? short-circuits, so the dialog's toggle path skips the scan entirely).
+  const effectivePreferPack = preferPack ?? (packCoverage[type] || []).includes(Number(id))
 
   useEffect(() => {
     let cancelled = false

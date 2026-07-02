@@ -27,8 +27,8 @@ export default function NationCrestCanvas({ flagNum, size = 80, paletteOverride,
 
   // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack
   // whenever a pack covers this specific flag.
-  const autoPrefer = (packCoverage.nation || []).includes(Number(flagNum))
-  const effectivePreferPack = preferPack ?? autoPrefer
+  // Only scan coverage when the caller didn't pass an explicit preferPack.
+  const effectivePreferPack = preferPack ?? (packCoverage.nation || []).includes(Number(flagNum))
 
   useEffect(() => {
     let cancelled = false

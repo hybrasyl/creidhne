@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
 import { List as VirtualList } from 'react-window'
 import {
   Box,
@@ -76,7 +76,7 @@ function useAutoSize() {
 
 // Row renderer for react-window. Receives index + precomputed style (absolute
 // positioning from the virtual list) + itemData populated by the parent.
-function VirtualRow({
+const VirtualRow = memo(function VirtualRow({
   index,
   style,
   items,
@@ -116,7 +116,7 @@ function VirtualRow({
       </ListItemButton>
     </ListItem>
   )
-}
+})
 
 /**
  * Shared file list panel for editor pages. Displays active + (optional) archived
@@ -172,9 +172,15 @@ export default function EditorFileListPanel({
   const [contextMenu, setContextMenu] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null) // file[] | null
 
-  const filteredActive = files.filter((f) => matchesFilter(f, search, namesByFilename))
-  const filteredArchived = (archivedFiles || []).filter((f) =>
-    matchesFilter(f, search, namesByFilename)
+  // Memoized so unrelated local-state changes (context menu, new-menu anchor,
+  // pending delete, selection) don't re-walk all 2000+ items with a regex each.
+  const filteredActive = useMemo(
+    () => files.filter((f) => matchesFilter(f, search, namesByFilename)),
+    [files, search, namesByFilename]
+  )
+  const filteredArchived = useMemo(
+    () => (archivedFiles || []).filter((f) => matchesFilter(f, search, namesByFilename)),
+    [archivedFiles, search, namesByFilename]
   )
 
   // Path → file lookup across both lists, used by the action toolbar to
@@ -322,6 +328,28 @@ export default function EditorFileListPanel({
   }, [pendingDelete, onDelete, clearSelection])
 
   const cancelDelete = useCallback(() => setPendingDelete(null), [])
+
+  // Stable rowProps identity so react-window doesn't re-render every visible
+  // row on unrelated state changes (memoized VirtualRow can then bail out).
+  const activeRowProps = useMemo(
+    () => ({
+      items: filteredActive,
+      selectedFile,
+      selectedPaths,
+      onRowClick: handleRowClick,
+      onRowContextMenu: handleRowContextMenu,
+      namesByFilename,
+      archived: false
+    }),
+    [
+      filteredActive,
+      selectedFile,
+      selectedPaths,
+      handleRowClick,
+      handleRowContextMenu,
+      namesByFilename
+    ]
+  )
 
   const noun = (title || '').toLowerCase()
   const newTooltip = `New ${entityLabel || title || 'file'}`
@@ -555,15 +583,7 @@ export default function EditorFileListPanel({
                   rowCount={filteredActive.length}
                   rowHeight={ITEM_HEIGHT}
                   rowComponent={VirtualRow}
-                  rowProps={{
-                    items: filteredActive,
-                    selectedFile,
-                    selectedPaths,
-                    onRowClick: handleRowClick,
-                    onRowContextMenu: handleRowContextMenu,
-                    namesByFilename,
-                    archived: false
-                  }}
+                  rowProps={activeRowProps}
                 />
               )}
               {filteredActive.length === 0 && showArchived && (
