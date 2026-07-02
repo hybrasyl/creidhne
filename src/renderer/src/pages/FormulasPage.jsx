@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRecoilValue } from 'recoil'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
 import SettingsIcon from '@mui/icons-material/Settings'
 import CallSplitIcon from '@mui/icons-material/CallSplit'
@@ -365,11 +366,6 @@ function FormulasPage() {
   const extraActions = useMemo(
     () => [
       {
-        icon: <CallSplitIcon fontSize="small" />,
-        tooltip: 'New Hybrid (direct + over-time pair)',
-        onClick: () => guard(() => setHybridOpen(true))
-      },
-      {
         icon: <FileUploadIcon fontSize="small" />,
         tooltip: 'Import from Lua',
         onClick: () => guard(doImport)
@@ -382,6 +378,16 @@ function FormulasPage() {
     ],
     [guard, doImport]
   )
+
+  // The + button offers both create paths so the toolbar stays uncluttered.
+  const newMenuItems = [
+    { label: 'New Formula', icon: <AddIcon fontSize="small" />, onClick: handleNew },
+    {
+      label: 'New Hybrid…',
+      icon: <CallSplitIcon fontSize="small" />,
+      onClick: () => guard(() => setHybridOpen(true))
+    }
+  ]
 
   return (
     <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
@@ -402,6 +408,7 @@ function FormulasPage() {
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
         extraActions={extraActions}
+        newMenuItems={newMenuItems}
       />
       <Box
         sx={{

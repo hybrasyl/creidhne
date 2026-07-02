@@ -158,8 +158,13 @@ export default function EditorFileListPanel({
   onSelectionChange,
   // Page-specific extra IconButton entries rendered before the New button.
   // Shape: [{ icon: ReactNode, tooltip: string, onClick: () => void, disabled?: boolean }]
-  extraActions
+  extraActions,
+  // Optional: turn the New (+) button into a dropdown of create options instead
+  // of a single onNew. Shape: [{ label: string, onClick: () => void, icon?: ReactNode }].
+  // When omitted, the + button calls onNew directly (default behavior).
+  newMenuItems
 }) {
+  const [newMenuAnchor, setNewMenuAnchor] = useState(null)
   const [search, setSearch] = useState('')
   const [listRef, listSize] = useAutoSize()
   const [selectedPaths, setSelectedPaths] = useState(() => new Set())
@@ -463,15 +468,43 @@ export default function EditorFileListPanel({
               </span>
             </Tooltip>
           ))}
-          <Tooltip title={newTooltip}>
+          <Tooltip title={newMenuItems?.length ? 'Create…' : newTooltip}>
             <span>
-              <IconButton size="small" onClick={onNew}>
+              <IconButton
+                size="small"
+                onClick={(e) =>
+                  newMenuItems?.length ? setNewMenuAnchor(e.currentTarget) : onNew?.()
+                }
+                aria-label={newTooltip}
+              >
                 <AddIcon fontSize="small" />
               </IconButton>
             </span>
           </Tooltip>
         </Box>
       </Box>
+
+      {/* New (+) dropdown — only when newMenuItems provided */}
+      <Menu
+        open={!!newMenuAnchor}
+        anchorEl={newMenuAnchor}
+        onClose={() => setNewMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {(newMenuItems || []).map((item, i) => (
+          <MenuItem
+            key={i}
+            onClick={() => {
+              setNewMenuAnchor(null)
+              item.onClick?.()
+            }}
+          >
+            {item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
+            {item.label}
+          </MenuItem>
+        ))}
+      </Menu>
 
       {/* Row 3 — filter input */}
       <Box sx={{ px: 1, pb: 1 }}>
