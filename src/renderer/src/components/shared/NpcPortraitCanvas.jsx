@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getNpcPortraitBitmap } from '../../data/npcPortraitData'
+import { getPackAssetUrl } from '../../data/packAssetCache'
 
 /**
  * Renders an NPC portrait SPF to a fixed-size canvas, scaled-to-fit while
@@ -60,8 +61,7 @@ export default function NpcPortraitCanvas({ filename, size = 96, preferPack }) {
         })
 
     if (effectivePreferPack) {
-      window.electronAPI
-        .resolvePackAsset('npcportrait', filename)
+      getPackAssetUrl('npcportrait', filename)
         .then((dataUrl) => {
           if (cancelled) return
           if (!dataUrl) return drawVanilla()

@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import { useRecoilValue } from 'recoil'
 import { clientPathState, packCoverageState } from '../../recoil/atoms'
 import { getCreatureMeta, getCreatureFrameBitmap } from '../../data/creatureSpriteData'
+import { getPackAssetUrl } from '../../data/packAssetCache'
 
 const FRAME_INTERVAL_MS = 200
 
@@ -98,7 +99,7 @@ export default function CreatureSpriteCanvas({ value, size, animate = false, pre
 
     ;(async () => {
       if (effectivePreferPack) {
-        const dataUrl = await window.electronAPI.resolvePackAsset('creature', id)
+        const dataUrl = await getPackAssetUrl('creature', id)
         if (cancelled) return
         if (dataUrl) {
           // Pack override is a single static master — draw it, no animation.
