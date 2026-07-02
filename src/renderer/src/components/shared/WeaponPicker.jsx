@@ -37,20 +37,19 @@ export default function WeaponPicker({
   onMaxDmgChange
 }) {
   const libraryIndex = useRecoilValue(libraryIndexState)
-  const itemWeaponDamage = libraryIndex.itemWeaponDamage || {}
 
   // Materialise itemWeaponDamage into a list of { name, minDmg, maxDmg }
   // using only the small-damage column. Sorted by name for predictable UX.
   const weapons = useMemo(
     () =>
-      Object.entries(itemWeaponDamage)
+      Object.entries(libraryIndex.itemWeaponDamage || {})
         .map(([name, d]) => ({
           name,
           minDmg: String(d.smallMin ?? ''),
           maxDmg: String(d.smallMax ?? '')
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
-    [itemWeaponDamage]
+    [libraryIndex.itemWeaponDamage]
   )
 
   const options = useMemo(() => [CUSTOM_OPTION, ...weapons], [weapons])

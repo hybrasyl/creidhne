@@ -1418,12 +1418,12 @@ function SpellBooksTab({ spellBooks, onChange, activeLibrary, libraryIndex, onIn
     setRightSel(new Set())
   }, [selectedBookId, selectedBook])
 
-  const allCastables = libraryIndex?.castables || []
   const available = useMemo(() => {
+    const allCastables = libraryIndex?.castables || []
     const inBook = new Set(draft.castables)
     const q = search.trim().toLowerCase()
     return allCastables.filter((n) => !inBook.has(n) && (!q || n.toLowerCase().includes(q)))
-  }, [allCastables, draft.castables, search])
+  }, [libraryIndex?.castables, draft.castables, search])
 
   const handleNew = () => {
     const id = crypto.randomUUID()

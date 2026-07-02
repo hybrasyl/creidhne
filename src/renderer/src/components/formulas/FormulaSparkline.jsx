@@ -11,11 +11,12 @@ import { Box, Typography } from '@mui/material'
  *   height — viewport CSS height (default 80)
  *   xLabel — optional label for the x-axis ("Level 1 … 99")
  */
-export default function FormulaSparkline({ lines, width = 240, height = 80, xLabel }) {
-  const vbW = 100
-  const vbH = 40
-  const pad = { t: 2, r: 4, b: 2, l: 4 }
+// Fixed SVG viewbox + padding (stable module constants so they aren't memo deps).
+const vbW = 100
+const vbH = 40
+const pad = { t: 2, r: 4, b: 2, l: 4 }
 
+export default function FormulaSparkline({ lines, width = 240, height = 80, xLabel }) {
   const { svgLines, xRange, yRange } = useMemo(() => {
     if (!lines?.length) return { svgLines: [], xRange: [0, 1], yRange: [0, 1] }
     const all = lines.flatMap((l) => l.points)
