@@ -10,7 +10,7 @@ const mockFs = {
 vi.mock('fs', () => ({ promises: mockFs }))
 vi.mock('crypto', () => ({ randomUUID: () => 'test-uuid-1234' }))
 
-const { getFormulasPath, loadFormulas, saveFormulas, importFormulas } =
+const { getFormulasPath, loadFormulas, saveFormulas, importFormulas, migrateCoefficientKeys } =
   await import('../formulasJson.js')
 
 beforeEach(() => {
@@ -26,6 +26,59 @@ describe('getFormulasPath', () => {
     expect(getFormulasPath('/worlds/test/xml')).toBe(
       join('/worlds/test/xml', '..', '.creidhne', 'formulas.json')
     )
+  })
+})
+
+// ── migrateCoefficientKeys (HDOT → HYOT) ─────────────────────────────────────
+
+describe('migrateCoefficientKeys', () => {
+  it('renames *_HDOT coefficient keys to *_HYOT', () => {
+    const out = migrateCoefficientKeys({
+      coefficients: {
+        DMG_ST: { spell: 1, skill: 0.8 },
+        DMG_ST_HDOT: { spell: 0.5, skill: 0.4 },
+        HEAL_AOE_HDOT: { spell: 0.3, skill: null }
+      }
+    })
+    expect(out.coefficients).toEqual({
+      DMG_ST: { spell: 1, skill: 0.8 },
+      DMG_ST_HYOT: { spell: 0.5, skill: 0.4 },
+      HEAL_AOE_HYOT: { spell: 0.3, skill: null }
+    })
+  })
+
+  it('is a no-op when there are no legacy keys', () => {
+    const settings = { coefficients: { DMG_ST: { spell: 1, skill: 1 } } }
+    expect(migrateCoefficientKeys(settings)).toBe(settings)
+  })
+
+  it('keeps an existing *_HYOT value over a stale *_HDOT on collision', () => {
+    const out = migrateCoefficientKeys({
+      coefficients: {
+        DMG_ST_HYOT: { spell: 9, skill: 9 },
+        DMG_ST_HDOT: { spell: 1, skill: 1 }
+      }
+    })
+    expect(out.coefficients).toEqual({ DMG_ST_HYOT: { spell: 9, skill: 9 } })
+  })
+
+  it('tolerates missing coefficients', () => {
+    expect(migrateCoefficientKeys({})).toEqual({})
+    expect(migrateCoefficientKeys(undefined)).toBeUndefined()
+  })
+})
+
+describe('loadFormulas — coefficient migration', () => {
+  it('renames legacy HDOT coefficient keys on load', async () => {
+    mockFs.readFile.mockResolvedValue(
+      JSON.stringify({
+        settings: { coefficients: { DMG_ST_HDOT: { spell: 0.5, skill: 0.4 } } },
+        patterns: [],
+        formulas: []
+      })
+    )
+    const data = await loadFormulas('/worlds/test/xml')
+    expect(data.settings.coefficients).toEqual({ DMG_ST_HYOT: { spell: 0.5, skill: 0.4 } })
   })
 })
 

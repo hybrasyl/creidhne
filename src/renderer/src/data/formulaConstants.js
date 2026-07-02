@@ -57,9 +57,9 @@ export const COEFFICIENT_GROUPS = [
         description: 'Direct portion of a hybrid ST spell'
       },
       {
-        key: 'DMG_ST_HDOT',
-        label: 'Single Target Hybrid DOT',
-        description: 'DOT portion of a hybrid ST spell'
+        key: 'DMG_ST_HYOT',
+        label: 'Single Target Hybrid over-time (HyoT)',
+        description: 'Over-time portion of a hybrid ST spell'
       },
       { key: 'DMG_AOE', label: 'AOE', description: 'Direct area-of-effect damage' },
       { key: 'DMG_AOE_DOT', label: 'AOE DOT', description: 'Area-of-effect damage over time' },
@@ -69,9 +69,9 @@ export const COEFFICIENT_GROUPS = [
         description: 'Direct portion of a hybrid AOE spell'
       },
       {
-        key: 'DMG_AOE_HDOT',
-        label: 'AOE Hybrid DOT',
-        description: 'DOT portion of a hybrid AOE spell'
+        key: 'DMG_AOE_HYOT',
+        label: 'AOE Hybrid over-time (HyoT)',
+        description: 'Over-time portion of a hybrid AOE spell'
       },
       { key: 'DMG_ASSAIL', label: 'Assail', description: 'Assail (skill only)', skillOnly: true }
     ]
@@ -92,9 +92,9 @@ export const COEFFICIENT_GROUPS = [
         description: 'Direct portion of a hybrid ST heal'
       },
       {
-        key: 'HEAL_ST_HDOT',
-        label: 'Single Target Hybrid HOT',
-        description: 'HOT portion of a hybrid ST heal'
+        key: 'HEAL_ST_HYOT',
+        label: 'Single Target Hybrid over-time (HyoT)',
+        description: 'Over-time (HOT) portion of a hybrid ST heal'
       },
       { key: 'HEAL_AOE', label: 'AOE', description: 'Direct area-of-effect heal' },
       { key: 'HEAL_AOE_HOT', label: 'AOE HOT', description: 'Area-of-effect heal over time' },
@@ -104,9 +104,9 @@ export const COEFFICIENT_GROUPS = [
         description: 'Direct portion of a hybrid AOE heal'
       },
       {
-        key: 'HEAL_AOE_HDOT',
-        label: 'AOE Hybrid HOT',
-        description: 'HOT portion of a hybrid AOE heal'
+        key: 'HEAL_AOE_HYOT',
+        label: 'AOE Hybrid over-time (HyoT)',
+        description: 'Over-time (HOT) portion of a hybrid AOE heal'
       }
     ]
   },
@@ -130,9 +130,9 @@ export const COEFFICIENT_GROUPS = [
         description: 'Direct portion of a hybrid ST conversion'
       },
       {
-        key: 'CONV_ST_HDOT',
-        label: 'Single Target Hybrid DOT',
-        description: 'DOT portion of a hybrid ST conversion'
+        key: 'CONV_ST_HYOT',
+        label: 'Single Target Hybrid over-time (HyoT)',
+        description: 'Over-time portion of a hybrid ST conversion'
       },
       { key: 'CONV_AOE', label: 'AOE', description: 'Direct area-of-effect conversion' },
       { key: 'CONV_AOE_DOT', label: 'AOE DOT', description: 'Area-of-effect conversion over time' },
@@ -142,9 +142,9 @@ export const COEFFICIENT_GROUPS = [
         description: 'Direct portion of a hybrid AOE conversion'
       },
       {
-        key: 'CONV_AOE_HDOT',
-        label: 'AOE Hybrid DOT',
-        description: 'DOT portion of a hybrid AOE conversion'
+        key: 'CONV_AOE_HYOT',
+        label: 'AOE Hybrid over-time (HyoT)',
+        description: 'Over-time portion of a hybrid AOE conversion'
       }
     ]
   },

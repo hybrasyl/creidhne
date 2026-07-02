@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { ASSAIL_KEY, buildCoefficientKey, resolveCoefficient } from '../utils/formulaCoefficients'
+import {
+  ASSAIL_KEY,
+  buildCoefficientKey,
+  resolveCoefficient,
+  applyHybridSplit
+} from '../utils/formulaCoefficients'
 import { ALL_COEFFICIENT_KEYS } from '../data/formulaConstants'
 
 // ── buildCoefficientKey ──────────────────────────────────────────────────────
@@ -22,10 +27,10 @@ describe('buildCoefficientKey', () => {
 
   it('keeps hybrid suffixes uniform across effects', () => {
     expect(buildCoefficientKey('DMG', 'ST', 'HDIR')).toBe('DMG_ST_HDIR')
-    expect(buildCoefficientKey('DMG', 'ST', 'HDOT')).toBe('DMG_ST_HDOT')
-    // heal hybrid over-time is HDOT, NOT HHOT
+    expect(buildCoefficientKey('DMG', 'ST', 'HYOT')).toBe('DMG_ST_HYOT')
+    // heal hybrid over-time is HYOT, NOT HHOT
     expect(buildCoefficientKey('HEAL', 'ST', 'HDIR')).toBe('HEAL_ST_HDIR')
-    expect(buildCoefficientKey('HEAL', 'ST', 'HDOT')).toBe('HEAL_ST_HDOT')
+    expect(buildCoefficientKey('HEAL', 'ST', 'HYOT')).toBe('HEAL_ST_HYOT')
   })
 
   it('returns the Assail key for damage skills regardless of delivery', () => {
@@ -40,7 +45,7 @@ describe('buildCoefficientKey', () => {
     // every key the editor can build for the shared set is a real catalog key.
     for (const effect of effects) {
       for (const targeting of targetings) {
-        for (const delivery of ['DIRECT', 'DOT', 'HDIR', 'HDOT']) {
+        for (const delivery of ['DIRECT', 'DOT', 'HDIR', 'HYOT']) {
           const key = buildCoefficientKey(effect, targeting, delivery)
           // SHIELD has no over-time/hybrid variants in the catalog — skip those.
           if (effect === 'SHIELD' && delivery !== 'DIRECT') continue
@@ -98,5 +103,31 @@ describe('resolveCoefficient', () => {
     const ref = { budgetDimension: 'cd', cooldown: 100 }
     // delta would be 0.94, capped to 0.02 → 1.02
     expect(resolveCoefficient(coeffs, 'DMG_ST', 'spell', bm, ref)).toBe(1.02)
+  })
+})
+
+// ── applyHybridSplit ─────────────────────────────────────────────────────────
+
+describe('applyHybridSplit', () => {
+  it('scales the coefficient by the split percentage for hybrid deliveries', () => {
+    expect(applyHybridSplit(1.0, 'HDIR', 60)).toBe(0.6)
+    expect(applyHybridSplit(1.0, 'HYOT', 40)).toBe(0.4)
+    expect(applyHybridSplit(0.5, 'HDIR', 50)).toBe(0.25)
+  })
+
+  it('leaves non-hybrid deliveries unchanged', () => {
+    expect(applyHybridSplit(1.0, 'DIRECT', 60)).toBe(1.0)
+    expect(applyHybridSplit(1.0, 'DOT', 60)).toBe(1.0)
+  })
+
+  it('passes through when the coefficient or split is unset', () => {
+    expect(applyHybridSplit(null, 'HDIR', 60)).toBeNull()
+    expect(applyHybridSplit(1.0, 'HDIR', null)).toBe(1.0)
+    expect(applyHybridSplit(1.0, 'HDIR', '')).toBe(1.0)
+  })
+
+  it('handles 0% and 100% splits', () => {
+    expect(applyHybridSplit(1.0, 'HDIR', 0)).toBe(0)
+    expect(applyHybridSplit(1.0, 'HYOT', 100)).toBe(1.0)
   })
 })

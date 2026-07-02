@@ -55,6 +55,29 @@ function migrateIfNeeded(data) {
   return migrated
 }
 
+/**
+ * Rename legacy hybrid over-time coefficient keys (`*_HDOT`) to their current
+ * name (`*_HYOT`). Returns a new settings object; never mutates the input. A
+ * pre-existing `*_HYOT` value wins over a stale `*_HDOT` on collision.
+ */
+export function migrateCoefficientKeys(settings) {
+  const coeffs = settings?.coefficients
+  if (!coeffs) return settings
+  const next = {}
+  let changed = false
+  // Copy the already-current keys first so they take precedence on collision.
+  for (const [k, v] of Object.entries(coeffs)) {
+    if (!k.endsWith('_HDOT')) next[k] = v
+  }
+  for (const [k, v] of Object.entries(coeffs)) {
+    if (!k.endsWith('_HDOT')) continue
+    changed = true
+    const target = `${k.slice(0, -'_HDOT'.length)}_HYOT`
+    if (!(target in next)) next[target] = v
+  }
+  return changed ? { ...settings, coefficients: next } : settings
+}
+
 export function getFormulasPath(libraryPath) {
   return getCreidhneFilePath(libraryPath, 'formulas.json')
 }
@@ -64,7 +87,7 @@ export async function loadFormulas(libraryPath) {
     const raw = JSON.parse(await fs.readFile(getFormulasPath(libraryPath), 'utf-8'))
     const data = migrateIfNeeded(raw)
     return {
-      settings: { ...DEFAULT_SETTINGS, ...data.settings },
+      settings: migrateCoefficientKeys({ ...DEFAULT_SETTINGS, ...data.settings }),
       patterns: data.patterns || [],
       formulas: data.formulas || []
     }

@@ -33,7 +33,9 @@ import { assembleFormula } from '../../utils/formulaAssembly'
 import {
   ASSAIL_KEY,
   buildCoefficientKey,
-  resolveCoefficient
+  resolveCoefficient,
+  applyHybridSplit,
+  HYBRID_DELIVERIES
 } from '../../utils/formulaCoefficients'
 
 const CATEGORIES = ['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general']
@@ -140,6 +142,8 @@ function FormulaEditor({
   const [coeffEffect, setCoeffEffect] = useState(formula.coeffEffect || 'DMG')
   const [coeffTargeting, setCoeffTargeting] = useState(formula.coeffTargeting || 'ST')
   const [coeffDelivery, setCoeffDelivery] = useState(formula.coeffDelivery || 'DIRECT')
+  // Hybrid split: this portion's % of the pair (only meaningful for HDIR/HYOT).
+  const [hybridSplit, setHybridSplit] = useState(formula.hybridSplit ?? 50)
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -177,6 +181,7 @@ function FormulaEditor({
     setCoeffEffect(formula.coeffEffect || 'DMG')
     setCoeffTargeting(formula.coeffTargeting || 'ST')
     setCoeffDelivery(formula.coeffDelivery || 'DIRECT')
+    setHybridSplit(formula.hybridSplit ?? 50)
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
@@ -237,6 +242,15 @@ function FormulaEditor({
     [settings, coeffKey, spellOrSkill, castableRef]
   )
 
+  const isHybrid = HYBRID_DELIVERIES.has(coeffDelivery)
+
+  // Effective coefficient after the hybrid split scales the resolved value.
+  // Non-hybrid deliveries pass through unchanged.
+  const splitCoefficient = useMemo(
+    () => applyHybridSplit(resolvedCoefficient, coeffDelivery, hybridSplit),
+    [resolvedCoefficient, coeffDelivery, hybridSplit]
+  )
+
   // ── Assembled formula ─────────────────────────────────────────────────────
   const assembledFormula = useMemo(() => {
     if (!selectedPattern) return ''
@@ -254,11 +268,11 @@ function FormulaEditor({
       if (p.type === 'coefficient') {
         const overrideKey = '_override_Coefficient'
         resolved[p.key] =
-          paramValues[overrideKey] != null ? paramValues[overrideKey] : (resolvedCoefficient ?? 0)
+          paramValues[overrideKey] != null ? paramValues[overrideKey] : (splitCoefficient ?? 0)
       }
     }
     return assembleFormula(selectedPattern.ncalc, resolved, selectedPattern.parameters)
-  }, [selectedPattern, paramValues, settings, resolvedCoefficient])
+  }, [selectedPattern, paramValues, settings, splitCoefficient])
 
   // Preview-only: substitute ACQUIREDLEVEL with the resolved value. The
   // assembledFormula above stays symbolic — that's what gets saved.
@@ -301,7 +315,9 @@ function FormulaEditor({
       castableCooldown,
       coeffEffect,
       coeffTargeting,
-      coeffDelivery
+      coeffDelivery,
+      // Split is only meaningful for hybrid deliveries; don't pollute other formulas.
+      ...(HYBRID_DELIVERIES.has(coeffDelivery) ? { hybridSplit } : {})
     })
   }
   if (saveRef) saveRef.current = handleSave
@@ -341,24 +357,33 @@ function FormulaEditor({
   }
 
   // ── Delivery options based on ref type ─────────────────────────────────────
-  // Castables: Direct, Hybrid-Direct, or Hybrid-DOT (never pure DOT)
-  // Statuses: always Over Time (DOT/HOT)
+  // Castables carry the instant hit: Direct or the direct portion of a hybrid.
+  // Statuses carry the tick: pure over-time (DoT/HoT) or the over-time portion
+  // of a hybrid (HyoT). The pure over-time label is effect-aware.
   const deliveryOptions = useMemo(() => {
-    if (refType === 'status') return [{ key: 'DOT', label: 'Over Time (DOT/HOT)' }]
-    // Castables do direct damage only — HDOT belongs on the status formula
+    if (refType === 'status') {
+      const overTime = coeffEffect === 'HEAL' ? 'HoT — heal over time' : 'DoT — over time'
+      return [
+        { key: 'DOT', label: overTime },
+        { key: 'HYOT', label: 'HyoT — hybrid over-time portion' }
+      ]
+    }
     return [
       { key: 'DIRECT', label: 'Direct' },
-      { key: 'HDIR', label: 'Hybrid — Direct portion' }
+      { key: 'HDIR', label: 'Hybrid — direct portion' }
     ]
-  }, [refType])
+  }, [refType, coeffEffect])
 
-  // Auto-set delivery when switching ref type
+  // Auto-correct delivery when switching ref type, keeping a value that's still
+  // valid for the new type (status: DOT/HYOT, castable: DIRECT/HDIR).
   useEffect(() => {
-    if (refType === 'status' && coeffDelivery !== 'DOT') {
+    const statusValid = coeffDelivery === 'DOT' || coeffDelivery === 'HYOT'
+    const castableValid = coeffDelivery === 'DIRECT' || coeffDelivery === 'HDIR'
+    if (refType === 'status' && !statusValid) {
       setCoeffDelivery('DOT')
       markDirtyLocal()
     }
-    if (refType === 'castable' && coeffDelivery === 'DOT') {
+    if (refType === 'castable' && !castableValid) {
       setCoeffDelivery('DIRECT')
       markDirtyLocal()
     }
@@ -651,7 +676,25 @@ function FormulaEditor({
                       </Select>
                     </FormControl>
                   )}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {isHybrid && (
+                    <TextField
+                      size="small"
+                      type="number"
+                      label={coeffDelivery === 'HDIR' ? 'Direct %' : 'Over-time %'}
+                      sx={{ width: 110 }}
+                      value={hybridSplit ?? ''}
+                      onChange={(e) => {
+                        markDirtyLocal()
+                        if (e.target.value === '') {
+                          setHybridSplit('')
+                          return
+                        }
+                        setHybridSplit(Math.max(0, Math.min(100, Number(e.target.value))))
+                      }}
+                      slotProps={{ htmlInput: { min: 0, max: 100, step: 5 } }}
+                    />
+                  )}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
                       label={coeffKey}
                       size="small"
@@ -662,8 +705,13 @@ function FormulaEditor({
                       variant="body2"
                       sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                     >
-                      = {resolvedCoefficient ?? '—'}
+                      = {splitCoefficient ?? '—'}
                     </Typography>
+                    {isHybrid && resolvedCoefficient != null && (
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        ({resolvedCoefficient} × {hybridSplit === '' ? 0 : hybridSplit}%)
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
               </Box>
@@ -968,7 +1016,7 @@ function FormulaEditor({
                                         onChange={(e) => {
                                           markDirtyLocal()
                                           if (e.target.checked) {
-                                            updateParam(overrideKey, resolvedCoefficient ?? 0)
+                                            updateParam(overrideKey, splitCoefficient ?? 0)
                                           } else {
                                             updateParam(overrideKey, null)
                                           }
@@ -999,7 +1047,7 @@ function FormulaEditor({
                                     <TextField
                                       size="small"
                                       label="Calculated"
-                                      value={resolvedCoefficient ?? '—'}
+                                      value={splitCoefficient ?? '—'}
                                       disabled
                                       sx={{ width: 120 }}
                                       slotProps={{
@@ -1014,7 +1062,7 @@ function FormulaEditor({
                                         color: 'warning.main'
                                       }}
                                     >
-                                      overrides calculated ({resolvedCoefficient ?? '—'})
+                                      overrides calculated ({splitCoefficient ?? '—'})
                                     </Typography>
                                   )}
                                   <Chip
