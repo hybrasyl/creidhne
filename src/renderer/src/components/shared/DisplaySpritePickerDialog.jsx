@@ -19,8 +19,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { getAvailableDisplaySprites, CATEGORY_DEFAULTS } from '../../data/khanData'
 import DisplaySpriteCanvas from './DisplaySpriteCanvas'
 
@@ -86,7 +85,7 @@ function Cell({
 }
 
 export default function DisplaySpritePickerDialog({ open, category, value, onClose, onChange }) {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [search, setSearch] = useState('')
   const [ids, setIds] = useState(null) // null = loading
   const [gender, setGender] = useState('M')

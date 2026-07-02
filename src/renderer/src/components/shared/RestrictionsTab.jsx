@@ -13,14 +13,13 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import { useRecoilValue } from 'recoil'
 import {
   CLASS_TYPES,
   GENDERS,
   SLOT_RESTRICTION_TYPES,
   EQUIPMENT_SLOTS
 } from '../../data/itemConstants'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 
 const CLASS_OPTIONS = CLASS_TYPES.filter((c) => c !== 'All')
 
@@ -35,7 +34,7 @@ function firstValidClass(value) {
 }
 
 function RestrictionsTab({ data, onChange }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const castableNames = libraryIndex.castables || []
   const npcStringKeys = libraryIndex.npcStringKeys || []
 

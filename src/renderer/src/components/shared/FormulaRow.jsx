@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Button, TextField, Tooltip, IconButton, Typography } from '@mui/material'
 import ClearIcon from '@mui/icons-material/Clear'
-import { useRecoilValue } from 'recoil'
-import { activeLibraryState } from '../../recoil/atoms'
+import { useStoreValue, activeLibraryState } from '../../store/appStore'
 import FormulaPickerDialog from './FormulaPickerDialog'
 
 /**
@@ -22,7 +21,7 @@ import FormulaPickerDialog from './FormulaPickerDialog'
  *   onClear     — () => void
  */
 function FormulaRow({ formulaName, formula, category, onSelect, onClear }) {
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const activeLibrary = useStoreValue(activeLibraryState)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [formulas, setFormulas] = useState([])
   const [formulasLoaded, setFormulasLoaded] = useState(false)

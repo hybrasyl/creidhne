@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useRecoilValue } from 'recoil'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
 import SettingsIcon from '@mui/icons-material/Settings'
 import CallSplitIcon from '@mui/icons-material/CallSplit'
-import { activeLibraryState } from '../recoil/atoms'
+import { useStoreValue, activeLibraryState } from '../store/appStore'
 import FormulaEditor from '../components/formulas/FormulaEditor'
 import FormulaSettingsDialog from '../components/formulas/FormulaSettingsDialog'
 import HybridGeneratorDialog from '../components/formulas/HybridGeneratorDialog'
@@ -33,7 +32,7 @@ function toPseudoFile(formula, archived = false) {
 }
 
 function FormulasPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const activeLibrary = useStoreValue(activeLibraryState)
   const [formulasData, setFormulasData] = useState({ settings: {}, patterns: [], formulas: [] })
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingFormula, setEditingFormula] = useState(null)

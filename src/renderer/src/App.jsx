@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ThemeProvider, CssBaseline } from '@mui/material'
-import { useRecoilState } from 'recoil'
 import {
+  useStoreState,
   themeState,
   librariesState,
   currentPageState,
@@ -17,7 +17,7 @@ import {
   npcPortraitPickerModeState,
   soundPickerModeState,
   creaturePickerModeState
-} from './recoil/atoms' // Import Recoil atoms
+} from './store/appStore'
 import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
 import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
 import { loadPackState } from './hooks/usePackRescan'
@@ -37,25 +37,25 @@ import { stopSound } from './data/soundData'
 
 function App() {
   const hydrateLibraryIndex = useLibraryIndexHydration()
-  const [theme, setTheme] = useRecoilState(themeState)
-  const [libraries, setLibraries] = useRecoilState(librariesState)
-  const [currentPage, setCurrentPage] = useRecoilState(currentPageState) // Manage current page with Recoil
-  const [activeLibrary, setActiveLibrary] = useRecoilState(activeLibraryState)
-  const [clientPath, setClientPath] = useRecoilState(clientPathState)
-  const [taliesinPath, setTaliesinPath] = useRecoilState(taliesinPathState)
-  const [brigidAssetsPath, setBrigidAssetsPath] = useRecoilState(brigidAssetsPathState)
-  const [dirtyEditor, setDirtyEditor] = useRecoilState(dirtyEditorState)
-  const [, setActivePacks] = useRecoilState(activePacksState)
-  const [, setPackCoverage] = useRecoilState(packCoverageState)
-  const [iconPickerMode, setIconPickerMode] = useRecoilState(iconPickerModeState)
-  const [nationCrestPickerMode, setNationCrestPickerMode] = useRecoilState(
+  const [theme, setTheme] = useStoreState(themeState)
+  const [libraries, setLibraries] = useStoreState(librariesState)
+  const [currentPage, setCurrentPage] = useStoreState(currentPageState)
+  const [activeLibrary, setActiveLibrary] = useStoreState(activeLibraryState)
+  const [clientPath, setClientPath] = useStoreState(clientPathState)
+  const [taliesinPath, setTaliesinPath] = useStoreState(taliesinPathState)
+  const [brigidAssetsPath, setBrigidAssetsPath] = useStoreState(brigidAssetsPathState)
+  const [dirtyEditor, setDirtyEditor] = useStoreState(dirtyEditorState)
+  const [, setActivePacks] = useStoreState(activePacksState)
+  const [, setPackCoverage] = useStoreState(packCoverageState)
+  const [iconPickerMode, setIconPickerMode] = useStoreState(iconPickerModeState)
+  const [nationCrestPickerMode, setNationCrestPickerMode] = useStoreState(
     nationCrestPickerModeState
   )
-  const [npcPortraitPickerMode, setNpcPortraitPickerMode] = useRecoilState(
+  const [npcPortraitPickerMode, setNpcPortraitPickerMode] = useStoreState(
     npcPortraitPickerModeState
   )
-  const [soundPickerMode, setSoundPickerMode] = useRecoilState(soundPickerModeState)
-  const [creaturePickerMode, setCreaturePickerMode] = useRecoilState(creaturePickerModeState)
+  const [soundPickerMode, setSoundPickerMode] = useStoreState(soundPickerModeState)
+  const [creaturePickerMode, setCreaturePickerMode] = useStoreState(creaturePickerModeState)
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)

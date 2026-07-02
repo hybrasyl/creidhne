@@ -20,8 +20,13 @@ import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
-import { useRecoilValue, useRecoilState } from 'recoil'
-import { clientPathState, packCoverageState, nationCrestPickerModeState } from '../../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  clientPathState,
+  packCoverageState,
+  nationCrestPickerModeState
+} from '../../store/appStore'
 import {
   useNationCrestIndex,
   getAvailableCrestPalettes,
@@ -84,10 +89,10 @@ function Cell({
 
 export default function NationCrestPickerDialog({ open, value, onClose, onChange }) {
   useRescanPacksOnOpen(open)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const index = useNationCrestIndex()
-  const packCoverage = useRecoilValue(packCoverageState)
-  const [mode, setMode] = useRecoilState(nationCrestPickerModeState)
+  const packCoverage = useStoreValue(packCoverageState)
+  const [mode, setMode] = useStoreState(nationCrestPickerModeState)
   const [search, setSearch] = useState('')
   const [palettes, setPalettes] = useState(null)
   const [paletteKey, setPaletteKey] = useState(null) // 'pattern|number' string

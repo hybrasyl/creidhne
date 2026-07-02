@@ -33,8 +33,7 @@ import {
   GiExpand,
   GiDeathSkull
 } from 'react-icons/gi'
-import { useRecoilValue } from 'recoil'
-import { taliesinPathState, currentPageState } from '../recoil/atoms'
+import { useStoreValue, taliesinPathState, currentPageState } from '../store/appStore'
 import AboutDialog from './AboutDialog'
 
 const iconSx = {
@@ -78,8 +77,8 @@ const winBtnSx = {
 
 const MainToolbar = ({ navigate }) => {
   const [aboutOpen, setAboutOpen] = useState(false)
-  const taliesinPath = useRecoilValue(taliesinPathState)
-  const currentPage = useRecoilValue(currentPageState)
+  const taliesinPath = useStoreValue(taliesinPathState)
+  const currentPage = useStoreValue(currentPageState)
   const pageSx = (page) => (currentPage === page ? activeBtnSx : btnSx)
 
   const handleLaunchTaliesin = async () => {

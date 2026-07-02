@@ -9,11 +9,10 @@
 // If the same id exists in both formats, EFA is preferred (richer / newer).
 
 import { useState, useEffect } from 'react'
-import { useRecoilValue } from 'recoil'
 import { EpfFile, EfaFile, PaletteLookup, renderEpf, renderEfa } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreValue, clientPathState } from '../store/appStore'
 
 const ARCHIVE = 'roh.dat'
 
@@ -292,7 +291,7 @@ registerCacheClearer(clearEffectCache)
 
 /** React hook — sorted visible effect id list for current clientPath. */
 export function useEffectIndex() {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [result, setResult] = useState(() => indexCache.get(clientPath) || null)
   useEffect(() => {
     if (!clientPath) {

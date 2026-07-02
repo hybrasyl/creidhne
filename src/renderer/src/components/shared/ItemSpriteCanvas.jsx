@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Box } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { getItemSpriteBitmap } from '../../data/itemSpriteData'
 
 /**
@@ -11,7 +10,7 @@ import { getItemSpriteBitmap } from '../../data/itemSpriteData'
  * blank (caller provides the surrounding placeholder chrome).
  */
 export default function ItemSpriteCanvas({ value, size, color = '' }) {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const canvasRef = useRef(null)
 
   useEffect(() => {

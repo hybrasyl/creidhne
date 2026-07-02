@@ -24,8 +24,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import GridViewIcon from '@mui/icons-material/GridView'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import NpcPortraitCanvas from '../shared/NpcPortraitCanvas'
 import NpcPortraitPickerDialog from '../shared/NpcPortraitPickerDialog'
@@ -90,7 +89,7 @@ function Section({ title, open, onToggle, enabled, onEnable, children }) {
 
 // ── Nation autocomplete ───────────────────────────────────────────────────────
 function NationPicker({ label, value, onChange, sx }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const nationNames = libraryIndex.nations || []
   return (
     <Autocomplete
@@ -144,7 +143,7 @@ function NPCEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const itemNames = libraryIndex.items || []
   const castableNames = libraryIndex.castables || []
   const castableClasses = libraryIndex.castableClasses || {}

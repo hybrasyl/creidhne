@@ -3,11 +3,10 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import ClearIcon from '@mui/icons-material/Clear'
 import HelpIcon from '@mui/icons-material/Help'
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch'
-import { useRecoilState } from 'recoil'
-import { taliesinPathState } from '../recoil/atoms'
+import { useStoreState, taliesinPathState } from '../store/appStore'
 
 const TaliesinPathSection = () => {
-  const [taliesinPath, setTaliesinPath] = useRecoilState(taliesinPathState)
+  const [taliesinPath, setTaliesinPath] = useStoreState(taliesinPathState)
 
   const handleBrowse = async () => {
     const file = await window.electronAPI.openExeFile()

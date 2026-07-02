@@ -31,8 +31,7 @@ import DisplaySpritePicker from '../shared/DisplaySpritePicker'
 import ColorSwatch from '../shared/ColorSwatch'
 import { useItemColorSwatches } from '../../data/itemColorData'
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 
 function deriveVariantPrefix(fileName, name) {
   if (!fileName) return 'vg'
@@ -411,7 +410,7 @@ function VariantEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
 
   const [data, setData] = useState(variantGroup)
   const [prefix, setPrefix] = useState(deriveVariantPrefix(initialFileName, variantGroup.name))

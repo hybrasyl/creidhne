@@ -18,8 +18,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../store/appStore'
 
 function deriveElementPrefix(fileName, name) {
   if (!fileName) return 'element'
@@ -57,7 +56,7 @@ function ElementTableEditor({
   const theme = useTheme()
   const headerBg = theme.palette.background.paper
   const borderColor = theme.palette.divider
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
 
   const [name, setName] = useState(table.name)
   const [comment, setComment] = useState(table.comment)

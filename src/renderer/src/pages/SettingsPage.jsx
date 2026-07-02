@@ -11,8 +11,7 @@ import {
   Link,
   CircularProgress
 } from '@mui/material'
-import { useRecoilState } from 'recoil'
-import { themeState } from '../recoil/atoms'
+import { useStoreState, themeState } from '../store/appStore'
 import ManageLibraries from '../components/ManageLibraries'
 import DAClientPathSection from '../components/DAClientPathSection'
 import TaliesinPathSection from '../components/TaliesinPathSection'
@@ -26,7 +25,7 @@ const THEMES = [
 ]
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
-  const [theme, setTheme] = useRecoilState(themeState)
+  const [theme, setTheme] = useStoreState(themeState)
   const [updateChecking, setUpdateChecking] = useState(false)
   const [updateResult, setUpdateResult] = useState(null)
 

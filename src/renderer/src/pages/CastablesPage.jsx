@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useRecoilValue, useRecoilState } from 'recoil'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  activeLibraryState,
+  libraryIndexState
+} from '../store/appStore'
 import CastableEditor from '../components/castables/CastableEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
@@ -18,8 +22,8 @@ function makeDefaultCastable() {
 }
 
 function CastablesPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.castablesNamesByFilename
   const [files, setFiles] = useState([])
   const [archivedFiles, setArchivedFiles] = useState([])

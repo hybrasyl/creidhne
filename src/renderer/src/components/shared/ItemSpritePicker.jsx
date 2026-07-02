@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import ItemSpriteCanvas from './ItemSpriteCanvas'
 import ItemSpritePickerDialog from './ItemSpritePickerDialog'
 
@@ -19,7 +18,7 @@ export default function ItemSpritePicker({
   color = ''
 }) {
   const [open, setOpen] = useState(false)
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
 
   const handleSelect = (id) => {
     onChange(String(id))

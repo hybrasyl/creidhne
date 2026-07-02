@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Box } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { clientPathState, packCoverageState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState, packCoverageState } from '../../store/appStore'
 import { getNationCrestBitmap } from '../../data/nationCrestData'
 import { getPackAssetUrl } from '../../data/packAssetCache'
 
@@ -21,8 +20,8 @@ import { getPackAssetUrl } from '../../data/packAssetCache'
  *                     actually sees.
  */
 export default function NationCrestCanvas({ flagNum, size = 80, paletteOverride, preferPack }) {
-  const clientPath = useRecoilValue(clientPathState)
-  const packCoverage = useRecoilValue(packCoverageState)
+  const clientPath = useStoreValue(clientPathState)
+  const packCoverage = useStoreValue(packCoverageState)
   const canvasRef = useRef(null)
 
   // Explicit prop (from the dialog toggle) wins; otherwise prefer the pack

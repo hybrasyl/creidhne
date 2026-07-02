@@ -12,11 +12,10 @@
 // in your archive, check the diagnostic log and update `PALETTE_PATTERN`.
 
 import { useState, useEffect } from 'react'
-import { useRecoilValue } from 'recoil'
 import { EpfFile, Palette, renderEpf } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, registerCacheClearer } from '../utils/daClient'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreValue, clientPathState } from '../store/appStore'
 
 const EPF_ARCHIVE = 'legend.dat'
 const FRAMES_PER_EPF = 266
@@ -189,7 +188,7 @@ registerCacheClearer(clearIconCache)
 
 /** React hook — { total, visibleIds } for (clientPath, type). */
 export function useIconIndex(type) {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const [result, setResult] = useState(() => indexCache.get(`${clientPath}|${type}`) || null)
   useEffect(() => {
     if (!clientPath || !type) {

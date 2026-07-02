@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useRecoilValue, useRecoilState } from 'recoil'
 import { Box, Typography, Alert, Snackbar } from '@mui/material'
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  activeLibraryState,
+  libraryIndexState
+} from '../store/appStore'
 import ServerConfigEditor from '../components/serverconfigs/ServerConfigEditor'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
@@ -57,8 +61,8 @@ export const DEFAULT_SERVERCONFIG = {
 }
 
 function ServerConfigPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.serverconfigsNamesByFilename
   const [files, setFiles] = useState([])
   const [archivedFiles, setArchivedFiles] = useState([])

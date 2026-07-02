@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, CircularProgress } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { getEffectFrames } from '../../data/effectData'
 
 // Speed in DA client = milliseconds per frame directly.
@@ -27,7 +26,7 @@ function frameDurationMs(speed, defaultMs) {
  *   playing  — true to loop animation, false to show first frame only
  */
 export default function EffectPreview({ effectId, speed, size = 64, playing = true }) {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const canvasRef = useRef(null)
   const [anim, setAnim] = useState(null) // { width, height, frames }
   const [loading, setLoading] = useState(false)

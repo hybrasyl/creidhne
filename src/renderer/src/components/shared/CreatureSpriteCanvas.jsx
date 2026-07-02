@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { clientPathState, packCoverageState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState, packCoverageState } from '../../store/appStore'
 import { getCreatureMeta, getCreatureFrameBitmap } from '../../data/creatureSpriteData'
 import { getPackAssetUrl } from '../../data/packAssetCache'
 
@@ -23,8 +22,8 @@ const FRAME_INTERVAL_MS = 200
  * actually sees.
  */
 export default function CreatureSpriteCanvas({ value, size, animate = false, preferPack }) {
-  const clientPath = useRecoilValue(clientPathState)
-  const packCoverage = useRecoilValue(packCoverageState)
+  const clientPath = useStoreValue(clientPathState)
+  const packCoverage = useStoreValue(packCoverageState)
   const canvasRef = useRef(null)
   const [hovered, setHovered] = useState(false)
   const id = Number(value)

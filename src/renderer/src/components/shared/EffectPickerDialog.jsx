@@ -13,8 +13,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { Grid } from 'react-window'
-import { useRecoilValue } from 'recoil'
-import { clientPathState } from '../../recoil/atoms'
+import { useStoreValue, clientPathState } from '../../store/appStore'
 import { useEffectIndex } from '../../data/effectData'
 import EffectPreview from './EffectPreview'
 
@@ -58,7 +57,7 @@ function Cell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, speed }
 }
 
 export default function EffectPickerDialog({ open, value, speed, onClose, onChange }) {
-  const clientPath = useRecoilValue(clientPathState)
+  const clientPath = useStoreValue(clientPathState)
   const index = useEffectIndex()
   const [search, setSearch] = useState('')
   const gridRef = useRef(null)

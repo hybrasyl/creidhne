@@ -27,8 +27,12 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import SearchIcon from '@mui/icons-material/Search'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { useRecoilValue, useRecoilState } from 'recoil'
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import {
+  useStoreValue,
+  useStoreState,
+  activeLibraryState,
+  libraryIndexState
+} from '../store/appStore'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 
 const EMPTY_CONSTANTS = {
@@ -1785,8 +1789,8 @@ const TABS = [
 ]
 
 function ConstantsPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const [libraryIndex, setLibraryIndex] = useRecoilState(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const [tab, setTab] = useState(0)
   const [userConstants, setUserConstants] = useState(EMPTY_CONSTANTS)
   const [dirty, setDirty] = useState(false)

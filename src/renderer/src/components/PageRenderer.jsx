@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Box, CircularProgress } from '@mui/material'
-import { useRecoilValue } from 'recoil'
-import { currentPageState } from '../recoil/atoms'
+import { useStoreValue, currentPageState } from '../store/appStore'
 import DashboardPage from '../pages/DashboardPage'
 
 // Dashboard is the default landing page, so it stays in the initial chunk and
@@ -37,7 +36,7 @@ const pageFallback = (
 )
 
 const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
-  const currentPage = useRecoilValue(currentPageState)
+  const currentPage = useStoreValue(currentPageState)
 
   let page
   switch (currentPage) {

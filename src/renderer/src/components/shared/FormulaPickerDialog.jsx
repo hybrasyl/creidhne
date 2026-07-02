@@ -18,8 +18,7 @@ import {
   Checkbox
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import { useRecoilValue } from 'recoil'
-import { activeLibraryState } from '../../recoil/atoms'
+import { useStoreValue, activeLibraryState } from '../../store/appStore'
 
 const CATEGORY_COLORS = {
   damage: 'error',
@@ -41,7 +40,7 @@ const CATEGORY_COLORS = {
  *   category    — optional filter (e.g. 'damage') — pre-filters but user can clear
  */
 function FormulaPickerDialog({ open, onClose, onSelect, category }) {
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const activeLibrary = useStoreValue(activeLibraryState)
   const [formulas, setFormulas] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')

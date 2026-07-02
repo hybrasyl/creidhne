@@ -16,13 +16,12 @@ vi.mock('../../utils/daClient', () => ({
   registerCacheClearer: vi.fn()
 }))
 
-// Recoil is imported by itemColorData (for the React hook); mock it so the
-// import doesn't pull the real recoil bundle into the test environment.
-vi.mock('recoil', () => ({
-  useRecoilValue: vi.fn(),
-  atom: vi.fn()
+// itemColorData uses the app store hook for clientPath; mock it so the import
+// doesn't pull the real store into the test environment.
+vi.mock('../../store/appStore', () => ({
+  useStoreValue: vi.fn(),
+  clientPathState: {}
 }))
-vi.mock('../../recoil/atoms', () => ({ clientPathState: {} }))
 
 const { getItemColorEntry, loadItemColorSwatches, clearItemColorCache } =
   await import('../itemColorData.js')

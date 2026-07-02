@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Box, Typography, Button, Alert, CircularProgress, Paper, Divider } from '@mui/material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
-import { useRecoilValue } from 'recoil'
-import { activeLibraryState } from '../recoil/atoms'
+import { useStoreValue, activeLibraryState } from '../store/appStore'
 
 function ExportsPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
+  const activeLibrary = useStoreValue(activeLibraryState)
   const [status, setStatus] = useState(null) // { type: 'success'|'error'|'info', message: string }
   const [loading, setLoading] = useState(false)
 

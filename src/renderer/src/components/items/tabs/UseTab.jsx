@@ -16,8 +16,7 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import { useRecoilValue } from 'recoil'
-import { libraryIndexState } from '../../../recoil/atoms'
+import { useStoreValue, libraryIndexState } from '../../../store/appStore'
 import SoundPicker from '../../shared/SoundPicker'
 import EffectPicker from '../../shared/EffectPicker'
 import { PROC_EVENT_TYPES } from '../../../data/itemConstants'
@@ -41,7 +40,7 @@ const DEFAULT_PROC = { type: 'OnUse', sourceType: '', castable: '', script: '', 
 // data: { use, motions, procs }
 // onChange: (updated) => void  — updated always includes all three keys
 function UseTab({ data, onChange }) {
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const libraryIndex = useStoreValue(libraryIndexState)
   const castableNames = libraryIndex.castables || []
   const mapNames = libraryIndex.maps || []
   const statusNames = libraryIndex.statuses || []

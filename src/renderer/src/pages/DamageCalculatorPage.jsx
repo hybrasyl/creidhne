@@ -36,8 +36,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
 import FormulaSparkline from '../components/formulas/FormulaSparkline'
-import { useRecoilValue } from 'recoil'
-import { activeLibraryState, libraryIndexState } from '../recoil/atoms'
+import { useStoreValue, activeLibraryState, libraryIndexState } from '../store/appStore'
 import { compile, UnknownVariableError, UnknownFunctionError } from '../utils/formulaEval'
 import {
   RAND_VARIABLES,
@@ -353,8 +352,8 @@ function PlayerResultRow({ player, low, avg, high, onOpenSparkline }) {
 // ── Main page ───────────────────────────────────────────────────────────────
 
 export default function DamageCalculatorPage() {
-  const activeLibrary = useRecoilValue(activeLibraryState)
-  const libraryIndex = useRecoilValue(libraryIndexState)
+  const activeLibrary = useStoreValue(activeLibraryState)
+  const libraryIndex = useStoreValue(libraryIndexState)
 
   // Enumerate + sort the world's weapon items once per index change (the weapon
   // Autocomplete rebuilt this inline on every render / keystroke).

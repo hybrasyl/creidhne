@@ -5,8 +5,7 @@ import ClearIcon from '@mui/icons-material/Clear'
 import HelpIcon from '@mui/icons-material/Help'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
 import HighlightOffIcon from '@mui/icons-material/HighlightOff'
-import { useRecoilState } from 'recoil'
-import { clientPathState } from '../recoil/atoms'
+import { useStoreState, clientPathState } from '../store/appStore'
 import { clearAllClientCaches } from '../utils/daClient'
 // Side-effect imports: register per-picker cache clearers.
 import '../data/itemSpriteData'
@@ -87,7 +86,7 @@ function StatusIndicator({ status, files }) {
 }
 
 const DAClientPathSection = () => {
-  const [clientPath, setClientPath] = useRecoilState(clientPathState)
+  const [clientPath, setClientPath] = useStoreState(clientPathState)
   const [check, setCheck] = useState({ status: 'gray', files: [] })
 
   const refreshCheck = useCallback(async (path) => {
