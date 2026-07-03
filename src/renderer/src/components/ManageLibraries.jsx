@@ -192,10 +192,15 @@ const ManageLibraries = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
         {libraries.map((library) => (
           <ListItem
             key={library}
-            button
             selected={selectedLibrary === library}
             onClick={() => setSelectedLibrary(library)}
-            sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}
+            sx={{
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              py: 1.5,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
               <Typography
