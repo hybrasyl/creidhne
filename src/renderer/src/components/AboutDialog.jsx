@@ -41,6 +41,7 @@ const AboutDialog = ({ open, onClose }) => {
             target="_blank"
             rel="noopener noreferrer"
             variant="body2"
+            color="info"
           >
             hybrasyl.com
           </Link>
@@ -49,6 +50,7 @@ const AboutDialog = ({ open, onClose }) => {
             target="_blank"
             rel="noopener noreferrer"
             variant="body2"
+            color="info"
           >
             GitHub
           </Link>

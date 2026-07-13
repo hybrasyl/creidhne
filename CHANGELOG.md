@@ -25,6 +25,8 @@ this changelog was introduced.
 
 ### Fixed
 
+- About dialog links now use the theme's info color so they're readable on the
+  Hybrasyl theme (they previously used the near-black primary color).
 - Recognize the new `town_maps` asset-pack content type (a Brigid runtime/UI type
   Creidhne doesn't consume) so loading such a pack is silently skipped instead of
   logging an "unknown content_type" warning.
