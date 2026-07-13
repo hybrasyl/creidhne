@@ -5,6 +5,7 @@ import IndexBuildProgress from './IndexBuildProgress'
 function MainLayout({ children, navigate, rightPanel }) {
   return (
     <Box
+      data-testid="app-root"
       sx={{
         display: 'flex',
         flexDirection: 'column',

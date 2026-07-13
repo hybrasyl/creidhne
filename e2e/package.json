@@ -1,0 +1,4 @@
+{
+  "//": "Scopes the E2E specs + helpers to ESM (the repo root is CommonJS) so import.meta and import/export work here.",
+  "type": "module"
+}

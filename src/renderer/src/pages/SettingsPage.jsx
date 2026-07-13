@@ -21,7 +21,9 @@ const THEMES = [
   { value: 'hybrasyl', label: 'Hybrasyl' },
   { value: 'chadul', label: 'Chadul' },
   { value: 'danaan', label: 'Danaan' },
-  { value: 'grinneal', label: 'Grinneal' }
+  { value: 'grinneal', label: 'Grinneal' },
+  { value: 'mundanes', label: 'Mundanes (light)' },
+  { value: 'dubhaimid', label: 'Dubhaimid (dark)' }
 ]
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {

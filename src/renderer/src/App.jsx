@@ -18,7 +18,14 @@ import {
   soundPickerModeState,
   creaturePickerModeState
 } from './store/appStore'
-import { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme } from './themes'
+import {
+  hybrasylTheme,
+  chadulTheme,
+  danaanTheme,
+  grinnealTheme,
+  mundanesTheme,
+  dubhaimidTheme
+} from './themes'
 import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
 import { loadPackState } from './hooks/usePackRescan'
 
@@ -26,7 +33,9 @@ const themes = {
   hybrasyl: hybrasylTheme,
   chadul: chadulTheme,
   danaan: danaanTheme,
-  grinneal: grinnealTheme
+  grinneal: grinnealTheme,
+  mundanes: mundanesTheme,
+  dubhaimid: dubhaimidTheme
 }
 import MainLayout from './components/MainLayout'
 import PageRenderer from './components/PageRenderer'
