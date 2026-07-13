@@ -23,6 +23,12 @@ this changelog was introduced.
 
 ## [Unreleased]
 
+### Fixed
+
+- Recognize the new `town_maps` asset-pack content type (a Brigid runtime/UI type
+  Creidhne doesn't consume) so loading such a pack is silently skipped instead of
+  logging an "unknown content_type" warning.
+
 ## [1.7.0] - 2026-07-02
 
 ### Added
