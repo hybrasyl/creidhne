@@ -171,10 +171,19 @@ jobs:
     if: github.ref_type == 'tag'
 
     steps:
+      # Checkout (the release job otherwise only downloads artifacts) so the
+      # CHANGELOG + extract script are on disk.
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      # Pull this tag's section from CHANGELOG.md into the release body. Missing
+      # section → empty file → the release falls back to the auto notes below.
+      - name: Extract release notes from CHANGELOG
+        run: node scripts/changelog-extract.mjs "${{ github.ref_name }}" > RELEASE_NOTES.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -184,6 +193,9 @@ jobs:
             artifacts/**/*.deb
             artifacts/**/*.AppImage
             artifacts/**/*.dmg
+          # Curated CHANGELOG section on top; generate_release_notes appends the
+          # auto PR list + Full Changelog link below it.
+          body_path: RELEASE_NOTES.md
           generate_release_notes: true
           fail_on_unmatched_files: true
 

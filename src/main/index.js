@@ -184,7 +184,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  electronApp.setAppUserModelId('com.electron')
+  // Must match electron-builder.yml `appId` exactly so Windows groups/pins the
+  // taskbar entry and Task Manager identifies it as Creidhne (not "Electron").
+  electronApp.setAppUserModelId('co.eris.creidhne')
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })

@@ -21,7 +21,9 @@
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
     "fetch-xsd": "node scripts/downloadXSD.js",
-    "convert-xsd": "node scripts/convertXsdToJson.js"
+    "convert-xsd": "node scripts/convertXsdToJson.js",
+    "e2e": "npm run build && playwright test",
+    "e2e:only": "playwright test"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -48,6 +50,7 @@
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/utils": "^4.0.0",
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.61.1",
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^4.1.9",
     "electron": "^41.1.0",

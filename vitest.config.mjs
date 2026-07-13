@@ -3,12 +3,15 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/__tests__/**/*.test.js'],
+    include: ['src/**/__tests__/**/*.test.js', 'scripts/**/*.test.mjs'],
     coverage: {
       provider: 'v8',
       include: ['src/**'],
       exclude: [
         'src/**/__tests__/**',
+        // Release tooling, not app code — has its own unit test but shouldn't
+        // count toward the logic-layer coverage thresholds below.
+        'scripts/**',
         'src/preload/**',
         'src/renderer/src/main.jsx',
         // Glue / worker-thread / network I/O — exercised via integration + manual

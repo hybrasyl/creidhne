@@ -6,6 +6,11 @@ import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/mat
 // bundled import so we don't ship a second copy of the artwork.
 const creidhneLogo = './creidhne-logo.png'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+// Flat window-control glyphs for the "corporate" (plain-chrome) themes, swapped
+// in for the stylized Gi skull/contract/expand on Mundanes & Dubhaimid.
+import RemoveIcon from '@mui/icons-material/Remove'
+import CropSquareIcon from '@mui/icons-material/CropSquare'
+import CloseIcon from '@mui/icons-material/Close'
 import {
   GiRadialBalance,
   GiMagicSwirl,
@@ -33,52 +38,69 @@ import {
   GiExpand,
   GiDeathSkull
 } from 'react-icons/gi'
-import { useStoreValue, taliesinPathState, currentPageState } from '../store/appStore'
+import { useStoreValue, taliesinPathState, currentPageState, themeState } from '../store/appStore'
 import AboutDialog from './AboutDialog'
 
-const iconSx = {
-  '& svg': {
-    fontSize: '1.4em',
-    stroke: 'rgba(0, 0, 0, 0.25)',
-    strokeWidth: 44
-  }
-}
-
-const btnSx = {
-  WebkitAppRegion: 'no-drag',
-  mx: -0.5,
-  color: 'text.button',
-  ...iconSx,
-  '&:hover': {
-    backgroundColor: 'info.main',
-    color: 'text.dark'
-  }
-}
-
-// Highlight the IconButton for whichever page the user is currently viewing.
-// Mirrors taliesin's NavToolbar pattern.
-const activeBtnSx = {
-  ...btnSx,
-  color: 'secondary.dark',
-  backgroundColor: 'rgba(255,255,255,0.08)'
-}
+// The "corporate" themes paint the same navy chrome but want plain, flat window
+// controls: white glyphs with no dark keyline stroke, translucent-white hover,
+// and a red close hover — rather than the stylized skull + cream-on-navy look.
+const PLAIN_CHROME_THEMES = ['mundanes', 'dubhaimid']
 
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
-
-const winBtnSx = {
-  WebkitAppRegion: 'no-drag',
-  color: 'text.button',
-  ...iconSx,
-  '&:hover': {
-    backgroundColor: 'info.main',
-    color: 'text.dark'
-  }
-}
 
 const MainToolbar = ({ navigate }) => {
   const [aboutOpen, setAboutOpen] = useState(false)
   const taliesinPath = useStoreValue(taliesinPathState)
   const currentPage = useStoreValue(currentPageState)
+  const themeName = useStoreValue(themeState)
+  const isPlain = PLAIN_CHROME_THEMES.includes(themeName)
+
+  // The keyline stroke reads as a subtle outline on the stylized dark themes;
+  // on the plain navy chrome it just greys the white glyphs, so drop it there.
+  const iconSx = {
+    '& svg': {
+      fontSize: '1.4em',
+      stroke: isPlain ? 'transparent' : 'rgba(0, 0, 0, 0.25)',
+      strokeWidth: isPlain ? 0 : 44
+    }
+  }
+  const hoverSx = isPlain
+    ? { backgroundColor: 'rgba(255,255,255,0.16)' }
+    : { backgroundColor: 'info.main', color: 'text.dark' }
+  // Chrome foreground: white on the navy corporate bar (text.button is dark/body
+  // there), the theme's cream text.button on the stylized themes.
+  const chromeColor = isPlain ? '#ffffff' : 'text.button'
+
+  const btnSx = {
+    WebkitAppRegion: 'no-drag',
+    mx: -0.5,
+    color: chromeColor,
+    ...iconSx,
+    '&:hover': hoverSx
+  }
+
+  // Highlight the IconButton for whichever page the user is currently viewing.
+  // Mirrors taliesin's NavToolbar pattern. secondary.dark is bright on every
+  // theme (the corporate palettes set it bright specifically for this).
+  const activeBtnSx = {
+    ...btnSx,
+    color: 'secondary.dark',
+    backgroundColor: 'rgba(255,255,255,0.08)'
+  }
+
+  const winBtnSx = {
+    WebkitAppRegion: 'no-drag',
+    color: chromeColor,
+    ...iconSx,
+    '&:hover': hoverSx
+  }
+  const closeBtnSx = {
+    ...winBtnSx,
+    '&:hover': isPlain
+      ? { backgroundColor: 'error.main', color: '#ffffff' }
+      : { backgroundColor: 'info.main', color: 'warning.main' }
+  }
+
   const pageSx = (page) => (currentPage === page ? activeBtnSx : btnSx)
 
   const handleLaunchTaliesin = async () => {
@@ -113,21 +135,17 @@ const MainToolbar = ({ navigate }) => {
         <Box sx={{ flexGrow: 1 }} />
         <Tooltip title="Minimize">
           <IconButton size="small" sx={winBtnSx} onClick={handleMinimize}>
-            <GiContract />
+            {isPlain ? <RemoveIcon /> : <GiContract />}
           </IconButton>
         </Tooltip>
         <Tooltip title="Maximize">
           <IconButton size="small" sx={winBtnSx} onClick={handleMaximize}>
-            <GiExpand />
+            {isPlain ? <CropSquareIcon /> : <GiExpand />}
           </IconButton>
         </Tooltip>
         <Tooltip title="Close">
-          <IconButton
-            size="small"
-            sx={{ ...winBtnSx, '&:hover': { backgroundColor: 'info.main', color: 'warning.main' } }}
-            onClick={handleClose}
-          >
-            <GiDeathSkull />
+          <IconButton size="small" sx={closeBtnSx} onClick={handleClose}>
+            {isPlain ? <CloseIcon /> : <GiDeathSkull />}
           </IconButton>
         </Tooltip>
       </Toolbar>
