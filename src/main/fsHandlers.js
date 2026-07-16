@@ -97,11 +97,18 @@ export async function moveFile(src, dest) {
 // `archiveDir` (`<type>/.ignore` → `<type>`). Returns '' for a file already at
 // the type root, or one outside it — the latter has no position under the type
 // to mirror, so it archives flat.
+//
+// A leading `.ignore` is dropped so an already-archived file is measured from
+// inside the archive, not from the type root. Without that, re-archiving
+// `.ignore/old.xml` (which the rename flow does, to retire the old file) targets
+// `.ignore/.ignore/old.xml` and buries it in a nested archive.
 function subDirWithinType(src, archiveDir) {
   const typeRoot = dirname(archiveDir)
   const rel = relative(typeRoot, dirname(src))
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) return ''
-  return rel
+  const segs = rel.split(/[\\/]/)
+  if (segs[0] === '.ignore') segs.shift()
+  return segs.join('/')
 }
 
 // Archive mirrors the file's subdirectory into the archive rather than

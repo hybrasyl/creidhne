@@ -438,3 +438,35 @@ describe('duplicateFile', () => {
     expect(result.duplicateAs).toMatch(/\.xml$/)
   })
 })
+
+// Re-archiving something already inside the archive: the rename flow retires the
+// old file via archiveFile, and for an archived file that src already sits under
+// `.ignore`. Measuring its subdir from the type root would mirror that `.ignore`
+// back into the archive and bury it at `.ignore/.ignore/`.
+describe('archiveFile: src already inside the archive', () => {
+  it('does not nest a second .ignore for an archived type-root file', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // .ignore/old.xml is the src itself
+      .mockRejectedValueOnce(new Error('ENOENT')) // .ignore/old_1.xml free
+    const result = await archiveFile('/world/castables/.ignore/old.xml', '/world/castables/.ignore')
+    expect(result.archivedAs).toBe('old_1.xml')
+    expect(mockFs.rename).toHaveBeenCalledWith(
+      '/world/castables/.ignore/old.xml',
+      join('/world/castables/.ignore', 'old_1.xml')
+    )
+  })
+
+  it('keeps an archived subfolder file in its own archive subfolder', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // universal/x.xml taken (the src)
+      .mockRejectedValueOnce(new Error('ENOENT'))
+    const result = await archiveFile(
+      '/world/castables/.ignore/universal/x.xml',
+      '/world/castables/.ignore'
+    )
+    expect(result.archivedAs).toBe('universal/x_1.xml')
+    expect(mockFs.mkdir).toHaveBeenCalledWith(join('/world/castables/.ignore', 'universal'), {
+      recursive: true
+    })
+  })
+})
