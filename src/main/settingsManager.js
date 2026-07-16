@@ -12,10 +12,14 @@ const DEFAULTS = {
   nationCrestPickerMode: 'vanilla',
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
-  creaturePickerMode: 'vanilla'
+  creaturePickerMode: 'vanilla',
+  // Editor file lists: group by folder, or show one flat list. Defaults to
+  // 'flat' — today's behavior, and the right default while subfolders are rare.
+  fileListViewMode: 'flat'
 }
 
 const PICKER_MODES = new Set(['vanilla', 'hybrasyl'])
+const FILE_LIST_VIEW_MODES = new Set(['flat', 'folder'])
 
 function validate(data) {
   if (!data || typeof data !== 'object') return false
@@ -49,7 +53,10 @@ function withDefaults(data) {
       : DEFAULTS.soundPickerMode,
     creaturePickerMode: PICKER_MODES.has(data?.creaturePickerMode)
       ? data.creaturePickerMode
-      : DEFAULTS.creaturePickerMode
+      : DEFAULTS.creaturePickerMode,
+    fileListViewMode: FILE_LIST_VIEW_MODES.has(data?.fileListViewMode)
+      ? data.fileListViewMode
+      : DEFAULTS.fileListViewMode
   }
 }
 

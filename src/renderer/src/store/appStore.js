@@ -27,6 +27,7 @@ export const useAppStore = create((set) => ({
   packCoverage: {},
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla',
+  fileListViewMode: 'flat',
   // Generic setter — accepts a value or an updater fn, matching Recoil setters
   // (e.g. setLibraryIndex(prev => ({ ...prev, ...section }))).
   _set: (key, value) => set((s) => ({ [key]: typeof value === 'function' ? value(s[key]) : value }))
@@ -52,6 +53,9 @@ export const activePacksState = { key: 'activePacks' }
 export const packCoverageState = { key: 'packCoverage' }
 export const iconPickerModeState = { key: 'iconPickerMode' }
 export const nationCrestPickerModeState = { key: 'nationCrestPickerMode' }
+// Folder-vs-flat for editor file lists. Read straight from the store by
+// EditorFileListPanel, so the toggle needs no prop threading through the pages.
+export const fileListViewModeState = { key: 'fileListViewMode' }
 
 // ── Hooks mirroring the three Recoil shapes ───────────────────────────────────
 
