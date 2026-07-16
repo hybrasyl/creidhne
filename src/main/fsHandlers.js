@@ -104,24 +104,51 @@ export async function moveFile(src, dest) {
   return { success: true }
 }
 
+// The subdirectory `src` sits in, relative to the type root that owns
+// `archiveDir`. Mirroring is defined only for the `<type>/.ignore` convention,
+// so anything else archives flat — that keeps the rule tied to the one layout
+// where "put it back where it came from" is meaningful.
+//
+// Returns '' for a file already at the type root, or one outside it.
+function subDirWithinType(src, archiveDir) {
+  if (basename(archiveDir) !== '.ignore') return ''
+  const typeRoot = dirname(archiveDir)
+  const rel = relative(typeRoot, dirname(src))
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) return ''
+  return rel
+}
+
+// Archive mirrors the file's subdirectory into the archive rather than
+// flattening: `universal/x.xml` → `.ignore/universal/x.xml`. Flattening let two
+// files in different subfolders collide on one archive name, and the suffixer
+// would silently rename one to `x_1.xml`. Mirroring also lets unarchive put the
+// file back where it came from. `isArchivedPath` matches `.ignore` at any depth,
+// so the nested entry is still correctly classified as archived by the index.
 export async function archiveFile(src, archiveDir) {
   const baseName = src.split(/[\\/]/).pop()
   const ext = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
   const stem = ext ? baseName.slice(0, -ext.length) : baseName
-  await fs.mkdir(archiveDir, { recursive: true })
-  let dest = join(archiveDir, baseName)
+  const subDir = subDirWithinType(src, archiveDir)
+  const destDir = subDir ? join(archiveDir, subDir) : archiveDir
+  await fs.mkdir(destDir, { recursive: true })
+  let dest = join(destDir, baseName)
   let counter = 1
   while (true) {
     try {
       await fs.access(dest)
-      dest = join(archiveDir, `${stem}_${counter}${ext}`)
+      dest = join(destDir, `${stem}_${counter}${ext}`)
       counter++
     } catch {
       break
     }
   }
   await fs.rename(src, dest)
-  return { success: true, archivedAs: dest.split(/[\\/]/).pop() }
+  // Report the archive-relative path so a mirrored file says where it landed,
+  // not just its basename.
+  const archivedAs = subDir
+    ? `${subDir.replace(/\\/g, '/')}/${dest.split(/[\\/]/).pop()}`
+    : dest.split(/[\\/]/).pop()
+  return { success: true, archivedAs }
 }
 
 // Bulk wrappers — settle each independently so a single failure doesn't
@@ -168,12 +195,23 @@ export async function duplicateFile(src) {
   }
 }
 
+// The archive-relative path of `src` — everything after the `.ignore` segment.
+// `…/castables/.ignore/universal/x.xml` → `universal/x.xml`. Falls back to the
+// basename when no `.ignore` segment is present.
+function pathWithinArchive(src) {
+  const parts = src.split(/[\\/]/)
+  const idx = parts.lastIndexOf('.ignore')
+  return idx === -1 ? parts[parts.length - 1] : parts.slice(idx + 1).join('/')
+}
+
+// Restores to the subdirectory the file was archived from, mirroring
+// archiveFile: `.ignore/universal/x.xml` → `universal/x.xml`. Flattening here
+// would silently relocate the file to the type root on a round-trip.
 export async function unarchiveFiles(srcs, destDir) {
   const ok = []
   const failed = []
   for (const src of srcs) {
-    const baseName = src.split(/[\\/]/).pop()
-    const dest = join(destDir, baseName)
+    const dest = join(destDir, pathWithinArchive(src))
     try {
       const r = await moveFile(src, dest)
       if (r?.conflict) {

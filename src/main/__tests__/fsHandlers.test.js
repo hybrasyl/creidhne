@@ -307,6 +307,95 @@ describe('archiveFiles', () => {
 
 // ─── unarchiveFiles (bulk) ───────────────────────────────────────────────────
 
+// ─── Archive/unarchive subfolder mirroring ───────────────────────────────────
+//
+// Subfolders are authored in git, not in the app — but the app must not undo
+// them. These pin the round-trip: a file archived out of `universal/` comes
+// back to `universal/`, and two same-named files in different subfolders no
+// longer collide into one archive slot.
+
+describe('archiveFile: subfolder mirroring', () => {
+  it('mirrors the subfolder into the archive', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await archiveFile(
+      '/world/castables/universal/dachaidh.xml',
+      '/world/castables/.ignore'
+    )
+    expect(mockFs.rename).toHaveBeenCalledWith(
+      '/world/castables/universal/dachaidh.xml',
+      join('/world/castables/.ignore/universal', 'dachaidh.xml')
+    )
+    expect(result.archivedAs).toBe('universal/dachaidh.xml')
+  })
+
+  it('creates the mirrored archive subdirectory', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    await archiveFile('/world/castables/universal/x.xml', '/world/castables/.ignore')
+    expect(mockFs.mkdir).toHaveBeenCalledWith(join('/world/castables/.ignore', 'universal'), {
+      recursive: true
+    })
+  })
+
+  it('keeps same-named files in different subfolders from colliding', async () => {
+    // Flattening sent both to .ignore/blast.xml, silently renaming one to
+    // blast_1.xml. Mirrored, each keeps its own name under its own folder.
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const fire = await archiveFile('/world/castables/fire/blast.xml', '/world/castables/.ignore')
+    const ice = await archiveFile('/world/castables/ice/blast.xml', '/world/castables/.ignore')
+    expect(fire.archivedAs).toBe('fire/blast.xml')
+    expect(ice.archivedAs).toBe('ice/blast.xml')
+  })
+
+  it('archives a type-root file flat, exactly as before', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await archiveFile('/world/castables/blast.xml', '/world/castables/.ignore')
+    expect(mockFs.rename).toHaveBeenCalledWith(
+      '/world/castables/blast.xml',
+      join('/world/castables/.ignore', 'blast.xml')
+    )
+    expect(result.archivedAs).toBe('blast.xml')
+  })
+
+  it('still suffixes on collision within a mirrored subfolder', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // universal/x.xml taken
+      .mockRejectedValueOnce(new Error('ENOENT')) // universal/x_1.xml free
+    const result = await archiveFile('/world/castables/universal/x.xml', '/world/castables/.ignore')
+    expect(result.archivedAs).toBe('universal/x_1.xml')
+  })
+})
+
+describe('unarchiveFiles: subfolder mirroring', () => {
+  it('restores a mirrored file to its original subfolder', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await unarchiveFiles(
+      ['/world/castables/.ignore/universal/dachaidh.xml'],
+      '/world/castables'
+    )
+    expect(result.ok).toEqual([
+      {
+        src: '/world/castables/.ignore/universal/dachaidh.xml',
+        dest: join('/world/castables', 'universal/dachaidh.xml')
+      }
+    ])
+  })
+
+  it('restores nested archive folders (e.g. Deprecated Spawngroups)', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await unarchiveFiles(
+      ['/world/spawngroups/.ignore/Deprecated Spawngroups/old.xml'],
+      '/world/spawngroups'
+    )
+    expect(result.ok[0].dest).toBe(join('/world/spawngroups', 'Deprecated Spawngroups/old.xml'))
+  })
+
+  it('restores a flat archived file to the type root', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await unarchiveFiles(['/world/castables/.ignore/old.xml'], '/world/castables')
+    expect(result.ok[0].dest).toBe(join('/world/castables', 'old.xml'))
+  })
+})
+
 describe('unarchiveFiles', () => {
   it('moves each src back to destDir using its basename', async () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT')) // every dest free
