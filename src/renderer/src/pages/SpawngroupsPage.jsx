@@ -12,6 +12,7 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { toSectionFile } from '../utils/fileTree'
 
 const SPAWN_SUBDIR = 'spawngroups'
 const IGNORE_SUBDIR = 'spawngroups/.ignore'
@@ -37,7 +38,6 @@ function SpawngroupsPage() {
   const [editingSpawngroup, setEditingSpawngroup] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingSpawngroup, setLoadingSpawngroup] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -52,23 +52,18 @@ function SpawngroupsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Spawn Group')
 
-  const loadActiveFiles = async (library) => {
+  // One recursive, archive-splitting call replaces the two flat listDir
+  // calls. Each rel path IS the index key, so name lookups need no prefix.
+  const loadFiles = useCallback(async (library) => {
     if (!library) {
       setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${SPAWN_SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
       setArchivedFiles([])
       return
     }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
+    const { dir, active, archived } = await window.electronAPI.listSection(library, SPAWN_SUBDIR)
+    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
+    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
+  }, [])
 
   useEffect(() => {
     if (!activeLibrary) {
@@ -80,16 +75,8 @@ function SpawngroupsPage() {
       return
     }
     setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    loadFiles(activeLibrary).finally(() => setLoading(false))
+  }, [activeLibrary, loadFiles])
 
   const doNew = () => {
     setSelectedFile(null)
@@ -122,7 +109,7 @@ function SpawngroupsPage() {
         : `${activeLibrary}/${SPAWN_SUBDIR}/${fileName}`
       await window.electronAPI.saveSpawngroup(filePath, data)
       markClean()
-      if (!selectedFile && activeLibrary) await loadActiveFiles(activeLibrary)
+      if (!selectedFile && activeLibrary) await loadFiles(activeLibrary)
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SPAWN_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
@@ -149,8 +136,7 @@ function SpawngroupsPage() {
     setSelectedFile,
     clearEditing: () => setEditingSpawngroup(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -172,8 +158,6 @@ function SpawngroupsPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

@@ -12,6 +12,7 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { toSectionFile, relDir } from '../utils/fileTree'
 
 const VARIANTS_SUBDIR = 'variantgroups'
 const IGNORE_SUBDIR = 'variantgroups/.ignore'
@@ -32,7 +33,6 @@ function VariantsPage() {
   const [editingVariantGroup, setEditingVariantGroup] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingVariantGroup, setLoadingVariantGroup] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -47,23 +47,18 @@ function VariantsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Variant Group')
 
-  const loadActiveFiles = async (library) => {
+  // One recursive, archive-splitting call replaces the two flat listDir
+  // calls. Each rel path IS the index key, so name lookups need no prefix.
+  const loadFiles = useCallback(async (library) => {
     if (!library) {
       setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${VARIANTS_SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
       setArchivedFiles([])
       return
     }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
+    const { dir, active, archived } = await window.electronAPI.listSection(library, VARIANTS_SUBDIR)
+    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
+    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
+  }, [])
 
   useEffect(() => {
     if (!activeLibrary) {
@@ -75,16 +70,8 @@ function VariantsPage() {
       return
     }
     setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    loadFiles(activeLibrary).finally(() => setLoading(false))
+  }, [activeLibrary, loadFiles])
 
   const doNew = () => {
     setSelectedFile(null)
@@ -113,10 +100,18 @@ function VariantsPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
+      // Rename in place: keep the file in whatever subfolder it was filed
+      // under. Writing to `<type>/<name>` unconditionally would silently
+      // lift it out of e.g. universal/ and back to the type root.
+      const subDir = selectedFile ? relDir(selectedFile.rel) : ''
       const newPath =
         isRename || !selectedFile
-          ? `${activeLibrary}/${VARIANTS_SUBDIR}/${fileName}`
+          ? `${activeLibrary}/${VARIANTS_SUBDIR}/${subDir ? `${subDir}/` : ''}${fileName}`
           : selectedFile.path
+
+      // `rel` rides along: it is the index key the panel looks names up by,
+      // and the source of the subfolder on any later rename.
+      const newRel = subDir ? `${subDir}/${fileName}` : fileName
 
       await window.electronAPI.saveVariantGroup(newPath, data)
       setEditingVariantGroup(data) // #6: sync editor to saved data before any selectedFile change
@@ -126,18 +121,18 @@ function VariantsPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath }) // #5: associate with file after first save
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath }) // #5: associate with file after first save
       }
 
       markClean()
       if (activeLibrary) {
-        await loadActiveFiles(activeLibrary)
+        await loadFiles(activeLibrary)
         const section = await window.electronAPI.buildIndexSection(activeLibrary, VARIANTS_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
@@ -163,8 +158,7 @@ function VariantsPage() {
     setSelectedFile,
     clearEditing: () => setEditingVariantGroup(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -186,8 +180,6 @@ function VariantsPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

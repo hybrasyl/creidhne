@@ -13,6 +13,7 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import { DEFAULT_CASTABLE } from '../data/castableConstants'
+import { toSectionFile, relDir } from '../utils/fileTree'
 
 const SUBDIR = 'castables'
 const IGNORE_SUBDIR = 'castables/.ignore'
@@ -31,7 +32,6 @@ function CastablesPage() {
   const [editingCastable, setEditingCastable] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingCastable, setLoadingCastable] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -46,23 +46,18 @@ function CastablesPage() {
     handleDialogCancel
   } = useUnsavedGuard('Castable')
 
-  const loadActiveFiles = async (library) => {
+  // One recursive, archive-splitting call replaces the two flat listDir calls.
+  // Each rel path IS the index key, so the panel's name lookups need no prefix.
+  const loadFiles = useCallback(async (library) => {
     if (!library) {
       setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
       setArchivedFiles([])
       return
     }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
+    const { dir, active, archived } = await window.electronAPI.listSection(library, SUBDIR)
+    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
+    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
+  }, [])
 
   useEffect(() => {
     if (!activeLibrary) {
@@ -74,16 +69,8 @@ function CastablesPage() {
       return
     }
     setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    loadFiles(activeLibrary).finally(() => setLoading(false))
+  }, [activeLibrary, loadFiles])
 
   const doNew = () => {
     setSelectedFile(null)
@@ -124,8 +111,14 @@ function CastablesPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
+      // Rename in place: keep the file in whatever subfolder it was filed under.
+      // Writing to `<type>/<name>` unconditionally would silently lift it out of
+      // e.g. universal/ and back to the type root.
+      const subDir = selectedFile ? relDir(selectedFile.rel) : ''
       const newPath =
-        isRename || !selectedFile ? `${activeLibrary}/${SUBDIR}/${fileName}` : selectedFile.path
+        isRename || !selectedFile
+          ? `${activeLibrary}/${SUBDIR}/${subDir ? `${subDir}/` : ''}${fileName}`
+          : selectedFile.path
 
       await window.electronAPI.saveCastable(newPath, data)
 
@@ -134,23 +127,25 @@ function CastablesPage() {
       // to the correct content rather than the stale pre-edit version.
       setEditingCastable(data)
 
+      // `rel` must ride along — it is the index key the panel looks names up by,
+      // and the source of the subfolder on any subsequent rename.
+      const newRel = subDir ? `${subDir}/${fileName}` : fileName
       if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
       }
 
       markClean()
-      await loadActiveFiles(activeLibrary)
-      if (showArchived) await loadArchivedFiles(activeLibrary)
+      await loadFiles(activeLibrary)
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
@@ -178,8 +173,7 @@ function CastablesPage() {
     setSelectedFile,
     clearEditing: () => setEditingCastable(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -201,8 +195,6 @@ function CastablesPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

@@ -18,8 +18,8 @@ import { useCallback, useState } from 'react'
  *   setSelectedFile     — clears the editor when its file is touched by a bulk op
  *   clearEditing        — page-specific editor-state clearer (e.g. setEditingItem(null))
  *   setLibraryIndex     — store setter; merged with rebuilt index section
- *   loadActiveFiles     — page reload helpers (already accept an activeLibrary arg)
- *   loadArchivedFiles
+ *   loadFiles           — page reload helper (accepts an activeLibrary arg); one
+ *                         listSection call now returns active + archived together
  *   setSnackbar         — page snackbar setter; receives { message, severity }
  *   markClean           — useUnsavedGuard.markClean — drops dirty state on bulk op
  */
@@ -31,8 +31,7 @@ export function useBulkFileActions({
   setSelectedFile,
   clearEditing,
   setLibraryIndex,
-  loadActiveFiles,
-  loadArchivedFiles,
+  loadFiles,
   setSnackbar,
   markClean
 }) {
@@ -46,8 +45,7 @@ export function useBulkFileActions({
         clearEditing?.()
         markClean?.()
       }
-      await loadActiveFiles(activeLibrary)
-      await loadArchivedFiles(activeLibrary)
+      await loadFiles(activeLibrary)
       const section = await window.electronAPI.buildIndexSection(activeLibrary, subdir)
       setLibraryIndex((prev) => ({ ...prev, ...section }))
     },
@@ -57,8 +55,7 @@ export function useBulkFileActions({
       setSelectedFile,
       clearEditing,
       markClean,
-      loadActiveFiles,
-      loadArchivedFiles,
+      loadFiles,
       setLibraryIndex,
       subdir
     ]
@@ -130,7 +127,7 @@ export function useBulkFileActions({
       if (!activeLibrary || !file) return
       try {
         const result = await window.electronAPI.duplicateFile(file.path)
-        await loadActiveFiles(activeLibrary)
+        await loadFiles(activeLibrary)
         const section = await window.electronAPI.buildIndexSection(activeLibrary, subdir)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
         setSnackbar?.({
@@ -144,7 +141,7 @@ export function useBulkFileActions({
         })
       }
     },
-    [activeLibrary, subdir, loadActiveFiles, setLibraryIndex, setSnackbar]
+    [activeLibrary, subdir, loadFiles, setLibraryIndex, setSnackbar]
   )
 
   // Single-item wrappers for the editor's existing buttons.

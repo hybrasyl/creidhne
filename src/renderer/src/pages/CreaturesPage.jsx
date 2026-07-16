@@ -12,6 +12,7 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { toSectionFile, relDir } from '../utils/fileTree'
 
 const CREATURES_SUBDIR = 'creatures'
 const IGNORE_SUBDIR = 'creatures/.ignore'
@@ -49,7 +50,6 @@ function CreaturesPage() {
   const [editingCreature, setEditingCreature] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingCreature, setLoadingCreature] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -64,23 +64,21 @@ function CreaturesPage() {
     handleDialogCancel
   } = useUnsavedGuard('Creature')
 
-  const loadActiveFiles = async (library) => {
+  // One recursive, archive-splitting call replaces the two flat listDir
+  // calls. Each rel path IS the index key, so name lookups need no prefix.
+  const loadFiles = useCallback(async (library) => {
     if (!library) {
       setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${CREATURES_SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
       setArchivedFiles([])
       return
     }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
+    const { dir, active, archived } = await window.electronAPI.listSection(
+      library,
+      CREATURES_SUBDIR
+    )
+    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
+    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
+  }, [])
 
   useEffect(() => {
     if (!activeLibrary) {
@@ -92,16 +90,8 @@ function CreaturesPage() {
       return
     }
     setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    loadFiles(activeLibrary).finally(() => setLoading(false))
+  }, [activeLibrary, loadFiles])
 
   const doNew = () => {
     setSelectedFile(null)
@@ -138,10 +128,18 @@ function CreaturesPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
+      // Rename in place: keep the file in whatever subfolder it was filed
+      // under. Writing to `<type>/<name>` unconditionally would silently
+      // lift it out of e.g. universal/ and back to the type root.
+      const subDir = selectedFile ? relDir(selectedFile.rel) : ''
       const newPath =
         isRename || !selectedFile
-          ? `${activeLibrary}/${CREATURES_SUBDIR}/${fileName}`
+          ? `${activeLibrary}/${CREATURES_SUBDIR}/${subDir ? `${subDir}/` : ''}${fileName}`
           : selectedFile.path
+
+      // `rel` rides along: it is the index key the panel looks names up by,
+      // and the source of the subfolder on any later rename.
+      const newRel = subDir ? `${subDir}/${fileName}` : fileName
       await window.electronAPI.saveCreature(newPath, data)
       setEditingCreature(data)
       markClean()
@@ -150,16 +148,16 @@ function CreaturesPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
       }
       if (activeLibrary) {
-        await loadActiveFiles(activeLibrary)
+        await loadFiles(activeLibrary)
         const section = await window.electronAPI.buildIndexSection(activeLibrary, CREATURES_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
@@ -185,8 +183,7 @@ function CreaturesPage() {
     setSelectedFile,
     clearEditing: () => setEditingCreature(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -208,8 +205,6 @@ function CreaturesPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

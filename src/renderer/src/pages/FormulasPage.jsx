@@ -27,8 +27,13 @@ const DEFAULT_FORMULA = {
 // Maps a formula record onto the shape the shared panel expects: `name` is
 // the display text and `path` is the stable identity key (we use the formula
 // id so renames don't break the selection).
+// Formulas live in formulas.json, not on disk, so there is no type-relative
+// path and no folder structure. The panel keys name lookups on `rel` and groups
+// on `treePath`, so mirror `name` into both: the list then renders identically
+// in either view mode, and folder mode simply has nothing to group.
 function toPseudoFile(formula, archived = false) {
-  return { name: formula.name || '(unnamed)', path: formula.id, archived }
+  const name = formula.name || '(unnamed)'
+  return { rel: name, treePath: name, name, path: formula.id, archived }
 }
 
 function FormulasPage() {
@@ -40,7 +45,6 @@ function FormulasPage() {
   const [snackbar, setSnackbar] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hybridOpen, setHybridOpen] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [selectionCount, setSelectionCount] = useState(0)
 
   const {
@@ -305,7 +309,6 @@ function FormulasPage() {
     [activeLibrary, formulasData, findById]
   )
 
-  const handleToggleArchived = () => setShowArchived((v) => !v)
   const onSelectionChange = useCallback((set) => setSelectionCount(set.size), [])
 
   // ── Import / settings ───────────────────────────────────────────────────────
@@ -398,8 +401,6 @@ function FormulasPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}

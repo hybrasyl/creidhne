@@ -1,21 +1,22 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { List as VirtualList } from 'react-window'
 import {
   Box,
-  List,
   ListItem,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Typography,
   Divider,
   Tooltip,
+  Tabs,
+  Tab,
   TextField,
   InputAdornment,
   IconButton,
   CircularProgress,
   Menu,
   MenuItem,
-  ListItemIcon,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -25,30 +26,30 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import SearchIcon from '@mui/icons-material/Search'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import ArchiveIcon from '@mui/icons-material/Archive'
 import UnarchiveIcon from '@mui/icons-material/Unarchive'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-
-const ITEM_HEIGHT = 52
-
-function stripXml(filename) {
-  return filename.replace(/\.xml$/i, '')
-}
-
-function displayNameFor(file, namesByFilename) {
-  return namesByFilename?.[file.name] ?? stripXml(file.name)
-}
-
-function matchesFilter(file, query, namesByFilename) {
-  if (!query) return true
-  const q = query.toLowerCase()
-  if (stripXml(file.name).toLowerCase().includes(q)) return true
-  const name = namesByFilename?.[file.name]
-  return !!(name && name.toLowerCase().includes(q))
-}
+import FolderIcon from '@mui/icons-material/Folder'
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
+import ViewListIcon from '@mui/icons-material/ViewList'
+import { useStoreState } from '../../store/appStore'
+import { fileListViewModeState } from '../../store/appStore'
+import {
+  ITEM_HEIGHT,
+  FOLDER_HEIGHT,
+  INDENT_STEP,
+  stripXml,
+  displayNameFor,
+  filterFiles,
+  buildFileTree,
+  flattenTree,
+  flattenFlat,
+  rowHeightFor
+} from '../../utils/fileTree'
 
 // Measures the bounding rect of a box and re-measures on resize so the virtual
 // list can be sized against real pixels (react-window needs explicit numbers).
@@ -74,32 +75,63 @@ function useAutoSize() {
   return [refCallback, size]
 }
 
-// Row renderer for react-window. Receives index + precomputed style (absolute
-// positioning from the virtual list) + itemData populated by the parent.
+// Row renderer for react-window. Renders either a folder header or a file, both
+// out of one flat row array — virtualization needs a flat rowCount, so the tree
+// is flattened rather than rendered recursively with <Collapse>.
 const VirtualRow = memo(function VirtualRow({
   index,
   style,
-  items,
+  rows,
   selectedFile,
   selectedPaths,
   onRowClick,
   onRowContextMenu,
+  onToggleFolder,
   namesByFilename,
   archived
 }) {
-  const file = items[index]
+  const row = rows[index]
+  const indent = 1 + row.depth * INDENT_STEP
+
+  if (row.kind === 'folder') {
+    return (
+      <ListItem disablePadding style={style}>
+        <ListItemButton
+          onClick={() => onToggleFolder(row.key)}
+          sx={{ height: FOLDER_HEIGHT, pl: indent }}
+        >
+          <ListItemIcon sx={{ minWidth: 28, color: 'text.secondary' }}>
+            {row.open ? <FolderOpenIcon fontSize="small" /> : <FolderIcon fontSize="small" />}
+          </ListItemIcon>
+          <ListItemText
+            primary={row.name}
+            secondary={null}
+            slotProps={{
+              primary: { noWrap: true, variant: 'body2', sx: { fontSize: '0.9rem' } }
+            }}
+          />
+          <Typography variant="caption" sx={{ color: 'text.secondary', mr: 0.5 }}>
+            {row.count}
+          </Typography>
+          {row.open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+        </ListItemButton>
+      </ListItem>
+    )
+  }
+
+  const file = row.file
   const displayName = displayNameFor(file, namesByFilename)
   const filenameBare = stripXml(file.name)
   const showSubtitle = displayName !== filenameBare
   const isMultiSelected = selectedPaths.has(file.path)
   const isPrimary = selectedFile?.path === file.path
   return (
-    <ListItem key={file.path} disablePadding style={style}>
+    <ListItem disablePadding style={style}>
       <ListItemButton
         selected={isPrimary || isMultiSelected}
         onClick={(e) => onRowClick(e, file)}
         onContextMenu={(e) => onRowContextMenu(e, file)}
-        sx={{ height: ITEM_HEIGHT }}
+        sx={{ height: ITEM_HEIGHT, pl: indent }}
       >
         <ListItemText
           primary={displayName}
@@ -119,18 +151,21 @@ const VirtualRow = memo(function VirtualRow({
 })
 
 /**
- * Shared file list panel for editor pages. Displays active + (optional) archived
- * files, filterable by either bare filename or the inner <Name>/Locale recorded
- * in the library index under `<type>NamesByFilename`.
+ * Shared file list panel for editor pages. Active and Archived are tabs over one
+ * virtualized list; each can group by folder or show flat, driven by a persisted
+ * global setting read straight from the store (so pages thread no view props).
  *
- * Active list is virtualized (react-window) to handle 2000+ items without
- * rendering every row into the DOM. Archived list uses native rendering since
- * it's typically small and stacked below with a bounded height.
+ * Files arrive as `{ rel, treePath, name, path, archived }` from
+ * `utils/fileTree#toSectionFile`. Lookups key on `rel` — the index's own
+ * `<type>NamesByFilename` key, `.ignore/`-prefixed for archived entries — so no
+ * key-prefix threading is needed anywhere.
  *
- * Multiselect: regular click selects + opens (today's behavior); Ctrl/Cmd-click
- * toggles into the bulk-select set without opening; Shift-click extends a range
- * within the currently-visible filtered list. Bulk actions (archive/unarchive/
- * delete/duplicate) live in the header toolbar AND a right-click context menu.
+ * Multiselect: regular click selects + opens; Ctrl/Cmd-click toggles into the
+ * bulk-select set without opening; Shift-click extends a range within the
+ * currently-visible file rows. Selection is per-tab and clears on tab change,
+ * which is what removes the old active/archived "mixed" selection state.
+ * Clicking a folder only expands/collapses it — folders are never selected, so
+ * bulk actions still operate purely on files.
  */
 export default function EditorFileListPanel({
   title,
@@ -140,12 +175,10 @@ export default function EditorFileListPanel({
   selectedFile,
   onSelect,
   onNew,
-  showArchived,
-  onToggleArchived,
   namesByFilename,
   loading = false,
   width = 240,
-  // Bulk-action callbacks. Each receives an array of { name, path } files.
+  // Bulk-action callbacks. Each receives an array of { rel, name, path } files.
   // If a callback is omitted, the corresponding button/menu item is hidden.
   onArchive,
   onUnarchive,
@@ -166,24 +199,45 @@ export default function EditorFileListPanel({
 }) {
   const [newMenuAnchor, setNewMenuAnchor] = useState(null)
   const [search, setSearch] = useState('')
+  const [tab, setTab] = useState('active')
+  const [viewMode, setViewMode] = useStoreState(fileListViewModeState)
   const [listRef, listSize] = useAutoSize()
   const [selectedPaths, setSelectedPaths] = useState(() => new Set())
   const [lastClickedPath, setLastClickedPath] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null) // file[] | null
+  // Expansion is per-tab and deliberately not persisted: the only real tree today
+  // is one archive folder, filtering auto-expands anyway, and persisting would
+  // mean a library/type-keyed map to prune as worlds come and go.
+  const [expanded, setExpanded] = useState(() => ({ active: new Set(), archived: new Set() }))
+
+  const archivedTab = tab === 'archived'
+  // Memoized: a bare conditional would hand `filtered` a new array identity on
+  // every render whenever archivedFiles is undefined, defeating its memo.
+  const tabFiles = useMemo(
+    () => (archivedTab ? archivedFiles || [] : files),
+    [archivedTab, archivedFiles, files]
+  )
 
   // Memoized so unrelated local-state changes (context menu, new-menu anchor,
   // pending delete, selection) don't re-walk all 2000+ items with a regex each.
-  const filteredActive = useMemo(
-    () => files.filter((f) => matchesFilter(f, search, namesByFilename)),
-    [files, search, namesByFilename]
-  )
-  const filteredArchived = useMemo(
-    () => (archivedFiles || []).filter((f) => matchesFilter(f, search, namesByFilename)),
-    [archivedFiles, search, namesByFilename]
+  const filtered = useMemo(
+    () => filterFiles(tabFiles, search, namesByFilename),
+    [tabFiles, search, namesByFilename]
   )
 
-  // Path → file lookup across both lists, used by the action toolbar to
+  // Filter first, then build: rebuilding from surviving leaves prunes empty
+  // folders and keeps every match's ancestors for free.
+  const rows = useMemo(() => {
+    if (viewMode !== 'folder') return flattenFlat(filtered)
+    // A live filter forces everything open — the surviving tree is only matches
+    // plus their ancestors, so revealing all of it is exactly right.
+    return flattenTree(buildFileTree(filtered), expanded[tab], !!search)
+  }, [viewMode, filtered, expanded, tab, search])
+
+  const rowHeight = useMemo(() => rowHeightFor(rows), [rows])
+
+  // Path → file lookup across both tabs, used by the action toolbar to
   // resolve the selectedPaths set into actual file objects.
   const filesByPath = useMemo(() => {
     const m = new Map()
@@ -191,26 +245,6 @@ export default function EditorFileListPanel({
     for (const f of archivedFiles || []) m.set(f.path, f)
     return m
   }, [files, archivedFiles])
-
-  const archivedPathSet = useMemo(
-    () => new Set((archivedFiles || []).map((f) => f.path)),
-    [archivedFiles]
-  )
-
-  // Whether all currently-selected items are active, all archived, or mixed.
-  // Drives the single context-aware Archive/Unarchive button.
-  const selectionLocation = useMemo(() => {
-    if (selectedPaths.size === 0) return 'empty'
-    let hasActive = false
-    let hasArchived = false
-    for (const p of selectedPaths) {
-      if (archivedPathSet.has(p)) hasArchived = true
-      else hasActive = true
-      if (hasActive && hasArchived) return 'mixed'
-    }
-    if (hasActive) return 'active'
-    return 'archived'
-  }, [selectedPaths, archivedPathSet])
 
   const updateSelection = useCallback(
     (next) => {
@@ -230,13 +264,30 @@ export default function EditorFileListPanel({
     setLastClickedPath(null)
   }, [onSelectionChange])
 
-  // Combined visible list — order matters for shift-click range selection.
-  // Active rows come first, then archived (matches the on-screen layout).
-  const visibleOrdered = useMemo(() => {
-    const arr = filteredActive.slice()
-    if (showArchived) arr.push(...filteredArchived)
-    return arr
-  }, [filteredActive, filteredArchived, showArchived])
+  // Selection is scoped to a tab, so switching tabs drops it — otherwise a bulk
+  // action fired from Archived could act on files selected under Active.
+  useEffect(() => {
+    clearSelection()
+  }, [tab, clearSelection])
+
+  const toggleFolder = useCallback(
+    (key) => {
+      setExpanded((prev) => {
+        const next = new Set(prev[tab])
+        if (next.has(key)) next.delete(key)
+        else next.add(key)
+        return { ...prev, [tab]: next }
+      })
+    },
+    [tab]
+  )
+
+  // Visible file rows, in render order — the basis for shift-click ranges.
+  // Folder rows are excluded so a range never sweeps in a folder.
+  const visibleFiles = useMemo(
+    () => rows.filter((r) => r.kind === 'file').map((r) => r.file),
+    [rows]
+  )
 
   const handleRowClick = useCallback(
     (e, file) => {
@@ -251,12 +302,12 @@ export default function EditorFileListPanel({
       }
       // Shift-click — range from lastClickedPath to this row in visible order.
       if (e.shiftKey && lastClickedPath) {
-        const fromIdx = visibleOrdered.findIndex((f) => f.path === lastClickedPath)
-        const toIdx = visibleOrdered.findIndex((f) => f.path === file.path)
+        const fromIdx = visibleFiles.findIndex((f) => f.path === lastClickedPath)
+        const toIdx = visibleFiles.findIndex((f) => f.path === file.path)
         if (fromIdx >= 0 && toIdx >= 0) {
           const [a, b] = fromIdx <= toIdx ? [fromIdx, toIdx] : [toIdx, fromIdx]
           const next = new Set(selectedPaths)
-          for (let i = a; i <= b; i++) next.add(visibleOrdered[i].path)
+          for (let i = a; i <= b; i++) next.add(visibleFiles[i].path)
           updateSelection(next)
           return
         }
@@ -267,7 +318,7 @@ export default function EditorFileListPanel({
       setLastClickedPath(file.path)
       onSelect?.(file)
     },
-    [selectedPaths, lastClickedPath, visibleOrdered, updateSelection, onSelect]
+    [selectedPaths, lastClickedPath, visibleFiles, updateSelection, onSelect]
   )
 
   // Right-click — if the row isn't already in selection, replace selection
@@ -331,23 +382,26 @@ export default function EditorFileListPanel({
 
   // Stable rowProps identity so react-window doesn't re-render every visible
   // row on unrelated state changes (memoized VirtualRow can then bail out).
-  const activeRowProps = useMemo(
+  const rowProps = useMemo(
     () => ({
-      items: filteredActive,
+      rows,
       selectedFile,
       selectedPaths,
       onRowClick: handleRowClick,
       onRowContextMenu: handleRowContextMenu,
+      onToggleFolder: toggleFolder,
       namesByFilename,
-      archived: false
+      archived: archivedTab
     }),
     [
-      filteredActive,
+      rows,
       selectedFile,
       selectedPaths,
       handleRowClick,
       handleRowContextMenu,
-      namesByFilename
+      toggleFolder,
+      namesByFilename,
+      archivedTab
     ]
   )
 
@@ -355,35 +409,30 @@ export default function EditorFileListPanel({
   const newTooltip = `New ${entityLabel || title || 'file'}`
   const selectionCount = selectedPaths.size
 
-  // Action availability — drives both the toolbar buttons and context menu.
-  const canArchive = !!onArchive && selectionLocation === 'active'
-  const canUnarchive = !!onUnarchive && selectionLocation === 'archived'
-  const canArchiveOrUnarchive = !!(onArchive || onUnarchive)
+  // Action availability. With tabs, "where the selection lives" is just the
+  // active tab — the old active/archived/mixed tri-state is gone.
+  const canArchive = !!onArchive && !archivedTab && selectionCount >= 1
+  const canUnarchive = !!onUnarchive && archivedTab && selectionCount >= 1
+  const canArchiveOrUnarchive = !!(archivedTab ? onUnarchive : onArchive)
   const archiveBtnEnabled = canArchive || canUnarchive
-  const archiveBtnLabel = selectionLocation === 'archived' ? 'Unarchive' : 'Archive'
-  const archiveBtnIcon =
-    selectionLocation === 'archived' ? (
-      <UnarchiveIcon fontSize="small" />
-    ) : (
-      <ArchiveIcon fontSize="small" />
-    )
-  const archiveBtnTooltip =
-    selectionLocation === 'mixed'
-      ? 'Mixed selection — archive and unarchive disabled'
-      : selectionLocation === 'empty'
-        ? 'Select item(s) to archive'
-        : archiveBtnLabel
+  const archiveBtnLabel = archivedTab ? 'Unarchive' : 'Archive'
+  const archiveBtnIcon = archivedTab ? (
+    <UnarchiveIcon fontSize="small" />
+  ) : (
+    <ArchiveIcon fontSize="small" />
+  )
+  const archiveBtnTooltip = archiveBtnEnabled
+    ? archiveBtnLabel
+    : `Select item(s) to ${archiveBtnLabel.toLowerCase()}`
   const canDelete = !!onDelete && selectionCount >= 1
   const canDuplicate = !!onDuplicate && selectionCount === 1
 
   const showLoader = loading && files.length === 0
-  const showEmptyLibrary = !loading && files.length === 0 && !showArchived
-  const showNoMatches =
-    !loading &&
-    filteredActive.length === 0 &&
-    (!showArchived || filteredArchived.length === 0) &&
-    files.length > 0
-  const showLists = !showLoader && !showEmptyLibrary && !showNoMatches
+  const showEmpty = !loading && tabFiles.length === 0
+  const showNoMatches = !loading && tabFiles.length > 0 && rows.length === 0
+  const showList = !showLoader && !showEmpty && !showNoMatches
+
+  const folderMode = viewMode === 'folder'
 
   return (
     <Box
@@ -404,7 +453,7 @@ export default function EditorFileListPanel({
         </Typography>
       </Box>
 
-      {/* Row 2 — action buttons. Eye toggle pinned left, bulk actions
+      {/* Row 2 — action buttons. Folder/flat toggle pinned left, bulk actions
           centered, New pinned right. Three flex sections at space-between. */}
       <Box
         sx={{
@@ -416,12 +465,16 @@ export default function EditorFileListPanel({
         }}
       >
         <Box sx={{ display: 'flex' }}>
-          <Tooltip title={showArchived ? 'Showing Archived Items' : 'Hiding Archived Items'}>
-            <IconButton size="small" onClick={onToggleArchived}>
-              {showArchived ? (
-                <VisibilityIcon fontSize="small" />
+          <Tooltip title={folderMode ? 'Grouping by folder' : 'Flat list'}>
+            <IconButton
+              size="small"
+              onClick={() => setViewMode(folderMode ? 'flat' : 'folder')}
+              aria-label={folderMode ? 'Switch to flat list' : 'Group by folder'}
+            >
+              {folderMode ? (
+                <AccountTreeIcon fontSize="small" />
               ) : (
-                <VisibilityOffIcon fontSize="small" />
+                <ViewListIcon fontSize="small" />
               )}
             </IconButton>
           </Tooltip>
@@ -454,7 +507,7 @@ export default function EditorFileListPanel({
                 <IconButton
                   size="small"
                   disabled={!archiveBtnEnabled}
-                  onClick={() => runAction(canUnarchive ? 'unarchive' : 'archive')}
+                  onClick={() => runAction(archivedTab ? 'unarchive' : 'archive')}
                   aria-label={archiveBtnLabel}
                 >
                   {archiveBtnIcon}
@@ -534,8 +587,19 @@ export default function EditorFileListPanel({
         ))}
       </Menu>
 
-      {/* Row 3 — filter input */}
-      <Box sx={{ px: 1, pb: 1 }}>
+      {/* Row 3 — Active / Archived tabs */}
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        variant="fullWidth"
+        sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0 } }}
+      >
+        <Tab value="active" label={`Active (${files.length})`} />
+        <Tab value="archived" label={`Archived (${(archivedFiles || []).length})`} />
+      </Tabs>
+
+      {/* Row 4 — filter input */}
+      <Box sx={{ px: 1, py: 1 }}>
         <TextField
           size="small"
           fullWidth
@@ -562,9 +626,11 @@ export default function EditorFileListPanel({
           </Box>
         )}
 
-        {showEmptyLibrary && (
+        {showEmpty && (
           <Typography variant="body2" sx={{ color: 'text.secondary', p: 2 }}>
-            No {noun} found. Check that a library is set in Settings.
+            {archivedTab
+              ? `No archived ${noun}.`
+              : `No ${noun} found. Check that a library is set in Settings.`}
           </Typography>
         )}
 
@@ -574,78 +640,18 @@ export default function EditorFileListPanel({
           </Typography>
         )}
 
-        {showLists && (
-          <>
-            <Box ref={listRef} sx={{ flex: 1, minHeight: 0 }}>
-              {listSize.height > 0 && filteredActive.length > 0 && (
-                <VirtualList
-                  style={{ height: listSize.height, width: listSize.width || width }}
-                  rowCount={filteredActive.length}
-                  rowHeight={ITEM_HEIGHT}
-                  rowComponent={VirtualRow}
-                  rowProps={activeRowProps}
-                />
-              )}
-              {filteredActive.length === 0 && showArchived && (
-                <Typography
-                  variant="caption"
-                  sx={{ color: 'text.secondary', display: 'block', px: 2, py: 1 }}
-                >
-                  No active matches.
-                </Typography>
-              )}
-            </Box>
-
-            {showArchived && filteredArchived.length > 0 && (
-              <Box
-                sx={{
-                  borderTop: 1,
-                  borderColor: 'divider',
-                  maxHeight: '40%',
-                  overflow: 'auto',
-                  flexShrink: 0
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ color: 'text.secondary', px: 1.5, py: 0.5, display: 'block' }}
-                >
-                  Archived
-                </Typography>
-                <List dense disablePadding>
-                  {filteredArchived.map((file) => {
-                    const displayName = displayNameFor(file, namesByFilename)
-                    const filenameBare = stripXml(file.name)
-                    const showSubtitle = displayName !== filenameBare
-                    const isMultiSelected = selectedPaths.has(file.path)
-                    const isPrimary = selectedFile?.path === file.path
-                    return (
-                      <ListItem key={file.path} disablePadding>
-                        <ListItemButton
-                          selected={isPrimary || isMultiSelected}
-                          onClick={(e) => handleRowClick(e, file)}
-                          onContextMenu={(e) => handleRowContextMenu(e, file)}
-                        >
-                          <ListItemText
-                            primary={displayName}
-                            secondary={showSubtitle ? filenameBare : null}
-                            slotProps={{
-                              primary: {
-                                noWrap: true,
-                                variant: 'body2',
-                                color: 'text.secondary'
-                              },
-                              secondary: { noWrap: true, variant: 'caption' }
-                            }}
-                          />
-                        </ListItemButton>
-                      </ListItem>
-                    )
-                  })}
-                </List>
-              </Box>
+        {showList && (
+          <Box ref={listRef} sx={{ flex: 1, minHeight: 0 }}>
+            {listSize.height > 0 && rows.length > 0 && (
+              <VirtualList
+                style={{ height: listSize.height, width: listSize.width || width }}
+                rowCount={rows.length}
+                rowHeight={rowHeight}
+                rowComponent={VirtualRow}
+                rowProps={rowProps}
+              />
             )}
-          </>
+          </Box>
         )}
       </Box>
 
@@ -659,7 +665,7 @@ export default function EditorFileListPanel({
         {canArchiveOrUnarchive && (
           <MenuItem
             disabled={!archiveBtnEnabled}
-            onClick={() => runAction(canUnarchive ? 'unarchive' : 'archive')}
+            onClick={() => runAction(archivedTab ? 'unarchive' : 'archive')}
           >
             <ListItemIcon>{archiveBtnIcon}</ListItemIcon>
             {archiveBtnLabel}

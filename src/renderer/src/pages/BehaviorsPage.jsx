@@ -13,6 +13,7 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import { DEFAULT_BEHAVIOR_SET } from '../data/behaviorSetConstants'
+import { toSectionFile, relDir } from '../utils/fileTree'
 
 const SUBDIR = 'creaturebehaviorsets'
 const IGNORE_SUBDIR = 'creaturebehaviorsets/.ignore'
@@ -27,7 +28,6 @@ function BehaviorsPage() {
   const [editingBehaviorSet, setEditingBehaviorSet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingBehaviorSet, setLoadingBehaviorSet] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -42,23 +42,18 @@ function BehaviorsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Behavior Set')
 
-  const loadActiveFiles = async (library) => {
+  // One recursive, archive-splitting call replaces the two flat listDir
+  // calls. Each rel path IS the index key, so name lookups need no prefix.
+  const loadFiles = useCallback(async (library) => {
     if (!library) {
       setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
       setArchivedFiles([])
       return
     }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
+    const { dir, active, archived } = await window.electronAPI.listSection(library, SUBDIR)
+    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
+    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
+  }, [])
 
   useEffect(() => {
     if (!activeLibrary) {
@@ -70,16 +65,8 @@ function BehaviorsPage() {
       return
     }
     setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    loadFiles(activeLibrary).finally(() => setLoading(false))
+  }, [activeLibrary, loadFiles])
 
   const doNew = () => {
     setSelectedFile(null)
@@ -108,8 +95,18 @@ function BehaviorsPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
+      // Rename in place: keep the file in whatever subfolder it was filed
+      // under. Writing to `<type>/<name>` unconditionally would silently
+      // lift it out of e.g. universal/ and back to the type root.
+      const subDir = selectedFile ? relDir(selectedFile.rel) : ''
       const newPath =
-        isRename || !selectedFile ? `${activeLibrary}/${SUBDIR}/${fileName}` : selectedFile.path
+        isRename || !selectedFile
+          ? `${activeLibrary}/${SUBDIR}/${subDir ? `${subDir}/` : ''}${fileName}`
+          : selectedFile.path
+
+      // `rel` rides along: it is the index key the panel looks names up by,
+      // and the source of the subfolder on any later rename.
+      const newRel = subDir ? `${subDir}/${fileName}` : fileName
 
       await window.electronAPI.saveBehaviorSet(newPath, data)
       setEditingBehaviorSet(data)
@@ -119,18 +116,17 @@ function BehaviorsPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
       }
 
       markClean()
-      await loadActiveFiles(activeLibrary)
-      await loadArchivedFiles(activeLibrary)
+      await loadFiles(activeLibrary)
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
@@ -158,8 +154,7 @@ function BehaviorsPage() {
     setSelectedFile,
     clearEditing: () => setEditingBehaviorSet(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -181,8 +176,6 @@ function BehaviorsPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}
