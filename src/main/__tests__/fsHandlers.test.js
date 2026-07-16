@@ -12,8 +12,18 @@ const mockFs = {
 
 vi.mock('fs', () => ({ promises: mockFs }))
 
+// listSection delegates to the index package — the single definition of which
+// files belong to a section. Mock at that boundary: these tests pin the
+// delegation and the shape Creidhne adds on top, not hybindex's own walk
+// (which has its own suite in that repo).
+const mockListSectionFiles = vi.fn()
+vi.mock('@eriscorp/hybindex-ts', () => ({
+  listSectionFiles: (...a) => mockListSectionFiles(...a)
+}))
+
 const {
   listDir,
+  listSection,
   readFile,
   writeFile,
   moveFile,
@@ -56,6 +66,51 @@ describe('listDir', () => {
     mockFs.readdir.mockResolvedValue([])
     const result = await listDir('/empty')
     expect(result).toEqual([])
+  })
+})
+
+// ─── listSection ─────────────────────────────────────────────────────────────
+
+describe('listSection', () => {
+  it('delegates to listSectionFiles with the library path and type', async () => {
+    mockListSectionFiles.mockResolvedValue({ dir: '/world/castables', active: [], archived: [] })
+    await listSection('/world', 'castables')
+    expect(mockListSectionFiles).toHaveBeenCalledWith('/world', 'castables')
+  })
+
+  it('passes through the recursive active/archived split', async () => {
+    mockListSectionFiles.mockResolvedValue({
+      dir: '/world/castables',
+      active: ['blast.xml', 'universal/dachaidh.xml'],
+      archived: ['.ignore/old.xml', '.ignore/Deprecated/older.xml']
+    })
+    const r = await listSection('/world', 'castables')
+    expect(r.active).toEqual(['blast.xml', 'universal/dachaidh.xml'])
+    expect(r.archived).toEqual(['.ignore/old.xml', '.ignore/Deprecated/older.xml'])
+  })
+
+  it('never reports archived files as active', async () => {
+    mockListSectionFiles.mockResolvedValue({
+      dir: '/world/castables',
+      active: ['blast.xml'],
+      archived: ['.ignore/old.xml']
+    })
+    const { active } = await listSection('/world', 'castables')
+    expect(active.some((rel) => rel.startsWith('.ignore/'))).toBe(false)
+  })
+
+  // Renderer paths are built as `${dir}/${rel}`. The pages construct save paths
+  // with forward slashes, so a native-separator `dir` would make
+  // `selectedFile.path === file.path` silently false and drop the selection
+  // highlight after a rename.
+  it('normalizes dir to forward slashes', async () => {
+    mockListSectionFiles.mockResolvedValue({
+      dir: 'E:\\world\\xml\\castables',
+      active: [],
+      archived: []
+    })
+    const { dir } = await listSection('E:\\world\\xml', 'castables')
+    expect(dir).toBe('E:/world/xml/castables')
   })
 })
 

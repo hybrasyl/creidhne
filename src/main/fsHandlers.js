@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs'
-import { join, dirname } from 'path'
+import { join, dirname, basename, relative, isAbsolute } from 'path'
+import { listSectionFiles } from '@eriscorp/hybindex-ts'
 
 export async function listDir(dirPath) {
   try {
@@ -10,6 +11,22 @@ export async function listDir(dirPath) {
   } catch {
     return []
   }
+}
+
+// Enumerate one world type (`castables`, `items`, …), recursively, split into
+// active and archived. Delegates to the index package rather than walking here:
+// `listSectionFiles` is the single definition of which files belong to a
+// section, so going through it is what keeps this list from disagreeing with
+// the index's filename keys. Entries are type-relative, forward-slashed, sorted
+// — and each one IS the key into `<type>NamesByFilename`.
+//
+// `dir` is normalized to forward slashes. Every renderer-side path is then
+// built as `${dir}/${rel}`, which matches how the pages construct save paths;
+// `join`'s native backslashes did not, so `selectedFile.path === file.path`
+// silently failed and the list lost its selection highlight after a rename.
+export async function listSection(libraryPath, type) {
+  const { dir, active, archived } = await listSectionFiles(libraryPath, type)
+  return { dir: dir.replace(/\\/g, '/'), active, archived }
 }
 
 export async function readFile(filePath) {

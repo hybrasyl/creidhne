@@ -34,6 +34,7 @@ import {
 } from './schemas/index.js'
 import {
   listDir,
+  listSection,
   readFile,
   writeFile,
   moveFile,
@@ -245,6 +246,19 @@ app.whenReady().then(async () => {
       return await listDir(validatePath(dirPath))
     } catch {
       return []
+    }
+  })
+  // Scan-style handler, same swallow-to-empty contract as fs:listDir.
+  // `type` needs its own traversal check: listSectionFiles joins it onto the
+  // library internally, so validating libraryPath alone would still let a
+  // renderer-supplied `../../..` escape.
+  ipcMain.handle('fs:listSection', async (_, libraryPath, type) => {
+    try {
+      const lib = validatePath(libraryPath)
+      assertInside(lib, type)
+      return await listSection(lib, type)
+    } catch {
+      return { dir: '', active: [], archived: [] }
     }
   })
   ipcMain.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
