@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs'
 import { join } from 'path'
+import { isArchivedPath } from '@eriscorp/hybindex-ts'
 import { assertInside } from './pathSafety.js'
+import { listSection } from './fsHandlers.js'
 import { loadIndex } from './indexService.js'
 import { parseCastableXml } from './castableXml'
 import { parseStatusXml } from './statusXml'
@@ -55,8 +57,8 @@ export async function loadReference(libraryPath, type, name) {
 
   // Filename often matches the identifier — try that first. assertInside
   // catches a renderer-supplied `name` like `../escape` that would join out
-  // of the type subdir; on traversal we fall through to the directory scan
-  // (which still constrains entries via fs.readdir to dir).
+  // of the type subdir; on traversal we fall through to the full scan (which
+  // still constrains candidates to files listSection found under dir).
   let guess
   try {
     guess = assertInside(dir, `${name}.xml`)
@@ -84,8 +86,12 @@ export async function loadReference(libraryPath, type, name) {
     const namesByFilename = index?.[`${type}NamesByFilename`]
     if (namesByFilename) {
       const target = String(name).toLowerCase()
+      // Archived entries share this map, keyed under `.ignore/`. A reference
+      // must never resolve to content the server does not load, so skip them —
+      // otherwise an archived file whose <Name> matches could satisfy a lookup
+      // for a live one purely by iteration order.
       const hit = Object.entries(namesByFilename).find(
-        ([, nm]) => String(nm).toLowerCase() === target
+        ([key, nm]) => !isArchivedPath(key) && String(nm).toLowerCase() === target
       )
       if (hit) {
         let filePath = null
@@ -111,16 +117,28 @@ export async function loadReference(libraryPath, type, name) {
     /* index unavailable — fall through to full scan */
   }
 
-  let entries
+  // Full scan. `active` is recursive and excludes the archive, so this finds
+  // files in subdirectories and still never resolves to `.ignore/` content.
+  let active
   try {
-    entries = await fs.readdir(dir, { withFileTypes: true })
+    ;({ active } = await listSection(libraryPath, type))
   } catch {
     return { ok: false, error: `Directory not found: ${dir}` }
   }
 
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.xml')) continue
-    const filePath = join(dir, entry.name)
+  // listSectionFiles reports a missing directory as an empty list rather than
+  // throwing, so an existence check is what still separates "no such type dir"
+  // from "dir exists but holds no match" — two different errors to the user.
+  if (!active.length) {
+    try {
+      await fs.access(dir)
+    } catch {
+      return { ok: false, error: `Directory not found: ${dir}` }
+    }
+  }
+
+  for (const rel of active) {
+    const filePath = join(dir, rel)
     try {
       const raw = await fs.readFile(filePath, 'utf-8')
       const parsed = await cfg.parse(raw)
