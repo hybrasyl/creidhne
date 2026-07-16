@@ -16,12 +16,14 @@ Release process (the notes are authored HERE, not edited on GitHub after the fac
      auto-generated PR list below it.
 Keep entries user-facing — internal refactors/tests show up in the appended auto list.
 
-Sections below 1.5.0 predate this file; the older release history lives on GitHub
-Releases. Entries from 1.5.0–1.7.0 were backfilled from those published notes when
-this changelog was introduced.
+Entries for 1.0.0–1.7.0 predate this file and were backfilled from the published
+GitHub release notes, condensed into the sections above. Those releases remain the
+verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 -->
 
 ## [Unreleased]
+
+## [1.8.0] - 2026-07-16
 
 ### Added
 
@@ -30,6 +32,18 @@ this changelog was introduced.
   archives (Spawngroups has 583) scroll smoothly.
 - File lists can **group by folder** or show one flat list, toggled from the
   panel header. The choice is saved and applies to every editor.
+- Two new corporate themes — **Mundanes** (light) and **Dubhaimid** (dark) —
+  bringing the theme count to six. Both use flat window-control chrome rather
+  than the sculpted Hybrasyl-style buttons.
+
+### Changed
+
+- The world index cache format advanced a version. The cache is stored per
+  format version, so **the first launch after updating rebuilds the index once
+  for each world** — that's expected and needs no action.
+- Upgraded to **React 19** and replaced the unmaintained Recoil state layer with
+  Zustand. No change to how the app behaves; Recoil couldn't run on React 19 and
+  was holding the app back on React 18.
 
 ### Fixed
 
@@ -51,6 +65,8 @@ this changelog was introduced.
 - Recognize the new `town_maps` asset-pack content type (a Brigid runtime/UI type
   Creidhne doesn't consume) so loading such a pack is silently skipped instead of
   logging an "unknown content_type" warning.
+- Creidhne identified itself to Windows under a boilerplate app id, so it could
+  show up wrong in the taskbar and Task Manager and misbehave when pinned.
 
 ## [1.7.0] - 2026-07-02
 
@@ -150,3 +166,105 @@ this changelog was introduced.
 - `app:launchCompanion` whitelisted to `settings.taliesinPath`.
 - zod schemas validate `settings:save`, `constants:saveUserConstants`, `constants:addValue`,
   `formulas:save`; failures land a breadcrumb in `ipc-validation.log`.
+
+## [1.4.0] - 2026-04-19
+
+### Added
+
+- **Launch Taliesin from Creidhne** — the companion app opens directly, no more hunting for the
+  other window (mirroring the "Launch Creidhne" button Taliesin has shipped since v2.0.0). An
+  anvil toolbar button launches it from anywhere; the Maps and World Maps dashboard cards are no
+  longer disabled and open it too. Configure the path under _Taliesin (Companion App)_ in
+  Settings — entry points stay disabled with a tooltip until it's set. Taliesin runs detached, so
+  closing Creidhne leaves it open.
+
+### Changed
+
+- **Toolbar restructure** — Formulas, Damage Calculator, Lua Helpers, Exports, and Constants
+  moved out of the right-aligned group into the centered group alongside the editors, separated
+  by a divider. The right side is now app actions only: Settings · Launch Taliesin · About.
+  _About Creidhne_ moved off the Settings page onto the toolbar behind an info icon.
+
+## [1.3.0] - 2026-04-18
+
+### Added
+
+- **Damage Calculator** — a new top-level page for previewing castable damage output before
+  shipping XML changes. Per-player test harness with a modal editor (persisted in
+  `constants.json`), formula picker with optional castable/weapon/override inputs, Low/Avg/High
+  roll evaluation via a hand-rolled NCalc-subset evaluator, and per-player level-sweep
+  sparklines. Castable `ACQUIREDLEVEL` and weapon damage ranges autopopulate from the index.
+- **Lua authoring environment** — everything needed for IntelliSense on Hybrasyl server scripts
+  in VS Code: 20 auto-generated type stubs (1,249 lines) covering `HybrasylUser`,
+  `HybrasylWorld`, the dialog DSL and more; a `.luarc.json` template wiring the sumneko Lua LSP
+  to them with all magic globals (`world`, `origin`, `source`, `target`, `player_response`,
+  `this_script`); a one-click "Install Lua types" button on the Lua Helpers page to deploy both
+  into `world/scripts/`; open-script buttons wherever a script is referenced; and an NCalc-aware
+  transpiler that saves the current formula set to `formulas.lua` as a usable Lua module.
+- **Hybrasyl asset pack support (`.datf`)** — the client install directory can ship custom
+  PNG-based packs that override vanilla Dark Ages EPF assets, shipping with `hybicons.datf` (335
+  spell + skill icons) and `hybnations.datf` (96 nation crests). A `Vanilla | Hybrasyl` toggle
+  appears in the icon and nation crest pickers when a pack is installed, editors preview both
+  side by side when each covers the same ID, and pack-only IDs (e.g. `spell0300`) become
+  pickable in Hybrasyl mode. The toggle persists across sessions.
+
+### Changed
+
+- **Major dependency sweep** — Vite 6 → 7, `@vitejs/plugin-react` 4 → 5, react-window 1 → 2
+  (full API migration across all 9 picker dialogs and the shared file list panel), and MUI 7 → 9
+  including a codemod pass migrating `*Props` shortcuts to the `slotProps` API.
+
+## [1.2.0] - 2026-04-15
+
+### Added
+
+- **Spell Books** — a new tab on the Constants page for creating named collections of castables
+  via a dual-list picker. Saving writes the book to `constants.json` **and** propagates its name
+  as a category onto each selected castable's XML, so BehaviorSets can reference it immediately.
+- **Formula "Used by" panel** — the Formula Editor now shows chips for every castable and status
+  that references the formula you're editing.
+- **Index build progress** — a compact top-left status pill reports scan progress in real time.
+
+### Changed
+
+- **Index rearchitecture** — world indexing moved into a dedicated shared package,
+  [`@eriscorp/hybindex-ts`](https://www.npmjs.com/package/@eriscorp/hybindex-ts), consumed by
+  both Creidhne and Taliesin; per-type index files (`castables.json`, `items.json`, …) replace
+  the monolithic `index.json`, with the legacy file migrating silently on first load; and builds
+  now run off the main process via Electron `utilityProcess`, so full scans on large libraries
+  no longer freeze the UI. ⚠️ **Existing libraries need an index rebuild** to populate the new
+  per-type layout.
+
+## [1.1.0] - 2026-04-14
+
+### Added
+
+- **Formula editor: phase 2** — a settings modal with budget modifier, coefficients, and
+  patterns; pattern-driven editors for Base Damage, Weapon Damage, and Stat Block; castable and
+  status reference with auto-load; plus a coefficient calculator, the full NCalc variable
+  catalog, clean formula assembly, a hand-edit toggle, and per-formula global overrides.
+- **Sprite pickers** — all in-scope pickers shipped: item sprite, color swatch, sound, spell
+  effects, display sprite (khan), NPC portrait, spell/skill icons, and nation crest.
+- **Update alert** — Creidhne checks GitHub Releases on startup and tells you when a new version
+  is out, with a link to the release page. A manual "Check for updates" button lives on the
+  Settings page.
+- **Reference side panel** — a right-side collapsible panel for read-only lookup of any entity
+  without leaving your current editor, with a type dropdown and searchable autocomplete.
+  Castable, status, item, and creature get formatted summary views; the other 9 types fall back
+  to raw XML.
+
+### Changed
+
+- File lists now show the inner `<Name>` as primary text with the bare filename as a muted
+  subtitle when the two differ, and the filter matches either — searching "ard sal" finds
+  `wizard_psp_ard-sal.xml`. ⚠️ **Existing libraries need an index rebuild** for the name-based
+  filter to work.
+- Large lists (2,000+ items) render smoothly via virtualization.
+
+### Fixed
+
+- A "no items found" flash on initial load, replaced by a loading spinner.
+
+## [1.0.0] - 2026-04-11
+
+Initial release.
