@@ -23,6 +23,8 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-16
+
 ### Added
 
 - Editor file lists now show **Active** and **Archived** as tabs, replacing the
