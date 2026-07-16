@@ -23,8 +23,29 @@ this changelog was introduced.
 
 ## [Unreleased]
 
+### Added
+
+- Editor file lists now show **Active** and **Archived** as tabs, replacing the
+  show/hide-archived eye toggle. The archived list is virtualized too, so large
+  archives (Spawngroups has 583) scroll smoothly.
+- File lists can **group by folder** or show one flat list, toggled from the
+  panel header. The choice is saved and applies to every editor.
+
 ### Fixed
 
+- Castables filed in a subdirectory were **missing from both CSV exports** and
+  from the Constants category/vendor-tab/job/family scans. Every place that
+  reads world XML now searches subdirectories, and still ignores `.ignore/`.
+- Renaming a file filed in a subdirectory silently moved it to the top level of
+  its type. It now stays where it was filed.
+- Archiving a file from a subdirectory flattened it into the top of `.ignore/`,
+  and unarchiving returned it to the top level rather than where it came from.
+  Two same-named files in different folders could also collide, silently
+  renaming one to `name_1.xml`. Archive now mirrors the folder structure and
+  round-trips.
+- A reference could resolve to an archived entity when a live one shared its
+  name, showing content the server never loads.
+- The file list lost its selection highlight after renaming a file.
 - About dialog links now use the theme's info color so they're readable on the
   Hybrasyl theme (they previously used the near-black primary color).
 - Recognize the new `town_maps` asset-pack content type (a Brigid runtime/UI type
