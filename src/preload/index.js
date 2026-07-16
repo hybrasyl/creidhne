@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
   maximizeWindow: () => ipcRenderer.send('maximize-window'),
   closeWindow: () => ipcRenderer.send('close-window'),
-  listDir: (dirPath) => ipcRenderer.invoke('fs:listDir', dirPath),
+  listSection: (libraryPath, type) => ipcRenderer.invoke('fs:listSection', libraryPath, type),
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   readBinaryFile: (filePath) => ipcRenderer.invoke('fs:readBinaryFile', filePath),

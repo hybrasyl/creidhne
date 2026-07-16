@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join } from 'path'
+import { basename, join } from 'path'
 import { promises as fs, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
@@ -33,7 +33,7 @@ import {
   formulasSchema
 } from './schemas/index.js'
 import {
-  listDir,
+  listSection,
   readFile,
   writeFile,
   moveFile,
@@ -238,13 +238,18 @@ app.whenReady().then(async () => {
     loadReference(validatePath(libraryPath), type, name)
   )
 
-  // Scan-style handler: swallow path-rejection into [] so the renderer sees
-  // the same empty-state UX as a missing directory (doc §10 Gotcha #2).
-  ipcMain.handle('fs:listDir', async (_, dirPath) => {
+  // Scan-style handler: swallow path-rejection into an empty result so the
+  // renderer sees the same empty-state UX as a missing directory (doc §10 #2).
+  // `type` needs its own traversal check: listSectionFiles joins it onto the
+  // library internally, so validating libraryPath alone would still let a
+  // renderer-supplied `../../..` escape.
+  ipcMain.handle('fs:listSection', async (_, libraryPath, type) => {
     try {
-      return await listDir(validatePath(dirPath))
+      const lib = validatePath(libraryPath)
+      assertInside(lib, type)
+      return await listSection(lib, type)
     } catch {
-      return []
+      return { dir: '', active: [], archived: [] }
     }
   })
   ipcMain.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
@@ -700,62 +705,39 @@ app.whenReady().then(async () => {
     await saveSection(libraryPath, 'castables', fields)
   }
 
+  // Category details are already a first-class index field: hybindex derives
+  // `<type>CategoryDetails` while indexing, in the same `{name, count, usedBy}`
+  // shape this handler used to re-derive by regex over every active file. That
+  // meant reading 3,096 files (2289 items + 581 castables + 226 statuses) to
+  // reproduce what the package computes anyway, and keeping a second parser in
+  // step with it. Verified byte-identical against the production world.
+  //
+  // Going through the worker rather than calling buildSection here keeps the
+  // parse off the main thread, and its saveSection is passed the type it
+  // actually built — unlike `updateIndexFields`, which hardcodes 'castables'
+  // and so stamps that signature falsely fresh (§4.1).
+  //
+  // Sequential, deliberately: each build ends in a saveSection, and saveSection
+  // read-modify-writes the shared `_filecache.json`. Running the three
+  // concurrently would race that file and lose signature updates — the exact
+  // clobber §4.2 describes. The win here is not reading 3,096 files; the
+  // remaining serialism is three builds, not three thousand reads.
+  const CATEGORY_SECTIONS = [
+    ['items', 'itemCategoryDetails'],
+    ['castables', 'castableCategoryDetails'],
+    ['statuses', 'statusCategoryDetails']
+  ]
+
   ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
     validatePath(libraryPath)
     const result = { items: [], castables: [], statuses: [] }
-    const scanDir = async (dir, target) => {
-      const catMap = {}
+    for (const [type, detailField] of CATEGORY_SECTIONS) {
       try {
-        const entries = await fs.readdir(dir, { withFileTypes: true })
-        for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-          const content = await fs.readFile(join(dir, entry.name), 'utf-8')
-          const nameMatch =
-            /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
-          const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
-          const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
-          if (!catSection) continue
-          const body = catSection[1]
-          const cats = new Set()
-          const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
-          const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
-          let m
-          while ((m = catElemRegex.exec(body)) !== null) {
-            const c = m[1].trim()
-            if (c) cats.add(c)
-          }
-          while ((m = catAttrRegex.exec(body)) !== null) {
-            const c = m[1].trim()
-            if (c) cats.add(c)
-          }
-          for (const cat of cats) {
-            if (!catMap[cat]) catMap[cat] = { count: 0, usedBy: [] }
-            catMap[cat].count++
-            if (catMap[cat].usedBy.length < 5) catMap[cat].usedBy.push(itemName)
-          }
-        }
+        const fields = await buildSectionInWorker(libraryPath, type)
+        result[type] = fields?.[detailField] ?? []
       } catch {
-        /* dir may not exist */
+        /* section dir may not exist — leave it empty */
       }
-      target.push(
-        ...Object.entries(catMap)
-          .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      )
-    }
-    await scanDir(join(libraryPath, 'items'), result.items)
-    await scanDir(join(libraryPath, 'castables'), result.castables)
-    await scanDir(join(libraryPath, 'statuses'), result.statuses)
-    try {
-      await updateIndexFields(libraryPath, {
-        itemCategories: result.items.map((c) => c.name),
-        castableCategories: result.castables.map((c) => c.name),
-        statusCategories: result.statuses.map((c) => c.name),
-        itemCategoryDetails: result.items,
-        castableCategoryDetails: result.castables,
-        statusCategoryDetails: result.statuses
-      })
-    } catch {
-      /* non-fatal */
     }
     return result
   })
@@ -765,11 +747,11 @@ app.whenReady().then(async () => {
     const tabMap = {}
     try {
       const itemsDir = join(libraryPath, 'items')
-      const entries = await fs.readdir(itemsDir, { withFileTypes: true })
-      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-        const content = await fs.readFile(join(itemsDir, entry.name), 'utf-8')
+      const { active } = await listSection(libraryPath, 'items')
+      for (const rel of active) {
+        const content = await fs.readFile(join(itemsDir, rel), 'utf-8')
         const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
-        const itemName = nameMatch ? nameMatch[1].trim() : entry.name.replace(/\.xml$/i, '')
+        const itemName = nameMatch ? nameMatch[1].trim() : basename(rel).replace(/\.xml$/i, '')
         const shopTabRegex = /\bShopTab="([^"]+)"/g
         let m
         while ((m = shopTabRegex.exec(content)) !== null) {
@@ -802,14 +784,16 @@ app.whenReady().then(async () => {
     const jobMap = {}
     try {
       const npcsDir = join(libraryPath, 'npcs')
-      const entries = await fs.readdir(npcsDir, { withFileTypes: true })
-      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-        const namePart = entry.name.replace(/\.xml$/i, '')
+      const { active } = await listSection(libraryPath, 'npcs')
+      for (const rel of active) {
+        // The job prefix comes from the filename, so derive it from the
+        // basename — a rel path would read a parent directory as the prefix.
+        const namePart = basename(rel).replace(/\.xml$/i, '')
         const underscoreIdx = namePart.indexOf('_')
         if (underscoreIdx <= 0) continue
         const prefix = namePart.slice(0, underscoreIdx)
         if (!prefix || prefix.toLowerCase() === 'npc') continue
-        const content = await fs.readFile(join(npcsDir, entry.name), 'utf-8')
+        const content = await fs.readFile(join(npcsDir, rel), 'utf-8')
         const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
         const npcName = nameMatch ? nameMatch[1].trim() : namePart
         if (!jobMap[prefix]) jobMap[prefix] = { count: 0, usedBy: [] }
@@ -837,10 +821,10 @@ app.whenReady().then(async () => {
     validatePath(libraryPath)
     const familyMap = {}
     try {
-      const creaturesDir = join(libraryPath, 'creatures')
-      const entries = await fs.readdir(creaturesDir, { withFileTypes: true })
-      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
-        const namePart = entry.name.replace(/\.xml$/i, '')
+      const { active } = await listSection(libraryPath, 'creatures')
+      for (const rel of active) {
+        // Family prefix comes from the filename — see scanNpcJobs above.
+        const namePart = basename(rel).replace(/\.xml$/i, '')
         const underscoreIdx = namePart.indexOf('_')
         if (underscoreIdx <= 0) continue
         const prefix = namePart.slice(0, underscoreIdx)
@@ -848,7 +832,7 @@ app.whenReady().then(async () => {
         if (!familyMap[prefix]) familyMap[prefix] = { count: 0, usedBy: [] }
         familyMap[prefix].count++
         try {
-          const content = await fs.readFile(join(creaturesDir, entry.name), 'utf-8')
+          const content = await fs.readFile(join(libraryPath, 'creatures', rel), 'utf-8')
           const nameMatch = /Name="([^"]+)"/.exec(content)
           const creatureName = nameMatch ? nameMatch[1].trim() : namePart
           if (familyMap[prefix].usedBy.length < 5) familyMap[prefix].usedBy.push(creatureName)
@@ -996,16 +980,18 @@ app.whenReady().then(async () => {
         /* index not available */
       }
 
-      // Fallback: scan directory files for matching <Name> element
+      // Fallback: scan section files for a matching <Name> element. `filename`
+      // is a type-relative rel path either way — the index map and listSection
+      // agree on that key — so the join below resolves both.
       if (!filename) {
         const castDir = join(libraryPath, 'castables')
-        const entries = await fs.readdir(castDir)
+        const { active } = await listSection(libraryPath, 'castables')
         const nameLower = castableName.toLowerCase()
-        for (const entry of entries.filter((e) => e.endsWith('.xml'))) {
-          const content = await fs.readFile(join(castDir, entry), 'utf-8')
+        for (const rel of active) {
+          const content = await fs.readFile(join(castDir, rel), 'utf-8')
           const nameMatch = /<Name>([^<]+)<\/Name>/.exec(content)
           if (nameMatch && nameMatch[1].trim().toLowerCase() === nameLower) {
-            filename = entry
+            filename = rel
             break
           }
         }
@@ -1127,16 +1113,19 @@ app.whenReady().then(async () => {
       'Name,Icon,Description,Class,Subclass,Location,StatStr,StatInt,StatWis,StatDex,StatCon,Mats,Level,Type,CastCost,Cooldown'
     const rows = [header]
 
-    let entries = []
+    let active = []
     try {
-      entries = await fs.readdir(castDir, { withFileTypes: true })
+      // See exportCastablesExcelCSV: `active` is recursive AND excludes the
+      // archive explicitly, which a plain readdir did only as a side effect of
+      // `isFile()` skipping the `.ignore` directory.
+      ;({ active } = await listSection(libraryPath, 'castables'))
     } catch {
       return { error: 'Could not read castables directory' }
     }
 
-    for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+    for (const rel of active) {
       try {
-        const xmlString = await fs.readFile(join(castDir, entry.name), 'utf-8')
+        const xmlString = await fs.readFile(join(castDir, rel), 'utf-8')
         const meta = extractMeta(xmlString)
         if (meta.isTest || meta.isGM) continue
         const castable = await parseCastableXml(xmlString)

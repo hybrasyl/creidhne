@@ -14,6 +14,7 @@ import {
   packCoverageState,
   iconPickerModeState,
   nationCrestPickerModeState,
+  fileListViewModeState,
   npcPortraitPickerModeState,
   soundPickerModeState,
   creaturePickerModeState
@@ -65,6 +66,7 @@ function App() {
   )
   const [soundPickerMode, setSoundPickerMode] = useStoreState(soundPickerModeState)
   const [creaturePickerMode, setCreaturePickerMode] = useStoreState(creaturePickerModeState)
+  const [fileListViewMode, setFileListViewMode] = useStoreState(fileListViewModeState)
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
@@ -90,6 +92,7 @@ function App() {
       setNpcPortraitPickerMode(settings.npcPortraitPickerMode || 'vanilla')
       setSoundPickerMode(settings.soundPickerMode || 'vanilla')
       setCreaturePickerMode(settings.creaturePickerMode || 'vanilla')
+      setFileListViewMode(settings.fileListViewMode || 'flat')
       setSettingsLoaded(true)
       // Tell main the first frame is populated so it can reveal the window and
       // dismiss the splash (no-op if the API predates this build).
@@ -108,7 +111,8 @@ function App() {
     setNationCrestPickerMode,
     setNpcPortraitPickerMode,
     setSoundPickerMode,
-    setCreaturePickerMode
+    setCreaturePickerMode,
+    setFileListViewMode
   ])
 
   // Refresh active asset packs whenever a .datf source path changes
@@ -170,7 +174,8 @@ function App() {
       nationCrestPickerMode,
       npcPortraitPickerMode,
       soundPickerMode,
-      creaturePickerMode
+      creaturePickerMode,
+      fileListViewMode
     })
   }, [
     settingsLoaded,
@@ -184,7 +189,8 @@ function App() {
     nationCrestPickerMode,
     npcPortraitPickerMode,
     soundPickerMode,
-    creaturePickerMode
+    creaturePickerMode,
+    fileListViewMode
   ])
 
   // Stop any sound preview on page navigation — keeps playback from bleeding

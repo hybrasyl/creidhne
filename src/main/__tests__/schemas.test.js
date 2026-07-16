@@ -20,11 +20,20 @@ describe('settingsSchema', () => {
     nationCrestPickerMode: 'vanilla',
     npcPortraitPickerMode: 'vanilla',
     soundPickerMode: 'vanilla',
-    creaturePickerMode: 'vanilla'
+    creaturePickerMode: 'vanilla',
+    fileListViewMode: 'flat'
   }
 
   it('accepts a fully-populated valid payload', () => {
     expect(settingsSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('accepts the folder file-list view mode', () => {
+    expect(settingsSchema.safeParse({ ...valid, fileListViewMode: 'folder' }).success).toBe(true)
+  })
+
+  it('rejects an unknown file-list view mode', () => {
+    expect(settingsSchema.safeParse({ ...valid, fileListViewMode: 'tree' }).success).toBe(false)
   })
 
   it('rejects libraries as a string', () => {

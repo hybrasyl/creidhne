@@ -29,7 +29,8 @@ const VALID = {
   nationCrestPickerMode: 'vanilla',
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
-  creaturePickerMode: 'vanilla'
+  creaturePickerMode: 'vanilla',
+  fileListViewMode: 'flat'
 }
 
 const DEFAULTS = {
@@ -43,7 +44,8 @@ const DEFAULTS = {
   nationCrestPickerMode: 'vanilla',
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
-  creaturePickerMode: 'vanilla'
+  creaturePickerMode: 'vanilla',
+  fileListViewMode: 'flat'
 }
 
 describe('settingsManager', () => {
@@ -205,7 +207,9 @@ describe('settingsManager', () => {
       nationCrestPickerMode: 'hybrasyl',
       npcPortraitPickerMode: 'hybrasyl',
       soundPickerMode: 'hybrasyl',
-      creaturePickerMode: 'hybrasyl'
+      creaturePickerMode: 'hybrasyl',
+      // Must differ from DEFAULTS — the round-trip test asserts every key does.
+      fileListViewMode: 'folder'
     }
 
     it('preserves every field through save → load', async () => {

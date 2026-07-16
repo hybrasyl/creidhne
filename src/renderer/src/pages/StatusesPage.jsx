@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -11,7 +11,9 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { resolveSavePath } from '../utils/fileTree'
 
 const SUBDIR = 'statuses'
 const IGNORE_SUBDIR = 'statuses/.ignore'
@@ -50,13 +52,9 @@ function StatusesPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.statusesNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingStatus, setEditingStatus] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingStatus, setLoadingStatus] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -71,44 +69,14 @@ function StatusesPage() {
     handleDialogCancel
   } = useUnsavedGuard('Status')
 
-  const loadActiveFiles = async (library) => {
-    if (!library) {
-      setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
-      setArchivedFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingStatus(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -143,8 +111,7 @@ function StatusesPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const newPath =
-        isRename || !selectedFile ? `${activeLibrary}/${SUBDIR}/${fileName}` : selectedFile.path
+      const { newPath, newRel } = resolveSavePath(activeLibrary, SUBDIR, selectedFile, fileName)
 
       await window.electronAPI.saveStatus(newPath, data)
       setEditingStatus(data)
@@ -155,17 +122,17 @@ function StatusesPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
       }
 
       if (activeLibrary) {
-        await loadActiveFiles(activeLibrary)
+        await loadFiles(activeLibrary)
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
@@ -191,8 +158,7 @@ function StatusesPage() {
     setSelectedFile,
     clearEditing: () => setEditingStatus(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -214,8 +180,6 @@ function StatusesPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

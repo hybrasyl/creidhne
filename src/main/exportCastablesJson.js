@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { promises as fs } from 'fs'
 import { parseCastableXml } from './castableXml.js'
+import { listSection } from './fsHandlers.js'
 
 function bookToType(book) {
   if (!book) return ''
@@ -132,17 +133,21 @@ function esc(val) {
 
 export async function exportCastablesExcelCSV(libraryPath) {
   const castDir = join(libraryPath, 'castables')
-  let entries
+  let active
   try {
-    entries = await fs.readdir(castDir, { withFileTypes: true })
+    // `active` excludes the archive explicitly. A plain readdir used to exclude
+    // it only by accident — `.ignore` is a directory, so `isFile()` dropped it —
+    // which means naively recursing here would have swept the whole archive into
+    // the report. It also missed subdirectories entirely, silently omitting rows.
+    ;({ active } = await listSection(libraryPath, 'castables'))
   } catch {
     return { error: 'Could not read castables directory' }
   }
 
   const dataRows = []
-  for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.xml'))) {
+  for (const rel of active) {
     try {
-      const xmlString = await fs.readFile(join(castDir, entry.name), 'utf-8')
+      const xmlString = await fs.readFile(join(castDir, rel), 'utf-8')
       const castable = await parseCastableXml(xmlString)
       dataRows.push(mapCastableToRow(castable))
     } catch {

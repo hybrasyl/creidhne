@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -11,7 +11,9 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { resolveSavePath } from '../utils/fileTree'
 
 const NATIONS_SUBDIR = 'nations'
 const IGNORE_SUBDIR = 'nations/.ignore'
@@ -30,13 +32,9 @@ function NationsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.nationsNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingNation, setEditingNation] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingNation, setLoadingNation] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -51,44 +49,14 @@ function NationsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Nation')
 
-  const loadActiveFiles = async (library) => {
-    if (!library) {
-      setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${NATIONS_SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
-      setArchivedFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    NATIONS_SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingNation(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -117,10 +85,12 @@ function NationsPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const newPath =
-        isRename || !selectedFile
-          ? `${activeLibrary}/${NATIONS_SUBDIR}/${fileName}`
-          : selectedFile.path
+      const { newPath, newRel } = resolveSavePath(
+        activeLibrary,
+        NATIONS_SUBDIR,
+        selectedFile,
+        fileName
+      )
 
       await window.electronAPI.saveNation(newPath, data)
       setEditingNation(data)
@@ -130,18 +100,17 @@ function NationsPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
       }
 
       markClean()
-      await loadActiveFiles(activeLibrary)
-      await loadArchivedFiles(activeLibrary)
+      await loadFiles(activeLibrary)
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, NATIONS_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
@@ -169,8 +138,7 @@ function NationsPage() {
     setSelectedFile,
     clearEditing: () => setEditingNation(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -192,8 +160,6 @@ function NationsPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

@@ -12,8 +12,17 @@ const mockFs = {
 
 vi.mock('fs', () => ({ promises: mockFs }))
 
+// listSection delegates to the index package — the single definition of which
+// files belong to a section. Mock at that boundary: these tests pin the
+// delegation and the shape Creidhne adds on top, not hybindex's own walk
+// (which has its own suite in that repo).
+const mockListSectionFiles = vi.fn()
+vi.mock('@eriscorp/hybindex-ts', () => ({
+  listSectionFiles: (...a) => mockListSectionFiles(...a)
+}))
+
 const {
-  listDir,
+  listSection,
   readFile,
   writeFile,
   moveFile,
@@ -33,29 +42,48 @@ beforeEach(() => {
   mockFs.writeFile.mockResolvedValue(undefined)
 })
 
-// ─── listDir ─────────────────────────────────────────────────────────────────
+// ─── listSection ─────────────────────────────────────────────────────────────
 
-describe('listDir', () => {
-  it('returns only .xml files with name and full path', async () => {
-    mockFs.readdir.mockResolvedValue([
-      { isFile: () => true, name: 'item.xml' },
-      { isFile: () => true, name: 'notes.txt' },
-      { isFile: () => false, name: 'subdir' }
-    ])
-    const result = await listDir('/world/items')
-    expect(result).toEqual([{ name: 'item.xml', path: join('/world/items', 'item.xml') }])
+describe('listSection', () => {
+  it('delegates to listSectionFiles with the library path and type', async () => {
+    mockListSectionFiles.mockResolvedValue({ dir: '/world/castables', active: [], archived: [] })
+    await listSection('/world', 'castables')
+    expect(mockListSectionFiles).toHaveBeenCalledWith('/world', 'castables')
   })
 
-  it('returns empty array when directory does not exist', async () => {
-    mockFs.readdir.mockRejectedValue(new Error('ENOENT'))
-    const result = await listDir('/missing')
-    expect(result).toEqual([])
+  it('passes through the recursive active/archived split', async () => {
+    mockListSectionFiles.mockResolvedValue({
+      dir: '/world/castables',
+      active: ['blast.xml', 'universal/dachaidh.xml'],
+      archived: ['.ignore/old.xml', '.ignore/Deprecated/older.xml']
+    })
+    const r = await listSection('/world', 'castables')
+    expect(r.active).toEqual(['blast.xml', 'universal/dachaidh.xml'])
+    expect(r.archived).toEqual(['.ignore/old.xml', '.ignore/Deprecated/older.xml'])
   })
 
-  it('returns empty array when directory is empty', async () => {
-    mockFs.readdir.mockResolvedValue([])
-    const result = await listDir('/empty')
-    expect(result).toEqual([])
+  it('never reports archived files as active', async () => {
+    mockListSectionFiles.mockResolvedValue({
+      dir: '/world/castables',
+      active: ['blast.xml'],
+      archived: ['.ignore/old.xml']
+    })
+    const { active } = await listSection('/world', 'castables')
+    expect(active.some((rel) => rel.startsWith('.ignore/'))).toBe(false)
+  })
+
+  // Renderer paths are built as `${dir}/${rel}`. The pages construct save paths
+  // with forward slashes, so a native-separator `dir` would make
+  // `selectedFile.path === file.path` silently false and drop the selection
+  // highlight after a rename.
+  it('normalizes dir to forward slashes', async () => {
+    mockListSectionFiles.mockResolvedValue({
+      dir: 'E:\\world\\xml\\castables',
+      active: [],
+      archived: []
+    })
+    const { dir } = await listSection('E:\\world\\xml', 'castables')
+    expect(dir).toBe('E:/world/xml/castables')
   })
 })
 
@@ -172,10 +200,10 @@ describe('checkClientPath', () => {
 describe('archiveFile', () => {
   it('moves file directly when no conflict in archive dir', async () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT')) // dest is free
-    const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
+    const result = await archiveFile('/world/items/sword.xml', '/world/items/.ignore')
     expect(mockFs.rename).toHaveBeenCalledWith(
       '/world/items/sword.xml',
-      join('/world/_archive', 'sword.xml')
+      join('/world/items/.ignore', 'sword.xml')
     )
     expect(result).toEqual({ success: true, archivedAs: 'sword.xml' })
   })
@@ -184,10 +212,10 @@ describe('archiveFile', () => {
     mockFs.access
       .mockResolvedValueOnce(undefined) // sword.xml exists
       .mockRejectedValueOnce(new Error('ENOENT')) // sword_1.xml is free
-    const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
+    const result = await archiveFile('/world/items/sword.xml', '/world/items/.ignore')
     expect(mockFs.rename).toHaveBeenCalledWith(
       '/world/items/sword.xml',
-      join('/world/_archive', 'sword_1.xml')
+      join('/world/items/.ignore', 'sword_1.xml')
     )
     expect(result).toEqual({ success: true, archivedAs: 'sword_1.xml' })
   })
@@ -198,19 +226,19 @@ describe('archiveFile', () => {
       .mockResolvedValueOnce(undefined) // sword_1.xml exists
       .mockResolvedValueOnce(undefined) // sword_2.xml exists
       .mockRejectedValueOnce(new Error('ENOENT')) // sword_3.xml is free
-    const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
+    const result = await archiveFile('/world/items/sword.xml', '/world/items/.ignore')
     expect(result).toEqual({ success: true, archivedAs: 'sword_3.xml' })
   })
 
   it('creates archive directory before moving', async () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT'))
-    await archiveFile('/world/items/sword.xml', '/world/_archive')
-    expect(mockFs.mkdir).toHaveBeenCalledWith('/world/_archive', { recursive: true })
+    await archiveFile('/world/items/sword.xml', '/world/items/.ignore')
+    expect(mockFs.mkdir).toHaveBeenCalledWith('/world/items/.ignore', { recursive: true })
   })
 
   it('preserves .xml extension in suffixed name', async () => {
     mockFs.access.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('ENOENT'))
-    const result = await archiveFile('/world/items/sword.xml', '/world/_archive')
+    const result = await archiveFile('/world/items/sword.xml', '/world/items/.ignore')
     expect(result.archivedAs).toMatch(/\.xml$/)
   })
 })
@@ -222,7 +250,7 @@ describe('archiveFiles', () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT')) // every dest free
     const result = await archiveFiles(
       ['/world/items/a.xml', '/world/items/b.xml'],
-      '/world/_archive'
+      '/world/items/.ignore'
     )
     expect(result.failed).toEqual([])
     expect(result.ok).toEqual([
@@ -237,14 +265,14 @@ describe('archiveFiles', () => {
     mockFs.rename.mockRejectedValueOnce(new Error('boom on first')).mockResolvedValueOnce(undefined)
     const result = await archiveFiles(
       ['/world/items/a.xml', '/world/items/b.xml'],
-      '/world/_archive'
+      '/world/items/.ignore'
     )
     expect(result.ok).toEqual([{ src: '/world/items/b.xml', archivedAs: 'b.xml' }])
     expect(result.failed).toEqual([{ src: '/world/items/a.xml', reason: 'boom on first' }])
   })
 
   it('handles empty src list as no-op', async () => {
-    const result = await archiveFiles([], '/world/_archive')
+    const result = await archiveFiles([], '/world/items/.ignore')
     expect(result).toEqual({ ok: [], failed: [] })
     expect(mockFs.rename).not.toHaveBeenCalled()
   })
@@ -252,17 +280,106 @@ describe('archiveFiles', () => {
 
 // ─── unarchiveFiles (bulk) ───────────────────────────────────────────────────
 
+// ─── Archive/unarchive subfolder mirroring ───────────────────────────────────
+//
+// Subfolders are authored in git, not in the app — but the app must not undo
+// them. These pin the round-trip: a file archived out of `universal/` comes
+// back to `universal/`, and two same-named files in different subfolders no
+// longer collide into one archive slot.
+
+describe('archiveFile: subfolder mirroring', () => {
+  it('mirrors the subfolder into the archive', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await archiveFile(
+      '/world/castables/universal/dachaidh.xml',
+      '/world/castables/.ignore'
+    )
+    expect(mockFs.rename).toHaveBeenCalledWith(
+      '/world/castables/universal/dachaidh.xml',
+      join('/world/castables/.ignore/universal', 'dachaidh.xml')
+    )
+    expect(result.archivedAs).toBe('universal/dachaidh.xml')
+  })
+
+  it('creates the mirrored archive subdirectory', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    await archiveFile('/world/castables/universal/x.xml', '/world/castables/.ignore')
+    expect(mockFs.mkdir).toHaveBeenCalledWith(join('/world/castables/.ignore', 'universal'), {
+      recursive: true
+    })
+  })
+
+  it('keeps same-named files in different subfolders from colliding', async () => {
+    // Flattening sent both to .ignore/blast.xml, silently renaming one to
+    // blast_1.xml. Mirrored, each keeps its own name under its own folder.
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const fire = await archiveFile('/world/castables/fire/blast.xml', '/world/castables/.ignore')
+    const ice = await archiveFile('/world/castables/ice/blast.xml', '/world/castables/.ignore')
+    expect(fire.archivedAs).toBe('fire/blast.xml')
+    expect(ice.archivedAs).toBe('ice/blast.xml')
+  })
+
+  it('archives a type-root file flat, exactly as before', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await archiveFile('/world/castables/blast.xml', '/world/castables/.ignore')
+    expect(mockFs.rename).toHaveBeenCalledWith(
+      '/world/castables/blast.xml',
+      join('/world/castables/.ignore', 'blast.xml')
+    )
+    expect(result.archivedAs).toBe('blast.xml')
+  })
+
+  it('still suffixes on collision within a mirrored subfolder', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // universal/x.xml taken
+      .mockRejectedValueOnce(new Error('ENOENT')) // universal/x_1.xml free
+    const result = await archiveFile('/world/castables/universal/x.xml', '/world/castables/.ignore')
+    expect(result.archivedAs).toBe('universal/x_1.xml')
+  })
+})
+
+describe('unarchiveFiles: subfolder mirroring', () => {
+  it('restores a mirrored file to its original subfolder', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await unarchiveFiles(
+      ['/world/castables/.ignore/universal/dachaidh.xml'],
+      '/world/castables'
+    )
+    expect(result.ok).toEqual([
+      {
+        src: '/world/castables/.ignore/universal/dachaidh.xml',
+        dest: join('/world/castables', 'universal/dachaidh.xml')
+      }
+    ])
+  })
+
+  it('restores nested archive folders (e.g. Deprecated Spawngroups)', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await unarchiveFiles(
+      ['/world/spawngroups/.ignore/Deprecated Spawngroups/old.xml'],
+      '/world/spawngroups'
+    )
+    expect(result.ok[0].dest).toBe(join('/world/spawngroups', 'Deprecated Spawngroups/old.xml'))
+  })
+
+  it('restores a flat archived file to the type root', async () => {
+    mockFs.access.mockRejectedValue(new Error('ENOENT'))
+    const result = await unarchiveFiles(['/world/castables/.ignore/old.xml'], '/world/castables')
+    expect(result.ok[0].dest).toBe(join('/world/castables', 'old.xml'))
+  })
+})
+
 describe('unarchiveFiles', () => {
   it('moves each src back to destDir using its basename', async () => {
     mockFs.access.mockRejectedValue(new Error('ENOENT')) // every dest free
     const result = await unarchiveFiles(
-      ['/world/_archive/a.xml', '/world/_archive/b.xml'],
+      ['/world/items/.ignore/a.xml', '/world/items/.ignore/b.xml'],
       '/world/items'
     )
     expect(result.failed).toEqual([])
     expect(result.ok).toEqual([
-      { src: '/world/_archive/a.xml', dest: join('/world/items', 'a.xml') },
-      { src: '/world/_archive/b.xml', dest: join('/world/items', 'b.xml') }
+      { src: '/world/items/.ignore/a.xml', dest: join('/world/items', 'a.xml') },
+      { src: '/world/items/.ignore/b.xml', dest: join('/world/items', 'b.xml') }
     ])
   })
 
@@ -271,12 +388,12 @@ describe('unarchiveFiles', () => {
       .mockResolvedValueOnce(undefined) // a.xml dest exists → conflict
       .mockRejectedValueOnce(new Error('ENOENT')) // b.xml dest free
     const result = await unarchiveFiles(
-      ['/world/_archive/a.xml', '/world/_archive/b.xml'],
+      ['/world/items/.ignore/a.xml', '/world/items/.ignore/b.xml'],
       '/world/items'
     )
-    expect(result.failed).toEqual([{ src: '/world/_archive/a.xml', reason: 'conflict' }])
+    expect(result.failed).toEqual([{ src: '/world/items/.ignore/a.xml', reason: 'conflict' }])
     expect(result.ok).toEqual([
-      { src: '/world/_archive/b.xml', dest: join('/world/items', 'b.xml') }
+      { src: '/world/items/.ignore/b.xml', dest: join('/world/items', 'b.xml') }
     ])
   })
 
@@ -319,5 +436,37 @@ describe('duplicateFile', () => {
     mockFs.readFile.mockResolvedValueOnce('<X/>')
     const result = await duplicateFile('/world/items/blade.xml')
     expect(result.duplicateAs).toMatch(/\.xml$/)
+  })
+})
+
+// Re-archiving something already inside the archive: the rename flow retires the
+// old file via archiveFile, and for an archived file that src already sits under
+// `.ignore`. Measuring its subdir from the type root would mirror that `.ignore`
+// back into the archive and bury it at `.ignore/.ignore/`.
+describe('archiveFile: src already inside the archive', () => {
+  it('does not nest a second .ignore for an archived type-root file', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // .ignore/old.xml is the src itself
+      .mockRejectedValueOnce(new Error('ENOENT')) // .ignore/old_1.xml free
+    const result = await archiveFile('/world/castables/.ignore/old.xml', '/world/castables/.ignore')
+    expect(result.archivedAs).toBe('old_1.xml')
+    expect(mockFs.rename).toHaveBeenCalledWith(
+      '/world/castables/.ignore/old.xml',
+      join('/world/castables/.ignore', 'old_1.xml')
+    )
+  })
+
+  it('keeps an archived subfolder file in its own archive subfolder', async () => {
+    mockFs.access
+      .mockResolvedValueOnce(undefined) // universal/x.xml taken (the src)
+      .mockRejectedValueOnce(new Error('ENOENT'))
+    const result = await archiveFile(
+      '/world/castables/.ignore/universal/x.xml',
+      '/world/castables/.ignore'
+    )
+    expect(result.archivedAs).toBe('universal/x_1.xml')
+    expect(mockFs.mkdir).toHaveBeenCalledWith(join('/world/castables/.ignore', 'universal'), {
+      recursive: true
+    })
   })
 })

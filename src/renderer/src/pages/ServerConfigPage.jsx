@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Alert, Snackbar } from '@mui/material'
 import {
   useStoreValue,
@@ -11,7 +11,9 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { resolveSavePath } from '../utils/fileTree'
 
 const SUBDIR = 'serverconfigs'
 const IGNORE_SUBDIR = 'serverconfigs/.ignore'
@@ -64,12 +66,8 @@ function ServerConfigPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.serverconfigsNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingConfig, setEditingConfig] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -84,44 +82,14 @@ function ServerConfigPage() {
     handleDialogCancel
   } = useUnsavedGuard('Server Config')
 
-  const loadFiles = async (library) => {
-    if (!library) {
-      setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
-      setArchivedFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingConfig(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    Promise.all([loadFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -147,8 +115,7 @@ function ServerConfigPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const newPath =
-        isRename || !selectedFile ? `${activeLibrary}/${SUBDIR}/${fileName}` : selectedFile.path
+      const { newPath, newRel } = resolveSavePath(activeLibrary, SUBDIR, selectedFile, fileName)
 
       await window.electronAPI.saveServerConfig(newPath, data)
       setEditingConfig(data) // #6: sync editor to saved data before any selectedFile change
@@ -158,13 +125,13 @@ function ServerConfigPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath }) // #5: associate with file after first save
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath }) // #5: associate with file after first save
       }
 
       markClean()
@@ -192,8 +159,7 @@ function ServerConfigPage() {
     setSelectedFile,
     clearEditing: () => setEditingConfig(null),
     setLibraryIndex,
-    loadActiveFiles: loadFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -215,8 +181,6 @@ function ServerConfigPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

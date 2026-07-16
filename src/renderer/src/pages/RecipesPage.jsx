@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -11,7 +11,9 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { resolveSavePath } from '../utils/fileTree'
 
 const RECIPES_SUBDIR = 'recipes'
 const IGNORE_SUBDIR = 'recipes/.ignore'
@@ -29,13 +31,9 @@ function RecipesPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.recipesNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingRecipe, setEditingRecipe] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingRecipe, setLoadingRecipe] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
 
@@ -50,44 +48,14 @@ function RecipesPage() {
     handleDialogCancel
   } = useUnsavedGuard('Recipe')
 
-  const loadActiveFiles = async (library) => {
-    if (!library) {
-      setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${RECIPES_SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
-      setArchivedFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    RECIPES_SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingRecipe(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -116,10 +84,12 @@ function RecipesPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const newPath =
-        isRename || !selectedFile
-          ? `${activeLibrary}/${RECIPES_SUBDIR}/${fileName}`
-          : selectedFile.path
+      const { newPath, newRel } = resolveSavePath(
+        activeLibrary,
+        RECIPES_SUBDIR,
+        selectedFile,
+        fileName
+      )
 
       await window.electronAPI.saveRecipe(newPath, data)
       setEditingRecipe(data) // #6: sync editor to saved data before any selectedFile change
@@ -129,18 +99,18 @@ function RecipesPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath }) // #5: associate with file after first save
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath }) // #5: associate with file after first save
       }
 
       markClean()
       if (activeLibrary) {
-        await loadActiveFiles(activeLibrary)
+        await loadFiles(activeLibrary)
         const section = await window.electronAPI.buildIndexSection(activeLibrary, RECIPES_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
@@ -166,8 +136,7 @@ function RecipesPage() {
     setSelectedFile,
     clearEditing: () => setEditingRecipe(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -189,8 +158,6 @@ function RecipesPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}

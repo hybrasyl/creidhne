@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -13,7 +13,9 @@ import { DEFAULT_ITEM } from '../data/itemConstants'
 import { validateItem } from '../data/itemValidation'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { resolveSavePath } from '../utils/fileTree'
 
 const ITEMS_SUBDIR = 'items'
 const IGNORE_SUBDIR = 'items/.ignore'
@@ -22,13 +24,9 @@ function ItemsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.itemsNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingItem, setLoadingItem] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [editWarnings, setEditWarnings] = useState([])
   const [snackbar, setSnackbar] = useState(null) // { message, severity }
@@ -44,44 +42,14 @@ function ItemsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Item')
 
-  const loadActiveFiles = async (library) => {
-    if (!library) {
-      setFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${ITEMS_SUBDIR}`)
-    setFiles(items)
-  }
-
-  const loadArchivedFiles = async (library) => {
-    if (!library) {
-      setArchivedFiles([])
-      return
-    }
-    const items = await window.electronAPI.listDir(`${library}/${IGNORE_SUBDIR}`)
-    setArchivedFiles(items.map((f) => ({ ...f, archived: true })))
-  }
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    ITEMS_SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingItem(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    Promise.all([loadActiveFiles(activeLibrary), loadArchivedFiles(activeLibrary)]).finally(() =>
-      setLoading(false)
-    )
-  }, [activeLibrary])
-
-  const handleToggleArchived = async () => {
-    const next = !showArchived
-    setShowArchived(next)
-    if (next && activeLibrary) await loadArchivedFiles(activeLibrary)
-  }
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -113,10 +81,12 @@ function ItemsPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const newPath =
-        isRename || !selectedFile
-          ? `${activeLibrary}/${ITEMS_SUBDIR}/${fileName}`
-          : selectedFile.path
+      const { newPath, newRel } = resolveSavePath(
+        activeLibrary,
+        ITEMS_SUBDIR,
+        selectedFile,
+        fileName
+      )
 
       await window.electronAPI.saveItem(newPath, data)
       setEditingItem(data) // #6: sync editor to saved data before any selectedFile change
@@ -126,18 +96,18 @@ function ItemsPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ name: fileName, path: newPath })
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
         setSnackbar({
           message: `Renamed. Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ name: fileName, path: newPath }) // #5: associate with file after first save
+        setSelectedFile({ rel: newRel, name: fileName, path: newPath }) // #5: associate with file after first save
       }
 
       markClean()
       if (activeLibrary) {
-        await loadActiveFiles(activeLibrary)
+        await loadFiles(activeLibrary)
         const section = await window.electronAPI.buildIndexSection(activeLibrary, ITEMS_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
@@ -163,8 +133,7 @@ function ItemsPage() {
     setSelectedFile,
     clearEditing: () => setEditingItem(null),
     setLibraryIndex,
-    loadActiveFiles,
-    loadArchivedFiles,
+    loadFiles,
     setSnackbar,
     markClean
   })
@@ -187,8 +156,6 @@ function ItemsPage() {
         selectedFile={selectedFile}
         onSelect={handleSelect}
         onNew={handleNew}
-        showArchived={showArchived}
-        onToggleArchived={handleToggleArchived}
         namesByFilename={namesByFilename}
         loading={loading}
         onArchive={handleBulkArchive}
