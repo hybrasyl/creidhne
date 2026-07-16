@@ -67,26 +67,42 @@ export function filterFiles(files, query, namesByFilename) {
   return files.filter((f) => matchesFilter(f, query, namesByFilename))
 }
 
-/**
- * The folder portion of a rel path: 'universal/x.xml' → 'universal', 'x.xml' → ''.
- * Pages use this to keep a renamed file in its own subfolder — writing to
- * `<type>/<name>` unconditionally would silently move it up to the type root.
- */
+/** The folder portion of a rel path: 'universal/x.xml' → 'universal', 'x.xml' → ''. */
 export function relDir(rel) {
   const i = rel.lastIndexOf('/')
   return i === -1 ? '' : rel.slice(0, i)
 }
 
-/** Every folder key on the way to `treePath`: 'a/b/c.xml' → ['a', 'a/b']. */
-export function ancestorFolders(treePath) {
-  const segs = treePath.split('/')
-  const out = []
-  for (let i = 1; i < segs.length; i++) out.push(segs.slice(0, i).join('/'))
-  return out
+/**
+ * Where a page should write `fileName`, given the file currently open.
+ *
+ * The rule this encodes is load-bearing and easy to get wrong: a renamed file
+ * stays in the subfolder it was filed under. Building `<library>/<type>/<name>`
+ * unconditionally — as every page did before subfolders existed — silently lifts
+ * it out of e.g. `universal/` and back to the type root, archiving the original
+ * on the way. That is one rule, so it lives in one place rather than being
+ * restated in each editor page.
+ *
+ * A new file (`selectedFile` null) has no folder to inherit and lands at the
+ * type root. Returns `newRel` too: it is the index key the file list looks names
+ * up by, and the source of the subfolder on any later rename.
+ */
+export function resolveSavePath(library, subdir, selectedFile, fileName) {
+  const subDir = selectedFile ? relDir(selectedFile.rel) : ''
+  const newRel = subDir ? `${subDir}/${fileName}` : fileName
+  // Saving under the same name writes back to the exact path we were handed,
+  // rather than a rebuilt one that is equivalent but not string-identical.
+  const newPath =
+    selectedFile && fileName === selectedFile.name
+      ? selectedFile.path
+      : `${library}/${subdir}/${newRel}`
+  return { newPath, newRel }
 }
 
 /**
- * Group files into a nested tree on their `treePath` segments.
+ * Group files into a nested tree on their `treePath` segments. Each folder node
+ * carries its own descendant `count`, stamped here — the build already visits
+ * every node, so the flatten pass reads it instead of re-walking each subtree.
  *
  * Filtering happens BEFORE this (see filterFiles), not inside it: rebuilding
  * from surviving leaves drops empty folders and keeps the ancestors of every
@@ -112,26 +128,23 @@ export function buildFileTree(files) {
 
   const byName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
   const toNodes = (node) => {
-    const folders = [...node.children.values()]
-      .sort(byName)
-      .map((c) => ({ kind: 'folder', key: c.key, name: c.name, children: toNodes(c) }))
+    // Folders must be sorted by name rather than left in Map insertion order:
+    // that order follows the full path, where '/' (0x2F) sorts below letters, so
+    // `a-b/x.xml` would otherwise precede `a/x.xml`. Files are sorted with the
+    // same comparator — listSectionFiles already hands us path order, but this
+    // helper is pure and shouldn't depend on its caller for ordering.
+    const folders = [...node.children.values()].sort(byName).map((c) => {
+      const children = toNodes(c)
+      const count = children.reduce((n, ch) => n + (ch.kind === 'file' ? 1 : ch.count), 0)
+      return { kind: 'folder', key: c.key, name: c.name, count, children }
+    })
     const files = node.files
       .slice()
-      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+      .sort(byName)
       .map((f) => ({ kind: 'file', key: f.path, file: f }))
     return [...folders, ...files]
   }
   return toNodes(root)
-}
-
-/** Total files beneath a node, for the folder row's count badge. */
-function countFiles(nodes) {
-  let n = 0
-  for (const node of nodes) {
-    if (node.kind === 'file') n++
-    else n += countFiles(node.children)
-  }
-  return n
 }
 
 /**
@@ -153,14 +166,7 @@ export function flattenTree(nodes, expanded, expandAll = false) {
         continue
       }
       const open = expandAll || expanded.has(node.key)
-      rows.push({
-        kind: 'folder',
-        key: node.key,
-        name: node.name,
-        depth,
-        open,
-        count: countFiles(node.children)
-      })
+      rows.push({ kind: 'folder', key: node.key, name: node.name, depth, open, count: node.count })
       if (open) walk(node.children, depth + 1)
     }
   }
@@ -171,21 +177,6 @@ export function flattenTree(nodes, expanded, expandAll = false) {
 /** Flat view: every file at depth 0, no folder rows. */
 export function flattenFlat(files) {
   return files.map((file) => ({ kind: 'file', key: file.path, file, depth: 0 }))
-}
-
-/** Every folder key in the tree, for expand-all. */
-export function collectExpandable(nodes) {
-  const out = []
-  const walk = (ns) => {
-    for (const node of ns) {
-      if (node.kind === 'folder') {
-        out.push(node.key)
-        walk(node.children)
-      }
-    }
-  }
-  walk(nodes)
-  return out
 }
 
 /**

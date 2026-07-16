@@ -33,7 +33,6 @@ import {
   formulasSchema
 } from './schemas/index.js'
 import {
-  listDir,
   listSection,
   readFile,
   writeFile,
@@ -239,16 +238,8 @@ app.whenReady().then(async () => {
     loadReference(validatePath(libraryPath), type, name)
   )
 
-  // Scan-style handler: swallow path-rejection into [] so the renderer sees
-  // the same empty-state UX as a missing directory (doc §10 Gotcha #2).
-  ipcMain.handle('fs:listDir', async (_, dirPath) => {
-    try {
-      return await listDir(validatePath(dirPath))
-    } catch {
-      return []
-    }
-  })
-  // Scan-style handler, same swallow-to-empty contract as fs:listDir.
+  // Scan-style handler: swallow path-rejection into an empty result so the
+  // renderer sees the same empty-state UX as a missing directory (doc §10 #2).
   // `type` needs its own traversal check: listSectionFiles joins it onto the
   // library internally, so validating libraryPath alone would still let a
   // renderer-supplied `../../..` escape.
@@ -714,63 +705,39 @@ app.whenReady().then(async () => {
     await saveSection(libraryPath, 'castables', fields)
   }
 
+  // Category details are already a first-class index field: hybindex derives
+  // `<type>CategoryDetails` while indexing, in the same `{name, count, usedBy}`
+  // shape this handler used to re-derive by regex over every active file. That
+  // meant reading 3,096 files (2289 items + 581 castables + 226 statuses) to
+  // reproduce what the package computes anyway, and keeping a second parser in
+  // step with it. Verified byte-identical against the production world.
+  //
+  // Going through the worker rather than calling buildSection here keeps the
+  // parse off the main thread, and its saveSection is passed the type it
+  // actually built — unlike `updateIndexFields`, which hardcodes 'castables'
+  // and so stamps that signature falsely fresh (§4.1).
+  //
+  // Sequential, deliberately: each build ends in a saveSection, and saveSection
+  // read-modify-writes the shared `_filecache.json`. Running the three
+  // concurrently would race that file and lose signature updates — the exact
+  // clobber §4.2 describes. The win here is not reading 3,096 files; the
+  // remaining serialism is three builds, not three thousand reads.
+  const CATEGORY_SECTIONS = [
+    ['items', 'itemCategoryDetails'],
+    ['castables', 'castableCategoryDetails'],
+    ['statuses', 'statusCategoryDetails']
+  ]
+
   ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
     validatePath(libraryPath)
     const result = { items: [], castables: [], statuses: [] }
-    const scanDir = async (type, target) => {
-      const dir = join(libraryPath, type)
-      const catMap = {}
+    for (const [type, detailField] of CATEGORY_SECTIONS) {
       try {
-        const { active } = await listSection(libraryPath, type)
-        for (const rel of active) {
-          const content = await fs.readFile(join(dir, rel), 'utf-8')
-          const nameMatch =
-            /<Name>([^<]+)<\/Name>/.exec(content) || /\bName="([^"]+)"/.exec(content)
-          const itemName = nameMatch ? nameMatch[1].trim() : basename(rel).replace(/\.xml$/i, '')
-          const catSection = /<Categories[^>]*>([\s\S]*?)<\/Categories>/.exec(content)
-          if (!catSection) continue
-          const body = catSection[1]
-          const cats = new Set()
-          const catElemRegex = /<Category\b[^>]*>([^<]+)<\/Category>/g
-          const catAttrRegex = /<Category\b[^>]*\bName="([^"]+)"/g
-          let m
-          while ((m = catElemRegex.exec(body)) !== null) {
-            const c = m[1].trim()
-            if (c) cats.add(c)
-          }
-          while ((m = catAttrRegex.exec(body)) !== null) {
-            const c = m[1].trim()
-            if (c) cats.add(c)
-          }
-          for (const cat of cats) {
-            if (!catMap[cat]) catMap[cat] = { count: 0, usedBy: [] }
-            catMap[cat].count++
-            if (catMap[cat].usedBy.length < 5) catMap[cat].usedBy.push(itemName)
-          }
-        }
+        const fields = await buildSectionInWorker(libraryPath, type)
+        result[type] = fields?.[detailField] ?? []
       } catch {
-        /* dir may not exist */
+        /* section dir may not exist — leave it empty */
       }
-      target.push(
-        ...Object.entries(catMap)
-          .map(([name, { count, usedBy }]) => ({ name, count, usedBy: count < 5 ? usedBy : [] }))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      )
-    }
-    await scanDir('items', result.items)
-    await scanDir('castables', result.castables)
-    await scanDir('statuses', result.statuses)
-    try {
-      await updateIndexFields(libraryPath, {
-        itemCategories: result.items.map((c) => c.name),
-        castableCategories: result.castables.map((c) => c.name),
-        statusCategories: result.statuses.map((c) => c.name),
-        itemCategoryDetails: result.items,
-        castableCategoryDetails: result.castables,
-        statusCategoryDetails: result.statuses
-      })
-    } catch {
-      /* non-fatal */
     }
     return result
   })

@@ -5,12 +5,12 @@ import {
   displayNameFor,
   matchesFilter,
   filterFiles,
-  ancestorFolders,
   buildFileTree,
   flattenTree,
   flattenFlat,
-  collectExpandable,
   rowHeightFor,
+  resolveSavePath,
+  relDir,
   ITEM_HEIGHT,
   FOLDER_HEIGHT
 } from '../fileTree'
@@ -124,18 +124,6 @@ describe('filterFiles', () => {
   })
 })
 
-// ─── ancestorFolders ─────────────────────────────────────────────────────────
-
-describe('ancestorFolders', () => {
-  it('returns nothing for a root-level file', () => {
-    expect(ancestorFolders('blast.xml')).toEqual([])
-  })
-
-  it('returns each folder on the path', () => {
-    expect(ancestorFolders('a/b/c.xml')).toEqual(['a', 'a/b'])
-  })
-})
-
 // ─── buildFileTree ───────────────────────────────────────────────────────────
 
 describe('buildFileTree', () => {
@@ -241,22 +229,6 @@ describe('flattenFlat', () => {
   })
 })
 
-// ─── collectExpandable ───────────────────────────────────────────────────────
-
-describe('collectExpandable', () => {
-  it('collects every folder key, including nested ones', () => {
-    expect(collectExpandable(buildFileTree([f('a/b/c.xml'), f('d/e.xml')]))).toEqual([
-      'a',
-      'a/b',
-      'd'
-    ])
-  })
-
-  it('returns nothing for a flat tree', () => {
-    expect(collectExpandable(buildFileTree([f('a.xml')]))).toEqual([])
-  })
-})
-
 // ─── rowHeightFor ────────────────────────────────────────────────────────────
 
 describe('rowHeightFor', () => {
@@ -279,5 +251,56 @@ describe('stripXml', () => {
     expect(stripXml('a.xml')).toBe('a')
     expect(stripXml('a.XML')).toBe('a')
     expect(stripXml('a.xml.bak')).toBe('a.xml.bak')
+  })
+})
+
+// ─── relDir / resolveSavePath ────────────────────────────────────────────────
+
+describe('relDir', () => {
+  it('extracts the folder, or empty at the type root', () => {
+    expect(relDir('universal/x.xml')).toBe('universal')
+    expect(relDir('a/b/x.xml')).toBe('a/b')
+    expect(relDir('x.xml')).toBe('')
+  })
+})
+
+// The rule this encodes is why the branch exists: a rename must not silently
+// lift a file out of the folder it was filed under.
+describe('resolveSavePath', () => {
+  const LIB = 'E:/world/xml'
+
+  it('puts a new file at the type root', () => {
+    expect(resolveSavePath(LIB, 'castables', null, 'new.xml')).toEqual({
+      newPath: `${LIB}/castables/new.xml`,
+      newRel: 'new.xml'
+    })
+  })
+
+  it('keeps a renamed file in its subfolder', () => {
+    const sel = f('universal/old.xml')
+    expect(resolveSavePath(LIB, 'castables', sel, 'new.xml')).toEqual({
+      newPath: `${LIB}/castables/universal/new.xml`,
+      newRel: 'universal/new.xml'
+    })
+  })
+
+  it('renames a type-root file without inventing a folder', () => {
+    const sel = f('old.xml')
+    expect(resolveSavePath(LIB, 'castables', sel, 'new.xml')).toEqual({
+      newPath: `${LIB}/castables/new.xml`,
+      newRel: 'new.xml'
+    })
+  })
+
+  it('writes back to the exact path when the name is unchanged', () => {
+    const sel = f('universal/same.xml')
+    const r = resolveSavePath(LIB, 'castables', sel, 'same.xml')
+    expect(r.newPath).toBe(sel.path)
+    expect(r.newRel).toBe('universal/same.xml')
+  })
+
+  it('handles nesting deeper than one level', () => {
+    const sel = f('a/b/old.xml')
+    expect(resolveSavePath(LIB, 'castables', sel, 'new.xml').newRel).toBe('a/b/new.xml')
   })
 })

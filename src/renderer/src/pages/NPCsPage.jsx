@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -11,8 +11,9 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { toSectionFile, relDir } from '../utils/fileTree'
+import { resolveSavePath } from '../utils/fileTree'
 
 const NPCS_SUBDIR = 'npcs'
 const IGNORE_SUBDIR = 'npcs/.ignore'
@@ -41,11 +42,8 @@ function NPCsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.npcsNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingNpc, setEditingNpc] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingNpc, setLoadingNpc] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
@@ -61,31 +59,14 @@ function NPCsPage() {
     handleDialogCancel
   } = useUnsavedGuard('NPC')
 
-  // One recursive, archive-splitting call replaces the two flat listDir
-  // calls. Each rel path IS the index key, so name lookups need no prefix.
-  const loadFiles = useCallback(async (library) => {
-    if (!library) {
-      setFiles([])
-      setArchivedFiles([])
-      return
-    }
-    const { dir, active, archived } = await window.electronAPI.listSection(library, NPCS_SUBDIR)
-    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
-    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
-  }, [])
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    NPCS_SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingNpc(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    loadFiles(activeLibrary).finally(() => setLoading(false))
-  }, [activeLibrary, loadFiles])
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -125,18 +106,13 @@ function NPCsPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      // Rename in place: keep the file in whatever subfolder it was filed
-      // under. Writing to `<type>/<name>` unconditionally would silently
-      // lift it out of e.g. universal/ and back to the type root.
-      const subDir = selectedFile ? relDir(selectedFile.rel) : ''
-      const newPath =
-        isRename || !selectedFile
-          ? `${activeLibrary}/${NPCS_SUBDIR}/${subDir ? `${subDir}/` : ''}${fileName}`
-          : selectedFile.path
+      const { newPath, newRel } = resolveSavePath(
+        activeLibrary,
+        NPCS_SUBDIR,
+        selectedFile,
+        fileName
+      )
 
-      // `rel` rides along: it is the index key the panel looks names up by,
-      // and the source of the subfolder on any later rename.
-      const newRel = subDir ? `${subDir}/${fileName}` : fileName
       await window.electronAPI.saveNpc(newPath, data)
       setEditingNpc(data)
       markClean()

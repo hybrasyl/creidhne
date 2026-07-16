@@ -1,17 +1,6 @@
 import { promises as fs } from 'fs'
-import { join, dirname, basename, relative, isAbsolute } from 'path'
+import { join, dirname, relative, isAbsolute } from 'path'
 import { listSectionFiles } from '@eriscorp/hybindex-ts'
-
-export async function listDir(dirPath) {
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true })
-    return entries
-      .filter((e) => e.isFile() && e.name.endsWith('.xml'))
-      .map((e) => ({ name: e.name, path: join(dirPath, e.name) }))
-  } catch {
-    return []
-  }
-}
 
 // Enumerate one world type (`castables`, `items`, …), recursively, split into
 // active and archived. Delegates to the index package rather than walking here:
@@ -105,13 +94,10 @@ export async function moveFile(src, dest) {
 }
 
 // The subdirectory `src` sits in, relative to the type root that owns
-// `archiveDir`. Mirroring is defined only for the `<type>/.ignore` convention,
-// so anything else archives flat — that keeps the rule tied to the one layout
-// where "put it back where it came from" is meaningful.
-//
-// Returns '' for a file already at the type root, or one outside it.
+// `archiveDir` (`<type>/.ignore` → `<type>`). Returns '' for a file already at
+// the type root, or one outside it — the latter has no position under the type
+// to mirror, so it archives flat.
 function subDirWithinType(src, archiveDir) {
-  if (basename(archiveDir) !== '.ignore') return ''
   const typeRoot = dirname(archiveDir)
   const rel = relative(typeRoot, dirname(src))
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) return ''

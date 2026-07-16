@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -11,8 +11,8 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { toSectionFile } from '../utils/fileTree'
 
 const SPAWN_SUBDIR = 'spawngroups'
 const IGNORE_SUBDIR = 'spawngroups/.ignore'
@@ -32,11 +32,8 @@ function SpawngroupsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.spawngroupsNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingSpawngroup, setEditingSpawngroup] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingSpawngroup, setLoadingSpawngroup] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
@@ -52,31 +49,14 @@ function SpawngroupsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Spawn Group')
 
-  // One recursive, archive-splitting call replaces the two flat listDir
-  // calls. Each rel path IS the index key, so name lookups need no prefix.
-  const loadFiles = useCallback(async (library) => {
-    if (!library) {
-      setFiles([])
-      setArchivedFiles([])
-      return
-    }
-    const { dir, active, archived } = await window.electronAPI.listSection(library, SPAWN_SUBDIR)
-    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
-    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
-  }, [])
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    SPAWN_SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingSpawngroup(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    loadFiles(activeLibrary).finally(() => setLoading(false))
-  }, [activeLibrary, loadFiles])
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)

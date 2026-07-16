@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -11,8 +11,9 @@ import EditorFileListPanel from '../components/shared/EditorFileListPanel'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
+import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { toSectionFile, relDir } from '../utils/fileTree'
+import { resolveSavePath } from '../utils/fileTree'
 
 const LOOT_SUBDIR = 'lootsets'
 const IGNORE_SUBDIR = 'lootsets/.ignore'
@@ -35,11 +36,8 @@ function LootPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.lootsetsNamesByFilename
-  const [files, setFiles] = useState([])
-  const [archivedFiles, setArchivedFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingLoot, setEditingLoot] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [loadingLoot, setLoadingLoot] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
@@ -55,31 +53,14 @@ function LootPage() {
     handleDialogCancel
   } = useUnsavedGuard('Loot Set')
 
-  // One recursive, archive-splitting call replaces the two flat listDir
-  // calls. Each rel path IS the index key, so name lookups need no prefix.
-  const loadFiles = useCallback(async (library) => {
-    if (!library) {
-      setFiles([])
-      setArchivedFiles([])
-      return
-    }
-    const { dir, active, archived } = await window.electronAPI.listSection(library, LOOT_SUBDIR)
-    setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
-    setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
-  }, [])
-
-  useEffect(() => {
-    if (!activeLibrary) {
-      setFiles([])
-      setArchivedFiles([])
+  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+    activeLibrary,
+    LOOT_SUBDIR,
+    useCallback(() => {
       setSelectedFile(null)
       setEditingLoot(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    loadFiles(activeLibrary).finally(() => setLoading(false))
-  }, [activeLibrary, loadFiles])
+    }, [])
+  )
 
   const doNew = () => {
     setSelectedFile(null)
@@ -111,18 +92,12 @@ function LootPage() {
   const handleSave = async (data, fileName) => {
     try {
       const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      // Rename in place: keep the file in whatever subfolder it was filed
-      // under. Writing to `<type>/<name>` unconditionally would silently
-      // lift it out of e.g. universal/ and back to the type root.
-      const subDir = selectedFile ? relDir(selectedFile.rel) : ''
-      const newPath =
-        isRename || !selectedFile
-          ? `${activeLibrary}/${LOOT_SUBDIR}/${subDir ? `${subDir}/` : ''}${fileName}`
-          : selectedFile.path
-
-      // `rel` rides along: it is the index key the panel looks names up by,
-      // and the source of the subfolder on any later rename.
-      const newRel = subDir ? `${subDir}/${fileName}` : fileName
+      const { newPath, newRel } = resolveSavePath(
+        activeLibrary,
+        LOOT_SUBDIR,
+        selectedFile,
+        fileName
+      )
 
       await window.electronAPI.saveLoot(newPath, data)
       setEditingLoot(data)

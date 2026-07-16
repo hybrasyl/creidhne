@@ -36,8 +36,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import ViewListIcon from '@mui/icons-material/ViewList'
-import { useStoreState } from '../../store/appStore'
-import { fileListViewModeState } from '../../store/appStore'
+import { useStoreState, fileListViewModeState } from '../../store/appStore'
 import {
   ITEM_HEIGHT,
   FOLDER_HEIGHT,
@@ -206,10 +205,11 @@ export default function EditorFileListPanel({
   const [lastClickedPath, setLastClickedPath] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null) // file[] | null
-  // Expansion is per-tab and deliberately not persisted: the only real tree today
-  // is one archive folder, filtering auto-expands anyway, and persisting would
-  // mean a library/type-keyed map to prune as worlds come and go.
-  const [expanded, setExpanded] = useState(() => ({ active: new Set(), archived: new Set() }))
+  // Expansion is deliberately not persisted: the only real tree today is one
+  // archive folder, filtering auto-expands anyway, and persisting would mean a
+  // library/type-keyed map to prune as worlds come and go. One Set across both
+  // tabs — a folder is the same folder whichever tab you view it from.
+  const [expanded, setExpanded] = useState(() => new Set())
 
   const archivedTab = tab === 'archived'
   // Memoized: a bare conditional would hand `filtered` a new array identity on
@@ -228,12 +228,21 @@ export default function EditorFileListPanel({
 
   // Filter first, then build: rebuilding from surviving leaves prunes empty
   // folders and keeps every match's ancestors for free.
+  //
+  // Split from the flatten below so expanding a folder doesn't re-run the build
+  // over every file — the tree is a pure function of `filtered` and cannot have
+  // changed just because a folder opened.
+  const tree = useMemo(
+    () => (viewMode === 'folder' ? buildFileTree(filtered) : null),
+    [viewMode, filtered]
+  )
+
   const rows = useMemo(() => {
-    if (viewMode !== 'folder') return flattenFlat(filtered)
+    if (!tree) return flattenFlat(filtered)
     // A live filter forces everything open — the surviving tree is only matches
     // plus their ancestors, so revealing all of it is exactly right.
-    return flattenTree(buildFileTree(filtered), expanded[tab], !!search)
-  }, [viewMode, filtered, expanded, tab, search])
+    return flattenTree(tree, expanded, !!search)
+  }, [tree, filtered, expanded, search])
 
   const rowHeight = useMemo(() => rowHeightFor(rows), [rows])
 
@@ -270,23 +279,21 @@ export default function EditorFileListPanel({
     clearSelection()
   }, [tab, clearSelection])
 
-  const toggleFolder = useCallback(
-    (key) => {
-      setExpanded((prev) => {
-        const next = new Set(prev[tab])
-        if (next.has(key)) next.delete(key)
-        else next.add(key)
-        return { ...prev, [tab]: next }
-      })
-    },
-    [tab]
-  )
+  const toggleFolder = useCallback((key) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
 
   // Visible file rows, in render order — the basis for shift-click ranges.
-  // Folder rows are excluded so a range never sweeps in a folder.
+  // Folder rows are excluded so a range never sweeps in a folder. In flat mode
+  // every row is already a file, so `filtered` is that list unchanged.
   const visibleFiles = useMemo(
-    () => rows.filter((r) => r.kind === 'file').map((r) => r.file),
-    [rows]
+    () => (tree ? rows.filter((r) => r.kind === 'file').map((r) => r.file) : filtered),
+    [tree, rows, filtered]
   )
 
   const handleRowClick = useCallback(
@@ -427,10 +434,16 @@ export default function EditorFileListPanel({
   const canDelete = !!onDelete && selectionCount >= 1
   const canDuplicate = !!onDuplicate && selectionCount === 1
 
-  const showLoader = loading && files.length === 0
-  const showEmpty = !loading && tabFiles.length === 0
-  const showNoMatches = !loading && tabFiles.length > 0 && rows.length === 0
-  const showList = !showLoader && !showEmpty && !showNoMatches
+  // One value rather than four overlapping booleans, so the states are
+  // exclusive by construction instead of by reading three `!loading` guards.
+  const listState =
+    loading && files.length === 0
+      ? 'loading'
+      : tabFiles.length === 0
+        ? 'empty'
+        : rows.length === 0
+          ? 'noMatches'
+          : 'list'
 
   const folderMode = viewMode === 'folder'
 
@@ -620,13 +633,13 @@ export default function EditorFileListPanel({
       <Divider />
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {showLoader && (
+        {listState === 'loading' && (
           <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CircularProgress size={24} />
           </Box>
         )}
 
-        {showEmpty && (
+        {listState === 'empty' && (
           <Typography variant="body2" sx={{ color: 'text.secondary', p: 2 }}>
             {archivedTab
               ? `No archived ${noun}.`
@@ -634,13 +647,13 @@ export default function EditorFileListPanel({
           </Typography>
         )}
 
-        {showNoMatches && (
+        {listState === 'noMatches' && (
           <Typography variant="body2" sx={{ color: 'text.secondary', p: 2 }}>
             No matches.
           </Typography>
         )}
 
-        {showList && (
+        {listState === 'list' && (
           <Box ref={listRef} sx={{ flex: 1, minHeight: 0 }}>
             {listSize.height > 0 && rows.length > 0 && (
               <VirtualList
