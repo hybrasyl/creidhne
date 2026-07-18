@@ -234,6 +234,9 @@ app.whenReady().then(async () => {
   ipcMain.handle('app:launchCompanion', (_, exePath) => launchCompanion(settingsManager, exePath))
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
+  // Open the local settings/cache dir (%LOCALAPPDATA%/Erisco/Creidhne) in the OS
+  // file manager — surfaced from the Settings "About" card.
+  ipcMain.handle('app:revealSettings', () => shell.openPath(settingsPath))
   ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
     loadReference(validatePath(libraryPath), type, name)
   )

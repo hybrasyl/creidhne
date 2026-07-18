@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Box, Paper, Typography, Button, Alert, Link, CircularProgress } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { Box, Paper, Stack, Typography, Button, Link } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import { useStoreState, themeState } from '../store/appStore'
 import ManageLibraries from '../components/ManageLibraries'
 import DAClientPathSection from '../components/DAClientPathSection'
@@ -8,6 +10,11 @@ import BrigidAssetsPathSection from '../components/BrigidAssetsPathSection'
 import AboutDialog from '../components/AboutDialog'
 import ThemePicker from '../components/ThemePicker'
 
+// Branded logo (shared with the toolbar/splash), referenced as a public asset.
+const creidhneLogo = './creidhne-logo.png'
+// Soft depth shadow lifting the logo off the card (matches the title-bar DEPTH).
+const DEPTH = '0 2px 3px rgba(0,0,0,0.55)'
+
 // Full-height flex column so cards sharing a grid row match height (oghma pattern).
 const cardSx = { p: 3, display: 'flex', flexDirection: 'column', height: '100%' }
 const cardHeadingSx = { color: 'text.button', fontWeight: 'bold' }
@@ -15,22 +22,12 @@ const cardDescSx = { color: 'text.secondary', mb: 2 }
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [theme, setTheme] = useStoreState(themeState)
-  const [updateChecking, setUpdateChecking] = useState(false)
-  const [updateResult, setUpdateResult] = useState(null)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [version, setVersion] = useState('')
 
-  const handleCheckForUpdates = async () => {
-    setUpdateChecking(true)
-    setUpdateResult(null)
-    try {
-      const result = await window.electronAPI.checkForUpdates()
-      setUpdateResult(result)
-    } catch (err) {
-      setUpdateResult({ ok: false, error: err?.message || String(err) })
-    } finally {
-      setUpdateChecking(false)
-    }
-  }
+  useEffect(() => {
+    window.electronAPI.getAppVersion().then(setVersion)
+  }, [])
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
@@ -81,53 +78,64 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           <TaliesinPathSection />
         </Paper>
 
-        {/* About & Updates */}
+        {/* About */}
         <Paper sx={cardSx}>
           <Typography variant="h6" gutterBottom sx={cardHeadingSx}>
-            About & Updates
+            About
           </Typography>
-          <Typography variant="body2" sx={cardDescSx}>
-            Version info and project links, and check GitHub for a newer release.
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Button variant="outlined" size="small" onClick={() => setAboutOpen(true)}>
-              About Creidhne
-            </Button>
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2 }}>
+            <Box
+              component="img"
+              src={creidhneLogo}
+              alt=""
+              aria-hidden
+              sx={{ height: 48, width: 48, filter: `drop-shadow(${DEPTH})` }}
+            />
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                Creidhne
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Version {version || '…'} — a bespoke editor for Hybrasyl world data.
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                <Link
+                  href="https://www.hybrasyl.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="body2"
+                >
+                  hybrasyl.com
+                </Link>
+                <Link
+                  href="https://github.com/hybrasyl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="body2"
+                >
+                  GitHub
+                </Link>
+              </Box>
+            </Box>
+          </Stack>
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
               size="small"
-              onClick={handleCheckForUpdates}
-              disabled={updateChecking}
-              startIcon={updateChecking ? <CircularProgress size={14} /> : null}
+              startIcon={<InfoOutlinedIcon />}
+              onClick={() => setAboutOpen(true)}
             >
-              {updateChecking ? 'Checking…' : 'Check for updates'}
+              About Creidhne…
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<FolderOpenIcon />}
+              onClick={() => window.electronAPI.revealSettings()}
+            >
+              Reveal settings folder
             </Button>
           </Box>
-          {updateResult && (
-            <Box sx={{ mt: 2 }}>
-              {!updateResult.ok && (
-                <Alert severity="warning" onClose={() => setUpdateResult(null)}>
-                  Update check failed: {updateResult.error}
-                </Alert>
-              )}
-              {updateResult.ok && updateResult.updateAvailable && (
-                <Alert severity="info" onClose={() => setUpdateResult(null)}>
-                  Creidhne {updateResult.latestVersion} is available (you have{' '}
-                  {updateResult.currentVersion}).{' '}
-                  <Link href={updateResult.releaseUrl} target="_blank" rel="noopener noreferrer">
-                    View release
-                  </Link>
-                </Alert>
-              )}
-              {updateResult.ok && !updateResult.updateAvailable && (
-                <Alert severity="success" onClose={() => setUpdateResult(null)}>
-                  {updateResult.reason === 'no-releases'
-                    ? 'No published releases yet.'
-                    : `You're on the latest version (${updateResult.currentVersion}).`}
-                </Alert>
-              )}
-            </Box>
-          )}
         </Paper>
       </Box>
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
