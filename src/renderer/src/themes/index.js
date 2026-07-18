@@ -6,9 +6,22 @@ import '@fontsource/cinzel'
 import '@fontsource/cinzel-decorative'
 import '@fontsource/crimson-pro'
 
-export { default as hybrasylTheme } from './hybrasyl'
-export { default as chadulTheme } from './chadul'
-export { default as danaanTheme } from './danaan'
-export { default as grinnealTheme } from './grinneal'
-export { default as mundanesTheme } from './mundanes'
-export { default as dubhaimidTheme } from './dubhaimid'
+import hybrasylTheme from './hybrasyl'
+import chadulTheme from './chadul'
+import danaanTheme from './danaan'
+import grinnealTheme from './grinneal'
+import mundanesTheme from './mundanes'
+import dubhaimidTheme from './dubhaimid'
+
+export { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme, mundanesTheme, dubhaimidTheme }
+
+// name → MUI theme, so the ThemePicker can paint each preview card in that
+// theme's own palette (mirrors the map App.jsx feeds to ThemeProvider).
+export const themesByName = {
+  hybrasyl: hybrasylTheme,
+  chadul: chadulTheme,
+  danaan: danaanTheme,
+  grinneal: grinnealTheme,
+  mundanes: mundanesTheme,
+  dubhaimid: dubhaimidTheme
+}

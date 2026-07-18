@@ -1,11 +1,9 @@
-import { useState } from 'react'
 import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
 
 // Branded logo lives in resources/ (Vite publicDir) and is shared with the
 // splash screen; referenced as a public asset (base is './') rather than a
 // bundled import so we don't ship a second copy of the artwork.
 const creidhneLogo = './creidhne-logo.png'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 // Flat window-control glyphs for the "corporate" (plain-chrome) themes, swapped
 // in for the stylized Gi skull/contract/expand on Mundanes & Dubhaimid.
 import RemoveIcon from '@mui/icons-material/Remove'
@@ -39,29 +37,41 @@ import {
   GiDeathSkull
 } from 'react-icons/gi'
 import { useStoreValue, taliesinPathState, currentPageState, themeState } from '../store/appStore'
-import AboutDialog from './AboutDialog'
 
 // The "corporate" themes paint the same navy chrome but want plain, flat window
 // controls: white glyphs with no dark keyline stroke, translucent-white hover,
 // and a red close hover — rather than the stylized skull + cream-on-navy look.
 const PLAIN_CHROME_THEMES = ['mundanes', 'dubhaimid']
 
+// Shared shadow vocabulary for the gamified chrome (ported from oghma's TitleBar).
+// KEYLINE is the crisp four-way #000 outline; DEPTH is the soft layer that lifts
+// the glyph/wordmark off the navy bar. The plain/corporate themes drop both.
+const KEYLINE = ['1px 1px 0 #000', '-1px -1px 0 #000', '1px -1px 0 #000', '-1px 1px 0 #000']
+const DEPTH = '0 2px 3px rgba(0,0,0,0.55)'
+// The wordmark is real text: text-shadow paints each layer independently, so the
+// keyline + depth both read at full strength.
+const TITLE_TEXT_SHADOW = [...KEYLINE, DEPTH].join(', ')
+
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
 const MainToolbar = ({ navigate }) => {
-  const [aboutOpen, setAboutOpen] = useState(false)
   const taliesinPath = useStoreValue(taliesinPathState)
   const currentPage = useStoreValue(currentPageState)
   const themeName = useStoreValue(themeState)
   const isPlain = PLAIN_CHROME_THEMES.includes(themeName)
 
-  // The keyline stroke reads as a subtle outline on the stylized dark themes;
-  // on the plain navy chrome it just greys the white glyphs, so drop it there.
+  // Gamified chrome (stylized themes): a crisp solid-black keyline stroke plus a
+  // SINGLE depth drop-shadow to match the wordmark's lift. SVG glyphs can't take
+  // text-shadow, so the outline comes from the stroke; chaining the four keyline
+  // offsets as drop-shadows too would compound and wash out the depth (oghma's
+  // lesson). On the plain navy chrome the stroke just greys the glyphs, so drop
+  // both. strokeWidth is in the icon's own ~512 viewbox units (react-icons/gi).
   const iconSx = {
     '& svg': {
       fontSize: '1.4em',
-      stroke: isPlain ? 'transparent' : 'rgba(0, 0, 0, 0.25)',
-      strokeWidth: isPlain ? 0 : 44
+      stroke: isPlain ? 'transparent' : '#000',
+      strokeWidth: isPlain ? 0 : 11,
+      filter: isPlain ? 'none' : `drop-shadow(${DEPTH})`
     }
   }
   const hoverSx = isPlain
@@ -127,7 +137,11 @@ const MainToolbar = ({ navigate }) => {
         <img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
         <Typography
           variant="h6"
-          sx={{ fontWeight: 'bold', flexGrow: 0 }}
+          sx={{
+            fontWeight: 'bold',
+            flexGrow: 0,
+            textShadow: isPlain ? 'none' : TITLE_TEXT_SHADOW
+          }}
           style={{ fontSize: '1.5rem' }}
         >
           Creidhne
@@ -284,14 +298,7 @@ const MainToolbar = ({ navigate }) => {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="About Creidhne">
-          <IconButton onClick={() => setAboutOpen(true)} sx={btnSx}>
-            <InfoOutlinedIcon />
-          </IconButton>
-        </Tooltip>
       </Toolbar>
-
-      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </>
   )
 }

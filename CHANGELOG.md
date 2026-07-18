@@ -23,6 +23,18 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+### Changed
+
+- The **Settings page** is now a grid of cards, each framing a section
+  (Appearance, Content Libraries, Dark Ages Client, Brigid Assets, Companion App,
+  About & Updates) instead of one long scrolling list.
+- The theme selector is now a **visual picker**: each theme is a preview card
+  painted in its own palette, replacing the plain dropdown.
+- **About** moved from the title bar into the Settings "About & Updates" card.
+- The title-bar wordmark and toolbar icons now carry a black keyline outline and a
+  soft drop-shadow on the stylized themes, lifting them off the chrome. The
+  corporate themes (Mundanes, Dubhaimid) stay flat.
+
 ## [1.8.0] - 2026-07-16
 
 ### Added

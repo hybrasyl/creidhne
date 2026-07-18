@@ -22,7 +22,7 @@ const TaliesinPathSection = () => {
   }
 
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6" sx={{ color: 'text.button', fontWeight: 'bold' }}>
           Taliesin (Companion App)
