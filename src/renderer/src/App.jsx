@@ -17,7 +17,8 @@ import {
   fileListViewModeState,
   npcPortraitPickerModeState,
   soundPickerModeState,
-  creaturePickerModeState
+  creaturePickerModeState,
+  reportIssueOpenState
 } from './store/appStore'
 import {
   hybrasylTheme,
@@ -42,6 +43,7 @@ import MainLayout from './components/MainLayout'
 import PageRenderer from './components/PageRenderer'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog'
 import UpdateSnackbar from './components/UpdateSnackbar'
+import ReportIssueDialog from './components/ReportIssueDialog'
 import ReferencePanel from './components/reference/ReferencePanel'
 import { stopSound } from './data/soundData'
 
@@ -67,6 +69,7 @@ function App() {
   const [soundPickerMode, setSoundPickerMode] = useStoreState(soundPickerModeState)
   const [creaturePickerMode, setCreaturePickerMode] = useStoreState(creaturePickerModeState)
   const [fileListViewMode, setFileListViewMode] = useStoreState(fileListViewModeState)
+  const [reportIssueOpen, setReportIssueOpen] = useStoreState(reportIssueOpenState)
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
@@ -308,6 +311,7 @@ function App() {
         onCancel={handleCloseCancel}
       />
       <UpdateSnackbar />
+      <ReportIssueDialog open={reportIssueOpen} onClose={() => setReportIssueOpen(false)} />
     </ThemeProvider>
   )
 }

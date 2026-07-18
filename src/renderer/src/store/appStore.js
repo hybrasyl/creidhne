@@ -28,6 +28,7 @@ export const useAppStore = create((set) => ({
   iconPickerMode: 'vanilla',
   nationCrestPickerMode: 'vanilla',
   fileListViewMode: 'flat',
+  reportIssueOpen: false,
   // Generic setter — accepts a value or an updater fn, matching Recoil setters
   // (e.g. setLibraryIndex(prev => ({ ...prev, ...section }))).
   _set: (key, value) => set((s) => ({ [key]: typeof value === 'function' ? value(s[key]) : value }))
@@ -56,6 +57,9 @@ export const nationCrestPickerModeState = { key: 'nationCrestPickerMode' }
 // Folder-vs-flat for editor file lists. Read straight from the store by
 // EditorFileListPanel, so the toggle needs no prop threading through the pages.
 export const fileListViewModeState = { key: 'fileListViewMode' }
+// Report Issue dialog visibility — opened from the toolbar bug button and the
+// Settings About card, mounted once in App.
+export const reportIssueOpenState = { key: 'reportIssueOpen' }
 
 // ── Hooks mirroring the three Recoil shapes ───────────────────────────────────
 

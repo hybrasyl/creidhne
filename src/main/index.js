@@ -30,8 +30,14 @@ import {
   settingsSchema,
   constantsSchema,
   constantsAddValueSchema,
-  formulasSchema
+  formulasSchema,
+  rendererErrorSchema,
+  openIssueSchema,
+  copyReportSchema
 } from './schemas/index.js'
+import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
+import { installGlobalErrorHandlers } from './errorHandlers.js'
+import { buildDiagnostics, openIssue, copyReport } from './diagnostics.js'
 import {
   listSection,
   readFile,
@@ -105,6 +111,14 @@ function migrateSettingsFromRoaming() {
 migrateSettingsFromRoaming()
 
 const settingsManager = createSettingsManager(settingsPath)
+
+// Diagnostics: session logs live in a `logs/` subfolder of the local app-data dir
+// (a clean "Reveal logs folder" target, separate from settings.json). Install the
+// global error nets synchronously and early so a crash during startup is captured;
+// kick off the session-file setup (touch + keep-5 rotation) best-effort.
+const logsDir = join(localBase, 'logs')
+installGlobalErrorHandlers(captureError)
+void initSessionLog(logsDir)
 
 // Gate every renderer-supplied path through the session's allowed roots
 // (libraries + clientPath from settings, plus anything the user picked
@@ -237,6 +251,23 @@ app.whenReady().then(async () => {
   // Open the local settings/cache dir (%LOCALAPPDATA%/Erisco/Creidhne) in the OS
   // file manager — surfaced from the Settings "About" card.
   ipcMain.handle('app:revealSettings', () => shell.openPath(settingsPath))
+
+  // Report Issue / diagnostics. Renderer errors are forwarded here so main +
+  // renderer failures share one scrubbed session log and one ring buffer.
+  ipcMain.handle('diagnostics:reportRendererError', (_, payload) => {
+    const p = parseOrLog(schemaCtx, 'diagnostics:reportRendererError', rendererErrorSchema, payload)
+    captureError({ source: p.source, origin: 'renderer', message: p.message, stack: p.stack })
+  })
+  ipcMain.handle('diagnostics:build', () => buildDiagnostics({ version: app.getVersion() }))
+  ipcMain.handle('diagnostics:openIssue', (_, payload) => {
+    const p = parseOrLog(schemaCtx, 'diagnostics:openIssue', openIssueSchema, payload)
+    return openIssue(p)
+  })
+  ipcMain.handle('diagnostics:copyReport', (_, payload) => {
+    const p = parseOrLog(schemaCtx, 'diagnostics:copyReport', copyReportSchema, payload)
+    return copyReport(p)
+  })
+  ipcMain.handle('diagnostics:revealLogs', () => shell.openPath(getLogsDir()))
   ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
     loadReference(validatePath(libraryPath), type, name)
   )

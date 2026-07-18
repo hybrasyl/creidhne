@@ -32,11 +32,19 @@ import {
   GiDoubleDiaphragm,
   GiSettingsKnobs,
   GiAnvil,
+  GiBugNet,
   GiContract,
   GiExpand,
   GiDeathSkull
 } from 'react-icons/gi'
-import { useStoreValue, taliesinPathState, currentPageState, themeState } from '../store/appStore'
+import {
+  useStoreValue,
+  useSetStoreValue,
+  taliesinPathState,
+  currentPageState,
+  themeState,
+  reportIssueOpenState
+} from '../store/appStore'
 
 // The "corporate" themes paint the same navy chrome but want plain, flat window
 // controls: white glyphs with no dark keyline stroke, translucent-white hover,
@@ -58,6 +66,7 @@ const MainToolbar = ({ navigate }) => {
   const taliesinPath = useStoreValue(taliesinPathState)
   const currentPage = useStoreValue(currentPageState)
   const themeName = useStoreValue(themeState)
+  const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const isPlain = PLAIN_CHROME_THEMES.includes(themeName)
 
   // Gamified chrome (stylized themes): a crisp solid-black keyline stroke plus a
@@ -297,6 +306,11 @@ const MainToolbar = ({ navigate }) => {
               <GiAnvil />
             </IconButton>
           </span>
+        </Tooltip>
+        <Tooltip title="Report an issue">
+          <IconButton onClick={() => setReportIssueOpen(true)} sx={btnSx}>
+            <GiBugNet />
+          </IconButton>
         </Tooltip>
       </Toolbar>
     </>
