@@ -23,6 +23,16 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+### Added
+
+- **Report an issue.** A new bug icon in the toolbar (and a button on the Settings
+  About card) opens a report dialog: describe what happened and either open a
+  prefilled GitHub issue or copy the report to your clipboard. Creidhne now keeps
+  the last five session logs (errors only) under a **logs** folder you can reveal
+  from the dialog. Attached diagnostics — app version, OS, and recent errors — are
+  automatically scrubbed of usernames, file paths, and other identifying details,
+  and shown to you for review before anything is sent.
+
 ### Changed
 
 - The **Settings page** is now a grid of cards, each framing a section

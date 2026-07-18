@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { Box, Paper, Stack, Typography, Button, Link } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
-import { useStoreState, themeState } from '../store/appStore'
+import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined'
+import {
+  useStoreState,
+  useSetStoreValue,
+  themeState,
+  reportIssueOpenState
+} from '../store/appStore'
 import ManageLibraries from '../components/ManageLibraries'
 import DAClientPathSection from '../components/DAClientPathSection'
 import TaliesinPathSection from '../components/TaliesinPathSection'
@@ -22,6 +28,7 @@ const cardDescSx = { color: 'text.secondary', mb: 2 }
 
 const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [theme, setTheme] = useStoreState(themeState)
+  const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [version, setVersion] = useState('')
 
@@ -134,6 +141,22 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
               onClick={() => window.electronAPI.revealSettings()}
             >
               Reveal settings folder
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<BugReportOutlinedIcon />}
+              onClick={() => setReportIssueOpen(true)}
+            >
+              Report an issue…
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<FolderOpenIcon />}
+              onClick={() => window.electronAPI.revealLogs()}
+            >
+              Reveal logs folder
             </Button>
           </Box>
         </Paper>

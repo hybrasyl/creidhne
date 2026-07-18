@@ -99,6 +99,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
   revealSettings: () => ipcRenderer.invoke('app:revealSettings'),
+  // Report Issue / diagnostics
+  reportRendererError: (payload) => ipcRenderer.invoke('diagnostics:reportRendererError', payload),
+  buildDiagnostics: () => ipcRenderer.invoke('diagnostics:build'),
+  openIssue: (payload) => ipcRenderer.invoke('diagnostics:openIssue', payload),
+  copyReport: (payload) => ipcRenderer.invoke('diagnostics:copyReport', payload),
+  revealLogs: () => ipcRenderer.invoke('diagnostics:revealLogs'),
   loadReference: (libraryPath, type, name) =>
     ipcRenderer.invoke('reference:load', libraryPath, type, name),
   onIndexBuildProgress: (callback) => {
