@@ -1,3 +1,5 @@
+---@meta
+---@diagnostic disable
 -- Generated from Subsystems/Messaging/SpokenEvent.cs
 -- Do not edit manually — regenerate with: node scripts/generate-lua-stubs.js
 

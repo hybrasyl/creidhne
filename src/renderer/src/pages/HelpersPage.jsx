@@ -81,7 +81,7 @@ export default function HelpersPage() {
     ├── HybrasylUser.lua
     ├── HybrasylWorld.lua
     ├── HybrasylDialog.lua
-    └── … (20 files)`}
+    └── … (33 files)`}
         </Box>
         <Typography
           variant="body2"
@@ -158,6 +158,36 @@ export default function HelpersPage() {
             <strong>4.</strong> Start typing — IntelliSense for <code>world:</code>,{' '}
             <code>source:</code>, <code>target:</code>, dialog sequences, and all Hybrasyl-exposed
             types should appear.
+          </Typography>
+          <Divider />
+          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+            Still seeing warnings? Manual settings
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            The <code>.luarc.json</code> written above already applies all of these, so you normally
+            need to do nothing. They only matter if <code>world/scripts/</code> isn&apos;t your VS
+            Code workspace root — sumneko reads <code>.luarc.json</code> from the workspace root
+            only. In that case set the same values in Settings (<code>Ctrl+,</code>):
+          </Typography>
+          <Box
+            component="pre"
+            sx={{
+              fontFamily: 'monospace',
+              fontSize: 12,
+              bgcolor: 'action.hover',
+              p: 1.5,
+              borderRadius: 1
+            }}
+          >
+            {`Lua › Diagnostics: Disable       add  lowercase-global
+                                add  undefined-global
+Lua › Runtime: Nonstandard Symbol   add  !=`}
+          </Box>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            <code>lowercase-global</code> and <code>undefined-global</code> silence the Hybrasyl
+            magic globals (<code>world</code>, <code>source</code>, <code>target</code>, …), and{' '}
+            <code>!=</code> stops Hybrasyl&apos;s accepted inequality operator being flagged as a
+            syntax error.
           </Typography>
           <Divider />
           <Typography

@@ -1,5 +1,5 @@
 ---@meta
----@diagnostic disable: missing-fields
+---@diagnostic disable
 -- Auto-generated enum stubs from Hybrasyl C# source.
 -- MoonSharp exposes C# enums as table-like globals.
 
