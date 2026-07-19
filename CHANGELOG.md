@@ -23,6 +23,8 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-07-19
+
 ### Added
 
 - **Report an issue.** A new bug icon in the toolbar (and a button on the Settings
