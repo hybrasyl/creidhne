@@ -8,17 +8,20 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!xsd/**'
   - '!scripts/**'
-  - '!lua-stubs/**'
   - '!vitest.config.{js,ts,mjs,cjs}'
   - '!eslint.config.{js,ts,mjs,cjs}'
 asarUnpack:
-  # Only the lua-annotations template needs to be a real on-disk file
-  # (src/main/index.js fs.copyFile's it into the user's library). The other
-  # resources/ entries are icons that don't need unpacking, so scope this
-  # narrowly instead of unpacking all of resources/**.
+  # These are read from disk at runtime by src/main/index.js:
+  #   - resources/lua-annotations/.luarc.json is fs.copyFile'd into the user's library
+  #   - lua-stubs/*.lua are fs.readdir'd + fs.copyFile'd (lua:setupEnvironment)
+  #   - xsd/src/XSD/*.xsd are fs.readdir'd + fs.readFile'd (constants:loadXsdTypes)
+  # Unpack so readdir/copyFile operate on real files, not asar-virtual entries.
+  # The other resources/ entries are icons that don't need unpacking, so keep
+  # this narrow instead of unpacking all of resources/**.
   - resources/lua-annotations/**
+  - lua-stubs/**
+  - xsd/**
 win:
   executableName: Creidhne
   icon: resources/icon.png

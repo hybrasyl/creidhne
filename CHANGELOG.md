@@ -47,6 +47,14 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   soft drop-shadow on the stylized themes, lifting them off the chrome. The
   corporate themes (Mundanes, Dubhaimid) stay flat.
 
+### Fixed
+
+- **Install Lua types** now works in installed builds. The bundled Lua type stubs
+  were missing from packaged releases, so the Helpers action failed with a
+  "cannot find lua-stubs" error; they now ship with the app. This also restores the
+  XSD-derived value lists in the Constants editor, which were empty in packaged
+  builds for the same reason.
+
 ## [1.8.0] - 2026-07-16
 
 ### Added
