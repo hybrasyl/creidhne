@@ -1,3 +1,5 @@
+---@meta
+---@diagnostic disable
 -- Generated from Subsystems/Scripting/ScriptLogger.cs
 -- Do not edit manually — regenerate with: node scripts/generate-lua-stubs.js
 

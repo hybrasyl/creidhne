@@ -23,6 +23,21 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+### Changed
+
+- The **Lua Helpers page** is now a grid of cards matching Settings, and scrolls
+  properly — the setup tips previously ran off the bottom of the window on larger
+  displays with no way to reach them.
+
+### Fixed
+
+- **Lua IntelliSense is quiet out of the box.** The bundled type stubs no longer
+  report problems of their own (they describe a C# API, so Lua lint rules don't
+  apply to them), and the generated `.luarc.json` now also silences
+  `undefined-global` and accepts Hybrasyl's `!=` inequality operator instead of
+  flagging it as a syntax error. The Helpers page documents the equivalent manual
+  VS Code settings for anyone whose workspace root isn't `world/scripts/`.
+
 ## [1.9.0] - 2026-07-19
 
 ### Added

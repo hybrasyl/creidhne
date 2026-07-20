@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
   "runtime": {
     "version": "Lua 5.3",
+    "nonstandardSymbol": ["!="],
     "special": {
       "world": "HybrasylWorld"
     }
@@ -13,7 +14,7 @@
   },
   "diagnostics": {
     "globals": ["world", "origin", "source", "target", "player_response", "this_script"],
-    "disable": ["lowercase-global"]
+    "disable": ["lowercase-global", "undefined-global"]
   },
   "hint": {
     "enable": true,

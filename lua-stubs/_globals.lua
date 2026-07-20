@@ -1,5 +1,5 @@
 ---@meta
----@diagnostic disable: missing-fields
+---@diagnostic disable
 -- Hybrasyl magic globals — available in all script contexts.
 -- Types these so sumneko can provide IntelliSense on source.XXX, world.XXX, etc.
 

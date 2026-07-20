@@ -1,5 +1,5 @@
 ---@meta
----@diagnostic disable: missing-fields, duplicate-set-field
+---@diagnostic disable
 -- Additional fields/methods on existing classes that are available at runtime
 -- via MoonSharp's C# interop proxy but aren't declared on the [MoonSharpUserData]
 -- scripting wrapper classes. sumneko merges these with the generated stubs.

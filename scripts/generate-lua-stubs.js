@@ -302,7 +302,12 @@ function extractDoc(docLines) {
 function generateStub(cls) {
   const lines = []
 
-  // Header
+  // Header. ---@meta marks this as a pure definition file so sumneko never
+  // treats a stub as real workspace code; the blanket ---@diagnostic disable
+  // keeps the stubs themselves from ever reporting problems (they describe a
+  // C# API, so lint rules written for hand-authored Lua don't apply).
+  lines.push('---@meta')
+  lines.push('---@diagnostic disable')
   lines.push(`-- Generated from ${cls.file}`)
   lines.push(`-- Do not edit manually — regenerate with: node scripts/generate-lua-stubs.js`)
   lines.push('')
@@ -509,7 +514,7 @@ function main() {
   if (allEnums.length) {
     const lines = [
       '---@meta',
-      '---@diagnostic disable: missing-fields',
+      '---@diagnostic disable',
       '-- Auto-generated enum stubs from Hybrasyl C# source.',
       '-- MoonSharp exposes C# enums as table-like globals.',
       ''

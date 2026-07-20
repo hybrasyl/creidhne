@@ -1,3 +1,5 @@
+---@meta
+---@diagnostic disable
 -- Generated from Subsystems/Scripting/HybrasylDialogOptions.cs
 -- Do not edit manually — regenerate with: node scripts/generate-lua-stubs.js
 
