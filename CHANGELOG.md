@@ -23,6 +23,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+### Changed
+
+- The **Lua Helpers page** is now a grid of cards matching Settings, and scrolls
+  properly — the setup tips previously ran off the bottom of the window on larger
+  displays with no way to reach them.
+
 ### Fixed
 
 - **Lua IntelliSense is quiet out of the box.** The bundled type stubs no longer
