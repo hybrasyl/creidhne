@@ -40,6 +40,7 @@ import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import { ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants'
 import { CONDITIONS } from '../../data/statusConstants'
 import CommentField from '../shared/CommentField'
+import { normalizeFolder } from '../../utils/fileTree'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -925,6 +926,8 @@ function EffectAccordion({
 function StatusEditor({
   status,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -941,6 +944,7 @@ function StatusEditor({
       computeStatusFilename(derivePrefixFromFilename(initialFileName), status.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
   const [castHint, setCastHint] = useState(false)
   const [openProhibited, setOpenProhibited] = useState(false)
   const [openCategories, setOpenCategories] = useState(false)
@@ -957,6 +961,7 @@ function StatusEditor({
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeStatusFilename(derivedPrefix, status.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setCastHint(false)
     setOpenProhibited(!!status.prohibitedMessage)
     setOpenCategories(status.categories?.length > 0)
@@ -1000,7 +1005,7 @@ function StatusEditor({
     }
 
     if (mismatches.length) setMismatchDialog(mismatches)
-  }, [status, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const resolveMismatches = (useUpdated) => {
     setData((prev) => {
@@ -1113,6 +1118,11 @@ function StatusEditor({
   const computedStatMods = computeRemoveStatMods(data)
   const computedConditions = computeRemoveConditions(data)
 
+  const handleFolderChange = (val) => {
+    markDirty()
+    setFolder(val)
+  }
+
   const handleRegenerate = () => {
     markDirty()
     setFileName(computeStatusFilename(prefix, data.name))
@@ -1133,7 +1143,7 @@ function StatusEditor({
         conditions: computedConditions
       }
     }
-    onSave(saveData, fileName)
+    onSave(saveData, fileName, normalizeFolder(folder))
   }
 
   if (saveRef) saveRef.current = handleSave
@@ -1154,6 +1164,10 @@ function StatusEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
         onArchive={onArchive}

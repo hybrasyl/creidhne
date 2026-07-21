@@ -24,6 +24,8 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
 import CommentField from '../shared/CommentField'
+import FolderSelect from '../shared/FolderSelect'
+import { normalizeFolder } from '../../utils/fileTree'
 
 // TODO: Fill in variable descriptions for each $ variable
 const KNOWN_VARIABLES = [
@@ -120,6 +122,8 @@ function ResponseRow({ call, response, onChangeCall, onChangeResponse, onDelete 
 function LocalizationEditor({
   localization,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -140,6 +144,7 @@ function LocalizationEditor({
       )
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
   const [varsOpen, setVarsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
 
@@ -151,10 +156,11 @@ function LocalizationEditor({
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeFileName(derivedPrefix, localization.locale))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setActiveTab(0)
     isDirtyRef.current = false
     onDirtyChange?.(false)
-  }, [localization, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [localization, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -188,7 +194,12 @@ function LocalizationEditor({
     markDirtyLocal()
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
+  }
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   // ── Common ────────────────────────────────────────────────────────────────
   const addCommon = () => update((d) => ({ ...d, common: [...d.common, { key: '', message: '' }] }))
@@ -363,7 +374,7 @@ function LocalizationEditor({
             variant="contained"
             size="small"
             startIcon={<SaveIcon />}
-            onClick={() => onSave(data, fileName)}
+            onClick={() => onSave(data, fileName, normalizeFolder(folder))}
           >
             Save
           </Button>
@@ -390,6 +401,12 @@ function LocalizationEditor({
             <AutorenewIcon fontSize="small" />
           </IconButton>
         </Tooltip>
+        <FolderSelect
+          value={folder}
+          options={folderOptions ?? []}
+          onChange={handleFolderChange}
+          warn={!!initialFileName && folder !== initialFolder}
+        />
       </Box>
       {/* ── Metadata on Paper ── */}
       <Paper variant="outlined" sx={{ p: 2, mb: 1, flexShrink: 0 }}>

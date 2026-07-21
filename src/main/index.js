@@ -300,7 +300,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveItem', async (_, filePath, itemData) => {
     const xml = serializeItemXml(itemData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadRecipe', async (_, filePath) => {
@@ -310,7 +310,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveRecipe', async (_, filePath, recipeData) => {
     const xml = serializeRecipeXml(recipeData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadNpc', async (_, filePath) => {
@@ -320,7 +320,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveNpc', async (_, filePath, npcData) => {
     const xml = serializeNpcXml(npcData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadNation', async (_, filePath) => {
@@ -330,7 +330,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveNation', async (_, filePath, nationData) => {
     const xml = serializeNationXml(nationData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadLoot', async (_, filePath) => {
@@ -340,7 +340,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveLoot', async (_, filePath, lootData) => {
     const xml = serializeLootXml(lootData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadVariantGroup', async (_, filePath) => {
@@ -350,7 +350,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
     const xml = serializeVariantXml(variantGroupData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadLocalization', async (_, filePath) => {
@@ -360,7 +360,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
     const xml = serializeLocalizationXml(localizationData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadCreature', async (_, filePath) => {
@@ -370,7 +370,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveCreature', async (_, filePath, creatureData) => {
     const xml = serializeCreatureXml(creatureData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadElementTable', async (_, filePath) => {
@@ -380,7 +380,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveElementTable', async (_, filePath, tableData) => {
     const xml = serializeElementTableXml(tableData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadStatus', async (_, filePath) => {
@@ -390,7 +390,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveStatus', async (_, filePath, statusData) => {
     const xml = serializeStatusXml(statusData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadCastable', async (_, filePath) => {
@@ -400,7 +400,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveCastable', async (_, filePath, castableData) => {
     const xml = serializeCastableXml(castableData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadBehaviorSet', async (_, filePath) => {
@@ -410,7 +410,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveBehaviorSet', async (_, filePath, bvsData) => {
     const xml = serializeBehaviorSetXml(bvsData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadSpawngroup', async (_, filePath) => {
@@ -420,7 +420,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
     const xml = serializeSpawngroupXml(sgData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('xml:loadServerConfig', async (_, filePath) => {
@@ -430,7 +430,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('xml:saveServerConfig', async (_, filePath, cfgData) => {
     const xml = serializeServerConfigXml(cfgData)
-    await fs.writeFile(validatePath(filePath), xml, 'utf-8')
+    await writeFile(validatePath(filePath), xml)
   })
 
   ipcMain.handle('fs:moveFile', (_, src, dest) => moveFile(validatePath(src), validatePath(dest)))

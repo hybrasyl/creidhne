@@ -34,6 +34,7 @@ import SpritePickerDialog from '../shared/SpritePickerDialog'
 import EditorHeader from '../shared/EditorHeader'
 import StringKeyField from '../shared/StringKeyField'
 import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
+import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveNpcPrefix(job) {
   if (!job) return 'npc'
@@ -135,6 +136,8 @@ function CookiePickers({ exceptCookie, onlyCookie, onChangeExcept, onChangeOnly 
 function NPCEditor({
   npc,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -166,6 +169,7 @@ function NPCEditor({
     return initialFileName || computeNpcFilename(p, npc.name)
   })
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const [openResponses, setOpenResponses] = useState(false)
   const [openStrings, setOpenStrings] = useState(false)
@@ -206,6 +210,7 @@ function NPCEditor({
       initialFileName || computeNpcFilename(deriveNpcPrefix(npc.meta?.job || ''), npc.name)
     )
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setOpenResponses(false)
     setOpenStrings(false)
     setOpenBank(npc.roles.bank !== null)
@@ -217,7 +222,7 @@ function NPCEditor({
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
-  }, [npc, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [npc, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -243,13 +248,18 @@ function NPCEditor({
   const setMetaField = (field) => (val) =>
     updateData((d) => ({ ...d, meta: { ...(d.meta || {}), [field]: val } }))
 
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
+  }
+
   const handleRegenerate = () => {
     markDirtyLocal()
     setFileName(computeNpcFilename(computedPrefix, data.name))
     setFileNameEdited(false)
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   // ── Role enable/disable ───────────────────────────────────────────────────
   const enableRole = (roleKey, defaultVal) => (checked) => {
@@ -393,8 +403,12 @@ function NPCEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

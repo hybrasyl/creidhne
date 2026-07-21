@@ -21,6 +21,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
+import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveLootPrefix(fileName, name) {
   if (!fileName) return 'lts'
@@ -71,6 +72,8 @@ function Section({ title, open, onToggle, children }) {
 function LootEditor({
   loot,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -89,6 +92,7 @@ function LootEditor({
     initialFileName || computeLootFilename(deriveLootPrefix(initialFileName, loot.name), loot.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
   const [openTable, setOpenTable] = useState(true)
   const [openItems, setOpenItems] = useState(true)
 
@@ -100,10 +104,11 @@ function LootEditor({
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeLootFilename(derivedPrefix, loot.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
-  }, [loot, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loot, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -129,6 +134,11 @@ function LootEditor({
     const p = e.target.value
     setPrefix(p)
     if (!fileNameEdited) setFileName(computeLootFilename(p, data.name))
+  }
+
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
   }
 
   const handleRegenerate = () => {
@@ -159,7 +169,7 @@ function LootEditor({
     if (dupStatus) setDupSnack(dupStatus)
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   const setTable = (field, val) =>
     updateData((d) => ({ ...d, table: { ...d.table, [field]: val } }))
@@ -232,8 +242,12 @@ function LootEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

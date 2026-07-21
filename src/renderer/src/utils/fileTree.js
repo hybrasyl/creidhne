@@ -73,8 +73,56 @@ export function relDir(rel) {
   return i === -1 ? '' : rel.slice(0, i)
 }
 
+/** Join two rel fragments, tolerating either (or both) being empty. */
+export function joinRel(a, b) {
+  return a && b ? `${a}/${b}` : a || b
+}
+
 /**
- * Where a page should write `fileName`, given the file currently open.
+ * The distinct folders a file list occupies — every ancestor included, the type
+ * root excluded, sorted. These are the editor folder picker's options.
+ *
+ * Keyed on `treePath`, not `rel`, so an archived file contributes `universal`
+ * rather than `.ignore/universal`: the picker chooses a place within the type,
+ * and the archive is not one of those places.
+ *
+ * Callers should pass the active AND archived lists — a folder whose files have
+ * all been archived is still somewhere you might legitimately file something.
+ */
+export function folderOptions(files) {
+  const paths = new Set()
+  for (const file of files) {
+    const folder = relDir(file.treePath)
+    if (!folder) continue
+    let path = ''
+    for (const seg of folder.split('/')) {
+      path = joinRel(path, seg)
+      paths.add(path)
+    }
+  }
+  return [...paths].sort()
+}
+
+/**
+ * Clean up a typed folder path: forward-slashes, trims each segment, collapses
+ * repeated separators, drops `.` and `..`.
+ *
+ * Main still validates every renderer path (`assertInsideAnyRoot`), but a picker
+ * that hands `..` straight through fails as an error dialog *after* the save
+ * rather than as an option that simply isn't available, so clean it here too.
+ */
+export function normalizeFolder(input) {
+  return String(input ?? '')
+    .replace(/\\/g, '/')
+    .split('/')
+    .map((s) => s.trim())
+    .filter((s) => s && s !== '.' && s !== '..')
+    .join('/')
+}
+
+/**
+ * Where a page should write `fileName`, given the file currently open and the
+ * folder the editor's picker is showing.
  *
  * The rule this encodes is load-bearing and easy to get wrong: a renamed file
  * stays in the subfolder it was filed under. Building `<library>/<type>/<name>`
@@ -83,20 +131,31 @@ export function relDir(rel) {
  * on the way. That is one rule, so it lives in one place rather than being
  * restated in each editor page.
  *
- * A new file (`selectedFile` null) has no folder to inherit and lands at the
- * type root. Returns `newRel` too: it is the index key the file list looks names
- * up by, and the source of the subfolder on any later rename.
+ * `folder` is the picker's value, relative to the type root. An **archived**
+ * file's picker shows its active-equivalent folder (from `treePath`), so the
+ * `.ignore/` prefix is put back here: saving an archived file edits it in place
+ * instead of silently resurrecting it into the active tree.
+ *
+ * Omitting `folder` falls back to the file's own folder — the pre-picker
+ * behaviour, kept so any call site that doesn't offer a picker is unchanged. A
+ * new file (`selectedFile` null) then lands at the type root.
+ *
+ * Returns `newRel` — the index key the file list looks names up by, and the
+ * source of the subfolder on any later rename — and `isRename`, true when the
+ * save lands anywhere other than where the open file is, whether that's a new
+ * name, a new folder, or both.
  */
-export function resolveSavePath(library, subdir, selectedFile, fileName) {
-  const subDir = selectedFile ? relDir(selectedFile.rel) : ''
-  const newRel = subDir ? `${subDir}/${fileName}` : fileName
-  // Saving under the same name writes back to the exact path we were handed,
+export function resolveSavePath(library, subdir, selectedFile, fileName, folder) {
+  const subDir =
+    folder === undefined
+      ? relDir(selectedFile?.rel ?? '')
+      : joinRel(selectedFile?.archived ? '.ignore' : '', normalizeFolder(folder))
+  const newRel = joinRel(subDir, fileName)
+  const isRename = !!selectedFile && newRel !== selectedFile.rel
+  // Saving to the same place writes back to the exact path we were handed,
   // rather than a rebuilt one that is equivalent but not string-identical.
-  const newPath =
-    selectedFile && fileName === selectedFile.name
-      ? selectedFile.path
-      : `${library}/${subdir}/${newRel}`
-  return { newPath, newRel }
+  const newPath = selectedFile && !isRename ? selectedFile.path : `${library}/${subdir}/${newRel}`
+  return { newPath, newRel, isRename }
 }
 
 /**

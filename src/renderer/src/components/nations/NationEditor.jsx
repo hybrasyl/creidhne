@@ -26,6 +26,7 @@ import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import NationCrestCanvas from '../shared/NationCrestCanvas'
 import NationCrestPickerDialog from '../shared/NationCrestPickerDialog'
+import { normalizeFolder } from '../../utils/fileTree'
 
 const FLAG_PREVIEW = 80
 
@@ -111,6 +112,8 @@ function MapPicker({ label, value, onChange, sx }) {
 function NationEditor({
   nation,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -126,6 +129,7 @@ function NationEditor({
     initialFileName || computeNationFilename('nation', nation.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
   const [flagPickerOpen, setFlagPickerOpen] = useState(false)
 
   const [openSpawnPoints, setOpenSpawnPoints] = useState(nation.spawnPoints.length > 0)
@@ -160,12 +164,13 @@ function NationEditor({
     setPrefix(p)
     setFileName(initialFileName || computeNationFilename(p, nation.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setOpenSpawnPoints(nation.spawnPoints.length > 0)
     setOpenTerritory(nation.territory !== null)
     isDirtyRef.current = false
     onDirtyChange?.(false)
     setDupSnack(null)
-  }, [nation, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [nation, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -194,13 +199,18 @@ function NationEditor({
     if (!fileNameEdited) setFileName(computeNationFilename(e.target.value, data.name))
   }
 
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
+  }
+
   const handleRegenerate = () => {
     markDirtyLocal()
     setFileName(computeNationFilename(prefix, data.name))
     setFileNameEdited(false)
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   // ── Spawn points ──────────────────────────────────────────────────────────
   const addSpawnPoint = () =>
@@ -244,8 +254,12 @@ function NationEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

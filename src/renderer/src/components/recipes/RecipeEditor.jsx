@@ -16,6 +16,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
+import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveRecipePrefix(fileName, name) {
   if (!fileName) return 'recipe'
@@ -37,6 +38,8 @@ function computeRecipeFilename(prefix, name) {
 function RecipeEditor({
   recipe,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -55,6 +58,7 @@ function RecipeEditor({
       computeRecipeFilename(deriveRecipePrefix(initialFileName, recipe.name), recipe.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const isDirtyRef = useRef(false)
 
@@ -64,10 +68,11 @@ function RecipeEditor({
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeRecipeFilename(derivedPrefix, recipe.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
-  }, [recipe, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [recipe, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -95,6 +100,11 @@ function RecipeEditor({
     const p = e.target.value
     setPrefix(p)
     if (!fileNameEdited) setFileName(computeRecipeFilename(p, data.name))
+  }
+
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
   }
 
   const handleRegenerate = () => {
@@ -125,7 +135,7 @@ function RecipeEditor({
     if (dupStatus) setDupSnack(dupStatus)
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   const addIngredient = () =>
     updateData((d) => ({ ...d, ingredients: [...d.ingredients, { name: '', quantity: '1' }] }))
@@ -155,8 +165,12 @@ function RecipeEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

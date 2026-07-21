@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -13,7 +13,7 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { resolveSavePath } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
 
 const RECIPES_SUBDIR = 'recipes'
 const IGNORE_SUBDIR = 'recipes/.ignore'
@@ -57,6 +57,17 @@ function RecipesPage() {
     }, [])
   )
 
+  // Save destinations the picker offers: every folder this section already uses,
+  // archived ones included — a folder emptied by archiving everything in it is
+  // still somewhere you might file a recipe.
+  const folderChoices = useMemo(
+    () => folderOptions([...files, ...archivedFiles]),
+    [files, archivedFiles]
+  )
+  // treePath, not rel: an archived file's picker shows where it sits within the
+  // type, not `.ignore/…`. resolveSavePath puts the prefix back.
+  const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
+
   const doNew = () => {
     setSelectedFile(null)
     setLoadError(null)
@@ -81,15 +92,20 @@ function RecipesPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
-  const handleSave = async (data, fileName) => {
+  const handleSave = async (data, fileName, folder) => {
     try {
-      const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const { newPath, newRel } = resolveSavePath(
+      const wasArchived = selectedFile?.archived === true
+      const { newPath, newRel, isRename } = resolveSavePath(
         activeLibrary,
         RECIPES_SUBDIR,
         selectedFile,
-        fileName
+        fileName,
+        folder
       )
+      // The list's own shape, so the next save reads back the folder it landed
+      // in rather than an ad-hoc object with no treePath.
+      const nextFile = () =>
+        toSectionFile(`${activeLibrary}/${RECIPES_SUBDIR}`, newRel, wasArchived)
 
       await window.electronAPI.saveRecipe(newPath, data)
       setEditingRecipe(data) // #6: sync editor to saved data before any selectedFile change
@@ -99,13 +115,13 @@ function RecipesPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
+        setSelectedFile(nextFile())
         setSnackbar({
-          message: `Renamed. Old file archived as "${result.archivedAs}".`,
+          message: `Saved as "${newRel}". Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ rel: newRel, name: fileName, path: newPath }) // #5: associate with file after first save
+        setSelectedFile(nextFile()) // #5: associate with file after first save
       }
 
       markClean()
@@ -190,6 +206,8 @@ function RecipesPage() {
           <RecipeEditor
             recipe={editingRecipe}
             initialFileName={selectedFile?.name ?? null}
+            initialFolder={initialFolder}
+            folderOptions={folderChoices}
             isArchived={selectedFile?.archived === true}
             isExisting={!!selectedFile}
             onSave={handleSave}

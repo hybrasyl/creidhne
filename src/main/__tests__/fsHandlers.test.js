@@ -105,6 +105,13 @@ describe('writeFile', () => {
     await writeFile('/path/item.xml', '<Item />')
     expect(mockFs.writeFile).toHaveBeenCalledWith('/path/item.xml', '<Item />', 'utf-8')
   })
+
+  // The editors' folder picker is free-text: typing a folder that does not
+  // exist yet IS how you create one, so the write has to make the parent.
+  it('creates the parent directory first', async () => {
+    await writeFile('/path/universal/item.xml', '<Item />')
+    expect(mockFs.mkdir).toHaveBeenCalledWith('/path/universal', { recursive: true })
+  })
 })
 
 // ─── moveFile ────────────────────────────────────────────────────────────────

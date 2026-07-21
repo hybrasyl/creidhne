@@ -28,6 +28,7 @@ import CreatureSpriteCanvas from '../shared/CreatureSpriteCanvas'
 import SpritePickerDialog from '../shared/SpritePickerDialog'
 import GridViewIcon from '@mui/icons-material/GridView'
 import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
+import { normalizeFolder } from '../../utils/fileTree'
 
 function computeCreatureFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '')
@@ -499,6 +500,8 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
 function CreatureEditor({
   creature,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -513,6 +516,7 @@ function CreatureEditor({
     initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const [openLoot, setOpenLoot] = useState(false)
   const [openHostility, setOpenHostility] = useState(false)
@@ -548,6 +552,7 @@ function CreatureEditor({
       initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name)
     )
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setOpenLoot(false)
     setOpenHostility(false)
     setOpenCookies(false)
@@ -555,7 +560,7 @@ function CreatureEditor({
     isDirtyRef.current = false
     onDirtyChange?.(false)
     setDupSnack(null)
-  }, [creature, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [creature, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -578,6 +583,11 @@ function CreatureEditor({
   )
 
   const set = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }))
+
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
+  }
 
   const handleRegenerate = () => {
     markDirtyLocal()
@@ -604,7 +614,7 @@ function CreatureEditor({
       subtypes: d.subtypes.filter((_, idx) => idx !== i)
     }))
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   const SPRITE_PREVIEW = 96
 
@@ -624,8 +634,12 @@ function CreatureEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

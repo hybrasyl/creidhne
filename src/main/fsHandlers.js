@@ -77,7 +77,12 @@ export async function checkClientPath(clientPath) {
   return { status, files }
 }
 
+// The parent directory is created rather than assumed: the editors' folder
+// picker is free-text, so a save is allowed to name a subfolder that does not
+// exist yet — typing one IS how you create it. Without the mkdir that save
+// fails with ENOENT. `filePath` is already path-validated by the caller.
 export async function writeFile(filePath, content) {
+  await fs.mkdir(dirname(filePath), { recursive: true })
   await fs.writeFile(filePath, content, 'utf-8')
 }
 

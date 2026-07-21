@@ -11,6 +11,9 @@ import {
   rowHeightFor,
   resolveSavePath,
   relDir,
+  joinRel,
+  folderOptions,
+  normalizeFolder,
   ITEM_HEIGHT,
   FOLDER_HEIGHT
 } from '../fileTree'
@@ -264,15 +267,74 @@ describe('relDir', () => {
   })
 })
 
+describe('joinRel', () => {
+  it('joins, tolerating either side being empty', () => {
+    expect(joinRel('universal', 'x.xml')).toBe('universal/x.xml')
+    expect(joinRel('', 'x.xml')).toBe('x.xml')
+    expect(joinRel('universal', '')).toBe('universal')
+    expect(joinRel('', '')).toBe('')
+  })
+})
+
+// ─── folderOptions / normalizeFolder ─────────────────────────────────────────
+
+describe('folderOptions', () => {
+  it('lists every folder in use, ancestors included, root excluded, sorted', () => {
+    expect(folderOptions([f('x.xml'), f('a/b/y.xml'), f('universal/z.xml')])).toEqual([
+      'a',
+      'a/b',
+      'universal'
+    ])
+  })
+
+  it('dedupes folders shared by several files', () => {
+    expect(folderOptions([f('universal/a.xml'), f('universal/b.xml')])).toEqual(['universal'])
+  })
+
+  // The picker chooses a place within the type; the archive is not one of them.
+  it('reads archived entries through treePath, without the .ignore prefix', () => {
+    expect(folderOptions([a('.ignore/universal/old.xml')])).toEqual(['universal'])
+  })
+
+  it('is empty when nothing is filed in a subfolder', () => {
+    expect(folderOptions([f('x.xml'), a('.ignore/y.xml')])).toEqual([])
+  })
+})
+
+describe('normalizeFolder', () => {
+  it('forward-slashes, trims and collapses', () => {
+    expect(normalizeFolder('universal\\deep')).toBe('universal/deep')
+    expect(normalizeFolder('a//b')).toBe('a/b')
+    expect(normalizeFolder('  a / b ')).toBe('a/b')
+    expect(normalizeFolder('/a/')).toBe('a')
+  })
+
+  // A typed `..` should read as an unavailable option, not as a path-safety
+  // error dialog after the save has already been attempted.
+  it('drops . and .. segments', () => {
+    expect(normalizeFolder('../evil')).toBe('evil')
+    expect(normalizeFolder('a/./b/../c')).toBe('a/b/c')
+    expect(normalizeFolder('..')).toBe('')
+  })
+
+  it('round-trips the type root as empty', () => {
+    expect(normalizeFolder('')).toBe('')
+    expect(normalizeFolder(undefined)).toBe('')
+  })
+})
+
 // The rule this encodes is why the branch exists: a rename must not silently
 // lift a file out of the folder it was filed under.
 describe('resolveSavePath', () => {
   const LIB = 'E:/world/xml'
 
+  // ── No folder argument: the pre-picker behaviour, unchanged ──
+
   it('puts a new file at the type root', () => {
     expect(resolveSavePath(LIB, 'castables', null, 'new.xml')).toEqual({
       newPath: `${LIB}/castables/new.xml`,
-      newRel: 'new.xml'
+      newRel: 'new.xml',
+      isRename: false
     })
   })
 
@@ -280,7 +342,8 @@ describe('resolveSavePath', () => {
     const sel = f('universal/old.xml')
     expect(resolveSavePath(LIB, 'castables', sel, 'new.xml')).toEqual({
       newPath: `${LIB}/castables/universal/new.xml`,
-      newRel: 'universal/new.xml'
+      newRel: 'universal/new.xml',
+      isRename: true
     })
   })
 
@@ -288,7 +351,8 @@ describe('resolveSavePath', () => {
     const sel = f('old.xml')
     expect(resolveSavePath(LIB, 'castables', sel, 'new.xml')).toEqual({
       newPath: `${LIB}/castables/new.xml`,
-      newRel: 'new.xml'
+      newRel: 'new.xml',
+      isRename: true
     })
   })
 
@@ -297,10 +361,73 @@ describe('resolveSavePath', () => {
     const r = resolveSavePath(LIB, 'castables', sel, 'same.xml')
     expect(r.newPath).toBe(sel.path)
     expect(r.newRel).toBe('universal/same.xml')
+    expect(r.isRename).toBe(false)
   })
 
   it('handles nesting deeper than one level', () => {
     const sel = f('a/b/old.xml')
     expect(resolveSavePath(LIB, 'castables', sel, 'new.xml').newRel).toBe('a/b/new.xml')
+  })
+
+  // ── With the picker's folder ──
+
+  it('files a new file where the picker says', () => {
+    expect(resolveSavePath(LIB, 'castables', null, 'new.xml', 'universal')).toEqual({
+      newPath: `${LIB}/castables/universal/new.xml`,
+      newRel: 'universal/new.xml',
+      isRename: false
+    })
+  })
+
+  it('moves a file to another folder without renaming it', () => {
+    const sel = f('universal/x.xml')
+    expect(resolveSavePath(LIB, 'castables', sel, 'x.xml', 'deep')).toEqual({
+      newPath: `${LIB}/castables/deep/x.xml`,
+      newRel: 'deep/x.xml',
+      isRename: true
+    })
+  })
+
+  it('moves a file back to the type root when the picker is cleared', () => {
+    const sel = f('universal/x.xml')
+    const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', '')
+    expect(r.newRel).toBe('x.xml')
+    expect(r.isRename).toBe(true)
+  })
+
+  it('treats a move plus a rename as one rename', () => {
+    const sel = f('universal/old.xml')
+    const r = resolveSavePath(LIB, 'castables', sel, 'new.xml', 'deep')
+    expect(r.newRel).toBe('deep/new.xml')
+    expect(r.isRename).toBe(true)
+  })
+
+  it('reports no rename when the picker matches where the file already is', () => {
+    const sel = f('universal/x.xml')
+    const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'universal')
+    expect(r.newPath).toBe(sel.path)
+    expect(r.isRename).toBe(false)
+  })
+
+  it('normalizes what the picker hands over', () => {
+    expect(resolveSavePath(LIB, 'castables', null, 'x.xml', '../a//b/').newRel).toBe('a/b/x.xml')
+  })
+
+  // Saving an archived file edits it in place; it does not resurrect it into
+  // the active tree just because the picker shows its active-side folder.
+  it('keeps an archived file under .ignore', () => {
+    const sel = a('.ignore/universal/x.xml')
+    const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'universal')
+    expect(r.newRel).toBe('.ignore/universal/x.xml')
+    expect(r.newPath).toBe(sel.path)
+    expect(r.isRename).toBe(false)
+  })
+
+  it('moves an archived file within the archive', () => {
+    const sel = a('.ignore/universal/x.xml')
+    const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'deep')
+    expect(r.newRel).toBe('.ignore/deep/x.xml')
+    expect(r.newPath).toBe(`${LIB}/castables/.ignore/deep/x.xml`)
+    expect(r.isRename).toBe(true)
   })
 })

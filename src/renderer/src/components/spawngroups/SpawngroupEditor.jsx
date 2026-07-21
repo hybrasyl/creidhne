@@ -31,6 +31,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import CommentField from '../shared/CommentField'
+import FolderSelect from '../shared/FolderSelect'
+import { normalizeFolder } from '../../utils/fileTree'
 import { IMMUNITY_TYPES, MESSAGE_TYPES } from '../../data/behaviorSetConstants'
 import { ELEMENT_TYPES } from '../../data/itemConstants'
 
@@ -866,6 +868,8 @@ const SpawnAccordion = memo(function SpawnAccordion({
 function SpawngroupEditor({
   spawngroup,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -882,6 +886,7 @@ function SpawngroupEditor({
     () => initialFileName || computeFilename('spn', spawngroup.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const [openGroupLoot, setOpenGroupLoot] = useState(true)
   const [openSpawns, setOpenSpawns] = useState(true)
@@ -916,10 +921,11 @@ function SpawngroupEditor({
     setPrefix(p)
     setFileName(initialFileName || computeFilename(p, spawngroup.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     isDirtyRef.current = false
     onDirtyChange?.(false)
     setDupSnack(null)
-  }, [spawngroup, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [spawngroup, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirty = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -955,7 +961,12 @@ function SpawngroupEditor({
     setFileNameEdited(false)
   }
 
-  const handleSave = () => onSave(data, fileName)
+  const handleFolderChange = (val) => {
+    markDirty()
+    setFolder(val)
+  }
+
+  const handleSave = () => onSave(data, fileName, normalizeFolder(folder))
   if (saveRef) saveRef.current = handleSave
 
   // ── Group Loot ──────────────────────────────────────────────────────────────
@@ -1030,6 +1041,12 @@ function SpawngroupEditor({
               <AutorenewIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          <FolderSelect
+            value={folder}
+            options={folderOptions ?? []}
+            onChange={handleFolderChange}
+            warn={!!initialFileName && folder !== initialFolder}
+          />
         </Box>
       </Box>
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
