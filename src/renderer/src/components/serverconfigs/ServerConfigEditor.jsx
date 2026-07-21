@@ -24,6 +24,7 @@ import EffectPicker from '../shared/EffectPicker'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import { normalizeFolder } from '../../utils/fileTree'
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 const LOG_LEVELS = ['All', 'Debug', 'Info', 'Warn', 'Error', 'Fatal', 'None']
@@ -1734,6 +1735,8 @@ function AdvancedTab({ data, updateData }) {
 function ServerConfigEditor({
   config,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isExisting,
   isArchived,
   onSave,
@@ -1744,16 +1747,18 @@ function ServerConfigEditor({
 }) {
   const [data, setData] = useState(config)
   const [fileName, setFileName] = useState(initialFileName || 'config.xml')
+  const [folder, setFolder] = useState(initialFolder)
   const [activeTab, setActiveTab] = useState(0)
   const isDirtyRef = useRef(false)
 
   useEffect(() => {
     setData(config)
     setFileName(initialFileName || 'config.xml')
+    setFolder(initialFolder)
     setActiveTab(0)
     isDirtyRef.current = false
     onDirtyChange?.(false)
-  }, [config, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [config, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -1770,7 +1775,12 @@ function ServerConfigEditor({
     [markDirtyLocal]
   )
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
+  }
+
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -1787,8 +1797,12 @@ function ServerConfigEditor({
           markDirtyLocal()
           setFileName(val)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={() => {}}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

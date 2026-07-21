@@ -3,6 +3,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import ArchiveIcon from '@mui/icons-material/Archive'
 import UnarchiveIcon from '@mui/icons-material/Unarchive'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
+import FolderSelect from './FolderSelect'
 
 /**
  * Shared editor header used by all entity editors.
@@ -16,6 +17,10 @@ import AutorenewIcon from '@mui/icons-material/Autorenew'
  *   isExisting       — whether this entity has an associated file
  *   isArchived       — whether the file is in the archive folder
  *   onFileNameChange — (value: string) => void
+ *   folder           — save destination within the type directory ('' is the type root)
+ *   folderOptions    — folders already in use in this section
+ *   initialFolder    — the folder the file is in now ('' for a new file)
+ *   onFolderChange   — (value: string) => void; omit to hide the picker entirely
  *   onRegenerate     — () => void  — reset fileName to computedFileName
  *   onSave           — () => void
  *   onArchive        — () => void
@@ -30,6 +35,10 @@ function EditorHeader({
   isExisting,
   isArchived,
   onFileNameChange,
+  folder,
+  folderOptions,
+  initialFolder,
+  onFolderChange,
   onRegenerate,
   onSave,
   onArchive,
@@ -37,14 +46,20 @@ function EditorHeader({
 }) {
   const recyclePending = !!initialFileName && fileName !== computedFileName
   const willRename = !!initialFileName && fileName !== initialFileName
-  const fileNameWarn = recyclePending || willRename
+  // A move is a rename by another name: it also writes a new file and archives
+  // the old one, so it warns the same way and says the same thing.
+  const willMove = !!initialFileName && initialFolder !== undefined && folder !== initialFolder
+  const fileNameWarn = recyclePending || willRename || willMove
   const recycleDisabled = fileName === computedFileName
 
-  const helperText = willRename
-    ? `Saving will create "${fileName}" and archive "${initialFileName}"`
-    : recyclePending
-      ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)`
-      : undefined
+  const destination = folder ? `${folder}/${fileName}` : fileName
+  const origin = `${initialFolder ? `${initialFolder}/` : ''}${initialFileName}`
+  const helperText =
+    willRename || willMove
+      ? `Saving will create "${destination}" and archive "${origin}"`
+      : recyclePending
+        ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)`
+        : undefined
 
   const recycleTooltip = recycleDisabled
     ? 'Filename is auto-computed'
@@ -107,6 +122,14 @@ function EditorHeader({
             </IconButton>
           </span>
         </Tooltip>
+        {onFolderChange && (
+          <FolderSelect
+            value={folder ?? ''}
+            options={folderOptions ?? []}
+            onChange={onFolderChange}
+            warn={willMove}
+          />
+        )}
       </Box>
     </Box>
   )

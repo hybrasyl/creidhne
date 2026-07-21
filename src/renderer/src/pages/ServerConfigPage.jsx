@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Box, Typography, Alert, Snackbar } from '@mui/material'
 import {
   useStoreValue,
@@ -13,7 +13,7 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { resolveSavePath } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
 
 const SUBDIR = 'serverconfigs'
 const IGNORE_SUBDIR = 'serverconfigs/.ignore'
@@ -91,6 +91,17 @@ function ServerConfigPage() {
     }, [])
   )
 
+  // Save destinations the picker offers: every folder this section already uses,
+  // archived ones included — a folder emptied by archiving everything in it is
+  // still somewhere you might file a config.
+  const folderChoices = useMemo(
+    () => folderOptions([...files, ...archivedFiles]),
+    [files, archivedFiles]
+  )
+  // treePath, not rel: an archived file's picker shows where it sits within the
+  // type, not `.ignore/…`. resolveSavePath puts the prefix back.
+  const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
+
   const doNew = () => {
     setSelectedFile(null)
     setLoadError(null)
@@ -112,10 +123,19 @@ function ServerConfigPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
-  const handleSave = async (data, fileName) => {
+  const handleSave = async (data, fileName, folder) => {
     try {
-      const isRename = !!(selectedFile && fileName !== selectedFile.name)
-      const { newPath, newRel } = resolveSavePath(activeLibrary, SUBDIR, selectedFile, fileName)
+      const wasArchived = selectedFile?.archived === true
+      const { newPath, newRel, isRename } = resolveSavePath(
+        activeLibrary,
+        SUBDIR,
+        selectedFile,
+        fileName,
+        folder
+      )
+      // The list's own shape, so the next save reads back the folder it landed
+      // in rather than an ad-hoc object with no treePath.
+      const nextFile = () => toSectionFile(`${activeLibrary}/${SUBDIR}`, newRel, wasArchived)
 
       await window.electronAPI.saveServerConfig(newPath, data)
       setEditingConfig(data) // #6: sync editor to saved data before any selectedFile change
@@ -125,13 +145,13 @@ function ServerConfigPage() {
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`
         )
-        setSelectedFile({ rel: newRel, name: fileName, path: newPath })
+        setSelectedFile(nextFile())
         setSnackbar({
-          message: `Renamed. Old file archived as "${result.archivedAs}".`,
+          message: `Saved as "${newRel}". Old file archived as "${result.archivedAs}".`,
           severity: 'success'
         })
       } else if (!selectedFile) {
-        setSelectedFile({ rel: newRel, name: fileName, path: newPath }) // #5: associate with file after first save
+        setSelectedFile(nextFile()) // #5: associate with file after first save
       }
 
       markClean()
@@ -207,6 +227,8 @@ function ServerConfigPage() {
           <ServerConfigEditor
             config={editingConfig}
             initialFileName={selectedFile?.name ?? null}
+            initialFolder={initialFolder}
+            folderOptions={folderChoices}
             isExisting={!!selectedFile}
             isArchived={selectedFile?.archived === true}
             onSave={handleSave}

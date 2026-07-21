@@ -32,6 +32,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { normalizeFolder } from '../../utils/fileTree'
 import StatsTab from '../shared/StatsTab'
 import RestrictionsTab from '../shared/RestrictionsTab'
 import UseTab from './tabs/UseTab'
@@ -140,6 +141,8 @@ function derivePrefix(data) {
 function ItemEditor({
   item,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   warnings = [],
@@ -157,6 +160,7 @@ function ItemEditor({
   const [data, setData] = useState(item)
   const [fileName, setFileName] = useState(initialFileName || deriveFilename(item))
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
   const [warningsDismissed, setWarningsDismissed] = useState(false)
 
   const [openFlags, setOpenFlags] = useState(item.properties.flags?.length > 0)
@@ -175,6 +179,7 @@ function ItemEditor({
     setData(item)
     setFileName(initialFileName || deriveFilename(item))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setWarningsDismissed(false)
     setOpenFlags(item.properties.flags?.length > 0)
     setOpenCategories(item.properties.categories?.length > 0)
@@ -182,7 +187,7 @@ function ItemEditor({
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
-  }, [item, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [item, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Duplicate detection ───────────────────────────────────────────────────
   const dupStatus = useMemo(() => {
@@ -229,13 +234,18 @@ function ItemEditor({
       properties: { ...d.properties, [key]: { ...d.properties[key], [field]: e.target.value } }
     }))
 
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
+  }
+
   const handleRegenerate = () => {
     markDirtyLocal()
     setFileName(deriveFilename(data))
     setFileNameEdited(false)
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   // Slot drives the existence of the equipment block. "None" → no equipment
   // in XML; anything else creates / updates the block. Replaces the explicit
@@ -321,8 +331,12 @@ function ItemEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

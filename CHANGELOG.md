@@ -23,7 +23,19 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+### Added
+
+- Every entity editor now has a **Folder** picker next to the filename, so you can
+  file a new entity into a subfolder (`castables/universal/…`) or move an existing
+  one between folders. Type a folder that doesn't exist yet and it's created on
+  save. Previously subfolders could only be read: anything you created landed at
+  the type root, and moving a file meant doing it outside the app.
+
 ### Changed
+
+- Renaming a **spawn group** now actually takes effect. The filename field was
+  being ignored on save — the file was always written back under its original
+  name — and now behaves like every other editor, archiving the file it replaces.
 
 - The **Lua Helpers page** is now a grid of cards matching Settings, and scrolls
   properly — the setup tips previously ran off the bottom of the window on larger

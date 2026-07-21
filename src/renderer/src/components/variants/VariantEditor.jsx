@@ -32,6 +32,7 @@ import ColorSwatch from '../shared/ColorSwatch'
 import { useItemColorSwatches } from '../../data/itemColorData'
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveVariantPrefix(fileName, name) {
   if (!fileName) return 'vg'
@@ -402,6 +403,8 @@ function VariantAccordion({ variant, index, onChange, onRemove }) {
 function VariantEditor({
   variantGroup,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -422,6 +425,7 @@ function VariantEditor({
       )
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const isDirtyRef = useRef(false)
 
@@ -431,10 +435,11 @@ function VariantEditor({
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeVariantFilename(derivedPrefix, variantGroup.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
-  }, [variantGroup, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [variantGroup, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirtyLocal = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -460,6 +465,11 @@ function VariantEditor({
     const p = e.target.value
     setPrefix(p)
     if (!fileNameEdited) setFileName(computeVariantFilename(p, data.name))
+  }
+
+  const handleFolderChange = (val) => {
+    markDirtyLocal()
+    setFolder(val)
   }
 
   const handleRegenerate = () => {
@@ -490,7 +500,7 @@ function VariantEditor({
     if (dupStatus) setDupSnack(dupStatus)
   }
 
-  if (saveRef) saveRef.current = () => onSave(data, fileName)
+  if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
   const addVariant = () =>
     updateData((d) => ({ ...d, variants: [...d.variants, makeDefaultVariant()] }))
@@ -516,8 +526,12 @@ function VariantEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
-        onSave={() => onSave(data, fileName)}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

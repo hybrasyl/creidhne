@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material'
 import {
   useStoreValue,
@@ -13,6 +13,7 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
 
 const SPAWN_SUBDIR = 'spawngroups'
 const IGNORE_SUBDIR = 'spawngroups/.ignore'
@@ -58,6 +59,17 @@ function SpawngroupsPage() {
     }, [])
   )
 
+  // Save destinations the picker offers: every folder this section already uses,
+  // archived ones included — a folder emptied by archiving everything in it is
+  // still somewhere you might file a spawn group.
+  const folderChoices = useMemo(
+    () => folderOptions([...files, ...archivedFiles]),
+    [files, archivedFiles]
+  )
+  // treePath, not rel: an archived file's picker shows where it sits within the
+  // type, not `.ignore/…`. resolveSavePath puts the prefix back.
+  const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
+
   const doNew = () => {
     setSelectedFile(null)
     setLoadError(null)
@@ -82,14 +94,41 @@ function SpawngroupsPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
-  const handleSave = async (data, fileName) => {
+  // Renames used to be silently ignored here — the save always wrote back to
+  // `selectedFile.path`, so editing the filename field did nothing. Now that the
+  // folder picker can retarget a save too, this goes through resolveSavePath
+  // like every other section and archives the file it supersedes.
+  const handleSave = async (data, fileName, folder) => {
     try {
-      const filePath = selectedFile
-        ? selectedFile.path
-        : `${activeLibrary}/${SPAWN_SUBDIR}/${fileName}`
-      await window.electronAPI.saveSpawngroup(filePath, data)
+      const wasArchived = selectedFile?.archived === true
+      const { newPath, newRel, isRename } = resolveSavePath(
+        activeLibrary,
+        SPAWN_SUBDIR,
+        selectedFile,
+        fileName,
+        folder
+      )
+      // The list's own shape, so the next save reads back the folder it landed
+      // in rather than an ad-hoc object with no treePath.
+      const nextFile = () => toSectionFile(`${activeLibrary}/${SPAWN_SUBDIR}`, newRel, wasArchived)
+
+      await window.electronAPI.saveSpawngroup(newPath, data)
       markClean()
-      if (!selectedFile && activeLibrary) await loadFiles(activeLibrary)
+
+      if (isRename) {
+        const result = await window.electronAPI.archiveFile(
+          selectedFile.path,
+          `${activeLibrary}/${IGNORE_SUBDIR}`
+        )
+        setSelectedFile(nextFile())
+        setSnackbar({
+          message: `Saved as "${newRel}". Old file archived as "${result.archivedAs}".`,
+          severity: 'success'
+        })
+      } else if (!selectedFile) {
+        setSelectedFile(nextFile())
+      }
+      if ((isRename || !selectedFile) && activeLibrary) await loadFiles(activeLibrary)
       if (activeLibrary) {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SPAWN_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
@@ -170,6 +209,8 @@ function SpawngroupsPage() {
           <SpawngroupEditor
             spawngroup={editingSpawngroup}
             initialFileName={selectedFile?.name ?? null}
+            initialFolder={initialFolder}
+            folderOptions={folderChoices}
             isArchived={selectedFile?.archived === true}
             isExisting={!!selectedFile}
             onSave={handleSave}

@@ -40,6 +40,7 @@ import {
 } from '../../data/behaviorSetConstants'
 import CommentField from '../shared/CommentField'
 import StatsTab from '../shared/StatsTab'
+import { normalizeFolder } from '../../utils/fileTree'
 
 const DEFAULT_PREFIX = 'bvs'
 
@@ -372,6 +373,8 @@ function CastingSetAccordion({ cs, index, castableOptions, onChange, onRemove })
 function BehaviorSetEditor({
   behaviorSet,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -389,6 +392,7 @@ function BehaviorSetEditor({
     () => initialFileName || computeBehaviorSetFilename(DEFAULT_PREFIX, behaviorSet.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const [openCastables, setOpenCastables] = useState(true)
   const [openImmunities, setOpenImmunities] = useState(true)
@@ -428,6 +432,7 @@ function BehaviorSetEditor({
     setPrefixEdited(false)
     setFileName(initialFileName || computeBehaviorSetFilename(p, behaviorSet.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     isDirtyRef.current = false
     onDirtyChange?.(false)
     setDupSnack(null)
@@ -435,7 +440,7 @@ function BehaviorSetEditor({
     setOpenCastingSets(true)
     setOpenHostility(true)
     setOpenCookies(true)
-  }, [behaviorSet, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [behaviorSet, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirty = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -465,13 +470,18 @@ function BehaviorSetEditor({
     if (!fileNameEdited) setFileName(computeBehaviorSetFilename(e.target.value, data.name))
   }
 
+  const handleFolderChange = (val) => {
+    markDirty()
+    setFolder(val)
+  }
+
   const handleRegenerate = () => {
     markDirty()
     setFileName(computeBehaviorSetFilename(prefix, data.name))
     setFileNameEdited(false)
   }
 
-  const handleSave = () => onSave(data, fileName)
+  const handleSave = () => onSave(data, fileName, normalizeFolder(folder))
   if (saveRef) saveRef.current = handleSave
 
   // ── Immunities ──────────────────────────────────────────────────────────────
@@ -581,6 +591,10 @@ function BehaviorSetEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
         onArchive={onArchive}

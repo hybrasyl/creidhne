@@ -48,6 +48,7 @@ import AnimationsSection from './AnimationsSection'
 import RequirementsSection from './RequirementsSection'
 import { ELEMENT_TYPES } from '../../data/itemConstants'
 import CommentField from '../shared/CommentField'
+import { normalizeFolder } from '../../utils/fileTree'
 
 const ALL_CLASS_SET = new Set(ALL_CASTABLE_CLASSES)
 function isAllClasses(classStr) {
@@ -99,6 +100,8 @@ function Section({ title, open, onToggle, children }) {
 function CastableEditor({
   castable,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -120,6 +123,7 @@ function CastableEditor({
     return computeCastableFilename(p, castable.name)
   })
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
 
   const [openDescriptions, setOpenDescriptions] = useState(true)
   const [openCategories, setOpenCategories] = useState(true)
@@ -170,10 +174,11 @@ function CastableEditor({
     setPrefixEdited(false)
     setFileName(initialFileName || computeCastableFilename(derivedPrefix, castable.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     isDirtyRef.current = false
     setDupSnack(null)
     onDirtyChange?.(false)
-  }, [castable, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [castable, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirty = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -249,13 +254,18 @@ function CastableEditor({
 
   // ── Filename ───────────────────────────────────────────────────────────────
 
+  const handleFolderChange = (val) => {
+    markDirty()
+    setFolder(val)
+  }
+
   const handleRegenerate = () => {
     markDirty()
     setFileName(computeCastableFilename(prefix, data.name))
     setFileNameEdited(false)
   }
 
-  const handleSave = () => onSave(data, fileName)
+  const handleSave = () => onSave(data, fileName, normalizeFolder(folder))
   if (saveRef) saveRef.current = handleSave
 
   // ── Descriptions ───────────────────────────────────────────────────────────
@@ -318,6 +328,10 @@ function CastableEditor({
           setFileName(val)
           setFileNameEdited(true)
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
         onArchive={onArchive}

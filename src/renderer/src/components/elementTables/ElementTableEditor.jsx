@@ -19,6 +19,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveElementPrefix(fileName, name) {
   if (!fileName) return 'element'
@@ -45,6 +46,8 @@ function computeFileName(prefix, name) {
 function ElementTableEditor({
   table,
   initialFileName,
+  initialFolder = '',
+  folderOptions,
   isArchived,
   isExisting,
   onSave,
@@ -67,6 +70,7 @@ function ElementTableEditor({
     initialFileName || computeFileName(deriveElementPrefix(initialFileName, table.name), table.name)
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
+  const [folder, setFolder] = useState(initialFolder)
   const [focusedCell, setFocusedCell] = useState(null) // { row, col }
   const [dupSnack, setDupSnack] = useState(null)
   const [elementsOpen, setElementsOpen] = useState(true)
@@ -82,11 +86,12 @@ function ElementTableEditor({
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeFileName(derivedPrefix, table.name))
     setFileNameEdited(!!initialFileName)
+    setFolder(initialFolder)
     setFocusedCell(null)
     setDupSnack(null)
     isDirtyRef.current = false
     onDirtyChange?.(false)
-  }, [table, initialFileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [table, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDirty = useCallback(() => {
     if (!isDirtyRef.current) {
@@ -106,6 +111,11 @@ function ElementTableEditor({
     setPrefix(p)
     if (!fileNameEdited) setFileName(computeFileName(p, name))
     markDirty()
+  }
+
+  const handleFolderChange = (val) => {
+    markDirty()
+    setFolder(val)
   }
 
   const handleRegenerate = () => {
@@ -191,10 +201,10 @@ function ElementTableEditor({
   const getFileName = () => fileName || computeFileName(prefix, name) || 'element-table.xml'
 
   const handleSave = useCallback(() => {
-    onSave({ name, comment, elements, matrix }, getFileName())
+    onSave({ name, comment, elements, matrix }, getFileName(), normalizeFolder(folder))
     isDirtyRef.current = false
     onDirtyChange?.(false)
-  }, [name, comment, elements, matrix, isExisting, initialFileName, fileName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [name, comment, elements, matrix, isExisting, initialFileName, fileName, folder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (saveRef) saveRef.current = handleSave
 
@@ -269,6 +279,10 @@ function ElementTableEditor({
           setFileNameEdited(true)
           markDirty()
         }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
         onArchive={onArchive}
