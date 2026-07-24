@@ -52,6 +52,11 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **The custom scrollbar now follows the theme.** It was hardcoded to the
+  hybrasyl teal on a dark gutter, so it looked wrong under the other themes —
+  especially the light corporate one. It now recolors from the active theme's
+  palette.
+
 - **Sprites and portraits now render true to the client.** Creidhne moved to
   dalib 3.0, which fixes the SPF decode (NPC portraits and other SPF frames now
   honor each frame's offset and pitch, so frames no longer skew or shift) and draws
