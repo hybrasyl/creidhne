@@ -43,6 +43,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **Sprites and portraits now render true to the client.** Creidhne moved to
+  dalib 3.0, which fixes the SPF decode (NPC portraits and other SPF frames now
+  honor each frame's offset and pitch, so frames no longer skew or shift) and draws
+  ground tiles like the game does. Some art that looked wrong or misaligned in the
+  pickers now matches what players see.
+
 - **Lua IntelliSense is quiet out of the box.** The bundled type stubs no longer
   report problems of their own (they describe a C# API, so Lua lint rules don't
   apply to them), and the generated `.luarc.json` now also silences
