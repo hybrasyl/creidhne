@@ -25,6 +25,15 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Added
 
+- **Spellbooks** are now a top-level editor. A spellbook is a named bundle of
+  castable categories and/or individual castables, with a live preview of the
+  full spell list it resolves to (categories expanded to their members). Saving a
+  book stamps its name as a category onto every castable it covers, so a behavior
+  set can pull in the whole book with one token — the Castables section of the
+  behavior-set editor has a new **Add from spellbook** picker for that. A
+  confirmation appears first when a book would edit many castable files. This
+  replaces the old Spell Books tab in Constants; existing books carry over.
+
 - Every entity editor now has a **Folder** picker next to the filename, so you can
   file a new entity into a subfolder (`castables/universal/…`) or move an existing
   one between folders. Type a folder that doesn't exist yet and it's created on

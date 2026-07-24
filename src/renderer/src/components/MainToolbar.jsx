@@ -17,6 +17,7 @@ import {
   GiFaceToFace,
   GiSpiderFace,
   GiBrainTentacle,
+  GiSpellBook,
   GiCastle,
   GiHiveMind,
   GiGoldStack,
@@ -214,6 +215,11 @@ const MainToolbar = ({ navigate }) => {
         <Tooltip title="Behavior Sets">
           <IconButton onClick={() => navigate('behaviors')} sx={pageSx('behaviors')}>
             <GiBrainTentacle />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Spellbooks">
+          <IconButton onClick={() => navigate('spellbooks')} sx={pageSx('spellbooks')}>
+            <GiSpellBook />
           </IconButton>
         </Tooltip>
         <Tooltip title="Nations">

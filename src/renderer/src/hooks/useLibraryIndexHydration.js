@@ -42,7 +42,8 @@ export function useLibraryIndexHydration() {
           (constants?.cookies || []).map((c) => c.name)
         ),
         motions: constants?.motions || [],
-        weapons: constants?.weapons || []
+        weapons: constants?.weapons || [],
+        spellBooks: constants?.spellBooks || []
       })
     },
     [setLibraryIndex]
