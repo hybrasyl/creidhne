@@ -1,29 +1,115 @@
 name: Release
 
+# Requires these repository secrets before the first tagged release:
+#   ES_USERNAME / ES_PASSWORD / ES_CREDENTIAL_ID / ES_TOTP_SECRET  (SSL.com eSigner, Windows)
+#   MACOS_CERT_P12_BASE64 / MACOS_CERT_PASSWORD                    (Developer ID cert)
+#   APPLE_API_KEY_P8_BASE64 / APPLE_API_KEY_ID / APPLE_API_ISSUER  (App Store Connect, notarize)
+#   DISCORD_WEBHOOK_URL                                            (release announcement)
+
 on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# The actions/* below are pinned to current-latest majors (checkout/setup-node/
+# upload-artifact @v7, download-artifact @v8) — all native Node 24. This env keeps
+# the one remaining third-party JavaScript action still on Node 20 —
+# sslcom/esigner-codesign@v1.3.2 (declares `using: node20`) — running on Node 24
+# until it ships a Node 24 release. softprops/action-gh-release@v3 is Node 24 native
+# and does not need it. Remove this env when no Node 20 action is left.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  # Fast validation gate — runs on every PR to main (and before any release
+  # build). Keeps lint / tests green so they can't silently rot (these are not
+  # otherwise enforced anywhere). No typecheck step: Creidhne is JavaScript.
+  validate:
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
+      # the XSD-validation tests read it.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Test + coverage gate
+        run: npm run test:coverage
+
+  # End-to-end gate. The Playwright/Electron specs drive the BUILT app, so they
+  # need a full build and a real display. GitHub's Windows runners have a desktop
+  # session, so these run without xvfb. Own job to keep the lint/test signal fast.
+  e2e:
+    runs-on: windows-latest
+    needs: validate
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
+      # the built app reads it at runtime.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
+
+      # `npm run e2e` builds first; the specs load out/main/index.js.
+      - name: End-to-end tests
+        run: npm run e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build-windows:
+    runs-on: windows-latest
+    needs: [validate, e2e]
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
       - name: Install dependencies
         run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # electron-builder unpacks xsd/** and the app reads it at runtime, so the
+      # packaged build needs it present.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
 
       - name: Build app
         run: npm run build
@@ -48,7 +134,7 @@ jobs:
           override: true
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-portable
           path: dist/*-portable.exe
@@ -56,15 +142,23 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    needs: [validate, e2e]
+    if: github.event_name != 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
       - name: Install dependencies
         run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # electron-builder unpacks xsd/** and the app reads it at runtime, so the
+      # packaged build needs it present.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
 
       - name: Build app
         run: npm run build
@@ -73,7 +167,7 @@ jobs:
         run: npx electron-builder --linux --publish never
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-packages
           path: |
@@ -83,15 +177,23 @@ jobs:
 
   build-mac:
     runs-on: macos-latest
+    needs: [validate, e2e]
+    if: github.event_name != 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
       - name: Install dependencies
         run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # electron-builder unpacks xsd/** and the app reads it at runtime, so the
+      # packaged build needs it present.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
 
       - name: Build app
         run: npm run build
@@ -159,7 +261,7 @@ jobs:
           xcrun stapler validate "$DMG"
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-dmg
           path: dist/*.dmg
@@ -173,10 +275,10 @@ jobs:
     steps:
       # Checkout (the release job otherwise only downloads artifacts) so the
       # CHANGELOG + extract script are on disk.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -186,7 +288,7 @@ jobs:
         run: node scripts/changelog-extract.mjs "${{ github.ref_name }}" > RELEASE_NOTES.md
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/**/*-portable.exe
