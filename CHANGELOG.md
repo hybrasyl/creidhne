@@ -25,11 +25,24 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Added
 
+- **Spellbooks** are now a top-level editor. A spellbook is a named bundle of
+  castable categories and/or individual castables, with a live preview of the
+  full spell list it resolves to (categories expanded to their members). Saving a
+  book stamps its name as a category onto every castable it covers, so a behavior
+  set can pull in the whole book with one token — the Castables section of the
+  behavior-set editor has a new **Add from spellbook** picker for that. A
+  confirmation appears first when a book would edit many castable files. This
+  replaces the old Spell Books tab in Constants; existing books carry over.
+
 - Every entity editor now has a **Folder** picker next to the filename, so you can
   file a new entity into a subfolder (`castables/universal/…`) or move an existing
   one between folders. Type a folder that doesn't exist yet and it's created on
   save. Previously subfolders could only be read: anything you created landed at
   the type root, and moving a file meant doing it outside the app.
+
+- **What's new** — Settings has a new button that shows the release notes in the
+  app. It replaces "Reveal logs folder", which stays available from the "Report an
+  issue" dialog.
 
 ### Changed
 
@@ -41,7 +54,21 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   properly — the setup tips previously ran off the bottom of the window on larger
   displays with no way to reach them.
 
+- Links in the **hybrasyl** theme now use the info accent, so they read clearly
+  instead of blending into the low-contrast primary blue.
+
 ### Fixed
+
+- **The custom scrollbar now follows the theme.** It was hardcoded to the
+  hybrasyl teal on a dark gutter, so it looked wrong under the other themes —
+  especially the light corporate one. It now recolors from the active theme's
+  palette.
+
+- **Sprites and portraits now render true to the client.** Creidhne moved to
+  dalib 3.0, which fixes the SPF decode (NPC portraits and other SPF frames now
+  honor each frame's offset and pitch, so frames no longer skew or shift) and draws
+  ground tiles like the game does. Some art that looked wrong or misaligned in the
+  pickers now matches what players see.
 
 - **Lua IntelliSense is quiet out of the box.** The bundled type stubs no longer
   report problems of their own (they describe a C# API, so Lua lint rules don't

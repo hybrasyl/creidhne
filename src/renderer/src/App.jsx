@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ThemeProvider, CssBaseline } from '@mui/material'
+import { ThemeProvider, CssBaseline, GlobalStyles } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import {
   useStoreState,
   themeState,
@@ -46,6 +47,30 @@ import UpdateSnackbar from './components/UpdateSnackbar'
 import ReportIssueDialog from './components/ReportIssueDialog'
 import ReferencePanel from './components/reference/ReferencePanel'
 import { stopSound } from './data/soundData'
+
+// Theme-aware custom scrollbar, injected globally so it recolors with the
+// active theme instead of the old hardcoded hybrasyl teal. The thumb uses the
+// theme accent (secondary, falling back to primary); the track derives from
+// text.primary so it reads as a faint gutter on both light and dark themes.
+const scrollbarGlobalStyles = (theme) => {
+  const accent = theme.palette.secondary?.main || theme.palette.primary.main
+  return {
+    '::-webkit-scrollbar': { width: 16, height: 12 },
+    '::-webkit-scrollbar-track': {
+      background: alpha(theme.palette.text.primary, 0.06),
+      borderLeft: '8px solid transparent',
+      backgroundClip: 'padding-box'
+    },
+    '::-webkit-scrollbar-thumb': {
+      backgroundColor: alpha(accent, 0.5),
+      borderRadius: 6,
+      borderLeft: '8px solid transparent',
+      backgroundClip: 'padding-box'
+    },
+    '::-webkit-scrollbar-thumb:hover': { backgroundColor: alpha(accent, 0.8) },
+    '::-webkit-scrollbar-corner': { background: 'transparent' }
+  }
+}
 
 function App() {
   const hydrateLibraryIndex = useLibraryIndexHydration()
@@ -289,6 +314,7 @@ function App() {
   return (
     <ThemeProvider theme={themes[theme] ?? hybrasylTheme}>
       <CssBaseline />
+      <GlobalStyles styles={scrollbarGlobalStyles} />
       <MainLayout navigate={handleNavigate} rightPanel={<ReferencePanel />}>
         <PageRenderer
           libraries={libraries}

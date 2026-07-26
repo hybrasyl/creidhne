@@ -551,6 +551,18 @@ function BehaviorSetEditor({
 
   const castableOptions = libraryIndex.castables || []
 
+  // Spellbook shorthand: a book is applied to the world as a single category
+  // (its name) stamped onto every castable it resolves to. Picking one here just
+  // adds that category token to the learn list's Spell Categories.
+  const spellBookNames = (libraryIndex.spellBooks || []).map((b) => b?.name).filter(Boolean)
+  const addSpellbookCategory = (bookName) => {
+    if (!bookName) return
+    const current = (data.castables?.spellCategories || '').trim().split(/\s+/).filter(Boolean)
+    if (!current.includes(bookName)) {
+      setCastablesField('spellCategories', [...current, bookName].join(' '))
+    }
+  }
+
   // ── Hostility ────────────────────────────────────────────────────────────────
 
   const setHostilityEntry = (side, field, val) =>
@@ -689,6 +701,20 @@ function BehaviorSetEditor({
           onToggle={() => setOpenCastables((v) => !v)}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {spellBookNames.length > 0 && (
+              <Autocomplete
+                size="small"
+                options={spellBookNames}
+                value={null}
+                blurOnSelect
+                clearOnBlur
+                sx={{ maxWidth: 280 }}
+                onChange={(_, val) => addSpellbookCategory(val)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Add from spellbook" placeholder="Pick a book…" />
+                )}
+              />
+            )}
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               <FormControlLabel
                 control={

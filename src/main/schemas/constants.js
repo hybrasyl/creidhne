@@ -8,7 +8,7 @@ import { z } from 'zod'
 //   - object[]:   cookies ({ name, sourceFile, comment }),
 //                 motions ({ id, speed, name }),
 //                 weapons ({ name, minDmg, maxDmg }),
-//                 spellBooks ({ id, name, castables })
+//                 spellBooks ({ id, name, castables, categories })
 // What we CAN assert at the IPC boundary: top-level values are always
 // arrays. That catches shape disasters (e.g. libraries: "string") while
 // accepting both string and object entries.

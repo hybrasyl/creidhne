@@ -24,6 +24,7 @@ const FormulasPage = lazy(() => import('../pages/FormulasPage'))
 const ElementsPage = lazy(() => import('../pages/ElementsPage'))
 const CreaturesPage = lazy(() => import('../pages/CreaturesPage'))
 const BehaviorsPage = lazy(() => import('../pages/BehaviorsPage'))
+const SpellbooksPage = lazy(() => import('../pages/SpellbooksPage'))
 const ConstantsPage = lazy(() => import('../pages/ConstantsPage'))
 const ServerConfigPage = lazy(() => import('../pages/ServerConfigPage'))
 const ExportsPage = lazy(() => import('../pages/ExportsPage'))
@@ -96,6 +97,9 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       break
     case 'behaviors':
       page = <BehaviorsPage />
+      break
+    case 'spellbooks':
+      page = <SpellbooksPage />
       break
     case 'constants':
       page = <ConstantsPage />

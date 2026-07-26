@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('xml:saveCastable', filePath, castableData),
   castableAddCategoryBulk: (libraryPath, castableNames, categoryName) =>
     ipcRenderer.invoke('castable:addCategoryBulk', libraryPath, castableNames, categoryName),
+  spellbookApply: (libraryPath, book) => ipcRenderer.invoke('spellbook:apply', libraryPath, book),
   openScript: (libraryPath, relativePath) =>
     ipcRenderer.invoke('script:open', libraryPath, relativePath),
   setupLuaEnvironment: (libraryPath) => ipcRenderer.invoke('lua:setupEnvironment', libraryPath),

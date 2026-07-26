@@ -1,27 +1,8 @@
 @import './base.css';
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 16px;
-  height: 12px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(6, 12, 18, 0.4);
-  border-left: 8px solid transparent;
-  background-clip: padding-box;
-}
-::-webkit-scrollbar-thumb {
-  background-color: rgba(58, 158, 144, 0.5);
-  border-radius: 6px;
-  border-left: 8px solid transparent;
-  background-clip: padding-box;
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(58, 158, 144, 0.8);
-}
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
+/* Custom scrollbars are theme-aware and injected from the active MUI theme's
+   palette via <GlobalStyles> in App.jsx (see scrollbarGlobalStyles), so they
+   recolor with the theme instead of being hardcoded to the hybrasyl teal. */
 
 body {
   overflow: hidden;

@@ -3,6 +3,7 @@ import { Box, Paper, Stack, Typography, Button, Link } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined'
+import NewReleasesOutlinedIcon from '@mui/icons-material/NewReleasesOutlined'
 import {
   useStoreState,
   useSetStoreValue,
@@ -14,6 +15,7 @@ import DAClientPathSection from '../components/DAClientPathSection'
 import TaliesinPathSection from '../components/TaliesinPathSection'
 import BrigidAssetsPathSection from '../components/BrigidAssetsPathSection'
 import AboutDialog from '../components/AboutDialog'
+import WhatsNewDialog from '../components/WhatsNewDialog'
 import ThemePicker from '../components/ThemePicker'
 
 // Branded logo (shared with the toolbar/splash), referenced as a public asset.
@@ -30,6 +32,7 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const [theme, setTheme] = useStoreState(themeState)
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false)
   const [version, setVersion] = useState('')
 
   useEffect(() => {
@@ -153,15 +156,16 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
             <Button
               variant="text"
               size="small"
-              startIcon={<FolderOpenIcon />}
-              onClick={() => window.electronAPI.revealLogs()}
+              startIcon={<NewReleasesOutlinedIcon />}
+              onClick={() => setWhatsNewOpen(true)}
             >
-              Reveal logs folder
+              What&apos;s new…
             </Button>
           </Box>
         </Paper>
       </Box>
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <WhatsNewDialog open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
     </Box>
   )
 }

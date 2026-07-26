@@ -12,6 +12,7 @@ import { parseCreatureXml, serializeCreatureXml } from './creatureXml'
 import { parseElementTableXml, serializeElementTableXml } from './elementTableXml'
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
+import { resolveSpellbook, nextCategories, sameCategorySet, affectedCastables } from './spellbook'
 import { exportCastablesExcelCSV } from './exportCastablesJson.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
 import { loadFormulas, saveFormulas, importFormulas } from './formulasJson.js'
@@ -701,6 +702,85 @@ app.whenReady().then(async () => {
       return { updated, unchanged, failed }
     }
   )
+
+  // Apply a spellbook to the world by reconciling the book-name category on the
+  // castables it resolves to. A spellbook is a Creidhne authoring convenience:
+  // its runtime effect is that every castable in the book carries the book's
+  // name as a category, so a BehaviorSet can reference the whole book with one
+  // category token. The book resolves to (individual castables) ∪ (all members
+  // of each included category), using the index's castableCategoryMembers.
+  //
+  // book = { name, prevName?, castables: string[], categories: string[] }.
+  // This is an idempotent reconcile, not an add: it stamps the book name onto
+  // castables that should have it, strips it from castables that no longer
+  // resolve, and (on rename) strips the previous name. Returns a summary; the
+  // caller re-indexes the castables section afterward.
+  ipcMain.handle('spellbook:apply', async (_, libraryPath, book) => {
+    const fail = (name, error) => ({
+      resolved: [],
+      added: [],
+      removed: [],
+      unchanged: [],
+      failed: [{ name, error }]
+    })
+    if (!libraryPath || !book || !book.name || !book.name.trim()) {
+      return fail('(invalid args)', 'Missing libraryPath or book name')
+    }
+    try {
+      validatePath(libraryPath)
+    } catch (err) {
+      return fail('(invalid path)', err.message)
+    }
+
+    const bookName = book.name.trim()
+    const prevRaw = typeof book.prevName === 'string' ? book.prevName.trim() : ''
+    const prevName = prevRaw && prevRaw !== bookName ? prevRaw : null
+
+    const index = await loadIndex(libraryPath)
+    const filenames = index?.castableFilenames || {}
+    const members = index?.castableCategoryMembers || {}
+
+    const resolvedList = resolveSpellbook(book, members)
+    const resolvedSet = new Set(resolvedList)
+    const affected = affectedCastables(resolvedList, bookName, prevName, members)
+
+    const added = []
+    const removed = []
+    const unchanged = []
+    const failed = []
+
+    for (const name of affected) {
+      const filename = filenames[name]
+      if (!filename) {
+        failed.push({ name, error: 'Not found in index' })
+        continue
+      }
+      const filePath = join(libraryPath, 'castables', filename)
+      try {
+        const xml = await fs.readFile(validatePath(filePath), 'utf-8')
+        const castable = await parseCastableXml(xml)
+        const orig = Array.isArray(castable.categories) ? castable.categories : []
+        const shouldHave = resolvedSet.has(name)
+        const next = nextCategories(orig, { bookName, prevName, shouldHave })
+
+        if (sameCategorySet(orig, next)) {
+          unchanged.push(name)
+          continue
+        }
+        await fs.writeFile(
+          filePath,
+          serializeCastableXml({ ...castable, categories: next }),
+          'utf-8'
+        )
+        if (shouldHave) added.push(name)
+        else removed.push(name)
+      } catch (err) {
+        failed.push({ name, error: err?.message || String(err) })
+      }
+    }
+
+    return { resolved: resolvedList, added, removed, unchanged, failed }
+  })
 
   // --- Constants (XSD simple types, categories, cookies) ---
 
