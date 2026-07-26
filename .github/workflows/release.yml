@@ -43,6 +43,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
+      # the XSD-validation tests read it.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
+
       - name: Lint
         run: npm run lint:check
 
@@ -65,6 +70,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
+      # the built app reads it at runtime.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
 
       # `npm run e2e` builds first; the specs load out/main/index.js.
       - name: End-to-end tests
@@ -94,6 +104,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # electron-builder unpacks xsd/** and the app reads it at runtime, so the
+      # packaged build needs it present.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
 
       - name: Build app
         run: npm run build
@@ -138,6 +154,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # electron-builder unpacks xsd/** and the app reads it at runtime, so the
+      # packaged build needs it present.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
+
       - name: Build app
         run: npm run build
 
@@ -166,6 +188,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # electron-builder unpacks xsd/** and the app reads it at runtime, so the
+      # packaged build needs it present.
+      - name: Fetch XSD schemas
+        run: npm run fetch-xsd
 
       - name: Build app
         run: npm run build
