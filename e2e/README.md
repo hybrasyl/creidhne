@@ -12,8 +12,8 @@ npm run e2e        # builds (electron-vite) then runs all specs
 npm run e2e:only   # runs specs against the existing out/ build
 ```
 
-Local-only for now. CI would need a virtual display (headed/xvfb), so this isn't in the
-`release.yml` build/validate jobs yet.
+The `e2e` job in `release.yml` runs these on every PR, on a Windows runner. Windows runners have
+a real desktop session, so no virtual display (xvfb) is needed.
 
 ## What's here
 
