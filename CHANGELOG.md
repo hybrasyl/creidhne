@@ -40,6 +40,10 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   save. Previously subfolders could only be read: anything you created landed at
   the type root, and moving a file meant doing it outside the app.
 
+- **What's new** — Settings has a new button that shows the release notes in the
+  app. It replaces "Reveal logs folder", which stays available from the "Report an
+  issue" dialog.
+
 ### Changed
 
 - Renaming a **spawn group** now actually takes effect. The filename field was
@@ -49,6 +53,9 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 - The **Lua Helpers page** is now a grid of cards matching Settings, and scrolls
   properly — the setup tips previously ran off the bottom of the window on larger
   displays with no way to reach them.
+
+- Links in the **hybrasyl** theme now use the info accent, so they read clearly
+  instead of blending into the low-contrast primary blue.
 
 ### Fixed
 

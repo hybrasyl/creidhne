@@ -124,6 +124,9 @@ const hybrasylTheme = responsiveFontSizes(
         }
       },
       MuiDivider: { styleOverrides: { root: { borderColor: 'rgba(58,158,144,0.15)' } } },
+      // Links use the info accent (#6de7f7) rather than the low-contrast primary
+      // blue; explicit color props on a Link still win over this default.
+      MuiLink: { styleOverrides: { root: { color: '#6de7f7' } } },
       MuiChip: {
         styleOverrides: {
           root: {
