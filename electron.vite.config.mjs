@@ -22,7 +22,11 @@ export default defineConfig({
   },
   renderer: {
     base: './', // Ensure the base URL is relative
-    publicDir: resolve('resources'),
+    // No publicDir. Pointing it at resources/ copied that whole tree into
+    // out/renderer AND electron-builder ships resources/ too, so every asset
+    // double-shipped (the 1.8MB logo master among them). The renderer's logo is
+    // now a hashed import from src/renderer/src/assets/; the splash + window
+    // icon are loaded by the main process from the packaged resources/.
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src')

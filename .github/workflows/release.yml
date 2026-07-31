@@ -139,6 +139,9 @@ jobs:
           name: windows-portable
           path: dist/*-portable.exe
           if-no-files-found: error
+          # The release job downloads these minutes later; keep them out of the
+          # 90-day default that otherwise exhausts the Actions storage quota.
+          retention-days: 1
 
   build-linux:
     runs-on: ubuntu-latest
@@ -174,6 +177,9 @@ jobs:
             dist/*.deb
             dist/*.AppImage
           if-no-files-found: error
+          # The release job downloads these minutes later; keep them out of the
+          # 90-day default that otherwise exhausts the Actions storage quota.
+          retention-days: 1
 
   build-mac:
     runs-on: macos-latest
@@ -266,6 +272,9 @@ jobs:
           name: macos-dmg
           path: dist/*.dmg
           if-no-files-found: error
+          # The release job downloads these minutes later; keep them out of the
+          # 90-day default that otherwise exhausts the Actions storage quota.
+          retention-days: 1
 
   release:
     runs-on: ubuntu-latest

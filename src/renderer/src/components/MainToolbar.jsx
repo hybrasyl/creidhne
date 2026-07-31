@@ -1,9 +1,9 @@
 import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
 
-// Branded logo lives in resources/ (Vite publicDir) and is shared with the
-// splash screen; referenced as a public asset (base is './') rather than a
-// bundled import so we don't ship a second copy of the artwork.
-const creidhneLogo = './creidhne-logo.png'
+// Right-sized WebP imported so Vite hashes it into the renderer bundle. The
+// splash screen uses its own resources/creidhne-splash.webp; the 1024px master
+// lives in build/ (regen only, never packaged).
+import creidhneLogo from '@renderer/assets/creidhne.webp'
 // Flat window-control glyphs for the "corporate" (plain-chrome) themes, swapped
 // in for the stylized Gi skull/contract/expand on Mundanes & Dubhaimid.
 import RemoveIcon from '@mui/icons-material/Remove'

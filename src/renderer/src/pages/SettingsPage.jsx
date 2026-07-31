@@ -18,8 +18,8 @@ import AboutDialog from '../components/AboutDialog'
 import WhatsNewDialog from '../components/WhatsNewDialog'
 import ThemePicker from '../components/ThemePicker'
 
-// Branded logo (shared with the toolbar/splash), referenced as a public asset.
-const creidhneLogo = './creidhne-logo.png'
+// Right-sized WebP, hashed into the bundle by Vite (shared with the toolbar).
+import creidhneLogo from '@renderer/assets/creidhne.webp'
 // Soft depth shadow lifting the logo off the card (matches the title-bar DEPTH).
 const DEPTH = '0 2px 3px rgba(0,0,0,0.55)'
 
