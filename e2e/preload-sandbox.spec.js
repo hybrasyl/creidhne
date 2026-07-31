@@ -19,12 +19,10 @@ test.describe('preload sandbox', () => {
     ;({ electronApp } = await launchApp())
     const page = await getMainWindow(electronApp)
 
-    const sandbox = await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) =>
-        (w.webContents.getLastWebPreferences()?.preload || '').includes('preload')
-      )
-      return win?.webContents.getLastWebPreferences()?.sandbox
-    })
+    // Read the flag off the main window's own BrowserWindow handle, not a
+    // getAllWindows() scan (which raced the splash teardown).
+    const win = await electronApp.browserWindow(page)
+    const sandbox = await win.evaluate((bw) => bw.webContents.getLastWebPreferences()?.sandbox)
     expect(sandbox).toBe(true)
 
     // The bridge is alive despite the sandbox.
