@@ -26,7 +26,6 @@
     "e2e:only": "playwright test"
   },
   "dependencies": {
-    "@electron-toolkit/preload": "^3.0.2",
     "@eriscorp/hybindex-ts": "^1.0.0",
     "fs-extra": "^11.3.4",
     "path": "^0.12.7",

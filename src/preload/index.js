@@ -1,12 +1,15 @@
+// `electron` is the ONLY module this file may import. The main window runs with
+// `sandbox: true`, and a sandboxed preload gets a polyfilled loader that resolves
+// `electron` and a handful of Node built-ins — nothing else. Importing any package
+// here re-breaks the sandbox, and it fails at run time in the packaged app rather
+// than at build time, because `externalizeDepsPlugin` leaves the bare `require` in
+// the bundle for anything listed in `dependencies`.
+//
+// `@electron-toolkit/preload` used to be imported here to expose `window.electron`
+// (and an empty `window.api`) that nothing in the renderer read. Removing it is
+// what made the sandbox reachable.
 import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
-const api = {}
-
-// Expose Electron APIs to the renderer process
-contextBridge.exposeInMainWorld('electron', electronAPI)
-contextBridge.exposeInMainWorld('api', api)
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
   openExeFile: () => ipcRenderer.invoke('dialog:openExeFile'),
@@ -126,16 +129,3 @@ contextBridge.exposeInMainWorld('electronAPI', {
   reloadPacks: () => ipcRenderer.invoke('pack:reload'),
   getSuggestedBrigidAssetsPath: () => ipcRenderer.invoke('pack:suggestedBrigidAssetsPath')
 })
-
-// If context isolation is disabled, add to the DOM global directly
-if (!process.contextIsolated) {
-  window.electron = electronAPI
-  window.api = api
-  window.electronAPI = {
-    openFile: () => ipcRenderer.invoke('dialog:openFile'),
-    openDirectory: () => ipcRenderer.invoke('open-directory'),
-    loadSettings: () => ipcRenderer.invoke('settings:load'), // Use IPC to load settings
-    saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings), // Use IPC to save settings
-    getUserDataPath: () => ipcRenderer.invoke('get-user-data-path')
-  }
-}

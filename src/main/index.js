@@ -38,6 +38,12 @@ import {
 } from './schemas/index.js'
 import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
 import { installGlobalErrorHandlers } from './errorHandlers.js'
+import {
+  initWindowSecurity,
+  registerTrustedWindow,
+  hardenWindow,
+  guardIpc
+} from './windowSecurity.js'
 import { buildDiagnostics, openIssue, copyReport } from './diagnostics.js'
 import {
   listSection,
@@ -164,7 +170,14 @@ function createWindow() {
     icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      contextIsolation: true,
+      nodeIntegration: false,
+      // The preload imports only `electron` (see src/preload/index.js), so the
+      // renderer runs in the OS sandbox like the splash already did. Turning this
+      // back off means auditing what the preload pulls in first — a sandboxed
+      // preload's loader resolves `electron` and a few Node built-ins, nothing
+      // else, so any package import re-breaks it (and only in the packaged app).
+      sandbox: true
     }
   })
 
@@ -174,6 +187,11 @@ function createWindow() {
       mainWindow.webContents.send('app:check-close')
     }
   })
+
+  // Trusted before it loads: registerTrustedWindow is what lets this window's IPC
+  // through guardIpc, and the guard fails closed, so registering after the load
+  // would reject whatever the renderer sends during hydration.
+  registerTrustedWindow(mainWindow)
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -190,10 +208,10 @@ function createWindow() {
     if (!splashWindow) mainWindow.show()
   })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
+  // Child windows denied, navigation away from our own bundle denied, and any
+  // http(s)/mailto URL handed to the OS browser instead. The scheme allowlist is
+  // what keeps `file:`/`smb:`/custom-scheme URLs out of shell.openExternal.
+  hardenWindow(mainWindow, { allowExternal: true, openExternal: (url) => shell.openExternal(url) })
 
   return mainWindow
 }
@@ -215,12 +233,29 @@ app.whenReady().then(async () => {
     /* missing/corrupt settings — start with empty roots until first save */
   }
 
-  ipcMain.on('minimize-window', () => {
+  // Record the renderer locations we trust, BEFORE any window loads. The IPC
+  // guard fails closed against this list, so an empty list rejects everything —
+  // the safe direction, but it makes this call load-bearing. Mirror createWindow's
+  // dev/prod loader exactly.
+  initWindowSecurity(
+    is.dev && process.env['ELECTRON_RENDERER_URL']
+      ? process.env['ELECTRON_RENDERER_URL']
+      : undefined,
+    join(__dirname, '../renderer/index.html')
+  )
+
+  // Every handler below registers through `ipc`, never the raw `ipcMain`, so the
+  // sender check applies by construction rather than by each handler remembering
+  // to ask for it. A new handler added on the raw import silently opts out — so
+  // keep `ipcMain` unused past this point.
+  const ipc = guardIpc(ipcMain)
+
+  ipc.on('minimize-window', () => {
     const window = BrowserWindow.getFocusedWindow()
     if (window) window.minimize()
   })
 
-  ipcMain.on('maximize-window', () => {
+  ipc.on('maximize-window', () => {
     const window = BrowserWindow.getFocusedWindow()
     if (window) {
       if (window.isMaximized()) {
@@ -231,45 +266,45 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.on('close-window', () => {
+  ipc.on('close-window', () => {
     const window = BrowserWindow.getFocusedWindow()
     if (window) window.webContents.send('app:check-close')
   })
 
-  ipcMain.on('app:confirm-close', () => {
+  ipc.on('app:confirm-close', () => {
     const window = BrowserWindow.getFocusedWindow()
     if (window) {
       closeConfirmed = true
       window.close()
     }
   })
-  ipcMain.handle('dialog:openFile', handleFileOpen)
-  ipcMain.handle('dialog:openExeFile', handleExeFileOpen)
-  ipcMain.handle('open-directory', handleDirectoryOpen)
-  ipcMain.handle('app:launchCompanion', (_, exePath) => launchCompanion(settingsManager, exePath))
-  ipcMain.handle('app:getVersion', () => app.getVersion())
-  ipcMain.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
+  ipc.handle('dialog:openFile', handleFileOpen)
+  ipc.handle('dialog:openExeFile', handleExeFileOpen)
+  ipc.handle('open-directory', handleDirectoryOpen)
+  ipc.handle('app:launchCompanion', (_, exePath) => launchCompanion(settingsManager, exePath))
+  ipc.handle('app:getVersion', () => app.getVersion())
+  ipc.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   // Open the local settings/cache dir (%LOCALAPPDATA%/Erisco/Creidhne) in the OS
   // file manager — surfaced from the Settings "About" card.
-  ipcMain.handle('app:revealSettings', () => shell.openPath(settingsPath))
+  ipc.handle('app:revealSettings', () => shell.openPath(settingsPath))
 
   // Report Issue / diagnostics. Renderer errors are forwarded here so main +
   // renderer failures share one scrubbed session log and one ring buffer.
-  ipcMain.handle('diagnostics:reportRendererError', (_, payload) => {
+  ipc.handle('diagnostics:reportRendererError', (_, payload) => {
     const p = parseOrLog(schemaCtx, 'diagnostics:reportRendererError', rendererErrorSchema, payload)
     captureError({ source: p.source, origin: 'renderer', message: p.message, stack: p.stack })
   })
-  ipcMain.handle('diagnostics:build', () => buildDiagnostics({ version: app.getVersion() }))
-  ipcMain.handle('diagnostics:openIssue', (_, payload) => {
+  ipc.handle('diagnostics:build', () => buildDiagnostics({ version: app.getVersion() }))
+  ipc.handle('diagnostics:openIssue', (_, payload) => {
     const p = parseOrLog(schemaCtx, 'diagnostics:openIssue', openIssueSchema, payload)
     return openIssue(p)
   })
-  ipcMain.handle('diagnostics:copyReport', (_, payload) => {
+  ipc.handle('diagnostics:copyReport', (_, payload) => {
     const p = parseOrLog(schemaCtx, 'diagnostics:copyReport', copyReportSchema, payload)
     return copyReport(p)
   })
-  ipcMain.handle('diagnostics:revealLogs', () => shell.openPath(getLogsDir()))
-  ipcMain.handle('reference:load', (_, libraryPath, type, name) =>
+  ipc.handle('diagnostics:revealLogs', () => shell.openPath(getLogsDir()))
+  ipc.handle('reference:load', (_, libraryPath, type, name) =>
     loadReference(validatePath(libraryPath), type, name)
   )
 
@@ -278,7 +313,7 @@ app.whenReady().then(async () => {
   // `type` needs its own traversal check: listSectionFiles joins it onto the
   // library internally, so validating libraryPath alone would still let a
   // renderer-supplied `../../..` escape.
-  ipcMain.handle('fs:listSection', async (_, libraryPath, type) => {
+  ipc.handle('fs:listSection', async (_, libraryPath, type) => {
     try {
       const lib = validatePath(libraryPath)
       assertInside(lib, type)
@@ -287,155 +322,153 @@ app.whenReady().then(async () => {
       return { dir: '', active: [], archived: [] }
     }
   })
-  ipcMain.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
-  ipcMain.handle('fs:writeFile', (_, filePath, content) =>
-    writeFile(validatePath(filePath), content)
-  )
-  ipcMain.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
-  ipcMain.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(validatePath(clientPath)))
+  ipc.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
+  ipc.handle('fs:writeFile', (_, filePath, content) => writeFile(validatePath(filePath), content))
+  ipc.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
+  ipc.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(validatePath(clientPath)))
 
-  ipcMain.handle('xml:loadItem', async (_, filePath) => {
+  ipc.handle('xml:loadItem', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseItemXml(xml)
   })
 
-  ipcMain.handle('xml:saveItem', async (_, filePath, itemData) => {
+  ipc.handle('xml:saveItem', async (_, filePath, itemData) => {
     const xml = serializeItemXml(itemData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadRecipe', async (_, filePath) => {
+  ipc.handle('xml:loadRecipe', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseRecipeXml(xml)
   })
 
-  ipcMain.handle('xml:saveRecipe', async (_, filePath, recipeData) => {
+  ipc.handle('xml:saveRecipe', async (_, filePath, recipeData) => {
     const xml = serializeRecipeXml(recipeData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadNpc', async (_, filePath) => {
+  ipc.handle('xml:loadNpc', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseNpcXml(xml)
   })
 
-  ipcMain.handle('xml:saveNpc', async (_, filePath, npcData) => {
+  ipc.handle('xml:saveNpc', async (_, filePath, npcData) => {
     const xml = serializeNpcXml(npcData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadNation', async (_, filePath) => {
+  ipc.handle('xml:loadNation', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseNationXml(xml)
   })
 
-  ipcMain.handle('xml:saveNation', async (_, filePath, nationData) => {
+  ipc.handle('xml:saveNation', async (_, filePath, nationData) => {
     const xml = serializeNationXml(nationData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadLoot', async (_, filePath) => {
+  ipc.handle('xml:loadLoot', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseLootXml(xml)
   })
 
-  ipcMain.handle('xml:saveLoot', async (_, filePath, lootData) => {
+  ipc.handle('xml:saveLoot', async (_, filePath, lootData) => {
     const xml = serializeLootXml(lootData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadVariantGroup', async (_, filePath) => {
+  ipc.handle('xml:loadVariantGroup', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseVariantXml(xml)
   })
 
-  ipcMain.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
+  ipc.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
     const xml = serializeVariantXml(variantGroupData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadLocalization', async (_, filePath) => {
+  ipc.handle('xml:loadLocalization', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseLocalizationXml(xml)
   })
 
-  ipcMain.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
+  ipc.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
     const xml = serializeLocalizationXml(localizationData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadCreature', async (_, filePath) => {
+  ipc.handle('xml:loadCreature', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseCreatureXml(xml)
   })
 
-  ipcMain.handle('xml:saveCreature', async (_, filePath, creatureData) => {
+  ipc.handle('xml:saveCreature', async (_, filePath, creatureData) => {
     const xml = serializeCreatureXml(creatureData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadElementTable', async (_, filePath) => {
+  ipc.handle('xml:loadElementTable', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseElementTableXml(xml)
   })
 
-  ipcMain.handle('xml:saveElementTable', async (_, filePath, tableData) => {
+  ipc.handle('xml:saveElementTable', async (_, filePath, tableData) => {
     const xml = serializeElementTableXml(tableData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadStatus', async (_, filePath) => {
+  ipc.handle('xml:loadStatus', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseStatusXml(xml)
   })
 
-  ipcMain.handle('xml:saveStatus', async (_, filePath, statusData) => {
+  ipc.handle('xml:saveStatus', async (_, filePath, statusData) => {
     const xml = serializeStatusXml(statusData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadCastable', async (_, filePath) => {
+  ipc.handle('xml:loadCastable', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseCastableXml(xml)
   })
 
-  ipcMain.handle('xml:saveCastable', async (_, filePath, castableData) => {
+  ipc.handle('xml:saveCastable', async (_, filePath, castableData) => {
     const xml = serializeCastableXml(castableData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadBehaviorSet', async (_, filePath) => {
+  ipc.handle('xml:loadBehaviorSet', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseBehaviorSetXml(xml)
   })
 
-  ipcMain.handle('xml:saveBehaviorSet', async (_, filePath, bvsData) => {
+  ipc.handle('xml:saveBehaviorSet', async (_, filePath, bvsData) => {
     const xml = serializeBehaviorSetXml(bvsData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadSpawngroup', async (_, filePath) => {
+  ipc.handle('xml:loadSpawngroup', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseSpawngroupXml(xml)
   })
 
-  ipcMain.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
+  ipc.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
     const xml = serializeSpawngroupXml(sgData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('xml:loadServerConfig', async (_, filePath) => {
+  ipc.handle('xml:loadServerConfig', async (_, filePath) => {
     const xml = await fs.readFile(validatePath(filePath), 'utf-8')
     return parseServerConfigXml(xml)
   })
 
-  ipcMain.handle('xml:saveServerConfig', async (_, filePath, cfgData) => {
+  ipc.handle('xml:saveServerConfig', async (_, filePath, cfgData) => {
     const xml = serializeServerConfigXml(cfgData)
     await writeFile(validatePath(filePath), xml)
   })
 
-  ipcMain.handle('fs:moveFile', (_, src, dest) => moveFile(validatePath(src), validatePath(dest)))
-  ipcMain.handle('fs:archiveFile', (_, src, archiveDir) =>
+  ipc.handle('fs:moveFile', (_, src, dest) => moveFile(validatePath(src), validatePath(dest)))
+  ipc.handle('fs:archiveFile', (_, src, archiveDir) =>
     archiveFile(validatePath(src), validatePath(archiveDir))
   )
 
@@ -443,15 +476,15 @@ app.whenReady().then(async () => {
   // multiselect action in one round-trip. Each result returns
   // { ok: [...], failed: [{ src, reason }] } so the UI can report partial
   // success without bailing the whole batch on a single failure.
-  ipcMain.handle('fs:archiveFiles', (_, srcs, archiveDir) => {
+  ipc.handle('fs:archiveFiles', (_, srcs, archiveDir) => {
     const validatedArchiveDir = validatePath(archiveDir)
     const validatedSrcs = (srcs || []).map((s) => validatePath(s))
     return archiveFiles(validatedSrcs, validatedArchiveDir)
   })
 
-  ipcMain.handle('fs:duplicateFile', (_, src) => duplicateFile(validatePath(src)))
+  ipc.handle('fs:duplicateFile', (_, src) => duplicateFile(validatePath(src)))
 
-  ipcMain.handle('fs:unarchiveFiles', (_, srcs, destDir) => {
+  ipc.handle('fs:unarchiveFiles', (_, srcs, destDir) => {
     const validatedDest = validatePath(destDir)
     const validatedSrcs = (srcs || []).map((s) => validatePath(s))
     return unarchiveFiles(validatedSrcs, validatedDest)
@@ -460,7 +493,7 @@ app.whenReady().then(async () => {
   // shell.trashItem moves to the OS recycle bin (Windows Recycle Bin /
   // macOS Trash / Linux trash equivalent). OS-level undo is the user's
   // safety net — no in-app staging area.
-  ipcMain.handle('fs:trashFiles', async (_, srcs) => {
+  ipc.handle('fs:trashFiles', async (_, srcs) => {
     const ok = []
     const failed = []
     for (const src of srcs || []) {
@@ -476,9 +509,9 @@ app.whenReady().then(async () => {
   })
 
   // Handling settings load and save
-  ipcMain.handle('settings:load', () => settingsManager.load())
+  ipc.handle('settings:load', () => settingsManager.load())
 
-  ipcMain.handle('settings:save', async (_, data) => {
+  ipc.handle('settings:save', async (_, data) => {
     const parsed = parseOrLog(schemaCtx, 'settings:save', settingsSchema, data)
     const before = await settingsManager.load()
     await settingsManager.save(parsed)
@@ -499,21 +532,21 @@ app.whenReady().then(async () => {
   })
 
   // Hybrasyl asset packs (*.datf bundles in the brigid assets dir + DA client dir)
-  ipcMain.handle('pack:listActive', () => listActivePacks())
-  ipcMain.handle('pack:listCoveredIds', (_, subtype) => listCoveredIds(subtype))
-  ipcMain.handle('pack:resolveAsset', async (_, subtype, id) => {
+  ipc.handle('pack:listActive', () => listActivePacks())
+  ipc.handle('pack:listCoveredIds', (_, subtype) => listCoveredIds(subtype))
+  ipc.handle('pack:resolveAsset', async (_, subtype, id) => {
     const buf = await resolveAsset(subtype, id)
     if (!buf) return null
     return `data:image/png;base64,${buf.toString('base64')}`
   })
   // MIME-aware variant for non-PNG assets (e.g. sound_effects audio). Returns a
   // full data URL with the correct MIME inferred from the pack entry extension.
-  ipcMain.handle('pack:resolveAssetUrl', (_, subtype, id) => resolveAssetUrl(subtype, id))
+  ipc.handle('pack:resolveAssetUrl', (_, subtype, id) => resolveAssetUrl(subtype, id))
 
   // On-demand rescan of the .datf source dirs so packs dropped in while the app
   // is running get picked up (pickers call this on open). Re-reads the current
   // settings paths and reloads.
-  ipcMain.handle('pack:reload', async () => {
+  ipc.handle('pack:reload', async () => {
     const s = await settingsManager.load()
     await loadPacks({
       brigidAssetsPath: s?.brigidAssetsPath || null,
@@ -524,7 +557,7 @@ app.whenReady().then(async () => {
   // Suggested default location for brigid's .datf packs, so the settings UI can
   // offer a "Use default" prefill. Mirrors brigid's AppPaths.AssetsDir:
   // %LOCALAPPDATA%\erisco\Brigid\assets on Windows.
-  ipcMain.handle('pack:suggestedBrigidAssetsPath', () => {
+  ipc.handle('pack:suggestedBrigidAssetsPath', () => {
     const localAppData = process.env.LOCALAPPDATA
     if (!localAppData) return null
     return join(localAppData, 'erisco', 'Brigid', 'assets')
@@ -541,24 +574,24 @@ app.whenReady().then(async () => {
     )
     .catch(() => {})
 
-  ipcMain.handle('get-user-data-path', async () => {
+  ipc.handle('get-user-data-path', async () => {
     return settingsPath
   })
 
   // --- Library index (via @eriscorp/hybindex-ts utilityProcess worker) ---
 
-  ipcMain.handle('index:build', async (_, libraryPath) => {
+  ipc.handle('index:build', async (_, libraryPath) => {
     const index = await buildIndexInWorker(validatePath(libraryPath))
     return { success: true, builtAt: index.builtAt }
   })
 
-  ipcMain.handle('index:buildSection', (_, libraryPath, section) =>
+  ipc.handle('index:buildSection', (_, libraryPath, section) =>
     buildSectionInWorker(validatePath(libraryPath), section)
   )
 
-  ipcMain.handle('index:load', (_, libraryPath) => loadIndex(validatePath(libraryPath)))
-  ipcMain.handle('index:status', (_, libraryPath) => getIndexStatus(validatePath(libraryPath)))
-  ipcMain.handle('index:delete', (_, libraryPath) => deleteIndex(validatePath(libraryPath)))
+  ipc.handle('index:load', (_, libraryPath) => loadIndex(validatePath(libraryPath)))
+  ipc.handle('index:status', (_, libraryPath) => getIndexStatus(validatePath(libraryPath)))
+  ipc.handle('index:delete', (_, libraryPath) => deleteIndex(validatePath(libraryPath)))
 
   // Bulk-add a category to each of the given castables (by display Name).
   // Used by the Spell Books tab in Constants: after persisting the spellbook
@@ -568,7 +601,7 @@ app.whenReady().then(async () => {
   // Copies the bundled Hybrasyl Lua type stubs into the active library's
   // world/scripts/.hybrasyl-types/ and writes a .luarc.json next to it so
   // the sumneko Lua language server (used by VS Code) picks up IntelliSense.
-  ipcMain.handle('lua:setupEnvironment', async (_, libraryPath) => {
+  ipc.handle('lua:setupEnvironment', async (_, libraryPath) => {
     if (!libraryPath) return { ok: false, error: 'No active library' }
     try {
       validatePath(libraryPath)
@@ -602,7 +635,7 @@ app.whenReady().then(async () => {
   // under world/scripts/ (e.g. "castables/SkillWindblade" or "npc/Piet/Narve")
   // — no extension. Returns { ok, path } on success, { ok: false, error } on
   // failure (file missing, no library, etc.).
-  ipcMain.handle('script:open', async (_, libraryPath, relativePath) => {
+  ipc.handle('script:open', async (_, libraryPath, relativePath) => {
     if (!libraryPath || !relativePath) {
       return { ok: false, error: 'Missing libraryPath or relativePath' }
     }
@@ -649,59 +682,56 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle(
-    'castable:addCategoryBulk',
-    async (_, libraryPath, castableNames, categoryName) => {
-      if (!libraryPath || !Array.isArray(castableNames) || !categoryName) {
-        return {
-          updated: [],
-          unchanged: [],
-          failed: [
-            { name: '(invalid args)', error: 'Missing libraryPath, castableNames, or categoryName' }
-          ]
-        }
+  ipc.handle('castable:addCategoryBulk', async (_, libraryPath, castableNames, categoryName) => {
+    if (!libraryPath || !Array.isArray(castableNames) || !categoryName) {
+      return {
+        updated: [],
+        unchanged: [],
+        failed: [
+          { name: '(invalid args)', error: 'Missing libraryPath, castableNames, or categoryName' }
+        ]
       }
+    }
+    try {
+      validatePath(libraryPath)
+    } catch (err) {
+      return {
+        updated: [],
+        unchanged: [],
+        failed: [{ name: '(invalid path)', error: err.message }]
+      }
+    }
+    const index = await loadIndex(libraryPath)
+    const filenames = index?.castableFilenames || {}
+    const updated = []
+    const unchanged = []
+    const failed = []
+    for (const name of castableNames) {
+      const filename = filenames[name]
+      if (!filename) {
+        failed.push({ name, error: 'Not found in index' })
+        continue
+      }
+      const filePath = join(libraryPath, 'castables', filename)
       try {
-        validatePath(libraryPath)
-      } catch (err) {
-        return {
-          updated: [],
-          unchanged: [],
-          failed: [{ name: '(invalid path)', error: err.message }]
-        }
-      }
-      const index = await loadIndex(libraryPath)
-      const filenames = index?.castableFilenames || {}
-      const updated = []
-      const unchanged = []
-      const failed = []
-      for (const name of castableNames) {
-        const filename = filenames[name]
-        if (!filename) {
-          failed.push({ name, error: 'Not found in index' })
+        const xml = await fs.readFile(validatePath(filePath), 'utf-8')
+        const castable = await parseCastableXml(xml)
+        const categories = Array.isArray(castable.categories) ? [...castable.categories] : []
+        if (categories.includes(categoryName)) {
+          unchanged.push(name)
           continue
         }
-        const filePath = join(libraryPath, 'castables', filename)
-        try {
-          const xml = await fs.readFile(validatePath(filePath), 'utf-8')
-          const castable = await parseCastableXml(xml)
-          const categories = Array.isArray(castable.categories) ? [...castable.categories] : []
-          if (categories.includes(categoryName)) {
-            unchanged.push(name)
-            continue
-          }
-          categories.push(categoryName)
-          const next = { ...castable, categories }
-          const outXml = serializeCastableXml(next)
-          await fs.writeFile(filePath, outXml, 'utf-8')
-          updated.push(name)
-        } catch (err) {
-          failed.push({ name, error: err?.message || String(err) })
-        }
+        categories.push(categoryName)
+        const next = { ...castable, categories }
+        const outXml = serializeCastableXml(next)
+        await fs.writeFile(filePath, outXml, 'utf-8')
+        updated.push(name)
+      } catch (err) {
+        failed.push({ name, error: err?.message || String(err) })
       }
-      return { updated, unchanged, failed }
     }
-  )
+    return { updated, unchanged, failed }
+  })
 
   // Apply a spellbook to the world by reconciling the book-name category on the
   // castables it resolves to. A spellbook is a Creidhne authoring convenience:
@@ -715,7 +745,7 @@ app.whenReady().then(async () => {
   // castables that should have it, strips it from castables that no longer
   // resolve, and (on rename) strips the previous name. Returns a summary; the
   // caller re-indexes the castables section afterward.
-  ipcMain.handle('spellbook:apply', async (_, libraryPath, book) => {
+  ipc.handle('spellbook:apply', async (_, libraryPath, book) => {
     const fail = (name, error) => ({
       resolved: [],
       added: [],
@@ -784,7 +814,7 @@ app.whenReady().then(async () => {
 
   // --- Constants (XSD simple types, categories, cookies) ---
 
-  ipcMain.handle('constants:loadXsdTypes', async () => {
+  ipc.handle('constants:loadXsdTypes', async () => {
     const xsdDir = join(app.getAppPath(), 'xsd', 'src', 'XSD')
     const result = []
     try {
@@ -842,7 +872,7 @@ app.whenReady().then(async () => {
     ['statuses', 'statusCategoryDetails']
   ]
 
-  ipcMain.handle('constants:scanCategories', async (_, libraryPath) => {
+  ipc.handle('constants:scanCategories', async (_, libraryPath) => {
     validatePath(libraryPath)
     const result = { items: [], castables: [], statuses: [] }
     for (const [type, detailField] of CATEGORY_SECTIONS) {
@@ -856,7 +886,7 @@ app.whenReady().then(async () => {
     return result
   })
 
-  ipcMain.handle('constants:scanVendorTabs', async (_, libraryPath) => {
+  ipc.handle('constants:scanVendorTabs', async (_, libraryPath) => {
     validatePath(libraryPath)
     const tabMap = {}
     try {
@@ -893,7 +923,7 @@ app.whenReady().then(async () => {
     return details
   })
 
-  ipcMain.handle('constants:scanNpcJobs', async (_, libraryPath) => {
+  ipc.handle('constants:scanNpcJobs', async (_, libraryPath) => {
     validatePath(libraryPath)
     const jobMap = {}
     try {
@@ -931,7 +961,7 @@ app.whenReady().then(async () => {
     return details
   })
 
-  ipcMain.handle('constants:scanCreatureFamilies', async (_, libraryPath) => {
+  ipc.handle('constants:scanCreatureFamilies', async (_, libraryPath) => {
     validatePath(libraryPath)
     const familyMap = {}
     try {
@@ -971,7 +1001,7 @@ app.whenReady().then(async () => {
     return details
   })
 
-  ipcMain.handle('constants:scanCookies', async (_, libraryPath) => {
+  ipc.handle('constants:scanCookies', async (_, libraryPath) => {
     validatePath(libraryPath)
     const scriptsDir = join(libraryPath, '..', 'scripts')
     const cookies = []
@@ -1011,7 +1041,7 @@ app.whenReady().then(async () => {
     return cookies
   })
 
-  ipcMain.handle('constants:addValue', async (_, libraryPath, type, value) => {
+  ipc.handle('constants:addValue', async (_, libraryPath, type, value) => {
     if (!libraryPath || !type || !value) return null
     validatePath(libraryPath)
     const parsed = parseOrLog(schemaCtx, 'constants:addValue', constantsAddValueSchema, {
@@ -1032,7 +1062,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle('constants:loadUserConstants', async (_, libraryPath) => {
+  ipc.handle('constants:loadUserConstants', async (_, libraryPath) => {
     if (!libraryPath)
       return {
         vendorTabs: [],
@@ -1046,7 +1076,7 @@ app.whenReady().then(async () => {
     return loadConstants(validatePath(libraryPath))
   })
 
-  ipcMain.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
+  ipc.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
     if (!libraryPath) return
     const parsed = parseOrLog(schemaCtx, 'constants:saveUserConstants', constantsSchema, data)
     await saveConstants(validatePath(libraryPath), parsed)
@@ -1054,18 +1084,18 @@ app.whenReady().then(async () => {
 
   // --- Formulas ---
 
-  ipcMain.handle('formulas:load', async (_, libraryPath) => {
+  ipc.handle('formulas:load', async (_, libraryPath) => {
     if (!libraryPath) return { settings: {}, patterns: [], formulas: [] }
     return loadFormulas(validatePath(libraryPath))
   })
 
-  ipcMain.handle('formulas:save', async (_, libraryPath, data) => {
+  ipc.handle('formulas:save', async (_, libraryPath, data) => {
     if (!libraryPath) return
     const parsed = parseOrLog(schemaCtx, 'formulas:save', formulasSchema, data)
     await saveFormulas(validatePath(libraryPath), parsed)
   })
 
-  ipcMain.handle('formulas:import', async (_, libraryPath) => {
+  ipc.handle('formulas:import', async (_, libraryPath) => {
     if (!libraryPath) return null
     validatePath(libraryPath)
     const window = BrowserWindow.getFocusedWindow()
@@ -1081,7 +1111,7 @@ app.whenReady().then(async () => {
     return importFormulas(filePaths[0], existing)
   })
 
-  ipcMain.handle('formulas:castableInfo', async (_, libraryPath, castableName) => {
+  ipc.handle('formulas:castableInfo', async (_, libraryPath, castableName) => {
     if (!libraryPath || !castableName) return null
     validatePath(libraryPath)
     try {
@@ -1125,7 +1155,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle('dialog:saveFile', async (_, defaultName, content) => {
+  ipc.handle('dialog:saveFile', async (_, defaultName, content) => {
     const window = BrowserWindow.getFocusedWindow()
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
       defaultPath: defaultName,
@@ -1139,7 +1169,7 @@ app.whenReady().then(async () => {
     return { canceled: false, filePath }
   })
 
-  ipcMain.handle('export:castablesCSV', async (_, libraryPath) => {
+  ipc.handle('export:castablesCSV', async (_, libraryPath) => {
     validatePath(libraryPath)
     const castDir = join(libraryPath, 'castables')
 
@@ -1278,7 +1308,7 @@ app.whenReady().then(async () => {
     return { csv: rows.join('\r\n') }
   })
 
-  ipcMain.handle('export:castablesJSON', async (_, libraryPath) => {
+  ipc.handle('export:castablesJSON', async (_, libraryPath) => {
     return exportCastablesExcelCSV(validatePath(libraryPath))
   })
 
@@ -1286,7 +1316,7 @@ app.whenReady().then(async () => {
   // on the renderer's 'app:ready' signal, with a safety timeout so a renderer
   // that throws before signalling can't leave the app permanently invisible.
   splashWindow = createSplashWindow()
-  ipcMain.on('app:ready', revealMainWindow)
+  ipc.on('app:ready', revealMainWindow)
   setTimeout(revealMainWindow, 15000)
 
   createWindow()
