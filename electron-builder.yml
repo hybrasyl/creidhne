@@ -2,15 +2,19 @@ appId: co.eris.creidhne
 productName: Creidhne
 directories:
   buildResources: build
+# Allowlist, not a denylist. electron-builder packages the whole project dir
+# minus `files` excludes; a denylist silently leaks every new top-level tree
+# (coverage/, e2e/, docs/, .claude/, playwright.config.mjs, CLAUDE.md all used
+# to ship). An allowlist ships only these four — the build output, the runtime
+# node_modules (externalizeDepsPlugin keeps main/preload deps here), resources/
+# (main reads splash.html + icons + lua-annotations from it), and the manifest.
+# CHANGELOG.md is intentionally absent: What's New bundles it at build time via
+# a Vite `?raw` import, so the file itself does not ship.
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!scripts/**'
-  - '!vitest.config.{js,ts,mjs,cjs}'
-  - '!eslint.config.{js,ts,mjs,cjs}'
+  - 'out/**'
+  - 'resources/**'
+  - 'node_modules/**'
+  - 'package.json'
 asarUnpack:
   # These are read from disk at runtime by src/main/index.js:
   #   - resources/lua-annotations/.luarc.json is fs.copyFile'd into the user's library
@@ -31,6 +35,9 @@ win:
         - x64
 portable:
   artifactName: ${name}-${version}-portable.${ext}
+  # Frozen frame of resources/splash.html shown while the exe extracts to %TEMP%
+  # (before electron exists). Regenerate with scripts/make-portable-splash.mjs.
+  splashImage: build/portable-splash.bmp
 mac:
   category: public.app-category.developer-tools
   icon: build/icon.icns
