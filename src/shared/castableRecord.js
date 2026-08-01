@@ -134,6 +134,24 @@ export function deriveLocation(name, ctx = {}) {
   return ctx.givenViaScript ? 'Awarded by a Quest' : ''
 }
 
+/**
+ * A blank requirement value means "the minimum", not "unknown".
+ *
+ * 3 is the minimum stat and 1 the minimum level, so a castable with no
+ * <Requirement> element reads the same as one that states the minimums. The
+ * balancing export used to show these blank while the website showed the
+ * minimum; one reading now serves both.
+ *
+ * Only missing and empty are substituted. A stated value passes through even if
+ * it is below the minimum, so bad data stays visible instead of being masked.
+ */
+export function withMinimum(value, minimum) {
+  return value == null || value === '' ? minimum : value
+}
+
+export const MIN_STAT = '3'
+export const MIN_LEVEL = '1'
+
 /** Builds the canonical record. `ctx` carries `castableTrainers` from the index. */
 export function castableToRecord(castable, ctx = {}) {
   const meta = castable.meta || {}
@@ -195,22 +213,15 @@ export function castableToRecord(castable, ctx = {}) {
     ),
     intentTargets: intent.maxTargets ?? '',
 
-    // First requirement, raw — blank when the castable has no <Requirement>
+    // First requirement. Stats and level read as their minimums when blank —
+    // one reading for every export, in the order Str, Int, Wis, Con, Dex.
     reqClass: req?.class ?? '',
-    reqLevelMin: req?.levelMin ?? '',
-    reqStr: req?.str ?? '',
-    reqInt: req?.int ?? '',
-    reqWis: req?.wis ?? '',
-    reqCon: req?.con ?? '',
-    reqDex: req?.dex ?? '',
-
-    // First requirement, defaulted to the minimums the website displays
-    statStr: req?.str || '3',
-    statInt: req?.int || '3',
-    statWis: req?.wis || '3',
-    statCon: req?.con || '3',
-    statDex: req?.dex || '3',
-    level: req?.levelMin || '1',
+    level: withMinimum(req?.levelMin, MIN_LEVEL),
+    str: withMinimum(req?.str, MIN_STAT),
+    int: withMinimum(req?.int, MIN_STAT),
+    wis: withMinimum(req?.wis, MIN_STAT),
+    con: withMinimum(req?.con, MIN_STAT),
+    dex: withMinimum(req?.dex, MIN_STAT),
     mats: formatMats(req),
 
     // Cast cost, both views
@@ -302,19 +313,13 @@ export const CASTABLE_COLUMNS = [
   { key: 'intentUseType', label: 'Intent use type', group: 'Intent' },
   { key: 'intentShape', label: 'Intent shape', group: 'Intent' },
   { key: 'intentTargets', label: 'Intent targets', group: 'Intent' },
-  { key: 'reqClass', label: 'Req class', group: 'Requirements (raw)' },
-  { key: 'reqLevelMin', label: 'Req level min', group: 'Requirements (raw)' },
-  { key: 'reqStr', label: 'Req str', group: 'Requirements (raw)' },
-  { key: 'reqInt', label: 'Req int', group: 'Requirements (raw)' },
-  { key: 'reqWis', label: 'Req wis', group: 'Requirements (raw)' },
-  { key: 'reqCon', label: 'Req con', group: 'Requirements (raw)' },
-  { key: 'reqDex', label: 'Req dex', group: 'Requirements (raw)' },
-  { key: 'statStr', label: 'Str', group: 'Requirements' },
-  { key: 'statInt', label: 'Int', group: 'Requirements' },
-  { key: 'statWis', label: 'Wis', group: 'Requirements' },
-  { key: 'statCon', label: 'Con', group: 'Requirements' },
-  { key: 'statDex', label: 'Dex', group: 'Requirements' },
+  { key: 'reqClass', label: 'Req class', group: 'Requirements' },
   { key: 'level', label: 'Level', group: 'Requirements' },
+  { key: 'str', label: 'Str', group: 'Requirements' },
+  { key: 'int', label: 'Int', group: 'Requirements' },
+  { key: 'wis', label: 'Wis', group: 'Requirements' },
+  { key: 'con', label: 'Con', group: 'Requirements' },
+  { key: 'dex', label: 'Dex', group: 'Requirements' },
   { key: 'mats', label: 'Mats', group: 'Learning' },
   { key: 'castCostSummary', label: 'Cast cost (raw)', group: 'Cast cost' },
   { key: 'castCost', label: 'Cast cost', group: 'Cast cost' },

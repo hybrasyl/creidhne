@@ -176,11 +176,32 @@ describe('runCastableExport — test and GM filtering', () => {
     expect(header.split(',')).toHaveLength(Object.keys(parsed[0]).length)
     expect(parsed[0].name).toBe(rows[0].split(',')[0])
     expect(parsed[0].icon).toBe(rows[0].split(',')[1])
-    // The JSON keys mirror the CSV headers, so the web can swap format without
-    // relearning the field names.
-    expect(Object.keys(parsed[0])).toEqual(
-      header.split(',').map((h) => h[0].toLowerCase() + h.slice(1))
-    )
+  })
+
+  // The JSON carries the same 16 fields as the web CSV, in the same order. The
+  // keys are the record's own names rather than the CSV headers: the CSV keeps
+  // `StatStr` for the website's current parser, while the JSON — a new format
+  // with no consumer yet — uses the plain stat names.
+  it('keys the web JSON by the record field names', async () => {
+    const { content } = await runCastableExport(lib, 'webJson')
+    expect(Object.keys(JSON.parse(content)[0])).toEqual([
+      'name',
+      'icon',
+      'description',
+      'class',
+      'subclass',
+      'location',
+      'str',
+      'int',
+      'wis',
+      'con',
+      'dex',
+      'mats',
+      'level',
+      'type',
+      'castCost',
+      'cooldown'
+    ])
   })
 })
 

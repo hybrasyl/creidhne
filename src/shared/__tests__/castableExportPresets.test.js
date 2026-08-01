@@ -43,17 +43,17 @@ const BALANCING_HEADERS = [
   'DamageFlags',
   'DamageFormula',
   'StatusAdd1',
-  'StatAdd1Dur',
-  'StatAdd1Int',
-  'StatAdd1Tick',
-  'StatAdd2',
-  'StatAdd2Dur',
-  'StatAdd2Int',
-  'StatAdd2Tick',
-  'StatAdd3',
-  'StatAdd3Dur',
-  'StatAdd3Int',
-  'StatAdd3Tick',
+  'StatusAdd1Dur',
+  'StatusAdd1Int',
+  'StatusAdd1Tick',
+  'StatusAdd2',
+  'StatusAdd2Dur',
+  'StatusAdd2Int',
+  'StatusAdd2Tick',
+  'StatusAdd3',
+  'StatusAdd3Dur',
+  'StatusAdd3Int',
+  'StatusAdd3Tick',
   'StatRem1',
   'StatRem1IsCat',
   'StatRem1Quant',
@@ -78,8 +78,8 @@ const WEB_HEADERS = [
   'StatStr',
   'StatInt',
   'StatWis',
-  'StatDex',
   'StatCon',
+  'StatDex',
   'Mats',
   'Level',
   'Type',
@@ -137,10 +137,16 @@ describe('balancingCsv', () => {
     expect(byId('balancingCsv').headerOnEmpty).toBe(false)
   })
 
-  it('reads the raw requirement stats, not the web-defaulted ones', () => {
+  it('reads the same requirement stats the web presets read', () => {
     const keys = byId('balancingCsv').columns.map((c) => c.key)
-    expect(keys).toContain('reqStr')
-    expect(keys).not.toContain('statStr')
+    expect(keys).toContain('str')
+    expect(keys).toContain('level')
+  })
+
+  it('orders the requirement stats Str, Int, Wis, Con, Dex', () => {
+    const keys = byId('balancingCsv').columns.map((c) => c.key)
+    const stats = keys.filter((k) => ['str', 'int', 'wis', 'con', 'dex'].includes(k))
+    expect(stats).toEqual(['str', 'int', 'wis', 'con', 'dex'])
   })
 })
 
@@ -167,10 +173,22 @@ describe('webCsv and webJson', () => {
     expect(filter({ isTest: true, isGM: true })).toBe(false)
   })
 
-  it('reads the web-defaulted requirement stats, not the raw ones', () => {
+  it('orders the requirement stats Str, Int, Wis, Con, Dex', () => {
     const keys = byId('webCsv').columns.map((c) => c.key)
-    expect(keys).toContain('statStr')
-    expect(keys).not.toContain('reqStr')
+    const stats = keys.filter((k) => ['str', 'int', 'wis', 'con', 'dex'].includes(k))
+    expect(stats).toEqual(['str', 'int', 'wis', 'con', 'dex'])
+  })
+
+  // Both presets now select the same requirement keys the balancing preset does.
+  it('reads the same requirement fields as the balancing preset', () => {
+    const web = byId('webCsv').columns.map((c) => c.key)
+    for (const key of ['str', 'int', 'wis', 'con', 'dex', 'level']) {
+      expect(web, key).toContain(key)
+      expect(
+        byId('balancingCsv').columns.map((c) => c.key),
+        key
+      ).toContain(key)
+    }
   })
 
   it('emits a header row for an empty library', () => {

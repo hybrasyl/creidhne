@@ -1,10 +1,10 @@
-Name,Icon,Description,Class,Subclass,Location,StatStr,StatInt,StatWis,StatDex,StatCon,Mats,Level,Type,CastCost,Cooldown
+Name,Icon,Description,Class,Subclass,Location,StatStr,StatInt,StatWis,StatCon,StatDex,Mats,Level,Type,CastCost,Cooldown
 AllSixClasses,skill2.png,Anyone may learn this.,Universal,Universal,,3,3,3,3,3,No Cost,1,Skill,,
 BareSourceHp,skill5.png,,Monk,Monk,,3,3,3,3,3,No Cost,1,Skill,100% of Base Health,
 CommasAndQuotes,skill19.png,"Hits hard, then harder; the ""big"" one.",Monk,Monk,,3,3,3,3,3,No Cost,1,Skill,,
 Deprecated,skill14.png,No longer used.,Warrior,Warrior,,3,3,3,3,3,No Cost,1,Skill,,
 Formulas,spell17.png,,Priest,Priest,,3,3,3,3,3,No Cost,1,Spell,,
-FullRequirement,spell8.png,Fully specified requirement.,Priest,Priest,Mileth Priest Trainer,11,22,33,55,44,"5000 gold, Emerald, 3 Ruby",33,Spell,,
+FullRequirement,spell8.png,Fully specified requirement.,Priest,Priest,Mileth Priest Trainer,11,22,33,44,55,"5000 gold, Emerald, 3 Ruby",33,Spell,,
 GoldAndItemCost,skill6.png,,Rogue,Rogue,,3,3,3,3,3,No Cost,1,Utility Skill,"10% of Gold, 2 Ruby",
 NoClass,skill3.png,No class restriction.,Universal,Universal,,3,3,3,3,3,No Cost,1,Skill,,
 NoRequirements,spell7.png,Has no requirements block.,Wizard,Wizard,,3,3,3,3,3,No Cost,1,Spell,,

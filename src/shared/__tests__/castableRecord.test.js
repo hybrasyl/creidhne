@@ -277,15 +277,21 @@ describe('castableToRecord', () => {
   })
 
   // The divergence WP1 was asked to resolve: with no <Requirement> at all the
-  // balancing export showed a blank stat and the web export showed the minimum.
-  // Both readings are carried until the presets are reconciled.
-  it('carries both readings of a missing requirement', () => {
+  // balancing export showed a blank stat where the website showed the minimum.
+  // 3 is the minimum stat and 1 the minimum level, so blank now reads as the
+  // minimum everywhere and there is one field rather than two.
+  it('reads a missing requirement as the minimums', () => {
     const r = castableToRecord(makeCastable({ requirements: [] }))
-    expect(r.reqStr).toBe('')
-    expect(r.reqLevelMin).toBe('')
-    expect(r.statStr).toBe('3')
+    expect([r.str, r.int, r.wis, r.con, r.dex]).toEqual(['3', '3', '3', '3', '3'])
     expect(r.level).toBe('1')
     expect(r.mats).toBe('No Cost')
+  })
+
+  it('reads a requirement with no Physical or Level block as the minimums', () => {
+    const r = castableToRecord(makeCastable({ requirements: [{ class: 'Priest', levelMin: '' }] }))
+    expect(r.str).toBe('3')
+    expect(r.level).toBe('1')
+    expect(r.reqClass).toBe('Priest')
   })
 
   it('uses the requirement values when there is one', () => {
@@ -296,21 +302,16 @@ describe('castableToRecord', () => {
         ]
       })
     )
-    expect([r.reqStr, r.reqInt, r.reqWis, r.reqCon, r.reqDex]).toEqual([
-      '11',
-      '22',
-      '33',
-      '44',
-      '55'
-    ])
-    expect([r.statStr, r.statInt, r.statWis, r.statCon, r.statDex]).toEqual([
-      '11',
-      '22',
-      '33',
-      '44',
-      '55'
-    ])
+    expect([r.str, r.int, r.wis, r.con, r.dex]).toEqual(['11', '22', '33', '44', '55'])
     expect(r.level).toBe('33')
+  })
+
+  // A stated value passes through even below the minimum, so bad data stays
+  // visible rather than being silently corrected to 3.
+  it('does not clamp a stated stat up to the minimum', () => {
+    const r = castableToRecord(makeCastable({ requirements: [{ str: '1', levelMin: '0' }] }))
+    expect(r.str).toBe('1')
+    expect(r.level).toBe('0')
   })
 
   it('keeps both cast-cost views', () => {
