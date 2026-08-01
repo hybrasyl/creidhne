@@ -1,6 +1,11 @@
 # WP5 — `EditorFileListPanel` secondary render prop (restores the Formulas category chip)
 
-**Size:** S. **Depends on:** —. **Status:** Planned, not built. **Prompted by:** `docs/future-ideas.md`, "FormulasPage: restore category chip on the file list" — promoted to a WP 2026-07-31.
+**Size:** S. **Depends on:** —. **Status:** Built 2026-08-01. **Prompted by:** `docs/future-ideas.md`, "FormulasPage: restore category chip on the file list" — promoted to a WP 2026-07-31.
+
+**Deviations from the design as planned:** the pure category mapping went to
+`src/renderer/src/utils/formulaCategory.js` rather than being exported from the chip component, so
+the node test project can cover it without importing MUI (see _Tests_). `FormulaEditor`'s duplicate
+category list was folded onto the same source.
 
 ## Goal
 
@@ -54,12 +59,31 @@ with a one-prop fix.
 
 ## Tests
 
-- `EditorFileListPanel`: with no `renderSecondary`, the filename-fallback subtitle behavior is
-  unchanged (guards the other 14 pages); with one supplied, its node renders in the secondary slot
-  and folder rows are unaffected.
-- `FormulasPage`: a formula with a category renders its chip; one without falls back to the picker's
-  `'damage'` default, matching `FormulaPickerDialog.jsx:177`.
-- `FormulaCategoryChip`: the extracted component renders the same color mapping the dialog used.
+**Corrected at build time (2026-08-01).** This section originally called for component-render tests.
+**They cannot run:** `vitest.config.js` sets `environment: 'node'` and the repo has no `jsdom`,
+`happy-dom` or `@testing-library/react` — every renderer test is a pure-helper test, and the config
+states the UI layer is "intentionally not thresholded — validated by manual smoke tests." E2E is no
+substitute either: `e2e/` covers boot, settings and the security boundary only, with no world-library
+fixture that would give a Formulas list any rows. Adding a jsdom tier is its own decision, not a
+rider on an S-sized visual fix.
+
+What was built instead:
+
+- The category→label and category→color mappings live in `src/renderer/src/utils/formulaCategory.js`
+  as plain functions, unit-tested in `src/renderer/src/__tests__/formulaCategory.test.js` (8 cases):
+  every known category maps to its own palette color, an unknown one to `'default'`, an absent one is
+  labelled `'damage'` while staying colored `'default'`, and `knownFormulaCategories()` returns a
+  fresh array so a caller cannot mutate the map.
+- The JSX itself — chip in the file list, chip in the picker — is verified by hand.
+
+**A behavior asymmetry was preserved deliberately.** `FormulaPickerDialog` labelled an absent
+category `'damage'` (`:177`) but colored it `'default'`, not `'error'` (`:179`). The extracted chip
+reproduces this exactly so nothing on screen changed; the test pins it and the source comments say
+why. Whether the two should agree is a design question, and is left open.
+
+**One extra consolidation.** `FormulaEditor.jsx:40` held a third copy of the category list, identical
+in content and order. It now calls `knownFormulaCategories()`, so a category cannot reach the editor
+dropdown without also having a chip color.
 
 ## Non-goals
 

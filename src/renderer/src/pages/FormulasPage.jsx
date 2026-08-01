@@ -9,6 +9,7 @@ import FormulaEditor from '../components/formulas/FormulaEditor'
 import FormulaSettingsDialog from '../components/formulas/FormulaSettingsDialog'
 import HybridGeneratorDialog from '../components/formulas/HybridGeneratorDialog'
 import EditorFileListPanel from '../components/shared/EditorFileListPanel'
+import FormulaCategoryChip from '../components/shared/FormulaCategoryChip'
 import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
@@ -93,9 +94,21 @@ function FormulasPage() {
     return { activeFiles: active, archivedFiles: archived }
   }, [formulasData.formulas])
 
-  const findById = useCallback(
-    (id) => formulasData.formulas.find((f) => f.id === id),
-    [formulasData.formulas]
+  // Keyed on id because that is what toPseudoFile puts in `file.path`, so this
+  // one map serves both the selection lookups and the file list's chip.
+  const formulasById = useMemo(() => {
+    const map = new Map()
+    for (const f of formulasData.formulas) map.set(f.id, f)
+    return map
+  }, [formulasData.formulas])
+
+  const findById = useCallback((id) => formulasById.get(id), [formulasById])
+
+  // Stable identity: the panel feeds this into its memoized row props, so a new
+  // function each render would re-render every visible row.
+  const renderCategoryChip = useCallback(
+    (file) => <FormulaCategoryChip category={formulasById.get(file.path)?.category} />,
+    [formulasById]
   )
 
   const existingNames = useMemo(
@@ -409,6 +422,7 @@ function FormulasPage() {
         onSelectionChange={onSelectionChange}
         extraActions={extraActions}
         newMenuItems={newMenuItems}
+        renderSecondary={renderCategoryChip}
       />
       <Box
         sx={{

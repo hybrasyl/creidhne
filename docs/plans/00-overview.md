@@ -24,28 +24,28 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 ## Active
 
-| WP  | Title                                       | Size | Status           | Depends on |
-| --- | ------------------------------------------- | ---- | ---------------- | ---------- |
-| 2   | Castables report builder                    | L    | Planned          | WP1        |
-| 3   | Report builder for other XML types          | L    | Planned          | WP2        |
-| 4   | Weapons tab and creature attack revamp      | L    | Planned          | —          |
-| 5   | `EditorFileListPanel` secondary render prop | S    | Planned          | —          |
-| 6   | Spawngroup spellbook references             | M    | Planned          | —          |
-| 7   | XSD validation at the IPC save boundary     | L    | Planned, blocked | —          |
+| WP  | Title                                   | Size | Status           | Depends on |
+| --- | --------------------------------------- | ---- | ---------------- | ---------- |
+| 2   | Castables report builder                | L    | Planned          | WP1        |
+| 3   | Report builder for other XML types      | L    | Planned          | WP2        |
+| 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
+| 6   | Spawngroup spellbook references         | M    | Planned          | —          |
+| 7   | XSD validation at the IPC save boundary | L    | Planned, blocked | —          |
 
 ## Complete
 
-| WP  | Title                                | Shipped    | Doc                                       |
-| --- | ------------------------------------ | ---------- | ----------------------------------------- |
-| 1   | Castables export cleanup (3 presets) | 2026-08-01 | `complete/01-castables-export-cleanup.md` |
+| WP  | Title                                       | Shipped    | Doc                                         |
+| --- | ------------------------------------------- | ---------- | ------------------------------------------- |
+| 1   | Castables export cleanup (3 presets)        | 2026-08-01 | `complete/01-castables-export-cleanup.md`   |
+| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 | `complete/05-file-list-render-secondary.md` |
 
-WP1's doc carries what changed during the build: four deliberate output changes agreed at build time
-(blank requirements read as their minimums, Str/Int/Wis/Con/Dex ordering, `StatusAddN` headers), and
-five findings that were not in its scope. **WP2 starts from `src/shared/castableExportPresets.js`,
-`castableRecord.js` and `exportSerializers.js`** — all three were built preset-agnostic for it.
+**WP2 is the one to take next.** WP1 unblocked it and was built for it: the canonical record,
+serializers and presets in `src/shared/` are all preset-agnostic, so the report builder consumes them
+directly rather than re-deriving anything. WP1's doc also records four output changes agreed during
+the build and five findings outside its scope.
 
-**WP5 is the one to take first** if you want a short branch — it is self-contained, fully designed,
-and touches one shared component plus one page.
+**WP5 shipped after the 1.10.0 tag, so it is not in that release.** Its entry sits under
+`[Unreleased]` in `CHANGELOG.md` and goes out with the next version.
 
 **WP7 is blocked** on the seven `hybrasyl/xml` XSD drift fixes, not on creidhne work. WP4 has a
 prerequisite in `@eriscorp/hybindex-ts`. Both are recorded in `00a-backlog.md` under _Owed to another
