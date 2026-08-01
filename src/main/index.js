@@ -133,6 +133,21 @@ void initSessionLog(logsDir)
 // addressing arbitrary disk locations.
 const validatePath = (p) => assertInsideAnyRoot(allRoots(), p)
 
+// Save dialogs used to offer a CSV filter no matter what was being saved, which
+// was wrong the moment an export produced JSON. One entry, derived from the
+// suggested file name — deliberately no "All Files" row, which would let the
+// user save an extensionless file and change the existing CSV behaviour.
+// `String(...)` guards the payload: it crosses IPC, and guardIpc checks the
+// sender rather than what it sent.
+const SAVE_FILTER_NAMES = { csv: 'CSV Files', json: 'JSON Files', txt: 'Text Files' }
+
+const saveFiltersFor = (defaultName) => {
+  const match = /\.([A-Za-z0-9]+)$/.exec(String(defaultName || ''))
+  if (!match) return [{ name: 'All Files', extensions: ['*'] }]
+  const ext = match[1].toLowerCase()
+  return [{ name: SAVE_FILTER_NAMES[ext] || `${ext.toUpperCase()} Files`, extensions: [ext] }]
+}
+
 // Context passed to parseOrLog so breadcrumb failures land in
 // <settingsPath>/ipc-validation.log alongside settings.json itself.
 const schemaCtx = { settingsPath }
@@ -1158,7 +1173,7 @@ app.whenReady().then(async () => {
     const window = BrowserWindow.getFocusedWindow()
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
       defaultPath: defaultName,
-      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+      filters: saveFiltersFor(defaultName)
     })
     if (canceled || !filePath) return { canceled: true }
     // The user just picked this path — bless its parent so the write succeeds
