@@ -26,7 +26,8 @@ const descriptions = (text) =>
 const categories = (...names) =>
   `  <Categories>\n${names.map((n) => `    <Category>${n}</Category>`).join('\n')}\n  </Categories>\n`
 
-const castCosts = (inner) => `  <CastCosts>\n    <CastCost>\n${inner}    </CastCost>\n  </CastCosts>\n`
+const castCosts = (inner) =>
+  `  <CastCosts>\n    <CastCost>\n${inner}    </CastCost>\n  </CastCosts>\n`
 
 export const CASTABLE_FIXTURES = {
   // Baseline. Also the one with trainers in the injected index context, so the
