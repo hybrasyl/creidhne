@@ -2,6 +2,31 @@ appId: co.eris.creidhne
 productName: Creidhne
 directories:
   buildResources: build
+# Turn off escape hatches built into the Electron binary that Creidhne never uses.
+# The one that matters is runAsNode: without it,
+#   ELECTRON_RUN_AS_NODE=1 Creidhne.exe -e "<script>"
+# turns the shipped, signed binary into a general-purpose Node interpreter — a real
+# capability handed to anything that can set an environment variable. It also makes
+# the app immune to the trap where that variable, exported in a shell, makes a
+# healthy launch look like a crash.
+#
+# onlyLoadAppFromAsar can break a packaged launch, so start the built app once
+# after adding this. Creidhne has no native addon; app code loads from app.asar
+# and the asarUnpack'd resources (lua-annotations, lua-stubs, xsd) are data, not
+# app code, so the fuse does not touch them.
+#
+# Native electron-builder config, NOT an afterPack hook: on the mac universal build
+# the per-arch packs must stay pristine and the fuses have to be flipped once on the
+# merged app right before signing. A per-arch hook corrupts the universal merge with
+# an "identical SHAs" failure. resetAdHocDarwinSignature is there because flipping
+# fuses rewrites the Electron Framework binary and invalidates the ad-hoc signature
+# that is mandatory on Apple Silicon.
+electronFuses:
+  runAsNode: false
+  enableNodeCliInspectArguments: false
+  enableNodeOptionsEnvironmentVariable: false
+  onlyLoadAppFromAsar: true
+  resetAdHocDarwinSignature: true
 # Allowlist, not a denylist. electron-builder packages the whole project dir
 # minus `files` excludes; a denylist silently leaks every new top-level tree
 # (coverage/, e2e/, docs/, .claude/, playwright.config.mjs, CLAUDE.md all used

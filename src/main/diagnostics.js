@@ -4,6 +4,7 @@ import { appIdentity } from '../shared/appIdentity.js'
 import { simplifyPlatform } from '../shared/osName.js'
 import { buildDiagnosticsBlock } from '../shared/diagnostics.js'
 import { buildIssueUrl, truncateBodyForUrl } from '../shared/issueUrl.js'
+import { isSafeExternalUrl } from '../shared/externalUrl.js'
 import { scrubText } from '../shared/scrub.js'
 import { getRecentErrors } from './sessionLog.js'
 
@@ -51,7 +52,9 @@ export function openIssue({ title, body }) {
     { owner: appIdentity.intakeOwner, repo: appIdentity.intakeRepo, title, body, labels },
     MAX_URL_LEN
   )
-  shell.openExternal(url)
+  // Single OS gate — the URL is a github.com https link we build, but every
+  // shell.openExternal in the app goes through the same allowlist on principle.
+  if (isSafeExternalUrl(url)) shell.openExternal(url)
   return { ok: true, truncated }
 }
 

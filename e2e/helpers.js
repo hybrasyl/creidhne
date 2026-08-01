@@ -38,16 +38,15 @@ export async function launchApp({ seedSettings, localAppData: reuseDir } = {}) {
 
 // Find the real main window and wait until it's actually shown. The app pops a
 // splash window first, so `firstWindow()` can return the wrong one. The splash
-// has NO preload, so we identify the main window by the presence of a preload
-// bridge: `window.electron` (the @electron-toolkit bridge) or `window.electronAPI`
-// (Creidhne's custom bridge) — the splash exposes neither.
+// has NO preload, so we identify the main window by the presence of Creidhne's
+// preload bridge `window.electronAPI` — the splash exposes nothing. (The old
+// `window.electron` toolkit bridge was removed when the main window went
+// sandboxed, so it is no longer a valid probe.)
 export async function getMainWindow(electronApp) {
   let page = null
   for (let i = 0; i < 120 && !page; i++) {
     for (const w of electronApp.windows()) {
-      const isMain = await w
-        .evaluate(() => !!(window.electron || window.electronAPI))
-        .catch(() => false)
+      const isMain = await w.evaluate(() => !!window.electronAPI).catch(() => false)
       if (isMain) {
         page = w
         break
