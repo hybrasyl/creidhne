@@ -254,7 +254,8 @@ describe('castableToRecord', () => {
       castableTrainers: { 'ard ioc': ['Mileth Priest'] }
     })
     expect(r.name).toBe('Ard Ioc')
-    expect(r.iconFile).toBe('spell42.png')
+    expect(r.icon).toBe('spell42.png')
+    expect(r.iconId).toBe('42')
     expect(r.type).toBe('Spell')
     expect(r.class).toBe('Priest')
     expect(r.subclass).toBe('Priest')

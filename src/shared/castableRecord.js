@@ -157,8 +157,11 @@ export function castableToRecord(castable, ctx = {}) {
     book: castable.book ?? '',
     bookType: bookToType(castable.book),
     type: deriveType(castable.book),
-    icon: castable.icon ?? '',
-    iconFile: deriveIcon(castable.book, castable.icon),
+    // `icon` is the filename the website serves; `iconId` is the raw attribute
+    // it derives from. The consumer's word for the filename is "icon", so that
+    // is the name it gets — the web JSON keys off this directly.
+    iconId: castable.icon ?? '',
+    icon: deriveIcon(castable.book, castable.icon),
     elements: castable.elements ?? '',
     lines: castable.lines ?? '',
     cooldown: castable.cooldown ?? '',
@@ -275,8 +278,8 @@ export const CASTABLE_COLUMNS = [
   { key: 'book', label: 'Book', group: 'Identity' },
   { key: 'bookType', label: 'Type (skill/spell)', group: 'Identity' },
   { key: 'type', label: 'Type', group: 'Identity' },
-  { key: 'icon', label: 'Icon id', group: 'Identity' },
-  { key: 'iconFile', label: 'Icon', group: 'Identity' },
+  { key: 'iconId', label: 'Icon id', group: 'Identity' },
+  { key: 'icon', label: 'Icon', group: 'Identity' },
   { key: 'elements', label: 'Element', group: 'Identity' },
   { key: 'lines', label: 'Lines', group: 'Identity' },
   { key: 'cooldown', label: 'Cooldown', group: 'Identity' },

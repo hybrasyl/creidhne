@@ -77,7 +77,7 @@ const BALANCING_COLUMNS = [
 // array, so the two web outputs cannot drift.
 const WEB_COLUMNS = [
   { key: 'name', header: 'Name' },
-  { key: 'iconFile', header: 'Icon' },
+  { key: 'icon', header: 'Icon' },
   { key: 'description', header: 'Description' },
   { key: 'class', header: 'Class' },
   { key: 'subclass', header: 'Subclass' },

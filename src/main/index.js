@@ -13,8 +13,7 @@ import { parseElementTableXml, serializeElementTableXml } from './elementTableXm
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { resolveSpellbook, nextCategories, sameCategorySet, affectedCastables } from './spellbook'
-import { exportCastablesExcelCSV } from './exportCastablesJson.js'
-import { exportCastablesWebCSV } from './exportCastablesWebCsv.js'
+import { runCastableExport } from './exportCastables.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
 import { loadFormulas, saveFormulas, importFormulas } from './formulasJson.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
@@ -1169,21 +1168,26 @@ app.whenReady().then(async () => {
     return { canceled: false, filePath }
   })
 
-  ipc.handle('export:castablesCSV', async (_, libraryPath) => {
-    validatePath(libraryPath)
-    let castableTrainers = {}
+  // Trainer names come from the world index. A library with no index still
+  // exports; the Location column is simply empty.
+  const castableExportContext = async (libraryPath) => {
     try {
       const indexData = await loadIndex(libraryPath)
-      castableTrainers = indexData?.castableTrainers || {}
+      return { castableTrainers: indexData?.castableTrainers || {} }
     } catch {
-      /* no index — trainers will be empty */
+      return { castableTrainers: {} }
     }
-    return exportCastablesWebCSV(libraryPath, castableTrainers)
-  })
+  }
 
-  ipc.handle('export:castablesJSON', async (_, libraryPath) => {
-    return exportCastablesExcelCSV(validatePath(libraryPath))
-  })
+  const castableExport = (presetId) => async (_, libraryPath) => {
+    validatePath(libraryPath)
+    const ctx = await castableExportContext(libraryPath)
+    const result = await runCastableExport(libraryPath, presetId, ctx)
+    return result.error ? result : { csv: result.content }
+  }
+
+  ipc.handle('export:castablesCSV', castableExport('webCsv'))
+  ipc.handle('export:castablesJSON', castableExport('balancingCsv'))
 
   // Show the splash immediately, then create the (hidden) main window. Reveal
   // on the renderer's 'app:ready' signal, with a safety timeout so a renderer

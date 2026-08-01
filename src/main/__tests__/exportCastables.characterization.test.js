@@ -2,8 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
-import { exportCastablesExcelCSV } from '../exportCastablesJson.js'
-import { exportCastablesWebCSV } from '../exportCastablesWebCsv.js'
+import { runCastableExport } from '../exportCastables.js'
 import { makeCastableLibrary, CASTABLE_TRAINERS } from './helpers/castableFixtures.js'
 
 // WP1 reshapes both castable exports onto one canonical record. These goldens
@@ -40,8 +39,9 @@ describe('castable exports — characterization', () => {
 
   beforeAll(async () => {
     lib = makeCastableLibrary()
-    balancing = await exportCastablesExcelCSV(lib)
-    web = await exportCastablesWebCSV(lib, CASTABLE_TRAINERS)
+    const ctx = { castableTrainers: CASTABLE_TRAINERS }
+    balancing = await runCastableExport(lib, 'balancingCsv', ctx)
+    web = await runCastableExport(lib, 'webCsv', ctx)
   })
 
   afterAll(() => rmSync(lib, { recursive: true, force: true }))
@@ -52,41 +52,41 @@ describe('castable exports — characterization', () => {
   })
 
   it('matches the balancing CSV golden byte for byte', () => {
-    checkGolden('castables_balancing.golden.csv', balancing.csv)
+    checkGolden('castables_balancing.golden.csv', balancing.content)
   })
 
   it('matches the web CSV golden byte for byte', () => {
-    checkGolden('castables_web.golden.csv', web.csv)
+    checkGolden('castables_web.golden.csv', web.content)
   })
 
   it('keeps CRLF line endings', () => {
-    expect(balancing.csv).toContain('\r\n')
-    expect(web.csv).toContain('\r\n')
-    expect(balancing.csv.endsWith('\n')).toBe(false)
-    expect(web.csv.endsWith('\n')).toBe(false)
+    expect(balancing.content).toContain('\r\n')
+    expect(web.content).toContain('\r\n')
+    expect(balancing.content.endsWith('\n')).toBe(false)
+    expect(web.content.endsWith('\n')).toBe(false)
   })
 
   it('excludes test and GM castables from the web CSV only', () => {
-    expect(balancing.csv).toContain('TestOnly')
-    expect(balancing.csv).toContain('GmOnly')
-    expect(web.csv).not.toContain('TestOnly')
-    expect(web.csv).not.toContain('GmOnly')
+    expect(balancing.content).toContain('TestOnly')
+    expect(balancing.content).toContain('GmOnly')
+    expect(web.content).not.toContain('TestOnly')
+    expect(web.content).not.toContain('GmOnly')
   })
 
   it('excludes the .ignore archive from both', () => {
-    expect(balancing.csv).not.toContain('Archived')
-    expect(web.csv).not.toContain('Archived')
+    expect(balancing.content).not.toContain('Archived')
+    expect(web.content).not.toContain('Archived')
   })
 
   it('includes castables nested one and two levels deep in both', () => {
-    for (const csv of [balancing.csv, web.csv]) {
+    for (const csv of [balancing.content, web.content]) {
       expect(csv).toContain('Nested')
       expect(csv).toContain('DeepNested')
     }
   })
 
   it('skips the malformed file without failing the export', () => {
-    expect(balancing.csv).not.toContain('Malformed')
-    expect(web.csv).not.toContain('Malformed')
+    expect(balancing.content).not.toContain('Malformed')
+    expect(web.content).not.toContain('Malformed')
   })
 })
