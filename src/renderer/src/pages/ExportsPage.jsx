@@ -1,14 +1,52 @@
 import { useState } from 'react'
-import { Box, Typography, Button, Alert, CircularProgress, Paper, Divider } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Button,
+  Alert,
+  CircularProgress,
+  Paper,
+  Divider,
+  Stack
+} from '@mui/material'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import { useStoreValue, activeLibraryState } from '../store/appStore'
+
+// The three castable exports are one canonical record rendered through three
+// presets (see src/shared/castableExportPresets.js). The suggested file name
+// comes back from main with the content, so the preset stays the single place
+// that names its output.
+const CASTABLE_EXPORTS = [
+  {
+    id: 'balancing',
+    label: 'Balancing CSV',
+    blurb:
+      'Every castable, including test and GM abilities, with the full column set. For balancing and hand review in Excel.',
+    run: (library) => window.electronAPI.exportCastablesBalancingCsv(library)
+  },
+  {
+    id: 'webCsv',
+    label: 'Web CSV',
+    blurb:
+      'The column set the Hybrasyl website ability browser reads. Test and GM abilities excluded.',
+    run: (library) => window.electronAPI.exportCastablesWebCsv(library)
+  },
+  {
+    id: 'webJson',
+    label: 'Web JSON',
+    blurb: 'The same web-facing data as JSON. Test and GM abilities excluded.',
+    run: (library) => window.electronAPI.exportCastablesWebJson(library)
+  }
+]
 
 function ExportsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [status, setStatus] = useState(null) // { type: 'success'|'error'|'info', message: string }
-  const [loading, setLoading] = useState(false)
+  // The id of the export currently running, or null. A single boolean used to
+  // spin every button at once, which read as though all of them were exporting.
+  const [busy, setBusy] = useState(null)
 
-  const handleExportCastablesJSON = async () => {
+  const handleExport = async (exportDef) => {
     if (!activeLibrary) {
       setStatus({
         type: 'error',
@@ -16,15 +54,15 @@ function ExportsPage() {
       })
       return
     }
-    setLoading(true)
+    setBusy(exportDef.id)
     setStatus(null)
     try {
-      const result = await window.electronAPI.exportCastablesJSON(activeLibrary)
+      const result = await exportDef.run(activeLibrary)
       if (result.error) {
         setStatus({ type: 'error', message: result.error })
         return
       }
-      const save = await window.electronAPI.saveFile('castables_excel.csv', result.csv)
+      const save = await window.electronAPI.saveFile(result.defaultName, result.content)
       if (save.canceled) {
         setStatus({ type: 'info', message: 'Export cancelled.' })
       } else {
@@ -33,36 +71,7 @@ function ExportsPage() {
     } catch (e) {
       setStatus({ type: 'error', message: `Export failed: ${e.message}` })
     } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleExportCastables = async () => {
-    if (!activeLibrary) {
-      setStatus({
-        type: 'error',
-        message: 'No library selected. Open a library from Settings first.'
-      })
-      return
-    }
-    setLoading(true)
-    setStatus(null)
-    try {
-      const result = await window.electronAPI.exportCastablesCSV(activeLibrary)
-      if (result.error) {
-        setStatus({ type: 'error', message: result.error })
-        return
-      }
-      const save = await window.electronAPI.saveFile('castables.csv', result.csv)
-      if (save.canceled) {
-        setStatus({ type: 'info', message: 'Export cancelled.' })
-      } else {
-        setStatus({ type: 'success', message: `Exported successfully to ${save.filePath}` })
-      }
-    } catch (e) {
-      setStatus({ type: 'error', message: `Export failed: ${e.message}` })
-    } finally {
-      setLoading(false)
+      setBusy(null)
     }
   }
 
@@ -73,67 +82,32 @@ function ExportsPage() {
       </Typography>
       <Divider sx={{ mb: 3 }} />
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography
-          variant="subtitle1"
-          gutterBottom
-          sx={{
-            fontWeight: 'bold'
-          }}
-        >
-          Castables Excel CSV
+        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+          Castables
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-            mb: 2
-          }}
-        >
-          Exports all castables to a CSV matching the Excel workbook column structure. Open directly
-          in Excel.
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={
-            loading ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />
-          }
-          onClick={handleExportCastablesJSON}
-          disabled={loading}
-        >
-          Export Castables Excel CSV
-        </Button>
-      </Paper>
-      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-        <Typography
-          variant="subtitle1"
-          gutterBottom
-          sx={{
-            fontWeight: 'bold'
-          }}
-        >
-          Castables CSV
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-            mb: 2
-          }}
-        >
-          Exports all castables (excluding test and GM abilities) to a CSV for the Hybrasyl website
-          ability browser. Includes name, icon, description, class, subclass, trainer location, stat
-          requirements, materials, cast cost, and cooldown.
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={
-            loading ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />
-          }
-          onClick={handleExportCastables}
-          disabled={loading}
-        >
-          Export Castables CSV
-        </Button>
+        <Stack spacing={2}>
+          {CASTABLE_EXPORTS.map((exportDef) => (
+            <Box key={exportDef.id}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                {exportDef.blurb}
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={
+                  busy === exportDef.id ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <FileDownloadIcon />
+                  )
+                }
+                onClick={() => handleExport(exportDef)}
+                disabled={busy !== null}
+              >
+                {exportDef.label}
+              </Button>
+            </Box>
+          ))}
+        </Stack>
       </Paper>
       {status && (
         <Alert severity={status.type} onClose={() => setStatus(null)}>

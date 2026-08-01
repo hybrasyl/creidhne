@@ -44,7 +44,24 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   app. It replaces "Reveal logs folder", which stays available from the "Report an
   issue" dialog.
 
+- **Castables can be exported as JSON** for the Hybrasyl website, alongside the
+  existing CSV. It carries the same data as the web CSV and excludes test and GM
+  abilities in the same way.
+
 ### Changed
+
+- **The two castable exports are now one Castables card with three buttons** —
+  Balancing CSV, Web CSV and Web JSON — and all three are built from one shared
+  record, so their columns can no longer drift apart. The balancing export saves
+  as `castables_balancing.csv` rather than `castables_excel.csv`, and only the
+  button you press shows a spinner.
+
+- **A castable with no requirements now exports its minimum stats rather than
+  blanks.** 3 is the minimum stat and 1 the minimum level, so the balancing
+  export reads the same as the website already did. Two further column fixes:
+  requirement stats are ordered Str, Int, Wis, Con, Dex everywhere (the web CSV
+  had Dex and Con reversed), and the balancing sheet's status columns are all
+  named `StatusAdd1`/`StatusAdd2`/`StatusAdd3` — previously only the first was.
 
 - **The download is smaller and the boot reads as one piece.** The portable build
   dropped from about 105 MB to about 87 MB — Creidhne no longer ships its

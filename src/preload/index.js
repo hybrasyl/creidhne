@@ -97,8 +97,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importFormulas: (libraryPath) => ipcRenderer.invoke('formulas:import', libraryPath),
   castableInfo: (libraryPath, name) =>
     ipcRenderer.invoke('formulas:castableInfo', libraryPath, name),
-  exportCastablesCSV: (libraryPath) => ipcRenderer.invoke('export:castablesCSV', libraryPath),
-  exportCastablesJSON: (libraryPath) => ipcRenderer.invoke('export:castablesJSON', libraryPath),
+  exportCastablesBalancingCsv: (libraryPath) =>
+    ipcRenderer.invoke('export:castablesBalancingCsv', libraryPath),
+  exportCastablesWebCsv: (libraryPath) => ipcRenderer.invoke('export:castablesWebCsv', libraryPath),
+  exportCastablesWebJson: (libraryPath) =>
+    ipcRenderer.invoke('export:castablesWebJson', libraryPath),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
