@@ -23,6 +23,8 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-08-01
+
 ### Added
 
 - **Spellbooks** are now a top-level editor. A spellbook is a named bundle of
