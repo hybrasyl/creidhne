@@ -11,6 +11,15 @@ node_modules/
 build/*
 !build/entitlements.mac.plist
 !build/icon.icns
+# The two logo masters the regen script reads. creidhne-logo.png is the star
+# used by the app chrome, Windows and Linux; creidhne-mac-icon.png is the
+# squircle drawn for the macOS Dock. Both are committed inputs, not output.
+!build/creidhne-logo.png
+!build/creidhne-mac-icon.png
+# The portable target's NSIS extraction splash. electron-builder.yml points at
+# it, and CI has neither ImageMagick nor a step that regenerates it, so it has
+# to be committed rather than built on demand.
+!build/portable-splash.bmp
 dist/
 out/
 

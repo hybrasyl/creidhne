@@ -35,6 +35,17 @@ descendant, XSD validation on save, came out of `docs/xsd-validation.md` and is 
   14, and that one is already fixed — so this may be closer than the skip implies. _Trigger:_ the
   `hybrasyl/xml` drift fixes landing, which is the same trigger as WP7.
 
+- **`src/shared/externalUrl.test.js` never runs.** `vitest.config.mjs:6` collects only
+  `src/**/__tests__/**/*.test.js`; that file sits beside its source, so it is silently skipped _and_
+  counted as uncovered source in the coverage report. Moving it into `src/shared/__tests__/` is a
+  one-line fix, but it may fail once it actually runs, which is why it is not a drive-by. _Trigger:_
+  the next piece of work that touches `externalUrl.js`. Found 2026-08-01 while building WP1.
+
+- **`npm run test:coverage` emits a Rollup `Expression expected` parse warning.** Present on `main`,
+  confirmed against a clean worktree; coverage still exits 0 and thresholds still apply, so nothing
+  is silently unmeasured. _Trigger:_ a coverage number that looks wrong, or a vitest/rollup bump.
+  Found 2026-08-01 while building WP1.
+
 - **`EditorFileListPanel` secondary for the other 14 pages.** WP5 shipped the `renderSecondary` prop
   (2026-08-01) and uses it on Formulas only. Items showing category and statuses showing duration
   were the named candidates. _Trigger:_ someone actually wanting one — the prop makes each an opt-in

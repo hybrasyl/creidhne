@@ -26,22 +26,26 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 | WP  | Title                                   | Size | Status           | Depends on |
 | --- | --------------------------------------- | ---- | ---------------- | ---------- |
-| 1   | Castables export cleanup (3 presets)    | S–M  | Planned          | —          |
 | 2   | Castables report builder                | L    | Planned          | WP1        |
 | 3   | Report builder for other XML types      | L    | Planned          | WP2        |
 | 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
 | 6   | Spawngroup spellbook references         | M    | Planned          | —          |
 | 7   | XSD validation at the IPC save boundary | L    | Planned, blocked | —          |
 
-## Shipped
+## Complete
 
-| WP  | Title                                       | Shipped    |
-| --- | ------------------------------------------- | ---------- |
-| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 |
+| WP  | Title                                       | Shipped    | Doc                                         |
+| --- | ------------------------------------------- | ---------- | ------------------------------------------- |
+| 1   | Castables export cleanup (3 presets)        | 2026-08-01 | `complete/01-castables-export-cleanup.md`   |
+| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 | `complete/05-file-list-render-secondary.md` |
 
-**WP1 is the one to take first** — it is the only remaining item with no external blocker and no open
-question, and it is the seed of WP2. Note that WP2 and WP3 are chained behind it, so WP1's canonical
-record shape is the decision that matters, not its three buttons.
+**WP2 is the one to take next.** WP1 unblocked it and was built for it: the canonical record,
+serializers and presets in `src/shared/` are all preset-agnostic, so the report builder consumes them
+directly rather than re-deriving anything. WP1's doc also records four output changes agreed during
+the build and five findings outside its scope.
+
+**WP5 shipped after the 1.10.0 tag, so it is not in that release.** Its entry sits under
+`[Unreleased]` in `CHANGELOG.md` and goes out with the next version.
 
 **WP7 is blocked** on the seven `hybrasyl/xml` XSD drift fixes, not on creidhne work. WP4 has a
 prerequisite in `@eriscorp/hybindex-ts`. Both are recorded in `00a-backlog.md` under _Owed to another

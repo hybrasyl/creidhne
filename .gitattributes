@@ -3,6 +3,11 @@
 # explicit safeguards for common asset formats.
 * text=auto eol=lf
 
+# Golden export fixtures are CRLF by contract: both CSV exporters join rows with
+# \r\n, and the characterization test compares bytes. The rule above would
+# normalize them to LF and break that test on a fresh checkout.
+*.golden.csv -text
+
 # Binary assets
 *.png binary
 *.jpg binary
