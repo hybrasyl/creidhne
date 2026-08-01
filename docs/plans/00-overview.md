@@ -26,13 +26,23 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 | WP  | Title                                       | Size | Status           | Depends on |
 | --- | ------------------------------------------- | ---- | ---------------- | ---------- |
-| 1   | Castables export cleanup (3 presets)        | S–M  | Planned          | —          |
 | 2   | Castables report builder                    | L    | Planned          | WP1        |
 | 3   | Report builder for other XML types          | L    | Planned          | WP2        |
 | 4   | Weapons tab and creature attack revamp      | L    | Planned          | —          |
 | 5   | `EditorFileListPanel` secondary render prop | S    | Planned          | —          |
 | 6   | Spawngroup spellbook references             | M    | Planned          | —          |
 | 7   | XSD validation at the IPC save boundary     | L    | Planned, blocked | —          |
+
+## Complete
+
+| WP  | Title                                | Shipped    | Doc                                       |
+| --- | ------------------------------------ | ---------- | ----------------------------------------- |
+| 1   | Castables export cleanup (3 presets) | 2026-08-01 | `complete/01-castables-export-cleanup.md` |
+
+WP1's doc carries what changed during the build: four deliberate output changes agreed at build time
+(blank requirements read as their minimums, Str/Int/Wis/Con/Dex ordering, `StatusAddN` headers), and
+five findings that were not in its scope. **WP2 starts from `src/shared/castableExportPresets.js`,
+`castableRecord.js` and `exportSerializers.js`** — all three were built preset-agnostic for it.
 
 **WP5 is the one to take first** if you want a short branch — it is self-contained, fully designed,
 and touches one shared component plus one page.
