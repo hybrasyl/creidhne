@@ -77,6 +77,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   flagging it as a syntax error. The Helpers page documents the equivalent manual
   VS Code settings for anyone whose workspace root isn't `world/scripts/`.
 
+### Security
+
+- Cleared a high-severity denial-of-service advisory in `brace-expansion`
+  (GHSA-mh99-v99m-4gvg) that reached the project through build tooling only. No
+  shipped code was affected, and the app itself is unchanged.
+
 ## [1.9.0] - 2026-07-19
 
 ### Added

@@ -25,6 +25,35 @@
     "e2e": "npm run build && playwright test",
     "e2e:only": "playwright test"
   },
+  "_overridesNote": [
+    "brace-expansion carries a high-severity DoS advisory (GHSA-mh99-v99m-4gvg). It reaches",
+    "us only through dev tooling -- eslint, eslint-plugin-react, electron-builder -- so",
+    "nothing that ships is affected.",
+    "",
+    "The advisory is patched WITHIN EVERY MAJOR: 1.1.17, 2.1.3, 3.0.3, 5.0.8. Our 2.x and",
+    "5.x copies already resolve at or above their patched version, so only the 1.x copies",
+    "(pinned by minimatch 3.x) need moving, and they only need to move to 1.1.18.",
+    "",
+    "The override is SCOPED to `brace-expansion@1` on purpose. A bare `brace-expansion`",
+    "override drags every consumer to 5.x, which CHANGED ITS EXPORT SHAPE: 1.x/2.x are",
+    "`module.exports = expandTop`, 5.x is `module.exports = { expand, ... }`. minimatch 3.x",
+    "does `var expand = require('brace-expansion')` and calls it, so a bare override dies",
+    "with `TypeError: expand is not a function` -- but ONLY for a pattern containing braces,",
+    "because minimatch 3.x short-circuits braceExpand for patterns without them. Our eslint",
+    "config globs `**/*.{js,jsx,mjs,cjs}`, so we would hit it on the first lint; a config",
+    "with no braces passes and ships the landmine instead.",
+    "",
+    "Scoping keeps each major on its own line: minimatch 3.x keeps a default-export 1.1.18,",
+    "minimatch 10.x keeps brace-expansion 5.x, whose named `expand` it imports. No",
+    "@eslint/config-array pin is needed, and nothing has to come back out when eslint 10",
+    "lands -- the selector simply stops matching when the last minimatch 3.x consumer goes.",
+    "",
+    "Verified: eslint still reports a seeded violation (not silently matching zero files),",
+    "and minimatch 3.x expands `**/*.{js,jsx,mjs,cjs}` correctly under 1.1.18."
+  ],
+  "overrides": {
+    "brace-expansion@1": "^1.1.18"
+  },
   "dependencies": {
     "@eriscorp/hybindex-ts": "^1.0.0",
     "fs-extra": "^11.3.4",
