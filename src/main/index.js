@@ -1197,12 +1197,12 @@ app.whenReady().then(async () => {
   const castableExport = (presetId) => async (_, libraryPath) => {
     validatePath(libraryPath)
     const ctx = await castableExportContext(libraryPath)
-    const result = await runCastableExport(libraryPath, presetId, ctx)
-    return result.error ? result : { csv: result.content }
+    return runCastableExport(libraryPath, presetId, ctx)
   }
 
-  ipc.handle('export:castablesCSV', castableExport('webCsv'))
-  ipc.handle('export:castablesJSON', castableExport('balancingCsv'))
+  ipc.handle('export:castablesBalancingCsv', castableExport('balancingCsv'))
+  ipc.handle('export:castablesWebCsv', castableExport('webCsv'))
+  ipc.handle('export:castablesWebJson', castableExport('webJson'))
 
   // Show the splash immediately, then create the (hidden) main window. Reveal
   // on the renderer's 'app:ready' signal, with a safety timeout so a renderer
