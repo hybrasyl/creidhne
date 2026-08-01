@@ -24,18 +24,24 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 ## Active
 
-| WP  | Title                                       | Size | Status           | Depends on |
-| --- | ------------------------------------------- | ---- | ---------------- | ---------- |
-| 1   | Castables export cleanup (3 presets)        | S–M  | Planned          | —          |
-| 2   | Castables report builder                    | L    | Planned          | WP1        |
-| 3   | Report builder for other XML types          | L    | Planned          | WP2        |
-| 4   | Weapons tab and creature attack revamp      | L    | Planned          | —          |
-| 5   | `EditorFileListPanel` secondary render prop | S    | Planned          | —          |
-| 6   | Spawngroup spellbook references             | M    | Planned          | —          |
-| 7   | XSD validation at the IPC save boundary     | L    | Planned, blocked | —          |
+| WP  | Title                                   | Size | Status           | Depends on |
+| --- | --------------------------------------- | ---- | ---------------- | ---------- |
+| 1   | Castables export cleanup (3 presets)    | S–M  | Planned          | —          |
+| 2   | Castables report builder                | L    | Planned          | WP1        |
+| 3   | Report builder for other XML types      | L    | Planned          | WP2        |
+| 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
+| 6   | Spawngroup spellbook references         | M    | Planned          | —          |
+| 7   | XSD validation at the IPC save boundary | L    | Planned, blocked | —          |
 
-**WP5 is the one to take first** if you want a short branch — it is self-contained, fully designed,
-and touches one shared component plus one page.
+## Shipped
+
+| WP  | Title                                       | Shipped    |
+| --- | ------------------------------------------- | ---------- |
+| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 |
+
+**WP1 is the one to take first** — it is the only remaining item with no external blocker and no open
+question, and it is the seed of WP2. Note that WP2 and WP3 are chained behind it, so WP1's canonical
+record shape is the decision that matters, not its three buttons.
 
 **WP7 is blocked** on the seven `hybrasyl/xml` XSD drift fixes, not on creidhne work. WP4 has a
 prerequisite in `@eriscorp/hybindex-ts`. Both are recorded in `00a-backlog.md` under _Owed to another

@@ -36,8 +36,11 @@ import {
   applyHybridSplit,
   HYBRID_DELIVERIES
 } from '../../utils/formulaCoefficients'
+import { knownFormulaCategories } from '../../utils/formulaCategory'
 
-const CATEGORIES = ['damage', 'heal', 'conversion', 'shield', 'stat', 'cast_cost', 'general']
+// The same list the category chip colors, so a new category cannot reach this
+// dropdown without also getting a color.
+const CATEGORIES = knownFormulaCategories()
 
 // ── Targeting / Delivery options for coefficient lookup ──────────────────────
 const EFFECT_TYPES = [

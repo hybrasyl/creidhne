@@ -35,10 +35,11 @@ descendant, XSD validation on save, came out of `docs/xsd-validation.md` and is 
   14, and that one is already fixed — so this may be closer than the skip implies. _Trigger:_ the
   `hybrasyl/xml` drift fixes landing, which is the same trigger as WP7.
 
-- **`EditorFileListPanel` secondary for the other 14 pages.** WP5 adds the `renderSecondary` prop and
-  uses it on Formulas only. Items showing category and statuses showing duration were the named
-  candidates. _Trigger:_ someone actually wanting one — the prop makes each an opt-in of a few lines,
-  so there is nothing to pre-build.
+- **`EditorFileListPanel` secondary for the other 14 pages.** WP5 shipped the `renderSecondary` prop
+  (2026-08-01) and uses it on Formulas only. Items showing category and statuses showing duration
+  were the named candidates. _Trigger:_ someone actually wanting one — the prop makes each an opt-in
+  of a few lines, so there is nothing to pre-build. Note the prop must be `useCallback`-stable; the
+  panel feeds it into a memoized row-props object.
 
 ## Non-goals — no trigger, these stay out
 

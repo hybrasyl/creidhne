@@ -87,7 +87,8 @@ const VirtualRow = memo(function VirtualRow({
   onRowContextMenu,
   onToggleFolder,
   namesByFilename,
-  archived
+  archived,
+  renderSecondary
 }) {
   const row = rows[index]
   const indent = 1 + row.depth * INDENT_STEP
@@ -134,7 +135,10 @@ const VirtualRow = memo(function VirtualRow({
       >
         <ListItemText
           primary={displayName}
-          secondary={showSubtitle ? filenameBare : null}
+          // A page-supplied secondary takes the slot outright; without one the
+          // filename fallback behaves exactly as it always has. Folder rows are
+          // never offered it — they return above with secondary={null}.
+          secondary={renderSecondary ? renderSecondary(file) : showSubtitle ? filenameBare : null}
           slotProps={{
             primary: {
               noWrap: true,
@@ -194,7 +198,13 @@ export default function EditorFileListPanel({
   // Optional: turn the New (+) button into a dropdown of create options instead
   // of a single onNew. Shape: [{ label: string, onClick: () => void, icon?: ReactNode }].
   // When omitted, the + button calls onNew directly (default behavior).
-  newMenuItems
+  newMenuItems,
+  // Optional: (file) => ReactNode, rendered in the secondary slot of file rows
+  // instead of the filename subtitle. Row height is fixed at ITEM_HEIGHT (52px),
+  // so keep the node to one line — a chip or a short caption.
+  // MUST be useCallback-stable: it goes into the rowProps memo below, and an
+  // identity that changes every render re-renders every visible row.
+  renderSecondary
 }) {
   const [newMenuAnchor, setNewMenuAnchor] = useState(null)
   const [search, setSearch] = useState('')
@@ -398,7 +408,8 @@ export default function EditorFileListPanel({
       onRowContextMenu: handleRowContextMenu,
       onToggleFolder: toggleFolder,
       namesByFilename,
-      archived: archivedTab
+      archived: archivedTab,
+      renderSecondary
     }),
     [
       rows,
@@ -408,7 +419,8 @@ export default function EditorFileListPanel({
       handleRowContextMenu,
       toggleFolder,
       namesByFilename,
-      archivedTab
+      archivedTab,
+      renderSecondary
     ]
   )
 

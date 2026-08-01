@@ -19,16 +19,7 @@ import {
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import { useStoreValue, activeLibraryState } from '../../store/appStore'
-
-const CATEGORY_COLORS = {
-  damage: 'error',
-  heal: 'success',
-  conversion: 'secondary',
-  shield: 'primary',
-  stat: 'info',
-  cast_cost: 'warning',
-  general: 'default'
-}
+import FormulaCategoryChip from './FormulaCategoryChip'
 
 /**
  * Formula picker dialog.
@@ -173,12 +164,7 @@ function FormulaPickerDialog({ open, onClose, onSelect, category }) {
                       >
                         {f.name}
                       </Typography>
-                      <Chip
-                        label={f.category || 'damage'}
-                        size="small"
-                        color={CATEGORY_COLORS[f.category] || 'default'}
-                        sx={{ height: 16, fontSize: '0.65rem' }}
-                      />
+                      <FormulaCategoryChip category={f.category} />
                       {f.isArchived && (
                         <Chip
                           label="archived"
