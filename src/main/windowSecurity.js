@@ -22,13 +22,39 @@ import { pathToFileURL } from 'url'
 import { isSafeExternalUrl } from '../shared/externalUrl.js'
 
 /**
- * Locations we consider "our own content", as `{ origin, pathname }`. Query and
+ * Locations we consider "our own content", as `locationKey` strings. Query and
  * hash are ignored so a future `?window=x` variant still matches.
  *
  * Empty until `initWindowSecurity` runs, which fails CLOSED: before init nothing
  * is trusted, so a handler registered too early rejects rather than admits.
  */
 let trustedLocations = []
+
+/**
+ * Reduce a URL to the key we compare on: scheme, host and path, with query and
+ * hash dropped. One place, so init and lookup cannot disagree.
+ *
+ * **`host` explicitly, NOT `origin`.** The WHATWG parser returns the opaque
+ * origin `"null"` for every `file:` URL, so an origin comparison is
+ * `"null" === "null"` in the packaged app — it carries no host information at
+ * all, leaving the pathname as the only discriminator. That is enough to trust
+ * a REMOTE host: `file://attacker.example/opt/Creidhne/…/index.html` and the
+ * local `file:///opt/Creidhne/…/index.html` compare equal, so a page served
+ * from an attacker's SMB share would satisfy both the `will-navigate` guard and
+ * the IPC sender check — with our preload attached. Comparing `host` closes it;
+ * a local `file:` URL has an empty host, which still distinguishes it from a
+ * UNC one.
+ *
+ * Windows happens to be spared — the install path starts with a drive letter
+ * and `C:` is not a legal UNC share name — but that is an accident of the path
+ * shape, not a protection, and it does not hold for the Linux or macOS targets.
+ *
+ * For `http`/`https` this is identical to `origin` (the parser normalizes the
+ * default port away), so nothing changes on the dev-server path.
+ */
+function locationKey(url) {
+  return `${url.protocol}//${url.host}${url.pathname}`
+}
 
 /**
  * webContents.id values for windows we constructed. An IPC from a webContents
@@ -46,8 +72,7 @@ export function initWindowSecurity(devUrl, prodIndexHtml) {
   const locations = []
   if (devUrl) {
     try {
-      const url = new URL(devUrl)
-      locations.push({ origin: url.origin, pathname: url.pathname })
+      locations.push(locationKey(new URL(devUrl)))
     } catch {
       // Malformed dev URL — leave it out and fail closed rather than guess.
     }
@@ -57,20 +82,19 @@ export function initWindowSecurity(devUrl, prodIndexHtml) {
   // and a trusted location that never matches is a LOCKOUT — every IPC rejected,
   // the app dead on arrival — not a safety margin. Creidhne installs under a path
   // that can contain the user's name.
-  const prod = pathToFileURL(prodIndexHtml)
-  locations.push({ origin: prod.origin, pathname: prod.pathname })
+  locations.push(locationKey(pathToFileURL(prodIndexHtml)))
   trustedLocations = locations
 }
 
 /** True when `rawUrl` points at our own renderer content. */
 function isTrustedLocation(rawUrl) {
-  let url
+  let key
   try {
-    url = new URL(rawUrl)
+    key = locationKey(new URL(rawUrl))
   } catch {
     return false // about:blank, a bare string, anything malformed
   }
-  return trustedLocations.some((l) => l.origin === url.origin && l.pathname === url.pathname)
+  return trustedLocations.includes(key)
 }
 
 /**

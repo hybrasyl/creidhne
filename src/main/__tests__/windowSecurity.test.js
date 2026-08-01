@@ -92,6 +92,36 @@ describe('isSenderAllowed', () => {
     expect(isSenderAllowed(eventFor(c))).toBe(false)
   })
 
+  it('rejects a remote file:// host whose path mirrors our own', () => {
+    // A file: URL has the opaque origin "null", so the old origin-based check
+    // was "null" === "null" and carried NO host information — leaving the
+    // pathname as the only discriminator. A page served from an attacker's SMB
+    // share at a mirroring path was therefore accepted as our own content, with
+    // our preload attached. Reachable on the dmg and linux targets; Windows is
+    // spared only because `C:` cannot be a UNC share name, which is an accident
+    // of the path shape rather than a protection.
+    initWindowSecurity(undefined, PROD_HTML)
+
+    // Build the adversary from the trusted URL's OWN pathname so the two differ
+    // in host and nothing else. A hand-written POSIX literal would pass for the
+    // wrong reason here: on win32 pathToFileURL('/opt/x') resolves against the
+    // current drive and yields '/E:/opt/x', which never matched regardless.
+    const trustedUrl = new URL(PROD_URL)
+    const remote = `file://attacker.example${trustedUrl.pathname}`
+    expect(trustedUrl.origin).toBe('null') // the reason this was a trap
+    expect(new URL(remote).origin).toBe('null') // ...and why the two compared equal
+    expect(new URL(remote).pathname).toBe(trustedUrl.pathname) // differ only in host
+
+    const c = makeContents(1, remote)
+    register(c)
+    expect(isSenderAllowed(eventFor(c))).toBe(false)
+
+    // ...and the genuine local path still matches, so the fix did not overshoot.
+    const local = makeContents(2, PROD_URL)
+    register(local)
+    expect(isSenderAllowed(eventFor(local))).toBe(true)
+  })
+
   it('rejects a destroyed sender', () => {
     initWindowSecurity(undefined, PROD_HTML)
     const c = makeContents(1, PROD_URL, { destroyed: true })
@@ -238,5 +268,21 @@ describe('hardenWindow', () => {
     win._fireWillNavigate({ preventDefault: () => (prevented = true) }, 'https://example.com')
     expect(prevented).toBe(true)
     expect(opened).toEqual(['https://example.com'])
+  })
+
+  it('will-navigate: blocks a remote file:// host mirroring our path', () => {
+    // The other half of the opaque-origin hole: the navigation guard shares
+    // isTrustedLocation with the IPC check, so it was equally fooled. Blocked
+    // and NOT handed to the OS — file: is not a safe external scheme.
+    initWindowSecurity(undefined, PROD_HTML)
+    const win = fakeWin()
+    const opened = []
+    hardenWindow(win, { allowExternal: true, openExternal: (u) => opened.push(u) })
+
+    const remote = `file://attacker.example${new URL(PROD_URL).pathname}`
+    let prevented = false
+    win._fireWillNavigate({ preventDefault: () => (prevented = true) }, remote)
+    expect(prevented).toBe(true)
+    expect(opened).toEqual([])
   })
 })
