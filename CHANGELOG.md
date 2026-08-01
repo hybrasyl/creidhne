@@ -50,6 +50,10 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   existing CSV. It carries the same data as the web CSV and excludes test and GM
   abilities in the same way.
 
+- **macOS builds have a proper app icon** — a gold dividers mark on a dark
+  squircle, drawn for the Dock and sized to Apple's icon grid instead of the
+  square logo the other platforms use. Windows and Linux are unchanged.
+
 ### Changed
 
 - **The two castable exports are now one Castables card with three buttons** —
