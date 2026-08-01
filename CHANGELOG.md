@@ -46,9 +46,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Changed
 
-- Renaming a **spawn group** now actually takes effect. The filename field was
-  being ignored on save — the file was always written back under its original
-  name — and now behaves like every other editor, archiving the file it replaces.
+- **The download is smaller and the boot reads as one piece.** The portable build
+  dropped from about 105 MB to about 87 MB — Creidhne no longer ships its
+  interface libraries, test files or documentation inside the app, and the logo
+  art is now sized for where it is drawn instead of decoded from a 1024px master
+  every time. The portable extraction screen is also a frozen frame of the app
+  splash, so the two screens you see at startup now match.
 
 - The **Lua Helpers page** is now a grid of cards matching Settings, and scrolls
   properly — the setup tips previously ran off the bottom of the window on larger
@@ -58,6 +61,10 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   instead of blending into the low-contrast primary blue.
 
 ### Fixed
+
+- Renaming a **spawn group** now actually takes effect. The filename field was
+  being ignored on save — the file was always written back under its original
+  name — and now behaves like every other editor, archiving the file it replaces.
 
 - **The custom scrollbar now follows the theme.** It was hardcoded to the
   hybrasyl teal on a dark gutter, so it looked wrong under the other themes —
@@ -78,6 +85,17 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   VS Code settings for anyone whose workspace root isn't `world/scripts/`.
 
 ### Security
+
+- **Creidhne's interface now runs in a sandbox, and the boundary around it is
+  closed.** The window that draws the editor no longer has direct access to the
+  operating system; it reaches the file system only through the small, named set
+  of operations Creidhne exposes to it. Each of those requests is now checked to
+  come from a real Creidhne window before it runs. Links open in your browser
+  only when they are ordinary web or mail links, the window can no longer be
+  navigated away from the app itself, and the packaged build closes a known way
+  of restarting Electron as a general-purpose script runner. Nothing you do in
+  the app changes; this closes routes a malicious world file or link could
+  otherwise have taken.
 
 - Cleared a high-severity denial-of-service advisory in `brace-expansion`
   (GHSA-mh99-v99m-4gvg) that reached the project through build tooling only. No
