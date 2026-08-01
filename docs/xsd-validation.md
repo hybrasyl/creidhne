@@ -51,14 +51,16 @@ currently produces 7 known failures — see the catalog below.
 
 ## Why we don't validate XML on save (yet)
 
-Branch 4's path-safety pass set up the wiring needed for IPC validation,
-and we considered shipping XSD validation on every `xml:save*` handler.
-The remaining blocker:
+**This is now [WP7](plans/07-xsd-validation-on-save.md).** Read that doc
+before starting — it carries the design, the blockers, and the sizing.
+This section keeps only the part that belongs with the drift catalog.
 
-- **The XSD-vs-real-data drift catalog below** — wrapping save handlers
-  with strict XSD validation would refuse legitimate user data on 7 of
-  the 14 XML payload types until upstream `hybrasyl/xml` lands the
-  fixes (or we ship a creidhne-local patched XSD set).
+The standing blocker is **the XSD-vs-real-data drift catalog below**:
+wrapping save handlers with strict XSD validation would refuse
+legitimate user data on 7 of the 14 XML payload types until upstream
+`hybrasyl/xml` lands the fixes (or we ship a creidhne-local patched XSD
+set). Each entry's **Fix:** line is that work; this catalog stays the
+authority for it.
 
 The Tier-2 serializer round-trip suite was originally cited as a
 second blocker (the existing `describe.skip` comment in
@@ -70,9 +72,12 @@ the actual count was **1, not 14** — `serverconfigs` was reordering
 the full per-type analysis. Once the upstream XSD drifts close, every
 Tier-2 case becomes a clean round-trip.
 
-Flipping XSD validation on at the IPC boundary is a one-helper change
-when prerequisites clear — the validator is already wired up, just
-not called.
+> **Correction (2026-07-31).** This section used to end "the validator
+> is already wired up, just not called." That is false. `xsdValidator.js`
+> lives in the **test tree**, `xmllint-wasm` is a **devDependency**, and
+> the XSDs are resolved from `process.cwd()` out of a **gitignored**
+> `xsd/` directory that no build ships. Three structural moves are
+> required before there is a call site at all. WP7 sizes them.
 
 ## Drift catalog (current as of 2026-04-25)
 
