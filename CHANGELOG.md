@@ -62,6 +62,11 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **Formulas show their category again.** Each formula in the list carries its
+  colored category chip, the same one the formula picker shows. The chip was
+  lost when the Formulas list moved onto the shared file list, so a category was
+  only visible after opening the formula.
+
 - Renaming a **spawn group** now actually takes effect. The filename field was
   being ignored on save — the file was always written back under its original
   name — and now behaves like every other editor, archiving the file it replaces.
