@@ -1,18 +1,20 @@
 import { describe, it, expect } from 'vitest'
+import { OPERATORS, compileRule, compileRules, findField, validateRules } from '../reportRules.js'
 import {
   BOOKS,
-  FILTERABLE_FIELDS,
-  OPERATORS,
+  CASTABLE_FILTER_FIELDS,
   UNIVERSAL,
   classMatches,
-  compileRule,
-  compileRules,
-  getFilterableField,
-  isUniversal,
-  validateRules
-} from '../reportRules.js'
+  isUniversal
+} from '../castableRules.js'
 import { CASTABLE_EXPORT_PRESETS } from '../castableExportPresets.js'
-import { ALL_CLASSES, resolveColumns } from '../castableRecord.js'
+import { ALL_CLASSES } from '../castableRecord.js'
+import { resolveColumns, validateDefinition } from '../reportEntities.js'
+
+// The engine takes a field list since WP3, so every call here passes the castable
+// vocabulary. That argument IS the per-entity rule: an items field on a castable
+// report is simply not in the list, and `compileRule` refuses it.
+const FIELDS = CASTABLE_FILTER_FIELDS
 
 // WP2. A report's filter is data, not a function, because a stored report is
 // JSON. These tests cover the vocabulary itself; the proof that the re-expressed
@@ -40,7 +42,7 @@ const record = (fields = {}) => ({
   ...fields
 })
 
-const matches = (spec, fields) => compileRules(spec)(record(fields))
+const matches = (spec, fields) => compileRules(FIELDS, spec)(record(fields))
 const one = (field, op, value, fields) =>
   matches({ match: 'all', rules: [{ field, op, value }] }, fields)
 
@@ -94,17 +96,19 @@ describe('compileRule — refusing what it cannot run', () => {
   // Throwing rather than skipping. A rule that silently does nothing produces a
   // report with too many rows and no error at all.
   it('throws on an unknown field', () => {
-    expect(() => compileRule({ field: 'nope', op: 'is', value: 1 })).toThrow(/Unknown report field/)
+    expect(() => compileRule(FIELDS, { field: 'nope', op: 'is', value: 1 })).toThrow(
+      /Unknown report field/
+    )
   })
 
   it('throws on an unknown operator', () => {
-    expect(() => compileRule({ field: 'name', op: 'startsWith', value: 'a' })).toThrow(
+    expect(() => compileRule(FIELDS, { field: 'name', op: 'startsWith', value: 'a' })).toThrow(
       /Unknown report operator/
     )
   })
 
   it('throws when the field does not allow that operator', () => {
-    expect(() => compileRule({ field: 'isTest', op: 'contains', value: 'x' })).toThrow(
+    expect(() => compileRule(FIELDS, { field: 'isTest', op: 'contains', value: 'x' })).toThrow(
       /does not support the operator/
     )
   })
@@ -189,13 +193,13 @@ describe('the other operators', () => {
 describe('validateRules', () => {
   it('accepts a valid rule list', () => {
     expect(
-      validateRules({ match: 'any', rules: [{ field: 'isGM', op: 'is', value: true }] })
+      validateRules(FIELDS, { match: 'any', rules: [{ field: 'isGM', op: 'is', value: true }] })
     ).toEqual([])
   })
 
   it('reports every fault at once, numbered', () => {
     // The loader wants every fault in a hand-edited file, not just the first.
-    const problems = validateRules({
+    const problems = validateRules(FIELDS, {
       match: 'some',
       rules: [
         { field: 'nope', op: 'is', value: 1 },
@@ -212,8 +216,8 @@ describe('validateRules', () => {
 describe('the vocabulary itself', () => {
   it('declares a label and at least one operator per field', () => {
     // Guards the guard: an empty field list would make every assertion here pass.
-    expect(FILTERABLE_FIELDS.length).toBeGreaterThanOrEqual(11)
-    for (const spec of FILTERABLE_FIELDS) {
+    expect(CASTABLE_FILTER_FIELDS.length).toBeGreaterThanOrEqual(11)
+    for (const spec of CASTABLE_FILTER_FIELDS) {
       expect(spec.label, spec.field).toBeTruthy()
       expect(spec.ops.length, spec.field).toBeGreaterThan(0)
       // Every operator a field offers must exist, or the UI offers a rule that
@@ -222,12 +226,12 @@ describe('the vocabulary itself', () => {
       // Every field must be able to produce a value from a record, one way or
       // the other. A field with neither reads as undefined for every record.
       expect(Boolean(spec.read || spec.matches), spec.field).toBe(true)
-      expect(getFilterableField(spec.field)).toBe(spec)
+      expect(findField(FIELDS, spec.field)).toBe(spec)
     }
   })
 
   it('offers a value list for every enum field', () => {
-    for (const spec of FILTERABLE_FIELDS.filter((f) => f.kind === 'enum')) {
+    for (const spec of CASTABLE_FILTER_FIELDS.filter((f) => f.kind === 'enum')) {
       expect(spec.values?.length, spec.field).toBeGreaterThan(0)
     }
   })
@@ -239,13 +243,13 @@ describe('the built-in reports', () => {
     // asserts the artifact. resolveColumns throws on an unknown key.
     expect(CASTABLE_EXPORT_PRESETS.length).toBe(3)
     for (const preset of CASTABLE_EXPORT_PRESETS) {
-      expect(() => resolveColumns(preset.columns), preset.id).not.toThrow()
+      expect(() => resolveColumns(preset.entity, preset.columns), preset.id).not.toThrow()
     }
   })
 
   it('state rules a user could have written', () => {
     for (const preset of CASTABLE_EXPORT_PRESETS) {
-      expect(validateRules(preset), preset.id).toEqual([])
+      expect(validateDefinition(preset), preset.id).toEqual([])
     }
   })
 })

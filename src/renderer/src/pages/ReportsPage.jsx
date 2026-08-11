@@ -24,21 +24,33 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteIcon from '@mui/icons-material/Delete'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import SaveIcon from '@mui/icons-material/Save'
-import { CASTABLE_EXPORT_PRESETS } from '@shared/castableExportPresets.js'
+import {
+  REPORT_ENTITIES,
+  allPresets,
+  filterFieldsFor,
+  findEntity,
+  presetsFor
+} from '@shared/reportEntities.js'
 import { useStoreValue, activeLibraryState } from '../store/appStore'
 import ColumnPicker from '../components/reports/ColumnPicker'
 import RuleList from '../components/reports/RuleList'
 
-// The Reports surface (WP2), which was the Exports page's three fixed buttons.
+// The Reports surface (WP2), entity-aware since WP3.
 //
-// The three built-in reports are read-only and clonable. Their column headers are
-// a contract with a balancing workbook and the Hybrasyl website parser, so a
-// header change stays a line in a diff rather than something a user can do here.
+// The built-in reports are read-only and clonable. The three castable ones carry
+// column headers that are a contract with a balancing workbook and the Hybrasyl
+// website parser, so a header change stays a line in a diff rather than something a
+// user can do here. The item one is fixed for the weaker reason that a built-in a
+// user can edit stops meaning what its name says.
 //
-// Label and description come from the preset data now, rather than being restated
-// in this file. The restated copy drifted the moment the presets changed, and this
-// repo has fixed that same fault twice (HTOO-130, HTOO-159). Reading them here is
-// what the `@shared` alias is for.
+// **Everything per-entity comes from the registry** (`@shared/reportEntities.js`):
+// the entity list, each entity's built-ins, its column catalogue and its filter
+// vocabulary. This file knows there is such a thing as an entity and nothing about
+// any particular one, which is what stopped WP3 from being a second builder.
+//
+// Label and description come from the preset data rather than being restated here.
+// The restated copy drifted the moment the presets changed, and this repo has fixed
+// that same fault three times (HTOO-130, HTOO-159, WP2).
 
 const PREVIEW_DEBOUNCE_MS = 400
 
@@ -50,7 +62,7 @@ function toDefinition(report) {
   return {
     id: report.id,
     label: report.label,
-    entity: 'castables',
+    entity: report.entity,
     format: report.format,
     columns: columnKeys(report.columns),
     match: report.match ?? 'all',
@@ -63,19 +75,32 @@ function ReportsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const [reports, setReports] = useState([])
   const [loadProblems, setLoadProblems] = useState([])
-  const [selectedId, setSelectedId] = useState(CASTABLE_EXPORT_PRESETS[0].id)
+  const [entity, setEntity] = useState(REPORT_ENTITIES[0].entity)
+  const [selectedId, setSelectedId] = useState(REPORT_ENTITIES[0].presets[0].id)
   const [draft, setDraft] = useState(null)
   const [status, setStatus] = useState(null)
   const [busy, setBusy] = useState(null)
   const [preview, setPreview] = useState(null)
 
-  const builtIns = CASTABLE_EXPORT_PRESETS
-  const isBuiltIn = builtIns.some((p) => p.id === selectedId)
+  // The built-ins for the chosen entity, and every one across every entity. The
+  // second list is what resolves a selection: switching entity must not make the
+  // selected report vanish before the effect that changes the selection runs.
+  const builtIns = useMemo(() => presetsFor(entity), [entity])
+  const isBuiltIn = allPresets().some((p) => p.id === selectedId)
+  const entityLabel = findEntity(entity)?.label ?? entity
+
+  // Only the reports for the chosen entity. A saved report keeps its own entity, so
+  // an items report is not offered while Castables is selected — its columns would
+  // not resolve.
+  const savedForEntity = useMemo(
+    () => reports.filter((r) => r.entity === entity),
+    [reports, entity]
+  )
 
   const selected = useMemo(() => {
     if (draft && draft.id === selectedId) return draft
-    return builtIns.find((p) => p.id === selectedId) ?? reports.find((r) => r.id === selectedId)
-  }, [builtIns, draft, reports, selectedId])
+    return allPresets().find((p) => p.id === selectedId) ?? reports.find((r) => r.id === selectedId)
+  }, [draft, reports, selectedId])
 
   const loadSaved = useCallback(async () => {
     if (!activeLibrary) {
@@ -136,7 +161,7 @@ function ReportsPage() {
           ? { type: 'info', message: 'Export cancelled.' }
           : {
               type: 'success',
-              message: `Exported ${result.matched} of ${result.total} castables to ${save.filePath}`
+              message: `Exported ${result.matched} of ${result.total} to ${save.filePath}`
             }
       )
     } catch (e) {
@@ -155,7 +180,7 @@ function ReportsPage() {
     const copy = {
       id,
       label: `${selected.label} copy`,
-      entity: 'castables',
+      entity: selected.entity,
       format: selected.format,
       columns: columnKeys(selected.columns),
       match: selected.match ?? 'all',
@@ -185,6 +210,16 @@ function ReportsPage() {
     }
   }
 
+  const changeEntity = (next) => {
+    setEntity(next)
+    setDraft(null)
+    setStatus(null)
+    // To that entity's first built-in. Keeping the old selection would show a report
+    // whose columns the new entity's catalogue cannot resolve, and the preview would
+    // fail rather than the selector explaining itself.
+    setSelectedId(presetsFor(next)[0]?.id ?? '')
+  }
+
   const handleDelete = async () => {
     if (!requireLibrary() || isBuiltIn) return
     const remaining = reports.filter((r) => r.id !== selectedId)
@@ -195,7 +230,7 @@ function ReportsPage() {
     }
     setReports(result.reports)
     setDraft(null)
-    setSelectedId(builtIns[0].id)
+    setSelectedId(builtIns[0]?.id ?? '')
     setStatus({ type: 'info', message: 'Report deleted.' })
   }
 
@@ -217,6 +252,19 @@ function ReportsPage() {
   return (
     <Box sx={{ display: 'flex', gap: 2, p: 3, height: '100%', overflow: 'hidden' }}>
       <Paper variant="outlined" sx={{ width: 260, p: 1, overflow: 'auto', flexShrink: 0 }}>
+        {/* The entity chooses the column catalogue, the filter vocabulary and the
+            built-in set together, so it sits above all three rather than beside the
+            format. */}
+        <FormControl size="small" fullWidth sx={{ mb: 1 }}>
+          <InputLabel>Report on</InputLabel>
+          <Select label="Report on" value={entity} onChange={(e) => changeEntity(e.target.value)}>
+            {REPORT_ENTITIES.map((row) => (
+              <MenuItem key={row.entity} value={row.entity}>
+                {row.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         <Typography variant="subtitle2" sx={{ px: 1 }}>
           Built in
         </Typography>
@@ -239,30 +287,31 @@ function ReportsPage() {
         <Typography variant="subtitle2" sx={{ px: 1 }}>
           Your reports
         </Typography>
-        {reports.length === 0 && !draft ? (
+        {savedForEntity.length === 0 && !draft ? (
           <Typography variant="body2" sx={{ color: 'text.secondary', px: 1 }}>
             Clone a built-in report to start one.
           </Typography>
         ) : (
           <List dense disablePadding>
-            {[...reports, ...(draft && !reports.some((r) => r.id === draft.id) ? [draft] : [])].map(
-              (report) => (
-                <ListItemButton
-                  key={report.id}
-                  selected={selectedId === report.id}
-                  onClick={() => setSelectedId(report.id)}
-                >
-                  <ListItemText
-                    primary={report.label}
-                    secondary={report.id === draft?.id ? 'unsaved' : undefined}
-                    slotProps={{
-                      primary: { variant: 'body2' },
-                      secondary: { variant: 'caption' }
-                    }}
-                  />
-                </ListItemButton>
-              )
-            )}
+            {[
+              ...savedForEntity,
+              ...(draft && !reports.some((r) => r.id === draft.id) ? [draft] : [])
+            ].map((report) => (
+              <ListItemButton
+                key={report.id}
+                selected={selectedId === report.id}
+                onClick={() => setSelectedId(report.id)}
+              >
+                <ListItemText
+                  primary={report.label}
+                  secondary={report.id === draft?.id ? 'unsaved' : undefined}
+                  slotProps={{
+                    primary: { variant: 'body2' },
+                    secondary: { variant: 'caption' }
+                  }}
+                />
+              </ListItemButton>
+            ))}
           </List>
         )}
       </Paper>
@@ -270,12 +319,12 @@ function ReportsPage() {
       <Box sx={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Typography variant="h5" sx={{ flex: 1 }}>
-            Reports
+            {entityLabel} reports
           </Typography>
           {preview && (
             <Chip
               size="small"
-              label={`${preview.matched} of ${preview.total} castables`}
+              label={`${preview.matched} of ${preview.total} ${entityLabel.toLowerCase()}`}
               variant="outlined"
             />
           )}
@@ -368,6 +417,7 @@ function ReportsPage() {
               Columns
             </Typography>
             <ColumnPicker
+              catalogue={findEntity(entity)?.columns ?? []}
               value={columns}
               disabled={isBuiltIn}
               onChange={(next) => edit({ columns: next })}
@@ -377,6 +427,7 @@ function ReportsPage() {
               Filter
             </Typography>
             <RuleList
+              fields={filterFieldsFor(entity)}
               match={selected.match}
               rules={selected.rules}
               disabled={isBuiltIn}

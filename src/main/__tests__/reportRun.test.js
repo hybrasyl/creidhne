@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { runCastableExport, collectCastableRecords } from '../exportCastables.js'
+import { runCastableExport, collectCastableRecords } from '../reportRun.js'
 
 // Guards the folder handling of the castables export: it must recurse into
 // subfolders (the Folder picker files castables under castables/<sub>/…) and it

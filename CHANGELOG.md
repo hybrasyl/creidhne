@@ -54,6 +54,18 @@ first section written to the rules above.
   A filter takes eleven fields: class, book, type, is test, is GM, deprecated, is assail, has
   a trainer, category, level and name. Match all of the rules or any one of them.
 
+- **Reports work for items as well as castables.** Choose what to report on at the top of the
+  Reports page. Creidhne changes the fields, the filters and the built-in reports together.
+
+  Items ship one built-in report, Items CSV. It carries the name, slot, value, damage,
+  requirement and bonus-stat columns. Clone it to change the columns.
+
+  An item report can also show which merchants sell an item, and which loot sets contain it.
+  Creidhne reads both from the world index.
+
+  An item filter takes eleven fields: name, slot, weapon type, is equipment, is a weapon, has a
+  vendor, in a loot set, shop tab, category, value and level required.
+
 ### Changed
 
 - **Creidhne runs as a single instance.** A second launch brings the window you already

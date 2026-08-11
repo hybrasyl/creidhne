@@ -112,6 +112,7 @@ export const CASTABLE_EXPORT_PRESETS = [
   {
     id: 'balancingCsv',
     label: 'Balancing CSV',
+    entity: 'castables',
     description:
       'Every castable including test and GM abilities, with the full column set. For balancing and hand review in Excel.',
     format: 'csv',
@@ -125,6 +126,7 @@ export const CASTABLE_EXPORT_PRESETS = [
   {
     id: 'webCsv',
     label: 'Web CSV',
+    entity: 'castables',
     description:
       'The column set the Hybrasyl website ability browser reads. Test and GM abilities excluded.',
     format: 'csv',
@@ -136,6 +138,7 @@ export const CASTABLE_EXPORT_PRESETS = [
   {
     id: 'webJson',
     label: 'Web JSON',
+    entity: 'castables',
     description: 'The same web-facing data as JSON. Test and GM abilities excluded.',
     format: 'json',
     defaultFileName: 'castables.json',

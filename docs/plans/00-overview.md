@@ -26,18 +26,18 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 | WP  | Title                                   | Size | Status           | Depends on |
 | --- | --------------------------------------- | ---- | ---------------- | ---------- |
-| 3   | Report builder for other XML types      | L    | Detailed         | WP2        |
 | 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
 | 6   | Spawngroup spellbook references         | M    | Planned          | —          |
 | 7   | XSD validation at the IPC save boundary | L    | Planned, blocked | —          |
 
 ## Complete
 
-| WP  | Title                                       | Shipped    | Doc                                         |
-| --- | ------------------------------------------- | ---------- | ------------------------------------------- |
-| 1   | Castables export cleanup (3 presets)        | 2026-08-01 | `complete/01-castables-export-cleanup.md`   |
-| 2   | Castables report builder                    | 2026-08-11 | `complete/02-castables-report-builder.md`   |
-| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 | `complete/05-file-list-render-secondary.md` |
+| WP  | Title                                       | Shipped    | Doc                                             |
+| --- | ------------------------------------------- | ---------- | ----------------------------------------------- |
+| 1   | Castables export cleanup (3 presets)        | 2026-08-01 | `complete/01-castables-export-cleanup.md`       |
+| 2   | Castables report builder                    | 2026-08-11 | `complete/02-castables-report-builder.md`       |
+| 3   | Report builder for other XML types (items)  | 2026-08-11 | `complete/03-report-builder-other-xml-types.md` |
+| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 | `complete/05-file-list-render-secondary.md`     |
 
 **WP2 was detailed and built on 2026-08-11.** WP1 was built for it, and it showed: the canonical
 record, the serializers and the presets in `src/shared/` were already preset-agnostic, so the builder
@@ -50,16 +50,32 @@ golden fixtures prove the re-expression byte for byte, which is the whole safety
 a file two external consumers read. Promotion also found that `ExportsPage.jsx` held a second copy of
 each preset's label and description; the `@shared` alias removed it, and a guard now keeps it removed.
 
-**WP3 is the one to take next, and it was detailed on 2026-08-11.** WP2 left it two inputs rather
-than a rewrite: `version` and `entity` are already written to `reports.json`, and the rule
-vocabulary and the serializers are already entity-agnostic. What WP3 adds is a second field
-catalogue, a second record mapper, and per-entity validation.
+**WP3 shipped items on 2026-08-11.** Each further type is now a registry row rather than a work
+package: `src/shared/reportEntities.js` maps an entity to its record mapper, column catalogue,
+filter vocabulary and built-in reports, and `src/main/reportRun.js` adds one line per type for the
+parser. Creatures, NPCs, statuses and spawngroups stay unbuilt on purpose — an unused mapper is a
+field catalogue nobody has checked against real data.
 
-Promotion measured two things. **Items need no `@eriscorp/hybindex-ts` field** — the XML carries
-everything except which NPCs sell an item and which loot sets hold it, and `itemVendors` and
-`itemLootSets` already exist. And **the 69 item stat keys exist twice**, in `src/main/itemXml.js`
-and `src/renderer/src/data/itemConstants.js`, identical and in the same order. A report needs the
-list a third time, so it moves to `src/shared/itemStats.js` first, as its own commit.
+Two findings from its promotion are worth carrying. **Items needed no `@eriscorp/hybindex-ts`
+field**: the XML holds everything except which NPCs sell an item and which loot sets hold it, and
+`itemVendors` and `itemLootSets` already existed. And **three value lists were about to exist in
+triplicate** — the 69 stat keys, the equipment slots and the weapon types each lived in
+`src/main/itemXml.js` or `src/renderer/src/data/itemConstants.js`, and the report needed all three.
+They moved to `src/shared/` first, as their own commit, with a guard asserting both earlier
+consumers read the shared copy.
+
+**No WP is in flight.** WP4, WP6 and WP7 were dropped from the current program on 2026-08-11
+(Sabrael) on size grounds — each is an L or M that wants its own session rather than a tail added to
+this one. They stay in the Active table because they are still wanted, not shelved.
+
+Two notes for whoever picks one up, so the reason is not re-derived:
+
+- **WP4's prerequisite is already in place.** The `@eriscorp/hybindex-ts` 1.1.0 `itemWeaponDamage`
+  fix is what WP4 consumes, and it landed with the dependency bump earlier in this program.
+- **WP4 now has a second input it did not have when it was scoped.** WP3 gave items a record mapper,
+  a field catalogue and a report surface, so the weapons work can read weapon damage through
+  `itemToRecord` rather than re-deriving it. Re-read its scope against `src/shared/itemRecord.js`
+  before designing.
 
 **WP5 shipped after the 1.10.0 tag, so it is not in that release.** Its entry sits under
 `[Unreleased]` in `CHANGELOG.md` and goes out with the next version.

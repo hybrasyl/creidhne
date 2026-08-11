@@ -1,79 +1,14 @@
 import xml2js from 'xml2js'
+import { ITEM_STAT_KEYS } from '../shared/itemStats.js'
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
-const STAT_KEYS = new Set([
-  'BaseStr',
-  'BaseInt',
-  'BaseWis',
-  'BaseCon',
-  'BaseDex',
-  'BaseHp',
-  'BaseMp',
-  'CurrentHp',
-  'CurrentMp',
-  'CurrentGold',
-  'CurrentXp',
-  'CurrentFaith',
-  'BaseHit',
-  'BaseDmg',
-  'BaseAc',
-  'BaseRegen',
-  'BaseMr',
-  'BaseCrit',
-  'BaseMagicCrit',
-  'BaseInboundDamageToMp',
-  'BaseOffensiveElement',
-  'BaseDefensiveElement',
-  'BaseExtraFaith',
-  'OffensiveElementOverride',
-  'DefensiveElementOverride',
-  'BaseInboundDamageModifier',
-  'BaseOutboundDamageModifier',
-  'BaseInboundHealModifier',
-  'BaseOutboundHealModifier',
-  'DamageType',
-  'BaseReflectMagical',
-  'BaseReflectPhysical',
-  'BaseExtraGold',
-  'BaseDodge',
-  'BaseMagicDodge',
-  'BaseExtraXp',
-  'BaseExtraItemFind',
-  'BaseLifeSteal',
-  'BaseManaSteal',
-  'BonusStr',
-  'BonusInt',
-  'BonusWis',
-  'BonusCon',
-  'BonusDex',
-  'BonusHp',
-  'BonusMp',
-  'BonusHit',
-  'BonusDmg',
-  'BonusAc',
-  'BonusRegen',
-  'BonusMr',
-  'BonusCrit',
-  'BonusMagicCrit',
-  'BonusInboundDamageModifier',
-  'BonusOutboundDamageModifier',
-  'BonusInboundHealModifier',
-  'BonusOutboundHealModifier',
-  'BonusReflectMagical',
-  'BonusReflectPhysical',
-  'BonusExtraGold',
-  'BonusDodge',
-  'BonusMagicDodge',
-  'BonusExtraXp',
-  'BonusExtraItemFind',
-  'BonusLifeSteal',
-  'BonusManaSteal',
-  'BonusInboundDamageToMp',
-  'BonusExtraFaith',
-  'Shield'
-])
-
+// The stat-modifier keys, from the ONE list in src/shared/itemStats.js (WP3).
+// This was a literal Set here and an identical 69-entry list in the renderer's
+// itemConstants.js. A key in one and not the other fails silently: the parser
+// drops the attribute into `unknownStatKeys`, which only the diagnostics panel
+// reads, so the value vanishes from a saved item with nothing to say so.
+export const STAT_KEYS = new Set(ITEM_STAT_KEYS)
 const first = (arr, def = undefined) => (Array.isArray(arr) && arr.length ? arr[0] : def)
 const a = (node, key, def = '') => node?.$?.[key] ?? def
 const toBool = (val, def = false) =>

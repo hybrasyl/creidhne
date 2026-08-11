@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { CASTABLE_EXPORT_PRESETS, getCastableExportPreset } from '../castableExportPresets.js'
 import { CASTABLE_COLUMNS } from '../castableRecord.js'
-import { compileRules, validateRules } from '../reportRules.js'
+import { compileRules } from '../reportRules.js'
+import { CASTABLE_FILTER_FIELDS } from '../castableRules.js'
+import { validateDefinition } from '../reportEntities.js'
 
 const byId = (id) => getCastableExportPreset(id)
 
@@ -133,7 +135,9 @@ describe('balancingCsv', () => {
   it('includes every castable', () => {
     // An empty rule list, which is what `filter: null` meant before WP2.
     expect(byId('balancingCsv').rules).toEqual([])
-    expect(compileRules(byId('balancingCsv'))({ isTest: true, isGM: true })).toBe(true)
+    expect(
+      compileRules(CASTABLE_FILTER_FIELDS, byId('balancingCsv'))({ isTest: true, isGM: true })
+    ).toBe(true)
   })
 
   it('emits nothing at all for an empty library', () => {
@@ -173,7 +177,7 @@ describe('webCsv and webJson', () => {
     // Through the rule compiler, because that is what runs at export time. The
     // filter used to be a predicate on the preset; a stored report cannot hold a
     // function, so the built-ins now state rules in the user's own vocabulary.
-    const filter = compileRules(byId('webCsv'))
+    const filter = compileRules(CASTABLE_FILTER_FIELDS, byId('webCsv'))
     expect(filter({ isTest: false, isGM: false })).toBe(true)
     expect(filter({ isTest: true, isGM: false })).toBe(false)
     expect(filter({ isTest: false, isGM: true })).toBe(false)
@@ -184,7 +188,7 @@ describe('webCsv and webJson', () => {
     // The point of re-expressing them: a built-in a user cannot express is a
     // built-in the user cannot clone.
     for (const rule of byId('webCsv').rules) {
-      expect(validateRules({ match: 'all', rules: [rule] })).toEqual([])
+      expect(validateDefinition({ ...byId('webCsv'), match: 'all', rules: [rule] })).toEqual([])
     }
   })
 
