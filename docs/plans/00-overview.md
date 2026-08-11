@@ -26,7 +26,7 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 | WP  | Title                                   | Size | Status           | Depends on |
 | --- | --------------------------------------- | ---- | ---------------- | ---------- |
-| 2   | Castables report builder                | L    | Planned          | WP1        |
+| 2   | Castables report builder                | L    | Detailed         | WP1        |
 | 3   | Report builder for other XML types      | L    | Planned          | WP2        |
 | 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
 | 6   | Spawngroup spellbook references         | M    | Planned          | —          |
@@ -43,6 +43,13 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 serializers and presets in `src/shared/` are all preset-agnostic, so the report builder consumes them
 directly rather than re-deriving anything. WP1's doc also records four output changes agreed during
 the build and five findings outside its scope.
+
+**WP2 was detailed on 2026-08-11**, and promotion resolved its three open questions and found one
+change the outline did not name: a preset's `filter` is a **function** today, so a user report stored
+as JSON cannot hold one. The filter becomes a rule list, the three built-ins are re-expressed in that
+same vocabulary, and WP1's golden fixtures prove the re-expression byte for byte. Promotion also
+found that `ExportsPage.jsx` holds a second copy of each preset's label and description, which the
+`@shared` alias removes.
 
 **WP5 shipped after the 1.10.0 tag, so it is not in that release.** Its entry sits under
 `[Unreleased]` in `CHANGELOG.md` and goes out with the next version.
