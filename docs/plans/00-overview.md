@@ -64,8 +64,18 @@ triplicate** — the 69 stat keys, the equipment slots and the weapon types each
 They moved to `src/shared/` first, as their own commit, with a guard asserting both earlier
 consumers read the shared copy.
 
-**WP4 is the one to take next**, and its prerequisite in `@eriscorp/hybindex-ts` is already in
-place — the 1.1.0 `itemWeaponDamage` fix is what WP4 consumes.
+**No WP is in flight.** WP4, WP6 and WP7 were dropped from the current program on 2026-08-11
+(Sabrael) on size grounds — each is an L or M that wants its own session rather than a tail added to
+this one. They stay in the Active table because they are still wanted, not shelved.
+
+Two notes for whoever picks one up, so the reason is not re-derived:
+
+- **WP4's prerequisite is already in place.** The `@eriscorp/hybindex-ts` 1.1.0 `itemWeaponDamage`
+  fix is what WP4 consumes, and it landed with the dependency bump earlier in this program.
+- **WP4 now has a second input it did not have when it was scoped.** WP3 gave items a record mapper,
+  a field catalogue and a report surface, so the weapons work can read weapon damage through
+  `itemToRecord` rather than re-deriving it. Re-read its scope against `src/shared/itemRecord.js`
+  before designing.
 
 **WP5 shipped after the 1.10.0 tag, so it is not in that release.** Its entry sits under
 `[Unreleased]` in `CHANGELOG.md` and goes out with the next version.
