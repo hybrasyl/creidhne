@@ -13,7 +13,7 @@ The house standard lives in the internal **document repo** (`Comhaigne`), under
 
 - **`dev-practices.md`** — git/commit discipline, PR prep, verify-before-commit, security posture.
 - **`electron-app-skeleton.md`** — the full Electron stack/architecture spec. `hyb-electron-template`
-  is its runnable snapshot; Creidhne predates parts of it (see *Known divergences* below).
+  is its runnable snapshot; Creidhne predates parts of it (see _Known divergences_ below).
 - **`e2e-playwright-electron.md`** — the E2E harness rationale (Creidhne's `e2e/` follows it).
 - **`mundanes-dubhaimid-themes.md`** — the two corporate themes (Creidhne has both).
 
@@ -105,7 +105,7 @@ Prop APIs differ from v5–v7 and fail cryptically:
 - `Stack`: `alignItems`/`justifyContent` go in `sx`, not top-level props.
 - Icons v9 drops deprecated base names (e.g. `HelpOutlineOutlined`, not `HelpOutline`).
 - `Autocomplete`'s `renderInput` params carry **`slotProps`** (v5–v7 used `InputProps` +
-  `inputProps`). Setting your own `slotProps` on the inner `TextField` *replaces* that object and
+  `inputProps`). Setting your own `slotProps` on the inner `TextField` _replaces_ that object and
   silently drops the classes/refs Autocomplete styles itself through — the field renders ~12px
   taller than a plain `size="small"` one and the popup anchors wrong. Always spread:
   `slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps?.htmlInput, … } }}`.

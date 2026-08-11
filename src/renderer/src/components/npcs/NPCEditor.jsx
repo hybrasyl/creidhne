@@ -132,6 +132,24 @@ function CookiePickers({ exceptCookie, onlyCookie, onChangeExcept, onChangeOnly 
   )
 }
 
+// Bank and Repair both carry a percentage discount for citizens of their Nation.
+// Kept as a string, like every other role attribute here: the schema types it as
+// a float, and parsing it to a number would rewrite `20` as `20` but `.5` as
+// `0.5` on every save of a file nobody meant to touch.
+function DiscountField({ value, onChange }) {
+  return (
+    <TextField
+      label="Discount"
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      size="small"
+      sx={{ width: 140 }}
+      helperText="Percent off, for this Nation"
+      slotProps={{ htmlInput: { maxLength: 16 } }}
+    />
+  )
+}
+
 // ── Main editor ───────────────────────────────────────────────────────────────
 function NPCEditor({
   npc,
@@ -277,6 +295,22 @@ function NPCEditor({
       ...d,
       roles: { ...d.roles, [roleKey]: { ...d.roles[roleKey], [field]: val } }
     }))
+
+  // ── Post surcharge helpers ────────────────────────────────────────────────
+  // Post-only, and distinct from a Cost Adjustment: a surcharge is a percentage
+  // added for senders from another Nation, where an adjustment is a multiplier.
+  const setSurcharges = (fn) =>
+    updateData((d) => ({
+      ...d,
+      roles: {
+        ...d.roles,
+        post: { ...d.roles.post, surcharges: fn(d.roles.post?.surcharges || []) }
+      }
+    }))
+  const addSurcharge = () => setSurcharges((list) => [...list, { nation: '', percent: '' }])
+  const setSurcharge = (i, field, val) =>
+    setSurcharges((list) => list.map((s, idx) => (idx === i ? { ...s, [field]: val } : s)))
+  const removeSurcharge = (i) => setSurcharges((list) => list.filter((_, idx) => idx !== i))
 
   // ── Adjustment helpers ────────────────────────────────────────────────────
   const addAdjustment = (roleKey) =>
@@ -720,10 +754,28 @@ function NPCEditor({
           open={openBank}
           onToggle={() => setOpenBank((v) => !v)}
           enabled={data.roles.bank !== null}
-          onEnable={enableRole('bank', { exceptCookie: '', onlyCookie: '', adjustments: [] })}
+          onEnable={enableRole('bank', {
+            nation: '',
+            discount: '',
+            exceptCookie: '',
+            onlyCookie: '',
+            adjustments: []
+          })}
         >
           {data.roles.bank !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <NationPicker
+                  label="Nation"
+                  value={data.roles.bank.nation || ''}
+                  sx={{ flex: 1 }}
+                  onChange={(val) => setRoleField('bank', 'nation', val)}
+                />
+                <DiscountField
+                  value={data.roles.bank.discount}
+                  onChange={(val) => setRoleField('bank', 'discount', val)}
+                />
+              </Box>
               <CookiePickers
                 exceptCookie={data.roles.bank.exceptCookie}
                 onlyCookie={data.roles.bank.onlyCookie}
@@ -782,6 +834,7 @@ function NPCEditor({
             nation: '',
             exceptCookie: '',
             onlyCookie: '',
+            surcharges: [],
             adjustments: []
           })}
         >
@@ -811,6 +864,40 @@ function NPCEditor({
                   inputProps={{ maxLength: 128 }}
                 />
               </Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
+                Surcharges
+              </Typography>
+              {(data.roles.post.surcharges || []).map((s, i) => (
+                <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <NationPicker
+                    label="Nation"
+                    value={s.nation}
+                    sx={{ flex: 1 }}
+                    onChange={(val) => setSurcharge(i, 'nation', val)}
+                  />
+                  <TextField
+                    label="Percent"
+                    value={s.percent}
+                    onChange={(e) => setSurcharge(i, 'percent', e.target.value)}
+                    size="small"
+                    sx={{ width: 140 }}
+                    slotProps={{
+                      htmlInput: { maxLength: 16 }
+                    }}
+                  />
+                  <IconButton size="small" color="error" onClick={() => removeSurcharge(i)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <Button size="small" startIcon={<AddIcon />} onClick={addSurcharge}>
+                Add Surcharge
+              </Button>
               <Typography
                 variant="caption"
                 sx={{
@@ -860,6 +947,8 @@ function NPCEditor({
           onToggle={() => setOpenRepair((v) => !v)}
           enabled={data.roles.repair !== null}
           onEnable={enableRole('repair', {
+            nation: '',
+            discount: '',
             type: '',
             exceptCookie: '',
             onlyCookie: '',
@@ -868,6 +957,18 @@ function NPCEditor({
         >
           {data.roles.repair !== null && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <NationPicker
+                  label="Nation"
+                  value={data.roles.repair.nation || ''}
+                  sx={{ flex: 1 }}
+                  onChange={(val) => setRoleField('repair', 'nation', val)}
+                />
+                <DiscountField
+                  value={data.roles.repair.discount}
+                  onChange={(val) => setRoleField('repair', 'discount', val)}
+                />
+              </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <FormControl size="small" sx={{ width: 120 }}>
                   <InputLabel>Type</InputLabel>

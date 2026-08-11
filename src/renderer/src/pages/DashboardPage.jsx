@@ -20,10 +20,10 @@ import {
   useStoreState,
   activeLibraryState,
   libraryIndexState,
-  currentPageState,
-  taliesinPathState
+  currentPageState
 } from '../store/appStore'
 import { useLibraryIndexHydration } from '../hooks/useLibraryIndexHydration'
+import { useCompanionStatus } from '../hooks/useCompanionStatus'
 
 const INDEX_TYPES = [
   { key: 'items', label: 'Items', page: 'items' },
@@ -167,7 +167,10 @@ function DashboardPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
   const libraryIndex = useStoreValue(libraryIndexState)
   const [, setCurrentPage] = useStoreState(currentPageState)
-  const taliesinPath = useStoreValue(taliesinPathState)
+  // Resolved by main rather than read from settings: the Maps cards must open
+  // Taliesin for the usual install, where it sits beside Creidhne and was never
+  // configured (HTOO-292).
+  const { found: taliesinFound, refresh: refreshCompanion } = useCompanionStatus()
   const [rebuilding, setRebuilding] = useState(false)
   const hydrateLibraryIndex = useLibraryIndexHydration()
 
@@ -186,8 +189,8 @@ function DashboardPage() {
   }
 
   const handleLaunchTaliesin = async () => {
-    if (!taliesinPath) return
-    await window.electronAPI.launchCompanion(taliesinPath)
+    await window.electronAPI.launchCompanion()
+    refreshCompanion()
   }
 
   const indexFooter = activeLibrary ? (
@@ -257,11 +260,11 @@ function DashboardPage() {
             let cardTooltip = tooltip
             let onLaunch
             if (launch === 'taliesin') {
-              if (taliesinPath) {
+              if (taliesinFound) {
                 onLaunch = handleLaunchTaliesin
                 cardTooltip = 'Open in Taliesin'
               } else {
-                cardTooltip = 'Set Taliesin path in Settings to enable'
+                cardTooltip = 'Taliesin not found — see Settings'
               }
             }
             return (

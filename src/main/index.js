@@ -21,8 +21,9 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
-import { launchCompanion } from './launchCompanion.js'
+import { launchCompanion, resolveCompanion, pickerFilters, nodeProbe } from './companion.js'
 import { createSplashWindow } from './splash.js'
+import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import { parseOrLog } from './schemaLog.js'
@@ -53,7 +54,7 @@ import {
   archiveFiles,
   unarchiveFiles,
   duplicateFile,
-  readBinaryFile,
+  readClientFile,
   checkClientPath
 } from './fsHandlers'
 import { checkForUpdates } from './updateCheck.js'
@@ -93,6 +94,18 @@ const localBase = join(localAppDataDir(), 'Erisco', 'Creidhne')
 const settingsPath = localBase
 const cachePath = localBase
 app.setPath('userData', cachePath)
+
+// Software rendering under Remote Desktop (HTOO-325). MUST be here, before the
+// `ready` event: app.disableHardwareAcceleration() after ready does not throw and
+// does not warn in a way anybody reads -- it simply stops working. That ordering is
+// the one thing about this fix no unit test could otherwise see, so
+// remoteSession.test.js reads this file and asserts the position.
+//
+// Read ONCE and kept, because createWindow needs the same answer later for the CSS
+// mitigation, and two calls that could disagree is a worse shape than one constant
+// however unlikely the disagreement.
+const softwareRendering = shouldDisableHardwareAcceleration(process.platform, process.env)
+if (softwareRendering) app.disableHardwareAcceleration()
 
 // Single instance. A second copy would run a second world index, a second
 // settings writer and a second session-log rotation over the same local app-data
@@ -234,6 +247,23 @@ function createWindow() {
   // would reject whatever the renderer sends during hydration.
   registerTrustedWindow(mainWindow)
 
+  // Under software compositing the themes' MuiPaper backdrop blur is the most
+  // expensive thing on screen, so turning the GPU off and leaving it in place would
+  // be half a fix. `dom-ready` fires before first paint, so there is no flash of the
+  // blurred style. The failure is logged rather than thrown -- a window that renders
+  // with one expensive effect still beats no window, and this whole path is a
+  // performance mitigation rather than a correctness one.
+  //
+  // The splash is deliberately not a second call site: it has no MuiPaper and is on
+  // screen for a moment.
+  if (softwareRendering) {
+    mainWindow.webContents.on('dom-ready', () => {
+      mainWindow.webContents.insertCSS(REMOTE_SESSION_CSS).catch((err) => {
+        console.warn('[display] remote-session CSS injection failed:', err?.message ?? err)
+      })
+    })
+  }
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -322,7 +352,23 @@ app.whenReady().then(async () => {
   ipc.handle('dialog:openFile', handleFileOpen)
   ipc.handle('dialog:openExeFile', handleExeFileOpen)
   ipc.handle('open-directory', handleDirectoryOpen)
-  ipc.handle('app:launchCompanion', (_, exePath) => launchCompanion(settingsManager, exePath))
+
+  // Companion app (HTOO-292). The renderer names no path: it asks for the
+  // companion, and what may be launched is decided in companion.js from sources
+  // main controls. `taliesinPath` in settings is an optional override now rather
+  // than the only route, so an existing setting keeps working with no migration.
+  //
+  // These three lines pass the real probe and are the only place that does. The
+  // injectable seam lives in companion.js, where the tests drive every platform's
+  // discovery: registry queries and Applications-folder scans cannot run in a unit
+  // test, and a resolver whose precedence is exercised on one machine has one
+  // tested path.
+  ipc.handle('app:companionStatus', async () =>
+    resolveCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
+  )
+  ipc.handle('app:launchCompanion', async () =>
+    launchCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
+  )
   ipc.handle('app:getVersion', () => app.getVersion())
   ipc.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   // Open the local settings/cache dir (%LOCALAPPDATA%/Erisco/Creidhne) in the OS
@@ -365,7 +411,15 @@ app.whenReady().then(async () => {
   })
   ipc.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
   ipc.handle('fs:writeFile', (_, filePath, content) => writeFile(validatePath(filePath), content))
-  ipc.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
+  // `rel` needs its own traversal check, for the same reason `fs:listSection`'s
+  // `type` does: resolveClientPath joins it onto the client root internally, so
+  // validating clientPath alone would still let a renderer-supplied `../..`
+  // escape.
+  ipc.handle('fs:readClientFile', (_, clientPath, rel) => {
+    const root = validatePath(clientPath)
+    assertInside(root, rel)
+    return readClientFile(root, rel)
+  })
   ipc.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(validatePath(clientPath)))
 
   ipc.handle('xml:loadItem', async (_, filePath) => {
@@ -1265,13 +1319,19 @@ async function handleFileOpen() {
   }
 }
 
+// The companion picker. Filters come from `pickerFilters` rather than being
+// hardcoded to `exe`, so the dialog offers `.app` on macOS and an AppImage or a
+// `.desktop` entry on Linux. Asking for `exe` on every platform is what stopped
+// this setting from being populated at all off Windows (HTOO-292). Main decides,
+// because main is what knows the platform — nothing is asked of the renderer.
+//
+// `openFile` alone cannot select a macOS `.app`, which is a directory. macOS needs
+// both properties, and `treatPackageAsDirectory` must stay off so the bundle comes
+// back whole instead of being browsed into.
 async function handleExeFileOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({
-    properties: ['openFile'],
-    filters: [
-      { name: 'Executable', extensions: ['exe'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+    properties: process.platform === 'darwin' ? ['openFile', 'openDirectory'] : ['openFile'],
+    filters: pickerFilters(process.platform)
   })
   if (!canceled) {
     bless(filePaths[0])

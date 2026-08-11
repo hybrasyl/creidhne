@@ -16,6 +16,11 @@
 *.ico binary
 *.icns binary
 *.webp binary
+# build/portable-splash.bmp — the NSIS portable extraction splash. It fell
+# through to `* text=auto` and was classified correctly only by git's NUL-byte
+# heuristic, which reads the first 8000 bytes. The list exists so classification
+# is stated rather than inferred.
+*.bmp binary
 *.woff binary
 *.woff2 binary
 *.ttf binary
