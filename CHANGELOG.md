@@ -37,6 +37,25 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   Creidhne everywhere you see its name; only the filenames changed. A desktop
   shortcut to the old filename needs remaking.
 
+- **Creidhne finds Taliesin on its own.** The Launch Taliesin button in the
+  toolbar, and the Maps and World Maps cards on the Dashboard, used to stay greyed
+  out until you set a path in Settings — even in the usual case, where Taliesin is
+  installed right next to Creidhne. Creidhne now looks beside itself first, then at
+  the installed application, so the button works without being configured. The path
+  in Settings is still there as an override for an unusual install, and any path you
+  already set keeps working.
+
+  Settings now says **where** the answer came from, and warns you when a path you
+  chose no longer exists — that used to fall back silently, so the button worked for
+  a reason you did not expect. A launch that fails now says why: three of the four
+  reasons are things you can fix.
+
+  On macOS and Linux the companion could not be configured at all, because the
+  picker only offered `.exe` files and the launch was a plain process spawn. It now
+  accepts a `.app` bundle, an AppImage or a desktop entry, and starts each the way
+  its platform expects — so `open -a` activates a Taliesin window you already have
+  instead of starting a second copy.
+
 - **The world index rebuilds itself once, the first time you open a library.**
   The index format changed, so the old cache is discarded and rebuilt from your
   world. It happens automatically and the progress pill shows it; nothing needs
@@ -78,6 +97,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   box — most visibly over Remote Desktop, where everything is slower. Each launch
   now unpacks to its own directory, so the second copy simply hands you the window
   you already have.
+- **The Dark Ages client is found on Linux and macOS.** The client installer
+  writes `Legend.dat` with a capital L, and Creidhne asked for `legend.dat`.
+  Windows ignores the difference; Linux and macOS do not, so a perfectly good
+  install showed a red or yellow client-path indicator and every sprite, icon,
+  sound and portrait picker came up empty. Creidhne now asks the folder how the
+  file is really spelled, so any mix of upper and lower case works.
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was
   lost when the Formulas list moved onto the shared file list, so a category was

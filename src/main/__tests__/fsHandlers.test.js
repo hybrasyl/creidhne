@@ -31,12 +31,18 @@ const {
   unarchiveFiles,
   duplicateFile,
   readBinaryFile,
+  readClientFile,
   checkClientPath,
   KNOWN_DAT_FILES
 } = await import('../fsHandlers.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // `clearAllMocks` clears recorded calls but keeps implementations, so a
+  // `readdir` stub set for one case would leak into the next. Reset it by name:
+  // an unset `readdir` makes the client-path resolver fall back to the requested
+  // spelling, which is the right default for every test that is not about casing.
+  mockFs.readdir.mockReset()
   mockFs.mkdir.mockResolvedValue(undefined)
   mockFs.rename.mockResolvedValue(undefined)
   mockFs.writeFile.mockResolvedValue(undefined)
@@ -150,6 +156,37 @@ describe('readBinaryFile', () => {
   })
 })
 
+// ─── readClientFile ──────────────────────────────────────────────────────────
+
+describe('readClientFile', () => {
+  it('reads the on-disk casing rather than the requested one (HTOO-287)', async () => {
+    // Case-sensitive filesystem: the directory holds `Legend.dat` and the caller
+    // asks for `legend.dat`, which is how every picker spells it.
+    mockFs.readdir.mockResolvedValue(['Legend.dat'])
+    mockFs.readFile.mockResolvedValue(Buffer.from([1]))
+    await readClientFile('/client', 'legend.dat')
+    expect(mockFs.readFile).toHaveBeenCalledWith(join('/client', 'Legend.dat'))
+  })
+
+  it('resolves each segment of a nested archive name', async () => {
+    mockFs.readdir.mockImplementation((dir) =>
+      dir === '/client' ? Promise.resolve(['NPC']) : Promise.resolve(['NpcBase.dat'])
+    )
+    mockFs.readFile.mockResolvedValue(Buffer.from([1]))
+    await readClientFile('/client', 'npc/npcbase.dat')
+    expect(mockFs.readFile).toHaveBeenCalledWith(join('/client', 'NPC', 'NpcBase.dat'))
+  })
+
+  it('still reads raw bytes, with no encoding', async () => {
+    mockFs.readdir.mockResolvedValue(['legend.dat'])
+    const buf = Buffer.from([0x00, 0xff])
+    mockFs.readFile.mockResolvedValue(buf)
+    const result = await readClientFile('/client', 'legend.dat')
+    expect(mockFs.readFile).toHaveBeenCalledWith(join('/client', 'legend.dat'))
+    expect(result).toBe(buf)
+  })
+})
+
 // ─── checkClientPath ─────────────────────────────────────────────────────────
 
 describe('checkClientPath', () => {
@@ -199,6 +236,34 @@ describe('checkClientPath', () => {
       expect(f).toHaveProperty('category')
       expect(f).toHaveProperty('found')
     }
+  })
+
+  it('finds a capitalised Legend.dat on a case-sensitive filesystem (HTOO-287)', async () => {
+    // The reported symptom: a stock install on Linux showed the client-path
+    // indicator red or yellow, because the installer writes `Legend.dat` and
+    // KNOWN_DAT_FILES asks for `legend.dat`. `access` here folds nothing, which is
+    // what a case-sensitive filesystem does and what Windows does not — so this
+    // test would fail against the old direct `join`.
+    const onDisk = new Set([join('/client', 'Legend.dat')])
+    mockFs.readdir.mockResolvedValue(['Legend.dat'])
+    mockFs.access.mockImplementation((p) =>
+      onDisk.has(p) ? Promise.resolve() : Promise.reject(new Error('ENOENT'))
+    )
+    const result = await checkClientPath('/client')
+    expect(result.files.find((f) => f.rel === 'legend.dat').found).toBe(true)
+    // Still yellow, not green: only one of the sixteen files is present here.
+    // Asserting that keeps this a casing test rather than an accidental
+    // everything-found test.
+    expect(result.status).toBe('yellow')
+  })
+
+  it('reports the requested rel, not the resolved casing', async () => {
+    // `rel` is the key the renderer's picker rows and the DA client-path panel
+    // match on, so resolution must not change what comes back.
+    mockFs.readdir.mockResolvedValue(['Legend.dat'])
+    mockFs.access.mockResolvedValue(undefined)
+    const result = await checkClientPath('/client')
+    expect(result.files.map((f) => f.rel)).toEqual(KNOWN_DAT_FILES.map((f) => f.rel))
   })
 })
 

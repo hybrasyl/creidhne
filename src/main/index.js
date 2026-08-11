@@ -21,7 +21,7 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
-import { launchCompanion } from './launchCompanion.js'
+import { launchCompanion, resolveCompanion, pickerFilters, nodeProbe } from './companion.js'
 import { createSplashWindow } from './splash.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
@@ -53,7 +53,7 @@ import {
   archiveFiles,
   unarchiveFiles,
   duplicateFile,
-  readBinaryFile,
+  readClientFile,
   checkClientPath
 } from './fsHandlers'
 import { checkForUpdates } from './updateCheck.js'
@@ -322,7 +322,23 @@ app.whenReady().then(async () => {
   ipc.handle('dialog:openFile', handleFileOpen)
   ipc.handle('dialog:openExeFile', handleExeFileOpen)
   ipc.handle('open-directory', handleDirectoryOpen)
-  ipc.handle('app:launchCompanion', (_, exePath) => launchCompanion(settingsManager, exePath))
+
+  // Companion app (HTOO-292). The renderer names no path: it asks for the
+  // companion, and what may be launched is decided in companion.js from sources
+  // main controls. `taliesinPath` in settings is an optional override now rather
+  // than the only route, so an existing setting keeps working with no migration.
+  //
+  // These three lines pass the real probe and are the only place that does. The
+  // injectable seam lives in companion.js, where the tests drive every platform's
+  // discovery: registry queries and Applications-folder scans cannot run in a unit
+  // test, and a resolver whose precedence is exercised on one machine has one
+  // tested path.
+  ipc.handle('app:companionStatus', async () =>
+    resolveCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
+  )
+  ipc.handle('app:launchCompanion', async () =>
+    launchCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
+  )
   ipc.handle('app:getVersion', () => app.getVersion())
   ipc.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
   // Open the local settings/cache dir (%LOCALAPPDATA%/Erisco/Creidhne) in the OS
@@ -365,7 +381,15 @@ app.whenReady().then(async () => {
   })
   ipc.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
   ipc.handle('fs:writeFile', (_, filePath, content) => writeFile(validatePath(filePath), content))
-  ipc.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
+  // `rel` needs its own traversal check, for the same reason `fs:listSection`'s
+  // `type` does: resolveClientPath joins it onto the client root internally, so
+  // validating clientPath alone would still let a renderer-supplied `../..`
+  // escape.
+  ipc.handle('fs:readClientFile', (_, clientPath, rel) => {
+    const root = validatePath(clientPath)
+    assertInside(root, rel)
+    return readClientFile(root, rel)
+  })
   ipc.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(validatePath(clientPath)))
 
   ipc.handle('xml:loadItem', async (_, filePath) => {
@@ -1265,13 +1289,19 @@ async function handleFileOpen() {
   }
 }
 
+// The companion picker. Filters come from `pickerFilters` rather than being
+// hardcoded to `exe`, so the dialog offers `.app` on macOS and an AppImage or a
+// `.desktop` entry on Linux. Asking for `exe` on every platform is what stopped
+// this setting from being populated at all off Windows (HTOO-292). Main decides,
+// because main is what knows the platform — nothing is asked of the renderer.
+//
+// `openFile` alone cannot select a macOS `.app`, which is a directory. macOS needs
+// both properties, and `treatPackageAsDirectory` must stay off so the bundle comes
+// back whole instead of being browsed into.
 async function handleExeFileOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({
-    properties: ['openFile'],
-    filters: [
-      { name: 'Executable', extensions: ['exe'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+    properties: process.platform === 'darwin' ? ['openFile', 'openDirectory'] : ['openFile'],
+    filters: pickerFilters(process.platform)
   })
   if (!canceled) {
     bless(filePaths[0])

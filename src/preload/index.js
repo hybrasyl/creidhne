@@ -13,7 +13,11 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
   openExeFile: () => ipcRenderer.invoke('dialog:openExeFile'),
-  launchCompanion: (exePath) => ipcRenderer.invoke('app:launchCompanion', exePath),
+  // Companion app. The renderer names no path: it asks for the companion, and
+  // main decides what may be launched (HTOO-292). `companionStatus` reports where
+  // the answer came from, and whether a configured override has gone stale.
+  companionStatus: () => ipcRenderer.invoke('app:companionStatus'),
+  launchCompanion: () => ipcRenderer.invoke('app:launchCompanion'),
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   openDirectory: () => ipcRenderer.invoke('open-directory'),
@@ -24,7 +28,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listSection: (libraryPath, type) => ipcRenderer.invoke('fs:listSection', libraryPath, type),
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
-  readBinaryFile: (filePath) => ipcRenderer.invoke('fs:readBinaryFile', filePath),
+  // Client archives are addressed as root + lowercase relative name, never as a
+  // full path: main resolves the on-disk casing, which the renderer cannot see
+  // (HTOO-287, src/main/fsCase.js).
+  readClientFile: (clientPath, rel) => ipcRenderer.invoke('fs:readClientFile', clientPath, rel),
   checkClientPath: (clientPath) => ipcRenderer.invoke('fs:checkClientPath', clientPath),
   loadItem: (filePath) => ipcRenderer.invoke('xml:loadItem', filePath),
   saveItem: (filePath, itemData) => ipcRenderer.invoke('xml:saveItem', filePath, itemData),

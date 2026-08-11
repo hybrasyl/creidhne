@@ -21,6 +21,10 @@ beforeEach(() => {
   globalThis.window = globalThis.window || {}
 })
 
+// joinPath builds cache keys, not paths to read with. HTOO-287 moved the read
+// itself onto `readClientFile(clientPath, rel)`, so main can resolve the on-disk
+// casing; the key stays built from the lowercase literal so one archive keeps one
+// cache entry whatever the install capitalises it as.
 describe('joinPath', () => {
   it('joins with a backslash when clientPath uses backslashes', () => {
     expect(joinPath('C:\\DA', 'legend.dat')).toBe('C:\\DA\\legend.dat')
@@ -47,11 +51,20 @@ describe('readClientFile', () => {
 
   it('wraps the IPC buffer as a Uint8Array over the same bytes', async () => {
     const buf = Buffer.from([1, 2, 3])
-    window.electronAPI = { readBinaryFile: vi.fn().mockResolvedValue(buf) }
+    window.electronAPI = { readClientFile: vi.fn().mockResolvedValue(buf) }
     const out = await readClientFile('/da', 'a.dat')
     expect(out).toBeInstanceOf(Uint8Array)
     expect(Array.from(out)).toEqual([1, 2, 3])
-    expect(window.electronAPI.readBinaryFile).toHaveBeenCalledWith('/da/a.dat')
+  })
+
+  it('passes the root and the relative name separately, not a joined path', async () => {
+    // The whole of HTOO-287's renderer half. A joined path cannot be
+    // case-resolved, because only main can read the directory — so a renderer
+    // that hands over `/da/legend.dat` has already lost the information main
+    // needs. Sending the two halves is what keeps the resolution possible.
+    window.electronAPI = { readClientFile: vi.fn().mockResolvedValue(Buffer.from([0])) }
+    await readClientFile('/da', 'npc/npcbase.dat')
+    expect(window.electronAPI.readClientFile).toHaveBeenCalledWith('/da', 'npc/npcbase.dat')
   })
 })
 
@@ -61,7 +74,7 @@ describe('loadArchive', () => {
   })
 
   it('parses once and returns the cached instance by full path', async () => {
-    window.electronAPI = { readBinaryFile: vi.fn().mockResolvedValue(Buffer.from([9])) }
+    window.electronAPI = { readClientFile: vi.fn().mockResolvedValue(Buffer.from([9])) }
     const archive = { id: 'A' }
     mockFromBuffer.mockReturnValue(archive)
 
@@ -70,11 +83,11 @@ describe('loadArchive', () => {
     expect(a).toBe(archive)
     expect(b).toBe(archive)
     expect(mockFromBuffer).toHaveBeenCalledTimes(1)
-    expect(window.electronAPI.readBinaryFile).toHaveBeenCalledTimes(1)
+    expect(window.electronAPI.readClientFile).toHaveBeenCalledTimes(1)
   })
 
   it('re-parses after clearArchiveCache', async () => {
-    window.electronAPI = { readBinaryFile: vi.fn().mockResolvedValue(Buffer.from([1])) }
+    window.electronAPI = { readClientFile: vi.fn().mockResolvedValue(Buffer.from([1])) }
     mockFromBuffer.mockReturnValue({})
     await loadArchive('/da', 'x.dat')
     clearArchiveCache()
