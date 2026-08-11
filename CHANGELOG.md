@@ -56,6 +56,22 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   its platform expects — so `open -a` activates a Taliesin window you already have
   instead of starting a second copy.
 
+- **Creidhne adapts to Remote Desktop.** A remote session has no GPU, so Chromium
+  rasterised in software while still paying for GPU compositing, and every repaint was
+  then captured and encoded by RDP on top of that. Creidhne is frameless, so dragging
+  the window took the most expensive path of all under exactly those conditions.
+  Creidhne now turns hardware acceleration off when it detects a remote session, and
+  drops the panel blur four of the six themes use — a blur makes Chromium re-read and
+  re-blur everything behind a panel on every frame of a drag, which is nearly free with
+  a GPU and not free without one.
+
+  Detection can miss a **reconnected** session: Windows writes the session name at
+  logon and never revises it, so connecting to a machine that already has your session
+  open at the console leaves every program reporting a local session while running over
+  Remote Desktop. Set `CREIDHNE_DISABLE_GPU=1` before starting Creidhne to force
+  software rendering, or `CREIDHNE_DISABLE_GPU=0` to force acceleration back on. The
+  README has the detail.
+
 - **The world index rebuilds itself once, the first time you open a library.**
   The index format changed, so the old cache is discarded and rebuilt from your
   world. It happens automatically and the progress pill shows it; nothing needs
