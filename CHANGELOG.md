@@ -54,11 +54,19 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   box — most visibly over Remote Desktop, where everything is slower. Each launch
   now unpacks to its own directory, so the second copy simply hands you the window
   you already have.
-
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was
   lost when the Formulas list moved onto the shared file list, so a category was
   only visible after opening the formula.
+
+### Security
+
+- **Electron updated to 41.10.4**, closing five advisories — among them a
+  context-isolation bypass and a `contextBridge` prototype-setter leak. Creidhne
+  runs its renderer sandboxed, and both of those reach a sandboxed app.
+- **The remaining dependency advisories are cleared**, so `npm audit` reports
+  nothing outstanding. All of them were in build and lint tooling rather than in
+  anything Creidhne ships.
 
 ## [1.10.0] - 2026-08-01
 
