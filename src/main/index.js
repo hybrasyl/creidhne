@@ -53,7 +53,7 @@ import {
   archiveFiles,
   unarchiveFiles,
   duplicateFile,
-  readBinaryFile,
+  readClientFile,
   checkClientPath
 } from './fsHandlers'
 import { checkForUpdates } from './updateCheck.js'
@@ -365,7 +365,15 @@ app.whenReady().then(async () => {
   })
   ipc.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
   ipc.handle('fs:writeFile', (_, filePath, content) => writeFile(validatePath(filePath), content))
-  ipc.handle('fs:readBinaryFile', (_, filePath) => readBinaryFile(validatePath(filePath)))
+  // `rel` needs its own traversal check, for the same reason `fs:listSection`'s
+  // `type` does: resolveClientPath joins it onto the client root internally, so
+  // validating clientPath alone would still let a renderer-supplied `../..`
+  // escape.
+  ipc.handle('fs:readClientFile', (_, clientPath, rel) => {
+    const root = validatePath(clientPath)
+    assertInside(root, rel)
+    return readClientFile(root, rel)
+  })
   ipc.handle('fs:checkClientPath', (_, clientPath) => checkClientPath(validatePath(clientPath)))
 
   ipc.handle('xml:loadItem', async (_, filePath) => {

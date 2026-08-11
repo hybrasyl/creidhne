@@ -24,7 +24,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listSection: (libraryPath, type) => ipcRenderer.invoke('fs:listSection', libraryPath, type),
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
-  readBinaryFile: (filePath) => ipcRenderer.invoke('fs:readBinaryFile', filePath),
+  // Client archives are addressed as root + lowercase relative name, never as a
+  // full path: main resolves the on-disk casing, which the renderer cannot see
+  // (HTOO-287, src/main/fsCase.js).
+  readClientFile: (clientPath, rel) => ipcRenderer.invoke('fs:readClientFile', clientPath, rel),
   checkClientPath: (clientPath) => ipcRenderer.invoke('fs:checkClientPath', clientPath),
   loadItem: (filePath) => ipcRenderer.invoke('xml:loadItem', filePath),
   saveItem: (filePath, itemData) => ipcRenderer.invoke('xml:saveItem', filePath, itemData),

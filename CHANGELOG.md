@@ -60,6 +60,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   box — most visibly over Remote Desktop, where everything is slower. Each launch
   now unpacks to its own directory, so the second copy simply hands you the window
   you already have.
+- **The Dark Ages client is found on Linux and macOS.** The client installer
+  writes `Legend.dat` with a capital L, and Creidhne asked for `legend.dat`.
+  Windows ignores the difference; Linux and macOS do not, so a perfectly good
+  install showed a red or yellow client-path indicator and every sprite, icon,
+  sound and portrait picker came up empty. Creidhne now asks the folder how the
+  file is really spelled, so any mix of upper and lower case works.
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was
   lost when the Formulas list moved onto the shared file list, so a category was
