@@ -366,10 +366,34 @@ describe('content security policy', () => {
   })
 
   it('gives the splash its own policy, not the renderer’s', () => {
-    const splashUrl = pathToFileURL('C:\\a b\\resources\\splash.html').href
+    // A literal file URL, NOT pathToFileURL. A Windows path handed to
+    // pathToFileURL on POSIX is a relative path whose backslashes are ordinary
+    // filename characters, so the pathname ends `\splash.html` and the check
+    // correctly does not match — the test would fail on Linux and macOS while
+    // passing on Windows. Same family as the win32 trap noted above, and the
+    // reason this file builds URLs rather than paths wherever the assertion is
+    // about the URL.
+    const splashUrl = 'file:///C:/a%20b/resources/splash.html'
+    expect(new URL(splashUrl).pathname.endsWith('/splash.html')).toBe(true)
     expect(withContentSecurityPolicy(splashUrl, {})['Content-Security-Policy']).toEqual([
       SPLASH_CSP
     ])
+  })
+
+  it('gives a posix-installed splash its own policy too', () => {
+    // The deb and AppImage targets install under /opt, so the packaged splash URL
+    // has no drive letter. Both shapes, since the platform this runs on must not
+    // decide which one is covered.
+    const posix = 'file:///opt/Creidhne/resources/splash.html'
+    expect(withContentSecurityPolicy(posix, {})['Content-Security-Policy']).toEqual([SPLASH_CSP])
+  })
+
+  it('does not mistake a file merely named like the splash for it', () => {
+    // `endsWith('/splash.html')` and not `includes`: a renderer asset called
+    // `not-splash.html` must keep the renderer policy rather than silently
+    // inheriting one with no script-src.
+    const near = 'file:///opt/Creidhne/resources/not-splash.html'
+    expect(withContentSecurityPolicy(near, {})['Content-Security-Policy']).toEqual([RENDERER_CSP])
   })
 
   it('leaves non-app schemes alone', () => {
