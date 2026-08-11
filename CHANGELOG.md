@@ -31,6 +31,12 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   taskbar. Two copies previously shared one settings file, one world index and one
   session log, and raced each other over all three.
 
+- **Downloads are named in lowercase**, matching every other Hybrasyl tool —
+  `creidhne-1.10.0-portable.exe` rather than `Creidhne-1.10.0-portable.exe`, and
+  the Windows program itself is now `creidhne.exe`. The app is still called
+  Creidhne everywhere you see its name; only the filenames changed. A desktop
+  shortcut to the old filename needs remaking.
+
 - **The world index rebuilds itself once, the first time you open a library.**
   The index format changed, so the old cache is discarded and rebuilt from your
   world. It happens automatically and the progress pill shows it; nothing needs

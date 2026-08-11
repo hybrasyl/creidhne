@@ -4,7 +4,7 @@ directories:
   buildResources: build
 # Turn off escape hatches built into the Electron binary that Creidhne never uses.
 # The one that matters is runAsNode: without it,
-#   ELECTRON_RUN_AS_NODE=1 Creidhne.exe -e "<script>"
+#   ELECTRON_RUN_AS_NODE=1 creidhne.exe -e "<script>"
 # turns the shipped, signed binary into a general-purpose Node interpreter — a real
 # capability handed to anything that can set an environment variable. It also makes
 # the app immune to the trap where that variable, exported in a shell, makes a
@@ -52,7 +52,11 @@ asarUnpack:
   - lua-stubs/**
   - xsd/**
 win:
-  executableName: Creidhne
+  # Lowercase, matching taliesin and epona. productName stays capitalised -- that
+  # is what the window and the installed app are called. This is the filename, and
+  # it is also what desktopName falls back to on Linux and what a companion app's
+  # colocated-sibling probe looks for (creidhne.exe beside taliesin.exe).
+  executableName: creidhne
   icon: resources/icon.png
   target:
     - target: portable
