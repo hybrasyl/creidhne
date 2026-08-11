@@ -4,11 +4,27 @@ const hybrasylTheme = responsiveFontSizes(
   createTheme({
     palette: {
       mode: 'dark',
+      // `main` MUST NOT equal `background.default`. It did — both were '#0d182f'
+      // — so anything signalling state through `primary` painted itself the
+      // colour of the page behind it, at a measured contrast of 1.00:1. The
+      // affordance inverted rather than merely dimming: a filled Chip takes
+      // `main` as its background while an unselected one keeps MUI's default
+      // grey, so the SELECTED chip was the one that vanished.
+      //
+      // '#4d84d1' was sitting right there as `light`, unused for this, which is
+      // the tell that `main` was filled in from the background rather than
+      // chosen. Re-measured here rather than taken from taliesin: 4.66:1 against
+      // the page.
+      //
+      // `contrastText` is deep navy, NOT the theme's cream. Measured: cream
+      // (#f0e6cc) on this blue is 3.05:1, which fails WCAG AA for normal text,
+      // and chip and button labels are normal text. Navy gives 4.66:1.
+      // Legibility over palette sentiment; see HTOO-341.
       primary: {
-        main: '#0d182f',
-        light: '#4d84d1',
+        main: '#4d84d1',
+        light: '#7fa9e0',
         dark: '#2a4a6e',
-        contrastText: '#f0e6cc'
+        contrastText: '#0d182f'
       },
       secondary: {
         main: '#1e5e56',
