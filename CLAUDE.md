@@ -24,8 +24,8 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (~1480 tests incl. scripts/; node env by default)
-npm run test:coverage
+npm test             # vitest run (~1490 tests incl. scripts/; node env by default)
+npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
 npm run format       # prettier --write .
@@ -65,9 +65,10 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs). Three of its tests run in the ordinary
+               generate-lua-stubs.js, make-icons.mjs). Four of its tests run in the ordinary
                suite: icons.test.mjs (committed icon artifacts), buildPaths.test.mjs (every
-               path electron-builder.yml names is tracked by git), changelog-extract.test.mjs.
+               path electron-builder.yml names is tracked by git), testCollection.test.mjs
+               (no test file sits where the runner won't find it), changelog-extract.test.mjs.
 e2e/           Playwright specs against the built app
 ```
 
@@ -108,6 +109,24 @@ e2e/           Playwright specs against the built app
   (8 Linux sizes), `resources/icon.png` and `build/icon.icns` from the two masters in `build/`.
   Only files matching `NxN.png` in `build/icons/` are collected by electron-builder, so a stray
   size there ships; `scripts/icons.test.mjs` asserts the directory holds those eight and no more.
+- **Structural guards, for faults whose failure mode is silence.** Several bugs here could not
+  fail loudly by construction: a fuse that stops applying, a build input missing from the
+  runner, `disableHardwareAcceleration()` after `ready`, a test file the runner never collects,
+  a save handler missing one of two lines. Each produces a working app and a green gate. So the
+  guard asserts the **artifact or the source**, not the intent — `scripts/buildPaths.test.mjs`,
+  `icons.test.mjs`, `testCollection.test.mjs`, `remoteSession.test.js`'s call-site position, and
+  `src/renderer/src/__tests__/pageSaveFlow.test.js`.
+
+  Three conventions these share, learned the hard way and worth keeping:
+  1. **Guard the guard.** Every one asserts it found something to check. A walk that returns
+     nothing, or a regex that stops matching, otherwise makes the real assertions pass
+     vacuously — the same silent pass being defended against.
+  2. **Derive the rule, don't restate it.** `testCollection.test.mjs` reads the `include`
+     patterns out of `vitest.config.mjs`; `pageSaveFlow.test.js` detects pages by
+     `resolveSavePath` instead of a hardcoded list. A restated rule drifts.
+  3. **Prove it can fail.** Each was verified by reintroducing the fault and checking that
+     exactly the expected assertion fails. Two of these tests passed against the bug on their
+     first draft.
 
 ## Release notes (CHANGELOG-driven)
 
