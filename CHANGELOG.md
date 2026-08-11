@@ -114,6 +114,12 @@ first section written to the rules above.
 
 ### Fixed
 
+- **Creidhne refuses a bad save instead of writing a broken world file.** Six of the fourteen
+  entity types wrote a file for any value that reached the save handler. A castable written
+  this way had an empty name. The file loads, and the server then keys it against nothing.
+  Creidhne now checks each save before it writes. A refused save gives the reason and changes
+  no file. Creidhne also records the reason in `ipc-validation.log`, beside your settings.
+
 - **The duplicate-name warning sees a server config that you saved in the same session.**
   The Server Configs page did not rebuild the world index after a save. The name of a new
   server config stayed out of the index until the next index build. The duplicate-name

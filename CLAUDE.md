@@ -86,12 +86,28 @@ e2e/           Playwright specs against the built app
   `src/preload/index.js`). Adding a feature = IPC handler → preload method → renderer call.
 - **Path safety**: every renderer-supplied path is validated against session-allowed roots via
   `assertInsideAnyRoot` (`src/main/pathSafety.js`) before any fs op — never trust a renderer path.
-- **Zod at the IPC boundary**: `settings:save`, `constants:*`, `formulas:save` and `reports:*`
-  payloads are validated (`src/main/schemas/`); failures log a breadcrumb next to settings
-  (`schemaLog.js`). `schemas/reports.js` is the shape to copy: it checks field and operator names
-  **against the vocabulary** in `src/shared/reportRules.js` rather than restating them, and one
-  schema gates both the file loader and the IPC handler — a hand-edited file and a renderer
-  message can both name a field that does not exist, and neither fails loudly.
+- **Zod at the IPC boundary, and every channel is accounted for** (HTOO-370). A new
+  `ipc.handle` must either `parseOrLog` its payload or be listed in `EXEMPT` in
+  `src/main/__tests__/ipcSchemaCoverage.test.js` with a category and a reason — the suite
+  reads `index.js` and fails naming any channel you did not classify. **Pass the channel
+  as a string literal**, or the check cannot see it; that is why the fourteen `xml:save*`
+  handlers spell theirs out instead of being registered from a table. Failures log a
+  breadcrumb next to settings (`schemaLog.js`).
+
+  What to validate is decided by whether the payload is **written**, not by whether it is a
+  string. The three exempt categories are `no-payload`, `path-only` (`pathSafety.js` owns
+  it) and `registry-key` (a miss finds nothing and writes nothing).
+
+  Two shapes worth copying. `schemas/reports.js` checks field and operator names **against
+  the vocabulary** in `src/shared/reportRules.js` rather than restating them, and one schema
+  gates both the file loader and the IPC handler — a hand-edited file and a renderer message
+  can both name a field that does not exist, and neither fails loudly.
+  `schemas/worldEntity.js` is the opposite lesson: it is deliberately **shallow**, because a
+  full per-type schema guessed wrong refuses a save of valid work, which is worse than the
+  bug it fixes. Its rules were measured against all 4201 files in the production world, not
+  reasoned out — that is how localizations (no name at all) and `serverconfigs/config.xml`
+  (an empty name, in production) earned their exceptions.
+
 - **Frameless window + custom chrome** (`MainToolbar.jsx` inside an `AppBar`); window controls
   message main via `minimize/maximize/close-window`.
 - **Splash + `app:ready` reveal handshake**: the main window stays hidden until `App.jsx` finishes
