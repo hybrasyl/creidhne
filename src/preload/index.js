@@ -13,7 +13,11 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
   openExeFile: () => ipcRenderer.invoke('dialog:openExeFile'),
-  launchCompanion: (exePath) => ipcRenderer.invoke('app:launchCompanion', exePath),
+  // Companion app. The renderer names no path: it asks for the companion, and
+  // main decides what may be launched (HTOO-292). `companionStatus` reports where
+  // the answer came from, and whether a configured override has gone stale.
+  companionStatus: () => ipcRenderer.invoke('app:companionStatus'),
+  launchCompanion: () => ipcRenderer.invoke('app:launchCompanion'),
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   openDirectory: () => ipcRenderer.invoke('open-directory'),
