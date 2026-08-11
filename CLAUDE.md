@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (~1490 tests incl. scripts/; node env by default)
+npm test             # vitest run (~1530 tests incl. scripts/; node env by default)
 npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
@@ -55,8 +55,16 @@ src/
                (client filename casing), companion.js (find/launch Taliesin),
                remoteSession.js (RDP detection), settingsManager.js, schemaLog.js, splash.js,
                updateCheck.js, indexService.js + indexWorker.js (index build off the main
-               thread), schemas/ (Zod), and per-domain XML (de)serializers: itemXml.js,
-               castableXml.js, creatureXml.js, npcXml.js, …
+               thread), worldData.js (world/.creidhne paths), constantsJson.js +
+               formulasJson.js + reportsFile.js (the three .creidhne files),
+               exportCastables.js, schemas/ (Zod), and per-domain XML (de)serializers:
+               itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
+  shared/      electron-free code BOTH processes import, via the `@shared` alias:
+               castableRecord.js (the canonical castable record + its 70-field column
+               catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
+               exportSerializers.js, externalUrl.js, scrub.js, appIdentity.js, …
+               Nothing here may import `electron` — main runs it under node and the renderer
+               bundles it.
   preload/     index.js — contextBridge, exposes window.electronAPI. `electron` is the ONLY
                module it may import: the window runs `sandbox: true`, so any package import
                re-breaks the sandbox, and only in the packaged app. (`@electron-toolkit/preload`
@@ -78,8 +86,12 @@ e2e/           Playwright specs against the built app
   `src/preload/index.js`). Adding a feature = IPC handler → preload method → renderer call.
 - **Path safety**: every renderer-supplied path is validated against session-allowed roots via
   `assertInsideAnyRoot` (`src/main/pathSafety.js`) before any fs op — never trust a renderer path.
-- **Zod at the IPC boundary**: `settings:save`, `constants:*`, `formulas:save` payloads are
-  validated (`src/main/schemas/`); failures log a breadcrumb next to settings (`schemaLog.js`).
+- **Zod at the IPC boundary**: `settings:save`, `constants:*`, `formulas:save` and `reports:*`
+  payloads are validated (`src/main/schemas/`); failures log a breadcrumb next to settings
+  (`schemaLog.js`). `schemas/reports.js` is the shape to copy: it checks field and operator names
+  **against the vocabulary** in `src/shared/reportRules.js` rather than restating them, and one
+  schema gates both the file loader and the IPC handler — a hand-edited file and a renderer
+  message can both name a field that does not exist, and neither fails loudly.
 - **Frameless window + custom chrome** (`MainToolbar.jsx` inside an `AppBar`); window controls
   message main via `minimize/maximize/close-window`.
 - **Splash + `app:ready` reveal handshake**: the main window stays hidden until `App.jsx` finishes
@@ -88,7 +100,13 @@ e2e/           Playwright specs against the built app
   The renderer save effect is gated on `settingsLoaded` so defaults never clobber the real file.
 - **World index is a rebuildable cache** outside the world's git folder
   (`%LOCALAPPDATA%\Erisco\hybindex`, shared with Taliesin), built incrementally off-thread and
-  self-healed on load. Authoritative `constants.json`/`formulas.json` stay in `world/.creidhne/`.
+  self-healed on load. `world/.creidhne/` holds the three authoritative files Creidhne owns:
+  `constants.json`, `formulas.json` and `reports.json` (user report definitions, WP2). A report
+  goes with the world so it is shareable through the world repo.
+- **`src/shared/` is electron-free, and its `@shared` alias lives in TWO config files** —
+  `electron.vite.config.mjs` (renderer) and `vitest.config.mjs`. Vitest does not read the
+  electron-vite config, and the error from a missing alias names the import rather than the
+  alias. Main imports the same modules by relative path and needs no alias.
 - **Six themes** — hybrasyl (default) · chadul · danaan · grinneal · mundanes (light corporate) ·
   dubhaimid (dark corporate). `MainToolbar` swaps to flat window-control glyphs for the two
   corporate themes (`PLAIN_CHROME_THEMES`).
@@ -112,10 +130,19 @@ e2e/           Playwright specs against the built app
 - **Structural guards, for faults whose failure mode is silence.** Several bugs here could not
   fail loudly by construction: a fuse that stops applying, a build input missing from the
   runner, `disableHardwareAcceleration()` after `ready`, a test file the runner never collects,
-  a save handler missing one of two lines. Each produces a working app and a green gate. So the
-  guard asserts the **artifact or the source**, not the intent — `scripts/buildPaths.test.mjs`,
-  `icons.test.mjs`, `testCollection.test.mjs`, `remoteSession.test.js`'s call-site position, and
-  `src/renderer/src/__tests__/pageSaveFlow.test.js`.
+  a save handler missing one of two lines, a hand-written copy of a shared component that stopped
+  matching it, a page restating a string it should import. Each produces a working app and a green
+  gate. So the guard asserts the **artifact or the source**, not the intent —
+  `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
+  `remoteSession.test.js`'s call-site position, and three under
+  `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js` and
+  `reportPresetSource.test.js`.
+
+  **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
+  Three separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
+  editors used the shared header (HTOO-159), and one page held a second copy of six preset
+  strings (WP2). None could fail loudly, because each site looks correct read on its own. When you
+  apply a pattern, count the sites and assert the count.
 
   Three conventions these share, learned the hard way and worth keeping:
   1. **Guard the guard.** Every one asserts it found something to check. A walk that returns
@@ -123,7 +150,10 @@ e2e/           Playwright specs against the built app
      vacuously — the same silent pass being defended against.
   2. **Derive the rule, don't restate it.** `testCollection.test.mjs` reads the `include`
      patterns out of `vitest.config.mjs`; `pageSaveFlow.test.js` detects pages by
-     `resolveSavePath` instead of a hardcoded list. A restated rule drifts.
+     `resolveSavePath`, and `editorHeader.test.js` detects editors by the `initialFileName`
+     prop, instead of a hardcoded list. A restated rule drifts. The same applies outside the
+     tests: `schemas/reports.js` validates against the rule vocabulary, and `RuleList.jsx`
+     builds its selects from it, so the UI cannot offer a rule the compiler then refuses.
   3. **Prove it can fail.** Each was verified by reintroducing the fault and checking that
      exactly the expected assertion fails. Two of these tests passed against the bug on their
      first draft.
