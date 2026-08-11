@@ -196,6 +196,22 @@ first section written to the rules above.
 
 ### Security
 
+- **Creidhne applies its content rules to each window, and to the startup window as well.**
+  Before this change Creidhne declared the rules inside the page. A page applies such a rule
+  only after it reads the declaration, so anything before that point had no rule. The startup
+  window had no rule at all. Creidhne now sends the rules with each page, before the page
+  starts. The startup window gets a stricter set, because it uses no scripts.
+
+  Creidhne also no longer permits an image from the network. The editor shows one image of its
+  own, and it draws each sprite from data that the world folder supplies. No part of the
+  interface needs an image from the network.
+
+- **Creidhne checks its release builds for the Electron protections.** One protection stops a
+  person from starting the Creidhne program as a general script tool. The build applies these
+  protections, but nothing confirmed the result. A build that stops applying them gives no
+  error and looks correct. Creidhne now reads each release build and stops the release if a
+  protection is absent.
+
 - **Creidhne uses Electron 41.10.4.** This version closes five advisories. Two of them are
   a context-isolation bypass and a `contextBridge` prototype-setter leak. Creidhne runs
   its renderer in a sandbox, and both advisories reach a sandboxed application.

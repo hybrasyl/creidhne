@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, session } from 'electron'
 import { basename, join } from 'path'
 import { promises as fs, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { parseItemXml, serializeItemXml } from './itemXml'
@@ -52,7 +52,10 @@ import {
   initWindowSecurity,
   registerTrustedWindow,
   hardenWindow,
-  guardIpc
+  guardIpc,
+  installContentSecurityPolicy,
+  RENDERER_CSP,
+  DEV_RENDERER_CSP
 } from './windowSecurity.js'
 import { buildDiagnostics, openIssue, copyReport } from './diagnostics.js'
 import {
@@ -323,6 +326,20 @@ app.whenReady().then(async () => {
       ? process.env['ELECTRON_RENDERER_URL']
       : undefined,
     join(__dirname, '../renderer/index.html')
+  )
+
+  // The CSP as a response HEADER, for the whole session, also before any window
+  // loads (HTOO-371). A meta policy is applied by the parser, so it governs only
+  // what follows the tag and cannot reach the splash, which carried no policy at
+  // all. This covers both documents and every future one.
+  //
+  // The dev policy is passed ONLY under the dev server: @vitejs/plugin-react
+  // injects its refresh preamble as an inline script, ahead of the meta tag, so
+  // the packaged `script-src 'self'` would stop `npm run dev` dead. See the two
+  // constants for why they cannot be the same string.
+  installContentSecurityPolicy(
+    session.defaultSession,
+    is.dev && process.env['ELECTRON_RENDERER_URL'] ? DEV_RENDERER_CSP : RENDERER_CSP
   )
 
   // Every handler below registers through `ipc`, never the raw `ipcMain`, so the
