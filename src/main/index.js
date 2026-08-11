@@ -36,7 +36,15 @@ import {
   rendererErrorSchema,
   openIssueSchema,
   copyReportSchema,
-  reportDefinitionSchema
+  reportDefinitionSchema,
+  reportsFileSchema,
+  namedEntitySchema,
+  localizationEntitySchema,
+  serverConfigEntitySchema,
+  writeFileArgsSchema,
+  saveDialogArgsSchema,
+  addCategoryBulkArgsSchema,
+  spellbookApplyArgsSchema
 } from './schemas/index.js'
 import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
 import { installGlobalErrorHandlers } from './errorHandlers.js'
@@ -412,7 +420,12 @@ app.whenReady().then(async () => {
     }
   })
   ipc.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
-  ipc.handle('fs:writeFile', (_, filePath, content) => writeFile(validatePath(filePath), content))
+  // `content` is validated because `fs.writeFile` COERCES it: an object reaches
+  // disk as `[object Object]`, over a real file, and the write reports success.
+  ipc.handle('fs:writeFile', (_, filePath, content) => {
+    parseOrLog(schemaCtx, 'fs:writeFile', writeFileArgsSchema, { filePath, content })
+    return writeFile(validatePath(filePath), content)
+  })
   // `rel` needs its own traversal check, for the same reason `fs:listSection`'s
   // `type` does: resolveClientPath joins it onto the client root internally, so
   // validating clientPath alone would still let a renderer-supplied `../..`
@@ -430,6 +443,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveItem', async (_, filePath, itemData) => {
+    parseOrLog(schemaCtx, 'xml:saveItem', namedEntitySchema, itemData)
     const xml = serializeItemXml(itemData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -440,6 +454,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveRecipe', async (_, filePath, recipeData) => {
+    parseOrLog(schemaCtx, 'xml:saveRecipe', namedEntitySchema, recipeData)
     const xml = serializeRecipeXml(recipeData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -450,6 +465,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveNpc', async (_, filePath, npcData) => {
+    parseOrLog(schemaCtx, 'xml:saveNpc', namedEntitySchema, npcData)
     const xml = serializeNpcXml(npcData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -460,6 +476,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveNation', async (_, filePath, nationData) => {
+    parseOrLog(schemaCtx, 'xml:saveNation', namedEntitySchema, nationData)
     const xml = serializeNationXml(nationData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -470,6 +487,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveLoot', async (_, filePath, lootData) => {
+    parseOrLog(schemaCtx, 'xml:saveLoot', namedEntitySchema, lootData)
     const xml = serializeLootXml(lootData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -480,6 +498,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveVariantGroup', async (_, filePath, variantGroupData) => {
+    parseOrLog(schemaCtx, 'xml:saveVariantGroup', namedEntitySchema, variantGroupData)
     const xml = serializeVariantXml(variantGroupData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -490,6 +509,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveLocalization', async (_, filePath, localizationData) => {
+    parseOrLog(schemaCtx, 'xml:saveLocalization', localizationEntitySchema, localizationData)
     const xml = serializeLocalizationXml(localizationData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -500,6 +520,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveCreature', async (_, filePath, creatureData) => {
+    parseOrLog(schemaCtx, 'xml:saveCreature', namedEntitySchema, creatureData)
     const xml = serializeCreatureXml(creatureData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -510,6 +531,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveElementTable', async (_, filePath, tableData) => {
+    parseOrLog(schemaCtx, 'xml:saveElementTable', namedEntitySchema, tableData)
     const xml = serializeElementTableXml(tableData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -520,6 +542,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveStatus', async (_, filePath, statusData) => {
+    parseOrLog(schemaCtx, 'xml:saveStatus', namedEntitySchema, statusData)
     const xml = serializeStatusXml(statusData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -530,6 +553,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveCastable', async (_, filePath, castableData) => {
+    parseOrLog(schemaCtx, 'xml:saveCastable', namedEntitySchema, castableData)
     const xml = serializeCastableXml(castableData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -540,6 +564,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveBehaviorSet', async (_, filePath, bvsData) => {
+    parseOrLog(schemaCtx, 'xml:saveBehaviorSet', namedEntitySchema, bvsData)
     const xml = serializeBehaviorSetXml(bvsData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -550,6 +575,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveSpawngroup', async (_, filePath, sgData) => {
+    parseOrLog(schemaCtx, 'xml:saveSpawngroup', namedEntitySchema, sgData)
     const xml = serializeSpawngroupXml(sgData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -560,6 +586,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('xml:saveServerConfig', async (_, filePath, cfgData) => {
+    parseOrLog(schemaCtx, 'xml:saveServerConfig', serverConfigEntitySchema, cfgData)
     const xml = serializeServerConfigXml(cfgData)
     await writeFile(validatePath(filePath), xml)
   })
@@ -780,13 +807,27 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('castable:addCategoryBulk', async (_, libraryPath, castableNames, categoryName) => {
-    if (!libraryPath || !Array.isArray(castableNames) || !categoryName) {
+    if (!libraryPath) {
       return {
         updated: [],
         unchanged: [],
-        failed: [
-          { name: '(invalid args)', error: 'Missing libraryPath, castableNames, or categoryName' }
-        ]
+        failed: [{ name: '(invalid args)', error: 'Missing libraryPath' }]
+      }
+    }
+    // The old guard was `!Array.isArray(names) || !categoryName`, which passes a
+    // number, an object, or an array holding objects — and `categoryName` is
+    // WRITTEN into every castable the names select. Validated before the scan, so
+    // a bad payload cannot leave the world half-updated.
+    try {
+      parseOrLog(schemaCtx, 'castable:addCategoryBulk', addCategoryBulkArgsSchema, {
+        castableNames,
+        categoryName
+      })
+    } catch (err) {
+      return {
+        updated: [],
+        unchanged: [],
+        failed: [{ name: '(invalid args)', error: err.message }]
       }
     }
     try {
@@ -850,8 +891,13 @@ app.whenReady().then(async () => {
       unchanged: [],
       failed: [{ name, error }]
     })
-    if (!libraryPath || !book || !book.name || !book.name.trim()) {
-      return fail('(invalid args)', 'Missing libraryPath or book name')
+    if (!libraryPath) return fail('(invalid args)', 'Missing libraryPath')
+    // Reaches more files than any other channel here: it adds and removes a
+    // category across every castable the book lists. Validated before the scan.
+    try {
+      parseOrLog(schemaCtx, 'spellbook:apply', spellbookApplyArgsSchema, book)
+    } catch (err) {
+      return fail('(invalid args)', err.message)
     }
     try {
       validatePath(libraryPath)
@@ -1253,6 +1299,9 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('dialog:saveFile', async (_, defaultName, content) => {
+    // Before the dialog, not after: a payload worth rejecting should not first
+    // make the user pick a destination for it.
+    parseOrLog(schemaCtx, 'dialog:saveFile', saveDialogArgsSchema, { defaultName, content })
     const window = BrowserWindow.getFocusedWindow()
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
       defaultPath: defaultName,
@@ -1311,6 +1360,10 @@ app.whenReady().then(async () => {
   ipc.handle('reports:save', async (_, libraryPath, reports) => {
     if (!libraryPath) return { error: 'No library selected.' }
     try {
+      // `saveReports` parses the same shape again before it writes. This call is
+      // not redundant: it is what puts a rejection in the schema log under a
+      // channel name, and what lets the coverage check see the channel at all.
+      parseOrLog(schemaCtx, 'reports:save', reportsFileSchema, { version: 1, reports })
       const saved = await saveReports(validatePath(libraryPath), reports)
       return { reports: saved.reports }
     } catch (err) {
@@ -1324,7 +1377,7 @@ app.whenReady().then(async () => {
   ipc.handle('reports:preview', async (_, libraryPath, definition) => {
     validatePath(libraryPath)
     try {
-      const parsed = reportDefinitionSchema.parse(definition)
+      const parsed = parseOrLog(schemaCtx, 'reports:preview', reportDefinitionSchema, definition)
       const ctx = await reportContext(libraryPath)
       const { records, error } = await collectRecords(libraryPath, parsed.entity, ctx)
       if (error) return { error }
@@ -1338,7 +1391,12 @@ app.whenReady().then(async () => {
   ipc.handle('export:castablesReport', async (_, libraryPath, definition) => {
     validatePath(libraryPath)
     try {
-      const parsed = reportDefinitionSchema.parse(definition)
+      const parsed = parseOrLog(
+        schemaCtx,
+        'export:castablesReport',
+        reportDefinitionSchema,
+        definition
+      )
       const ctx = await reportContext(libraryPath)
       return runReport(libraryPath, { ...parsed, label: definition?.label }, ctx)
     } catch (err) {

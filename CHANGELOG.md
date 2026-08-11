@@ -114,6 +114,12 @@ first section written to the rules above.
 
 ### Fixed
 
+- **Creidhne refuses a bad save instead of writing a broken world file.** Six of the fourteen
+  entity types wrote a file for any value that reached the save handler. A castable written
+  this way had an empty name. The file loads, and the server then keys it against nothing.
+  Creidhne now checks each save before it writes. A refused save gives the reason and changes
+  no file. Creidhne also records the reason in `ipc-validation.log`, beside your settings.
+
 - **Creidhne keeps the NPC Location note when you save.** The NPC editor did not read the
   `<!-- Location: -->` line. 572 of the 594 NPCs in the production world carry that line.
   The field showed as empty, and a save deleted the line. Creidhne now loads the Location,
