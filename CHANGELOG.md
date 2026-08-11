@@ -44,6 +44,14 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **Selected things are visible again on the hybrasyl theme.** The theme's primary
+  colour was the same value as the page background, so anything that marks itself
+  as active or selected painted itself invisible — and it read backwards, because
+  the _unselected_ items kept their grey. The selected chip, the highlighted
+  border in the sprite, icon, sound, effect and portrait pickers, and the
+  monospace snippets on the Lua Helpers page were all affected. Primary is now the
+  legible blue that was already sitting in the palette, with dark label text so
+  button and chip captions meet the accessibility contrast bar.
 - **Names holding an `&` are no longer escaped twice.** A name like
   `The Crow & Cask` was read out of the world index still carrying its `&amp;`,
   so picking it from a list and saving wrote `&amp;amp;` — a value that matches
