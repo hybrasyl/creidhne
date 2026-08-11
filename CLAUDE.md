@@ -30,7 +30,7 @@ npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
 npm run format       # prettier --write .
 npm run build        # electron-vite build (main + preload + renderer)
-npm run build:win    # packaged portable Windows build
+npm run build:win    # packaged Windows build — NSIS installer + portable exe (build:mac, build:linux too)
 npm run e2e          # build, then Playwright-drives the built app (local-only, needs a GUI)
 npm run e2e:only     # E2E against the existing out/ build
 ```
@@ -75,12 +75,13 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs). Five of its tests run
+               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs). Six of its tests run
                in the ordinary suite: icons.test.mjs (committed icon artifacts),
                buildPaths.test.mjs (every path electron-builder.yml names is tracked by git),
                testCollection.test.mjs (no test file sits where the runner won't find it),
                changelog-extract.test.mjs, verify-fuses.test.mjs (the electronFuses block, the
-               copied @electron/fuses constants, and the packed artifact when one exists).
+               copied @electron/fuses constants, and the packed artifact when one exists),
+               release-artifacts.test.mjs (every declared target has a release glob, and back).
 e2e/           Playwright specs against the built app
 ```
 
@@ -237,7 +238,16 @@ Prop APIs differ from v5–v7 and fail cryptically:
   in the skeleton doc (`ThemeName` union, `augmentation.ts`, `typecheck`).
 - **Bridge name `window.electronAPI`** (template standard is `window.api`) — eventual, not urgent.
 - **`react-window`** for virtualization (template prefers `@tanstack/react-virtual`) — eventual.
-- **Windows portable-only** build target (template ships nsis + portable). Now tracked as
-  **HTOO-373** rather than a note here, because the gap is load-bearing: HTOO-351 was written
-  against an installer Creidhne does not ship, so its prescribed fix could not have worked. The
-  card's deliverable is the decision, not necessarily adding NSIS.
+- **~~Windows portable-only~~ — CLOSED (HTOO-373).** Creidhne now ships the same five targets as
+  taliesin and epona: `nsis`, `portable`, `deb`, `AppImage`, `dmg`. Kept here rather than deleted
+  because the gap was load-bearing while it lasted — HTOO-351 was written against an installer
+  Creidhne did not ship, so its prescribed fix could not have worked. **Read that card's two
+  faults as target-specific:** the portable extraction-collision fix (`unpackDirName: true`)
+  stands on its own, and `_CHECK_APP_RUNNING` becomes reachable now that an NSIS target exists.
+
+  The target list lives in `electron-builder.yml` and nowhere else. Do not name targets in the
+  workflow's packaging step: Taliesin shipped for months with `--win portable` against a config
+  declaring both, publishing four assets where five were configured, with every gate green —
+  a list of globs cannot report the entry missing from the list.
+  `scripts/release-artifacts.test.mjs` pins the config's targets against the release globs in
+  both directions, plus the signing steps, the upload paths and the per-platform fuse checks.

@@ -58,10 +58,48 @@ win:
   # colocated-sibling probe looks for (creidhne.exe beside taliesin.exe).
   executableName: creidhne
   icon: resources/icon.png
+  # Both, matching taliesin and epona (HTOO-373). Creidhne shipped portable-only,
+  # which left Windows as the one platform with no installed form -- no Start
+  # Menu entry, no uninstaller, and nothing for the update notice to lead to
+  # except a manual re-download. It also made HTOO-351's fault 2 unanswerable,
+  # since that card was written against an installer this app did not have.
+  #
+  # The list lives HERE and not in the workflow's packaging step. Taliesin shipped
+  # for months with `--win portable` in the workflow against a config declaring
+  # both, publishing four assets where five were configured, and every gate passed
+  # -- the config is the half a reader checks. scripts/release-artifacts.test.mjs
+  # enforces the absence of a target list there.
   target:
+    - target: nsis
+      arch:
+        - x64
     - target: portable
       arch:
         - x64
+nsis:
+  # Predictable name for the release workflow's sign + upload steps. The default
+  # is "Creidhne Setup <version>.exe", with spaces, which every path in that
+  # workflow would then have to quote.
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  # Assisted rather than one-click, and per-user rather than per-machine. The
+  # three settle together and match taliesin and epona:
+  #   * oneClick: false gives a wizard rather than an install that starts on
+  #     double-click. This tool sits beside a world repository and a Dark Ages
+  #     install, so where it goes is a decision the user may want to make.
+  #   * perMachine: false installs under the user profile, so there is no UAC
+  #     prompt and no administrator requirement. It also agrees with where the
+  #     app already keeps its data: %LOCALAPPDATA%\Erisco\Creidhne.
+  #   * allowToChangeInstallationDirectory only has an effect when oneClick is
+  #     false; NSIS has no directory page to offer in a one-click install.
+  # Changing perMachine after a release is the expensive one: an existing
+  # per-user installation is not upgraded by a per-machine installer, and the
+  # user ends with two.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
 portable:
   artifactName: ${name}-${version}-portable.${ext}
   # Frozen frame of resources/splash.html shown while the exe extracts to %TEMP%

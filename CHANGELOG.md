@@ -68,6 +68,15 @@ first section written to the rules above.
 
 ### Changed
 
+- **Creidhne has a Windows installer.** Before this change Windows got a portable program file
+  only. The installer puts Creidhne in your Start Menu, makes a desktop shortcut, and adds an
+  entry to Add or Remove Programs. It installs for your user account, so it asks for no
+  administrator permission. You choose the folder.
+
+  The portable program file continues. Use it if you want no installation. Each release now
+  gives you five downloads: the Windows installer, the Windows portable file, a Linux `.deb`,
+  a Linux AppImage, and a macOS disk image. Creidhne signs both Windows files.
+
 - **Creidhne runs as a single instance.** A second launch brings the window you already
   have to the front. Creidhne restores that window first if it is minimized. Two copies
   shared one settings file, one world index and one session log. Each copy wrote over the

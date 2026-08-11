@@ -114,7 +114,16 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Package portable exe
+      # No target list here, so the Windows targets live in electron-builder.yml
+      # and nowhere else. Taliesin named one of its two targets in this step and
+      # quietly built one of them for months, shipping four assets where five
+      # were configured -- with every gate green, because a list of globs cannot
+      # report the entry missing from the list.
+      #
+      # scripts/release-artifacts.test.mjs enforces the absence of a target list
+      # here, and pins the config's targets against the release job's globs in
+      # both directions.
+      - name: Package installer + portable exe
         run: npx electron-builder --win --publish never
 
       # HTOO-374. The fuses are burned into the packed binary and nothing before
@@ -129,24 +138,32 @@ jobs:
       - name: Verify Electron fuses
         run: node scripts/verify-fuses.mjs dist/win-unpacked/creidhne.exe
 
-      # Resolve the artifact PATH by globbing what electron-builder actually
-      # wrote, rather than restating its artifactName template here. Spelling the
+      # Resolve both artifact PATHs by globbing what electron-builder actually
+      # wrote, rather than restating its artifactName templates here. Spelling a
       # name out is how this step breaks on a rename, and it breaks only on a tag
-      # push -- there is no earlier gate that runs it. Fail loudly if the glob
+      # push -- there is no earlier gate that runs it. Fail loudly if either glob
       # does not land on exactly one file, because a silent miss would hand the
       # signer a nonexistent path.
-      - name: Resolve portable artifact
+      - name: Resolve Windows artifacts
         id: artifact
         shell: bash
         run: |
           shopt -s nullglob
-          files=(dist/*-portable.exe)
-          if [ ${#files[@]} -ne 1 ]; then
-            echo "expected exactly one dist/*-portable.exe, found ${#files[@]}: ${files[*]}" >&2
-            exit 1
-          fi
-          echo "path=${files[0]}" >> "$GITHUB_OUTPUT"
+          for kind in portable setup; do
+            files=(dist/*-"$kind".exe)
+            if [ ${#files[@]} -ne 1 ]; then
+              echo "expected exactly one dist/*-$kind.exe, found ${#files[@]}: ${files[*]}" >&2
+              exit 1
+            fi
+            echo "$kind=${files[0]}" >> "$GITHUB_OUTPUT"
+          done
 
+      # Both artifacts are signed, or neither is. Signing one and not the other
+      # is worse than signing neither: a user handed a signed installer beside an
+      # unsigned portable exe cannot read that as "credentials are configured for
+      # one artifact". release-artifacts.test.mjs counts these steps against the
+      # Windows targets, so adding a third .exe without a third signing step
+      # fails on a commit rather than on a tag.
       - name: Sign portable exe (SSL.com eSigner)
         uses: sslcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
         with:
@@ -155,14 +172,34 @@ jobs:
           password: ${{ secrets.ES_PASSWORD }}
           credential_id: ${{ secrets.ES_CREDENTIAL_ID }}
           totp_secret: ${{ secrets.ES_TOTP_SECRET }}
-          file_path: ${{ github.workspace }}/${{ steps.artifact.outputs.path }}
+          file_path: ${{ github.workspace }}/${{ steps.artifact.outputs.portable }}
           override: true
 
-      - name: Upload Windows artifact
+      - name: Sign installer (SSL.com eSigner)
+        uses: sslcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.ES_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}/${{ steps.artifact.outputs.setup }}
+          override: true
+
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: windows-portable
-          path: dist/*-portable.exe
+          name: windows
+          # Both, and `if-no-files-found: error` covers both -- the setup exe is
+          # named by `nsis.artifactName` in electron-builder.yml, so a rename
+          # there fails this step rather than silently shipping one artifact.
+          # The `.blockmap` electron-builder writes beside the installer is not
+          # collected: it exists for electron-updater's differential download,
+          # and this app has no updater (updateCheck.js notifies and downloads
+          # nothing).
+          path: |
+            dist/*-portable.exe
+            dist/*-setup.exe
           if-no-files-found: error
           # The release job downloads these minutes later; keep them out of the
           # 90-day default that otherwise exhausts the Actions storage quota.
@@ -351,6 +388,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
+            artifacts/**/*-setup.exe
             artifacts/**/*-portable.exe
             artifacts/**/*.deb
             artifacts/**/*.AppImage
