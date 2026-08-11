@@ -31,8 +31,23 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   taskbar. Two copies previously shared one settings file, one world index and one
   session log, and raced each other over all three.
 
+- **The world index rebuilds itself once, the first time you open a library.**
+  The index format changed, so the old cache is discarded and rebuilt from your
+  world. It happens automatically and the progress pill shows it; nothing needs
+  doing and nothing in the world folder is touched.
+
 ### Fixed
 
+- **Names holding an `&` are no longer escaped twice.** A name like
+  `The Crow & Cask` was read out of the world index still carrying its `&amp;`,
+  so picking it from a list and saving wrote `&amp;amp;` — a value that matches
+  no map, which quietly killed the warp pointing at it. Two such warps exist in
+  the production world and both can now be repaired by re-picking the
+  destination.
+- **A missing weapon is back in the weapon pickers.** Weapons that leave the
+  large-damage range at its default, or write `<Damage>` as a paired tag rather
+  than self-closing, were dropped from the index with no error and no way to
+  tell them from a non-weapon. Oak Stick was the one this affected.
 - **The portable build no longer shows "Creidhne cannot be closed."** Launching a
   second copy of the portable exe made its launcher try to unpack over the copy
   already running, and after a few seconds of failing it raised that Retry/Cancel

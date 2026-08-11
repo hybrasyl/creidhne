@@ -55,7 +55,7 @@
     "brace-expansion@1": "^1.1.18"
   },
   "dependencies": {
-    "@eriscorp/hybindex-ts": "^1.0.0",
+    "@eriscorp/hybindex-ts": "^1.1.0",
     "fs-extra": "^11.3.4",
     "path": "^0.12.7",
     "unzipper": "^0.12.3",
