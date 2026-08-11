@@ -75,10 +75,12 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs). Four of its tests run in the ordinary
-               suite: icons.test.mjs (committed icon artifacts), buildPaths.test.mjs (every
-               path electron-builder.yml names is tracked by git), testCollection.test.mjs
-               (no test file sits where the runner won't find it), changelog-extract.test.mjs.
+               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs). Five of its tests run
+               in the ordinary suite: icons.test.mjs (committed icon artifacts),
+               buildPaths.test.mjs (every path electron-builder.yml names is tracked by git),
+               testCollection.test.mjs (no test file sits where the runner won't find it),
+               changelog-extract.test.mjs, verify-fuses.test.mjs (the electronFuses block, the
+               copied @electron/fuses constants, and the packed artifact when one exists).
 e2e/           Playwright specs against the built app
 ```
 
