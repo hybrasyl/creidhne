@@ -8,7 +8,7 @@
   "desktopName": "creidhne.desktop",
   "scripts": {
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.include=src/**",
+    "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --max-warnings 0 --fix",
     "lint:check": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --max-warnings 0",

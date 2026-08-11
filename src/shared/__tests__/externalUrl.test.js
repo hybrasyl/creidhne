@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSafeExternalUrl } from './externalUrl.js'
+import { isSafeExternalUrl } from '../externalUrl.js'
 
 describe('isSafeExternalUrl', () => {
   it('allows http, https and mailto', () => {
