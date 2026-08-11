@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -31,7 +31,7 @@ import DisplaySpritePicker from '../shared/DisplaySpritePicker'
 import ColorSwatch from '../shared/ColorSwatch'
 import { useItemColorSwatches } from '../../data/itemColorData'
 import { ITEM_TAGS, ITEM_FLAGS, ITEM_BODY_STYLES, ITEM_COLORS } from '../../data/itemConstants'
-import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveVariantPrefix(fileName, name) {
@@ -413,8 +413,6 @@ function VariantEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useStoreValue(libraryIndexState)
-
   const [data, setData] = useState(variantGroup)
   const [prefix, setPrefix] = useState(deriveVariantPrefix(initialFileName, variantGroup.name))
   const [fileName, setFileName] = useState(
@@ -480,20 +478,12 @@ function VariantEditor({
 
   // ── Duplicate detection ──────────────────────────────────────────────────────
 
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? variantGroup.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.variantgroups || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedVariantgroups || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-
-    return null
-  }, [data.name, libraryIndex, isExisting, variantGroup.name])
+  const dupStatus = useDuplicateName({
+    type: 'variantgroups',
+    name: data.name,
+    originalName: variantGroup.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {

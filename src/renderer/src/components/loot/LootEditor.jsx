@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Typography,
@@ -19,6 +19,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
@@ -149,20 +150,12 @@ function LootEditor({
 
   // ── Duplicate detection ──────────────────────────────────────────────────────
 
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? loot.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.lootsets || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedLootsets || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-
-    return null
-  }, [data.name, libraryIndex, isExisting, loot.name])
+  const dupStatus = useDuplicateName({
+    type: 'lootsets',
+    name: data.name,
+    originalName: loot.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {
