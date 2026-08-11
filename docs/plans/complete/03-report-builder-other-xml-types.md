@@ -1,6 +1,6 @@
 # WP3 — Report builder for other XML types
 
-**Size:** L (grows per type). **Depends on:** WP2. **Status:** Detailed 2026-08-11, not built.
+**Size:** L (grows per type). **Depends on:** WP2. **Status:** Built (items). Each further type is a registry row.
 **Prompted by:** Sabrael — "adapting for other xml types as needed (items comes to mind
 specifically)."
 

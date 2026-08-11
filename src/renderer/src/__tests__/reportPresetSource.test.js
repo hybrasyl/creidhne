@@ -2,12 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { CASTABLE_EXPORT_PRESETS } from '../../../shared/castableExportPresets.js'
+import { allPresets } from '../../../shared/reportEntities.js'
 
 /**
- * WP2. The Reports page reads each built-in report's label and description from
- * the preset data. Before the `@shared` alias existed it could not, so the page
- * held a second copy of all six strings — and a second copy drifts.
+ * WP2, widened by WP3. The Reports page reads each built-in report's label and
+ * description from the preset data. Before the `@shared` alias existed it could not,
+ * so the page held a second copy of all six strings — and a second copy drifts.
+ *
+ * WP3 makes this stricter rather than looser: the page reads the whole registry, so
+ * adding an entity adds its built-ins to the check without touching this file.
  *
  * This asserts the source rather than the rendering, because the failure is
  * silent: a page with a stale label renders perfectly, and the only way to notice
@@ -31,8 +34,8 @@ describe('built-in report text has one source (WP2)', () => {
     const sources = rendererSources()
     expect(sources.length, 'the renderer walk found no .jsx files').toBeGreaterThan(50)
     expect(sources.map((s) => s.rel)).toContain('pages/ReportsPage.jsx')
-    expect(CASTABLE_EXPORT_PRESETS).toHaveLength(3)
-    for (const preset of CASTABLE_EXPORT_PRESETS) {
+    expect(allPresets().length).toBeGreaterThanOrEqual(4)
+    for (const preset of allPresets()) {
       expect(preset.label, preset.id).toBeTruthy()
       expect(preset.description?.length, preset.id).toBeGreaterThan(20)
     }
@@ -43,7 +46,7 @@ describe('built-in report text has one source (WP2)', () => {
     // The description is a sentence, and a sentence in two files is a copy.
     const offenders = []
     for (const { rel, src } of rendererSources()) {
-      for (const preset of CASTABLE_EXPORT_PRESETS) {
+      for (const preset of allPresets()) {
         if (src.includes(preset.description)) offenders.push(`${rel} restates ${preset.id}`)
       }
     }
@@ -52,6 +55,6 @@ describe('built-in report text has one source (WP2)', () => {
 
   it('reads the presets from the shared module', () => {
     const page = rendererSources().find((s) => s.rel === 'pages/ReportsPage.jsx')
-    expect(page.src).toMatch(/import \{ CASTABLE_EXPORT_PRESETS \} from '@shared\//)
+    expect(page.src).toMatch(/from '@shared\/reportEntities\.js'/)
   })
 })

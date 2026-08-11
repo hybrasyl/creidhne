@@ -15,33 +15,37 @@ import {
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import CloseIcon from '@mui/icons-material/Close'
-import { CASTABLE_COLUMNS } from '@shared/castableRecord.js'
 
 /**
  * Which castable fields a report exports, and in what order (WP2).
  *
  * Two panes rather than one checkbox list, because a report needs an order as
- * well as a set. The left pane groups the whole field universe by the `group`
- * each entry already carries; the right pane is the report's own column order.
+ * well as a set. The left pane groups the chosen entity's field catalogue by the
+ * `group` each entry already carries; the right pane is the report's own column
+ * order.
  *
  * Props:
- *   value    — record keys, in export order
- *   onChange — (keys: string[]) => void
- *   disabled — a built-in report: readable, never editable
+ *   catalogue — that entity's columns, `{ key, label, group }` (WP3)
+ *   value     — record keys, in export order
+ *   onChange  — (keys: string[]) => void
+ *   disabled  — a built-in report: readable, never editable
  */
-function ColumnPicker({ value, onChange, disabled }) {
+function ColumnPicker({ catalogue, value, onChange, disabled }) {
   const selected = value ?? []
 
   const groups = useMemo(() => {
     const byGroup = new Map()
-    for (const column of CASTABLE_COLUMNS) {
+    for (const column of catalogue ?? []) {
       if (!byGroup.has(column.group)) byGroup.set(column.group, [])
       byGroup.get(column.group).push(column)
     }
     return [...byGroup]
-  }, [])
+  }, [catalogue])
 
-  const labelFor = useMemo(() => new Map(CASTABLE_COLUMNS.map((c) => [c.key, c.label])), [])
+  const labelFor = useMemo(
+    () => new Map((catalogue ?? []).map((c) => [c.key, c.label])),
+    [catalogue]
+  )
 
   const toggle = (key) => {
     if (disabled) return

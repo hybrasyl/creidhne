@@ -370,33 +370,3 @@ export const CASTABLE_COLUMNS = [
   { key: 'statusRemove4IsCategory', label: 'Status remove 4 is category', group: 'Statuses' },
   { key: 'statusRemove4Quantity', label: 'Status remove 4 quantity', group: 'Statuses' }
 ]
-
-const COLUMN_BY_KEY = new Map(CASTABLE_COLUMNS.map((c) => [c.key, c]))
-
-/** Whether a key names a field the record actually carries. */
-export function isCastableField(key) {
-  return COLUMN_BY_KEY.has(key)
-}
-
-/**
- * Normalizes a report's column list to `{ key, header }` pairs (WP2).
- *
- * A stored report holds bare record keys and takes its header from the field's
- * catalogue label. A built-in report holds explicit pairs, because its headers
- * are a contract with a consumer outside this repo. Both arrive here, so the
- * serializers see one shape.
- *
- * **Throws on a key the record does not carry.** `recordsToCsv` writes an empty
- * cell for an unknown key, so a typo — or a field renamed by a later work
- * package — would otherwise produce a silent blank column in a file someone
- * treats as data.
- */
-export function resolveColumns(columns) {
-  return (columns ?? []).map((column) => {
-    const key = typeof column === 'string' ? column : column?.key
-    const known = COLUMN_BY_KEY.get(key)
-    if (!known) throw new Error(`Unknown castable field: ${key}`)
-    if (typeof column === 'string') return { key, header: known.label }
-    return { key, header: column.header ?? known.label }
-  })
-}

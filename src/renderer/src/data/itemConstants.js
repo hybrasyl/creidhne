@@ -1,4 +1,8 @@
 import { ITEM_STATS } from '@shared/itemStats.js'
+import {
+  EQUIPMENT_SLOTS as SHARED_EQUIPMENT_SLOTS,
+  WEAPON_TYPES as SHARED_WEAPON_TYPES
+} from '@shared/itemVocabulary.js'
 
 export const ITEM_BODY_STYLES = ['', 'Transparent', 'Male', 'MaleBlack', 'MaleRed', 'Female']
 
@@ -96,31 +100,11 @@ export const ITEM_FLAGS = [
   'Consumable'
 ]
 
-export const EQUIPMENT_SLOTS = [
-  'None',
-  'Weapon',
-  'Armor',
-  'Shield',
-  'Helmet',
-  'Earring',
-  'Necklace',
-  'LeftHand',
-  'RightHand',
-  'LeftArm',
-  'RightArm',
-  'Waist',
-  'Leg',
-  'Foot',
-  'FirstAcc',
-  'Trousers',
-  'Coat',
-  'SecondAcc',
-  'ThirdAcc',
-  'Gauntlet',
-  'Ring'
-]
-
-export const WEAPON_TYPES = ['OneHand', 'TwoHand', 'Dagger', 'Staff', 'Claw', 'None']
+// The equipment slots and weapon types, from the ONE list in
+// src/shared/itemVocabulary.js (WP3). Re-exported under their established names,
+// so every consumer in the item editor is unchanged.
+export const EQUIPMENT_SLOTS = SHARED_EQUIPMENT_SLOTS
+export const WEAPON_TYPES = SHARED_WEAPON_TYPES
 
 export const CLASS_TYPES = ['All', 'Peasant', 'Warrior', 'Rogue', 'Wizard', 'Priest', 'Monk']
 

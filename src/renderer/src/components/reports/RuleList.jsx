@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { FILTERABLE_FIELDS, OPERATORS, getFilterableField } from '@shared/reportRules.js'
+import { OPERATORS, findField } from '@shared/reportRules.js'
 
 /**
  * A report's filter, as rows (WP2).
@@ -22,18 +22,21 @@ import { FILTERABLE_FIELDS, OPERATORS, getFilterableField } from '@shared/report
  * nested query builder is the thing every one of these grows into, and nobody
  * reads the result.
  *
- * The field list, the operators each field allows, and the value lists all come
- * from `FILTERABLE_FIELDS`. Nothing is restated here, so the UI cannot offer a
- * rule the compiler then refuses.
+ * The field list, the operators each field allows, and the value lists all arrive in
+ * `fields`, which is the chosen entity's vocabulary from the registry (WP3). Nothing
+ * is restated here, so the UI cannot offer a rule the compiler then refuses, and it
+ * cannot offer a castable rule on an items report.
  *
  * Props:
+ *   fields   — that entity's filter vocabulary
  *   match    — 'all' | 'any'
  *   rules    — [{ field, op, value }]
  *   onChange — ({ match, rules }) => void
  *   disabled — a built-in report: readable, never editable
  */
-function RuleList({ match, rules, onChange, disabled }) {
+function RuleList({ fields, match, rules, onChange, disabled }) {
   const list = rules ?? []
+  const vocabulary = fields ?? []
 
   const set = (next) => onChange({ match: match ?? 'all', rules: list, ...next })
   const setRule = (index, over) =>
@@ -43,12 +46,12 @@ function RuleList({ match, rules, onChange, disabled }) {
   // the value are reset with it. Keeping a stale operator would produce a rule
   // that only fails when the report runs.
   const changeField = (index, field) => {
-    const spec = getFilterableField(field)
+    const spec = findField(vocabulary, field)
     setRule(index, { field, op: spec.ops[0], value: defaultValueFor(spec, spec.ops[0]) })
   }
 
   const changeOp = (index, op) => {
-    const spec = getFilterableField(list[index].field)
+    const spec = findField(vocabulary, list[index].field)
     const current = list[index].value
     // `between` needs two values and every other operator needs one, so the
     // value only resets when the shape changes.
@@ -57,7 +60,8 @@ function RuleList({ match, rules, onChange, disabled }) {
   }
 
   const addRule = () => {
-    const spec = FILTERABLE_FIELDS[0]
+    const spec = vocabulary[0]
+    if (!spec) return
     set({
       rules: [
         ...list,
@@ -86,7 +90,7 @@ function RuleList({ match, rules, onChange, disabled }) {
       </Box>
 
       {list.map((rule, index) => {
-        const spec = getFilterableField(rule.field)
+        const spec = findField(vocabulary, rule.field)
         return (
           <Paper
             key={index}
@@ -101,7 +105,7 @@ function RuleList({ match, rules, onChange, disabled }) {
                 disabled={disabled}
                 onChange={(e) => changeField(index, e.target.value)}
               >
-                {FILTERABLE_FIELDS.map((f) => (
+                {vocabulary.map((f) => (
                   <MenuItem key={f.field} value={f.field}>
                     {f.label}
                   </MenuItem>

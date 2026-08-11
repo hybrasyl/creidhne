@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
-import { runCastableExport } from '../exportCastables.js'
+import { runCastableExport } from '../reportRun.js'
 import { makeCastableLibrary, CASTABLE_TRAINERS } from './helpers/castableFixtures.js'
 
 // WP1 reshapes both castable exports onto one canonical record. These goldens

@@ -13,12 +13,7 @@ import { parseElementTableXml, serializeElementTableXml } from './elementTableXm
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { resolveSpellbook, nextCategories, sameCategorySet, affectedCastables } from './spellbook'
-import {
-  runCastableExport,
-  runCastableReport,
-  renderReport,
-  collectCastableRecords
-} from './exportCastables.js'
+import { runCastableExport, runReport, renderReport, collectRecords } from './reportRun.js'
 import { loadReports, saveReports } from './reportsFile.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
 import { loadFormulas, saveFormulas, importFormulas } from './formulasJson.js'
@@ -1271,20 +1266,29 @@ app.whenReady().then(async () => {
     return { canceled: false, filePath }
   })
 
-  // Trainer names come from the world index. A library with no index still
-  // exports; the Location column is simply empty.
-  const castableExportContext = async (libraryPath) => {
+  // The index lookups a record mapper may read: trainer names for castables,
+  // vendors and loot sets for items. A library with no index still exports; those
+  // columns are simply empty.
+  //
+  // One context for every entity rather than one per entity. The mappers read what
+  // they need and ignore the rest, and a missing key reads the same as an empty
+  // index — so adding an entity does not mean remembering to widen this.
+  const reportContext = async (libraryPath) => {
     try {
       const indexData = await loadIndex(libraryPath)
-      return { castableTrainers: indexData?.castableTrainers || {} }
+      return {
+        castableTrainers: indexData?.castableTrainers || {},
+        itemVendors: indexData?.itemVendors || {},
+        itemLootSets: indexData?.itemLootSets || {}
+      }
     } catch {
-      return { castableTrainers: {} }
+      return { castableTrainers: {}, itemVendors: {}, itemLootSets: {} }
     }
   }
 
   const castableExport = (presetId) => async (_, libraryPath) => {
     validatePath(libraryPath)
-    const ctx = await castableExportContext(libraryPath)
+    const ctx = await reportContext(libraryPath)
     return runCastableExport(libraryPath, presetId, ctx)
   }
 
@@ -1321,8 +1325,8 @@ app.whenReady().then(async () => {
     validatePath(libraryPath)
     try {
       const parsed = reportDefinitionSchema.parse(definition)
-      const ctx = await castableExportContext(libraryPath)
-      const { records, error } = await collectCastableRecords(libraryPath, ctx)
+      const ctx = await reportContext(libraryPath)
+      const { records, error } = await collectRecords(libraryPath, parsed.entity, ctx)
       if (error) return { error }
       const { total, matched } = renderReport(records, parsed)
       return { total, matched }
@@ -1335,8 +1339,8 @@ app.whenReady().then(async () => {
     validatePath(libraryPath)
     try {
       const parsed = reportDefinitionSchema.parse(definition)
-      const ctx = await castableExportContext(libraryPath)
-      return runCastableReport(libraryPath, { ...parsed, label: definition?.label }, ctx)
+      const ctx = await reportContext(libraryPath)
+      return runReport(libraryPath, { ...parsed, label: definition?.label }, ctx)
     } catch (err) {
       return { error: err.message }
     }

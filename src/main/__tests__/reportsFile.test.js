@@ -83,7 +83,7 @@ describe('reports.json', () => {
     const { reports, problems } = await loadReports(lib)
     expect(reports.map((r) => r.id)).toEqual(['r_1'])
     expect(problems).toHaveLength(1)
-    expect(problems[0]).toMatch(/^"Broken": columns\.0 names a field/)
+    expect(problems[0]).toMatch(/^"Broken": column "nosuchfield" is not a castables field/)
   })
 
   it('names the offending value for each kind of fault', async () => {
@@ -102,11 +102,12 @@ describe('reports.json', () => {
     )
     const { reports, problems } = await loadReports(lib)
     expect(reports).toEqual([])
-    expect(problems.join('\n')).toMatch(/"Bad op": rules\.0\.op .*does not support/)
-    expect(problems.join('\n')).toMatch(/"Bad field": rules\.0\.field unknown report field/)
-    expect(problems.join('\n')).toMatch(/"Bad format"/)
-    expect(problems.join('\n')).toMatch(/"No columns"/)
-    expect(problems.join('\n')).toMatch(/"Half a range": rules\.0\.value .*two values/)
+    const all = problems.join('\n')
+    expect(all).toMatch(/"Bad op": rule 1: .*does not support the operator/)
+    expect(all).toMatch(/"Bad field": rule 1: Unknown report field/)
+    expect(all).toMatch(/"Bad format"/)
+    expect(all).toMatch(/"No columns": a report needs at least one column/)
+    expect(all).toMatch(/"Half a range": rule 1: .*two values/)
   })
 
   it('refuses a file whose version it does not know', async () => {
@@ -130,5 +131,93 @@ describe('reports.json', () => {
     const { reports, problems } = await loadReports(lib)
     expect(reports).toHaveLength(2)
     expect(problems).toEqual([])
+  })
+
+  it('rejects a castable column on an items report (WP3)', async () => {
+    // The per-entity rule, at the storage layer. A union catalogue would accept this
+    // and then write a blank column, because recordsToCsv emits an empty cell for a
+    // key the record does not hold — a file somebody reads as data, quietly wrong.
+    writeFile(
+      JSON.stringify({
+        version: 1,
+        reports: [
+          {
+            ...REPORT,
+            id: 'r_i',
+            label: 'Items',
+            entity: 'items',
+            columns: ['name', 'value'],
+            rules: []
+          },
+          {
+            ...REPORT,
+            id: 'r_x',
+            label: 'Wrong entity',
+            entity: 'items',
+            columns: ['name', 'damageFormula'],
+            rules: []
+          }
+        ]
+      })
+    )
+    const { reports, problems } = await loadReports(lib)
+    expect(reports.map((r) => r.id)).toEqual(['r_i'])
+    expect(problems[0]).toMatch(/"Wrong entity": column "damageFormula" is not a items field/)
+  })
+
+  it('rejects a castable rule on an items report (WP3)', async () => {
+    writeFile(
+      JSON.stringify({
+        version: 1,
+        reports: [
+          {
+            ...REPORT,
+            entity: 'items',
+            columns: ['name'],
+            rules: [{ field: 'isGM', op: 'is', value: true }]
+          }
+        ]
+      })
+    )
+    const { reports, problems } = await loadReports(lib)
+    expect(reports).toEqual([])
+    expect(problems.join('\n')).toMatch(/Unknown report field: isGM/)
+  })
+
+  it('rejects an entity it does not know, and names the ones it knows', async () => {
+    // The schema's enum refuses this before the shared checker runs, and its message
+    // lists the valid entities — which is what someone hand-editing the file needs.
+    // `validateDefinition`'s own unknown-entity branch still matters for a direct
+    // caller, and reportEntities.test.js covers that path.
+    //
+    // One message, not one per column: with no catalogue there is nothing to check
+    // the columns against, and repeating "unknown field" per column would bury the
+    // one message that explains all of them.
+    writeFile(JSON.stringify({ version: 1, reports: [{ ...REPORT, entity: 'creatures' }] }))
+    const { reports, problems } = await loadReports(lib)
+    expect(reports).toEqual([])
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/entity/)
+    expect(problems[0]).toMatch(/items/)
+  })
+
+  it('round-trips an items report', async () => {
+    const items = {
+      id: 'r_items',
+      label: 'Cheap weapons',
+      entity: 'items',
+      format: 'csv',
+      columns: ['name', 'value', 'weaponType'],
+      match: 'all',
+      rules: [
+        { field: 'isWeapon', op: 'is', value: true },
+        { field: 'value', op: 'atMost', value: 500 }
+      ],
+      headerOnEmpty: true
+    }
+    await saveReports(lib, [items])
+    const { reports, problems } = await loadReports(lib)
+    expect(problems).toEqual([])
+    expect(reports).toEqual([items])
   })
 })
