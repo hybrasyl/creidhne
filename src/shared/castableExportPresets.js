@@ -1,15 +1,29 @@
-// The three castable exports, as data.
+// The three castable exports, as data — and, since WP2, as report definitions.
 //
-// A preset is `{ id, label, description, format, defaultFileName, filter,
-// headerOnEmpty, columns }` — no code beyond the filter predicate, so WP2 can
-// present these as built-in report definitions and let a user clone one.
+// A preset is `{ id, label, description, format, defaultFileName, match, rules,
+// headerOnEmpty, columns }`. There is no code in it at all: the filter is a rule
+// list in the same vocabulary a user's own report uses (src/shared/reportRules.js),
+// so a user can clone a built-in and get something they can then edit.
 //
-// The column lists are written out rather than generated. They are a contract
-// with two consumers that live outside this repo (a balancing workbook and the
-// Hybrasyl website), so a header change should be a visible line in a diff.
+// Before WP2 the filter was a predicate — `(record) => !record.isTest &&
+// !record.isGM`. A stored report cannot hold a function, and a second filter
+// mechanism for built-ins would mean a built-in a user cannot express. The
+// golden fixtures in src/main/__tests__/fixtures/export/ prove the two forms
+// produce byte-identical output.
+//
+// These three are fixed: they are clonable, never editable. Their column lists
+// are a contract with two consumers outside this repo (a balancing workbook and
+// the Hybrasyl website ability browser), so a header change must stay a visible
+// line in a diff rather than a thing a user can do in the UI.
 
 /** Test and GM abilities are internal; neither web consumer should see them. */
-const notTestOrGM = (record) => !record.isTest && !record.isGM
+const NOT_TEST_OR_GM = {
+  match: 'all',
+  rules: [
+    { field: 'isTest', op: 'is', value: false },
+    { field: 'isGM', op: 'is', value: false }
+  ]
+}
 
 // The balancing workbook's columns, in its established order.
 const BALANCING_COLUMNS = [
@@ -102,7 +116,9 @@ export const CASTABLE_EXPORT_PRESETS = [
       'Every castable including test and GM abilities, with the full column set. For balancing and hand review in Excel.',
     format: 'csv',
     defaultFileName: 'castables_balancing.csv',
-    filter: null,
+    // No rules: every castable. This was `filter: null`.
+    match: 'all',
+    rules: [],
     headerOnEmpty: false,
     columns: BALANCING_COLUMNS
   },
@@ -113,7 +129,7 @@ export const CASTABLE_EXPORT_PRESETS = [
       'The column set the Hybrasyl website ability browser reads. Test and GM abilities excluded.',
     format: 'csv',
     defaultFileName: 'castables.csv',
-    filter: notTestOrGM,
+    ...NOT_TEST_OR_GM,
     headerOnEmpty: true,
     columns: WEB_COLUMNS
   },
@@ -123,10 +139,15 @@ export const CASTABLE_EXPORT_PRESETS = [
     description: 'The same web-facing data as JSON. Test and GM abilities excluded.',
     format: 'json',
     defaultFileName: 'castables.json',
-    filter: notTestOrGM,
+    ...NOT_TEST_OR_GM,
     columns: WEB_COLUMNS
   }
 ]
+
+/** Whether an id names one of the three fixed built-in reports. */
+export function isBuiltInReport(id) {
+  return CASTABLE_EXPORT_PRESETS.some((p) => p.id === id)
+}
 
 /** Looks a preset up by id. Throws rather than exporting the wrong thing. */
 export function getCastableExportPreset(id) {

@@ -1,3 +1,4 @@
+import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -6,6 +7,15 @@ export default defineConfig({
   // the plugin adds Babel and fast refresh to the transform, and neither does
   // anything for a test run.
   esbuild: { jsx: 'automatic' },
+  // The same two aliases electron.vite.config.mjs gives the renderer. Vitest does
+  // not read that file, so a renderer test importing through `@shared` fails to
+  // resolve without this — and the error names the import, not the missing alias.
+  resolve: {
+    alias: {
+      '@renderer': resolve('src/renderer/src'),
+      '@shared': resolve('src/shared')
+    }
+  },
   test: {
     // `node` stays the default: almost every test here is a pure-function test over
     // main-process parsers, schemas and renderer helpers, and a DOM they never touch

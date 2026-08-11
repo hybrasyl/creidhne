@@ -124,12 +124,24 @@ export function deriveShape(crosses = [], squares = [], cones = [], lines = [], 
 }
 
 /**
+ * The trainers that teach this castable, from the world index.
+ *
+ * One lookup, used by both `deriveLocation` and the record's `hasTrainer`. A
+ * has-trainer report rule must not test the `location` string: if the
+ * `Awarded by a Quest` wording ever changes, a rule reading it matches nothing,
+ * and an empty report reads as a valid answer.
+ */
+export function deriveTrainers(name, ctx = {}) {
+  return ctx.castableTrainers?.[String(name || '').toLowerCase()] || []
+}
+
+/**
  * Where a player learns this. Trainer names come from the world index, keyed by
  * lowercased castable name; a castable with no trainer but flagged as given by
  * a script is quest-awarded.
  */
 export function deriveLocation(name, ctx = {}) {
-  const trainers = ctx.castableTrainers?.[String(name || '').toLowerCase()] || []
+  const trainers = deriveTrainers(name, ctx)
   if (trainers.length > 0) return trainers.join(', ')
   return ctx.givenViaScript ? 'Awarded by a Quest' : ''
 }
@@ -163,6 +175,7 @@ export function castableToRecord(castable, ctx = {}) {
   const rem = castable.statuses?.remove || []
 
   const classLabel = deriveClass(castable.class)
+  const trainers = deriveTrainers(castable.name, ctx)
   const location = deriveLocation(castable.name, {
     castableTrainers: ctx.castableTrainers,
     givenViaScript: meta.givenViaScript
@@ -193,6 +206,9 @@ export function castableToRecord(castable, ctx = {}) {
     isGM: meta.isGM ?? false,
     givenViaScript: meta.givenViaScript ?? false,
     location,
+    // The boolean a report rule filters on. `location` is display text and
+    // carries three meanings in one string.
+    hasTrainer: trainers.length > 0,
 
     // Categories, flattened to the six the balancing sheet carries
     category1: cats[0] ?? '',
@@ -304,6 +320,7 @@ export const CASTABLE_COLUMNS = [
   { key: 'isGM', label: 'Is GM', group: 'Flags' },
   { key: 'givenViaScript', label: 'Given via script', group: 'Flags' },
   { key: 'location', label: 'Location', group: 'Learning' },
+  { key: 'hasTrainer', label: 'Has a trainer', group: 'Learning' },
   { key: 'category1', label: 'Category 1', group: 'Categories' },
   { key: 'category2', label: 'Category 2', group: 'Categories' },
   { key: 'category3', label: 'Category 3', group: 'Categories' },
@@ -353,3 +370,33 @@ export const CASTABLE_COLUMNS = [
   { key: 'statusRemove4IsCategory', label: 'Status remove 4 is category', group: 'Statuses' },
   { key: 'statusRemove4Quantity', label: 'Status remove 4 quantity', group: 'Statuses' }
 ]
+
+const COLUMN_BY_KEY = new Map(CASTABLE_COLUMNS.map((c) => [c.key, c]))
+
+/** Whether a key names a field the record actually carries. */
+export function isCastableField(key) {
+  return COLUMN_BY_KEY.has(key)
+}
+
+/**
+ * Normalizes a report's column list to `{ key, header }` pairs (WP2).
+ *
+ * A stored report holds bare record keys and takes its header from the field's
+ * catalogue label. A built-in report holds explicit pairs, because its headers
+ * are a contract with a consumer outside this repo. Both arrive here, so the
+ * serializers see one shape.
+ *
+ * **Throws on a key the record does not carry.** `recordsToCsv` writes an empty
+ * cell for an unknown key, so a typo — or a field renamed by a later work
+ * package — would otherwise produce a silent blank column in a file someone
+ * treats as data.
+ */
+export function resolveColumns(columns) {
+  return (columns ?? []).map((column) => {
+    const key = typeof column === 'string' ? column : column?.key
+    const known = COLUMN_BY_KEY.get(key)
+    if (!known) throw new Error(`Unknown castable field: ${key}`)
+    if (typeof column === 'string') return { key, header: known.label }
+    return { key, header: column.header ?? known.label }
+  })
+}
