@@ -109,6 +109,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportCastablesWebCsv: (libraryPath) => ipcRenderer.invoke('export:castablesWebCsv', libraryPath),
   exportCastablesWebJson: (libraryPath) =>
     ipcRenderer.invoke('export:castablesWebJson', libraryPath),
+  // Reports (WP2). A definition travels whole; main validates it before it runs.
+  loadReports: (libraryPath) => ipcRenderer.invoke('reports:load', libraryPath),
+  saveReports: (libraryPath, reports) => ipcRenderer.invoke('reports:save', libraryPath, reports),
+  previewReport: (libraryPath, definition) =>
+    ipcRenderer.invoke('reports:preview', libraryPath, definition),
+  runCastableReport: (libraryPath, definition) =>
+    ipcRenderer.invoke('export:castablesReport', libraryPath, definition),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),

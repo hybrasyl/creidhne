@@ -13,7 +13,13 @@ import { parseElementTableXml, serializeElementTableXml } from './elementTableXm
 import { parseStatusXml, serializeStatusXml } from './statusXml'
 import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { resolveSpellbook, nextCategories, sameCategorySet, affectedCastables } from './spellbook'
-import { runCastableExport } from './exportCastables.js'
+import {
+  runCastableExport,
+  runCastableReport,
+  renderReport,
+  collectCastableRecords
+} from './exportCastables.js'
+import { loadReports, saveReports } from './reportsFile.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
 import { loadFormulas, saveFormulas, importFormulas } from './formulasJson.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
@@ -34,7 +40,8 @@ import {
   formulasSchema,
   rendererErrorSchema,
   openIssueSchema,
-  copyReportSchema
+  copyReportSchema,
+  reportDefinitionSchema
 } from './schemas/index.js'
 import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
 import { installGlobalErrorHandlers } from './errorHandlers.js'
@@ -1284,6 +1291,56 @@ app.whenReady().then(async () => {
   ipc.handle('export:castablesBalancingCsv', castableExport('balancingCsv'))
   ipc.handle('export:castablesWebCsv', castableExport('webCsv'))
   ipc.handle('export:castablesWebJson', castableExport('webJson'))
+
+  // --- Reports (WP2) ---
+  //
+  // Every one of these takes a renderer-supplied definition, so every one is
+  // validated against the same schema the file loader uses. An unvalidated field
+  // name would reach a file write, and an unknown column key writes a blank
+  // column rather than an error.
+
+  ipc.handle('reports:load', async (_, libraryPath) => {
+    if (!libraryPath) return { version: 1, reports: [], problems: [] }
+    return loadReports(validatePath(libraryPath))
+  })
+
+  ipc.handle('reports:save', async (_, libraryPath, reports) => {
+    if (!libraryPath) return { error: 'No library selected.' }
+    try {
+      const saved = await saveReports(validatePath(libraryPath), reports)
+      return { reports: saved.reports }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  // The row count, without a save dialog. Shares the enumeration and the compiled
+  // predicate with the export, so the number the UI shows is the number of rows
+  // the file gets.
+  ipc.handle('reports:preview', async (_, libraryPath, definition) => {
+    validatePath(libraryPath)
+    try {
+      const parsed = reportDefinitionSchema.parse(definition)
+      const ctx = await castableExportContext(libraryPath)
+      const { records, error } = await collectCastableRecords(libraryPath, ctx)
+      if (error) return { error }
+      const { total, matched } = renderReport(records, parsed)
+      return { total, matched }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  ipc.handle('export:castablesReport', async (_, libraryPath, definition) => {
+    validatePath(libraryPath)
+    try {
+      const parsed = reportDefinitionSchema.parse(definition)
+      const ctx = await castableExportContext(libraryPath)
+      return runCastableReport(libraryPath, { ...parsed, label: definition?.label }, ctx)
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
 
   // Show the splash immediately, then create the (hidden) main window. Reveal
   // on the renderer's 'app:ready' signal, with a safety timeout so a renderer

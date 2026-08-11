@@ -29,7 +29,14 @@ export default defineConfig({
     // icon are loaded by the main process from the packaged resources/.
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        '@renderer': resolve('src/renderer/src'),
+        // WP2. The renderer imports the castable record's column catalogue, the
+        // report rule vocabulary and the built-in report definitions from
+        // src/shared. Main is left on relative paths, which already work.
+        //
+        // vitest.config.mjs needs the SAME alias: vitest does not read this file,
+        // and the failure names the import rather than the missing alias.
+        '@shared': resolve('src/shared')
       }
     },
     plugins: [react()],

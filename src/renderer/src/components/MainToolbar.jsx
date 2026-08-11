@@ -289,7 +289,7 @@ const MainToolbar = ({ navigate }) => {
             <GiPull />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Exports">
+        <Tooltip title="Reports">
           <IconButton onClick={() => navigate('exports')} sx={pageSx('exports')}>
             <GiBootKick />
           </IconButton>
