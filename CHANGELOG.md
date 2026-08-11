@@ -119,6 +119,14 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   install showed a red or yellow client-path indicator and every sprite, icon,
   sound and portrait picker came up empty. Creidhne now asks the folder how the
   file is really spelled, so any mix of upper and lower case works.
+- **The update banner can be closed, and a stray click no longer silences it.** Two
+  faults hid each other. The banner had no close button at all — MUI draws its own X
+  only when no other buttons are present, and the "View release" button counted — so
+  the only way to get rid of it was to click somewhere else in the window. And that
+  click recorded the version as permanently dismissed, so the banner never came back
+  for that release. There is now a real close button, which is the only thing that
+  records the dismissal; clicking elsewhere does nothing.
+
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was
   lost when the Formulas list moved onto the shared file list, so a category was
