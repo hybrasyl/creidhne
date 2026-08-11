@@ -27,7 +27,7 @@ const BehaviorsPage = lazy(() => import('../pages/BehaviorsPage'))
 const SpellbooksPage = lazy(() => import('../pages/SpellbooksPage'))
 const ConstantsPage = lazy(() => import('../pages/ConstantsPage'))
 const ServerConfigPage = lazy(() => import('../pages/ServerConfigPage'))
-const ExportsPage = lazy(() => import('../pages/ExportsPage'))
+const ReportsPage = lazy(() => import('../pages/ReportsPage'))
 const DamageCalculatorPage = lazy(() => import('../pages/DamageCalculatorPage'))
 
 const pageFallback = (
@@ -107,8 +107,11 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
     case 'serverconfig':
       page = <ServerConfigPage />
       break
+    // The page key stays `exports` although the page is now Reports (WP2). The
+    // key is what the toolbar navigates by and what a persisted last page holds,
+    // so renaming it would strand a stored value for no gain.
     case 'exports':
-      page = <ExportsPage />
+      page = <ReportsPage />
       break
     case 'damage-calculator':
       page = <DamageCalculatorPage />

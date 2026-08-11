@@ -1,6 +1,6 @@
 # WP2 — Castables report builder
 
-**Size:** L. **Depends on:** WP1. **Status:** Detailed 2026-08-11, not built. **Prompted by:**
+**Size:** L. **Depends on:** WP1. **Status:** Built. **Prompted by:**
 Sabrael — "scope out a report builder to replace this, with these as presets."
 
 ## Goal

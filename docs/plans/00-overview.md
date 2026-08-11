@@ -26,7 +26,6 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 
 | WP  | Title                                   | Size | Status           | Depends on |
 | --- | --------------------------------------- | ---- | ---------------- | ---------- |
-| 2   | Castables report builder                | L    | Detailed         | WP1        |
 | 3   | Report builder for other XML types      | L    | Planned          | WP2        |
 | 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
 | 6   | Spawngroup spellbook references         | M    | Planned          | —          |
@@ -37,19 +36,23 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 | WP  | Title                                       | Shipped    | Doc                                         |
 | --- | ------------------------------------------- | ---------- | ------------------------------------------- |
 | 1   | Castables export cleanup (3 presets)        | 2026-08-01 | `complete/01-castables-export-cleanup.md`   |
+| 2   | Castables report builder                    | 2026-08-11 | `complete/02-castables-report-builder.md`   |
 | 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 | `complete/05-file-list-render-secondary.md` |
 
-**WP2 is the one to take next.** WP1 unblocked it and was built for it: the canonical record,
-serializers and presets in `src/shared/` are all preset-agnostic, so the report builder consumes them
-directly rather than re-deriving anything. WP1's doc also records four output changes agreed during
-the build and five findings outside its scope.
+**WP2 was detailed and built on 2026-08-11.** WP1 was built for it, and it showed: the canonical
+record, the serializers and the presets in `src/shared/` were already preset-agnostic, so the builder
+consumes them rather than re-deriving anything.
 
-**WP2 was detailed on 2026-08-11**, and promotion resolved its three open questions and found one
-change the outline did not name: a preset's `filter` is a **function** today, so a user report stored
-as JSON cannot hold one. The filter becomes a rule list, the three built-ins are re-expressed in that
-same vocabulary, and WP1's golden fixtures prove the re-expression byte for byte. Promotion also
-found that `ExportsPage.jsx` holds a second copy of each preset's label and description, which the
-`@shared` alias removes.
+Promotion resolved the three open questions and found one change the outline did not name. A preset's
+`filter` was a **function**, and a report stored as JSON cannot hold one — so the filter became a rule
+list, and the three built-ins state their rules in the same vocabulary a user gets. WP1's committed
+golden fixtures prove the re-expression byte for byte, which is the whole safety argument for touching
+a file two external consumers read. Promotion also found that `ExportsPage.jsx` held a second copy of
+each preset's label and description; the `@shared` alias removed it, and a guard now keeps it removed.
+
+**WP3 is the one to take next.** WP2 left it two inputs rather than a rewrite: `version` and
+`entity` are already written to `reports.json`, and the rule vocabulary and the serializers are
+already entity-agnostic. What WP3 adds is a second field catalogue and a second record mapper.
 
 **WP5 shipped after the 1.10.0 tag, so it is not in that release.** Its entry sits under
 `[Unreleased]` in `CHANGELOG.md` and goes out with the next version.

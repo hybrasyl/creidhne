@@ -37,6 +37,23 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Added
+
+- **The Exports page is now Reports, and you can build your own report.** Choose the
+  castable fields, set their order, filter the rows, and pick CSV or JSON. Creidhne shows
+  how many castables match while you work.
+
+  The three earlier exports are built-in reports with the same output as before. Balancing
+  CSV, Web CSV and Web JSON are read-only, because the balancing workbook and the Hybrasyl
+  website read their columns. Use Clone to make a copy that you can edit.
+
+  Creidhne saves your reports to `.creidhne/reports.json` in the world folder. A report goes
+  with the world, so you can share it through the world repository. Creidhne loads the
+  reports that are valid and tells you about each one it cannot read.
+
+  A filter takes eleven fields: class, book, type, is test, is GM, deprecated, is assail, has
+  a trainer, category, level and name. Match all of the rules or any one of them.
+
 ### Changed
 
 - **Creidhne runs as a single instance.** A second launch brings the window you already
