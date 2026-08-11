@@ -140,6 +140,12 @@ first section written to the rules above.
   chip that the formula picker shows. The chip was lost when the formula list moved to the
   shared file list. A category was visible only after you opened the formula.
 
+- **The spawn group and localization editors warn you before a save writes a new file.**
+  You changed the filename or the folder, and the editor said nothing. The save then wrote
+  a new file and moved the old file to the archive. Both editors now mark the Filename
+  field and name the destination, as the other twelve editors do. Each editor also disables
+  the regenerate button when the filename already matches the computed name.
+
 ### Security
 
 - **Creidhne uses Electron 41.10.4.** This version closes five advisories. Two of them are
