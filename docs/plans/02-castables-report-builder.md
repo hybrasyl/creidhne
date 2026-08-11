@@ -77,9 +77,13 @@ consumers read.
 
 ## The rule vocabulary
 
-Nine operators, each one line of code. The field list is closed, and it is a **subset** of the
-column universe: not every field is worth filtering on, and an open list invites a rule nobody can
-read.
+Eight operators, each one line of code: `is`, `is not`, `has`, `does not have`, `between`,
+`at least`, `at most`, `contains`. The field list is closed, and it is a **subset** of the column
+universe: not every field is worth filtering on, and an open list invites a rule nobody can read.
+
+A rule's `field` is a **logical** name, not a record key. `class` reads `classRaw`, and `category`
+reads all six category fields. A logical name keeps the stored rule readable, and it keeps a report
+working when a record key is renamed.
 
 | Rule        | Field it reads          | Operator                         | Note                              |
 | ----------- | ----------------------- | -------------------------------- | --------------------------------- |
