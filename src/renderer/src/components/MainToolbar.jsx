@@ -41,11 +41,11 @@ import {
 import {
   useStoreValue,
   useSetStoreValue,
-  taliesinPathState,
   currentPageState,
   themeState,
   reportIssueOpenState
 } from '../store/appStore'
+import { useCompanionStatus } from '../hooks/useCompanionStatus'
 
 // The "corporate" themes paint the same navy chrome but want plain, flat window
 // controls: white glyphs with no dark keyline stroke, translucent-white hover,
@@ -64,7 +64,10 @@ const TITLE_TEXT_SHADOW = [...KEYLINE, DEPTH].join(', ')
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
 const MainToolbar = ({ navigate }) => {
-  const taliesinPath = useStoreValue(taliesinPathState)
+  // Resolved by main, not read from settings: the button must work before anyone
+  // visits Settings, because Taliesin is usually found beside Creidhne without
+  // being configured at all (HTOO-292).
+  const { found: taliesinFound, refresh: refreshCompanion } = useCompanionStatus()
   const currentPage = useStoreValue(currentPageState)
   const themeName = useStoreValue(themeState)
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
@@ -124,8 +127,10 @@ const MainToolbar = ({ navigate }) => {
   const pageSx = (page) => (currentPage === page ? activeBtnSx : btnSx)
 
   const handleLaunchTaliesin = async () => {
-    if (!taliesinPath) return
-    await window.electronAPI.launchCompanion(taliesinPath)
+    await window.electronAPI.launchCompanion()
+    // A launch is the moment a target can turn out to have gone missing, so
+    // re-resolve rather than leaving the button enabled on a stale answer.
+    refreshCompanion()
   }
 
   const handleMinimize = () => {
@@ -306,9 +311,9 @@ const MainToolbar = ({ navigate }) => {
             <GiSettingsKnobs />
           </IconButton>
         </Tooltip>
-        <Tooltip title={taliesinPath ? 'Launch Taliesin' : 'Set Taliesin path in Settings'}>
+        <Tooltip title={taliesinFound ? 'Launch Taliesin' : 'Taliesin not found — see Settings'}>
           <span>
-            <IconButton onClick={handleLaunchTaliesin} disabled={!taliesinPath} sx={btnSx}>
+            <IconButton onClick={handleLaunchTaliesin} disabled={!taliesinFound} sx={btnSx}>
               <GiAnvil />
             </IconButton>
           </span>

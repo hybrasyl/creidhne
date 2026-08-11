@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import { join, dirname, relative, isAbsolute } from 'path'
 import { listSectionFiles } from '@eriscorp/hybindex-ts'
+import { resolveClientPath } from './fsCase.js'
 
 // Enumerate one world type (`castables`, `items`, …), recursively, split into
 // active and archived. Delegates to the index package rather than walking here:
@@ -27,9 +28,30 @@ export async function readBinaryFile(filePath) {
   return fs.readFile(filePath)
 }
 
+// Read one file out of the DA client install, under the casing it has on disk.
+//
+// The renderer names client archives as lowercase literals (`legend.dat`,
+// `npc/npcbase.dat`) and has no way to list a directory, so the casing is
+// resolved here — see `fsCase.js` for why there is no renderer-side copy. This
+// takes a root plus a relative name rather than a full path for the same reason:
+// only the two halves together let the resolver walk the segments.
+//
+// It replaces the renderer's use of `readBinaryFile`, and that is deliberate. A
+// bridge method that reads client bytes from a caller-built path is a way to read
+// a client file with the casing unresolved, which is the bug itself.
+export async function readClientFile(clientPath, rel) {
+  return readBinaryFile(await resolveClientPath(clientPath, rel))
+}
+
 // Files dalib-ts pickers depend on. Relative paths from the DA client root.
 // Source: sprite_pickers_roadmap.md
 // `category` controls which pickers are affected when a file is missing.
+//
+// Spelled lowercase on purpose, and read through `resolveClientPath` rather than
+// joined directly (HTOO-287). The official installer writes `Legend.dat`, so on
+// a case-sensitive filesystem a direct join reports a perfectly good install as
+// missing. Do not "fix" a row here by capitalising it — that trades one wrong
+// guess for another, and the resolver already covers every casing.
 export const KNOWN_DAT_FILES = [
   { rel: 'legend.dat', category: 'sounds + spell/skill icons + item sprites' },
   { rel: 'hades.dat', category: 'creature/NPC sprites' },
@@ -58,7 +80,7 @@ export async function checkClientPath(clientPath) {
   }
   const files = await Promise.all(
     KNOWN_DAT_FILES.map(async ({ rel, category }) => {
-      const fullPath = join(clientPath, rel)
+      const fullPath = await resolveClientPath(clientPath, rel)
       let found = false
       try {
         await fs.access(fullPath)
