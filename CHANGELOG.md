@@ -23,6 +23,14 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ## [Unreleased]
 
+### Changed
+
+- **Creidhne now runs as a single instance.** Launching it again brings the window
+  you already have to the front instead of starting a second copy — and if that
+  window was minimized, it is restored rather than just given focus in the
+  taskbar. Two copies previously shared one settings file, one world index and one
+  session log, and raced each other over all three.
+
 ### Fixed
 
 - **Formulas show their category again.** Each formula in the list carries its

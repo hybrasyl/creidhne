@@ -94,6 +94,19 @@ const settingsPath = localBase
 const cachePath = localBase
 app.setPath('userData', cachePath)
 
+// Single instance. A second copy would run a second world index, a second
+// settings writer and a second session-log rotation over the same local app-data
+// dir, which race each other and lose edits. The lock is keyed on the userData
+// dir, so it must be requested *after* the setPath above.
+//
+// `app.exit(0)`, not `app.quit()`: everything below this line is module-scope
+// side effect (the roaming migration copies files, initSessionLog touches and
+// rotates the log set). `quit()` is async, so the losing instance would run all
+// of it before the event loop got the chance to tear the process down. `exit()`
+// stops here, which is what "did nothing" has to mean.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) app.exit(0)
+
 // One-time roaming → local settings migration. Runs before the settings
 // manager first reads, so a returning user's settings.json (libraries,
 // activeLibrary, theme, clientPath/taliesinPath) carries over instead of
@@ -171,6 +184,20 @@ function revealMainWindow() {
   if (splashWindow && !splashWindow.isDestroyed()) splashWindow.destroy()
   splashWindow = null
 }
+
+// The answer to a second launch: surface the window we already have. Restore
+// first, so a minimised Creidhne actually comes forward instead of silently
+// taking focus in the taskbar.
+function focusMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+// Registered before whenReady: the losing instance signals as soon as it fails
+// the lock, which can land before this instance has finished booting.
+app.on('second-instance', focusMainWindow)
 
 function createWindow() {
   mainWindow = new BrowserWindow({
