@@ -1,9 +1,22 @@
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // The automatic JSX runtime, so a component test needs no `import React`. This is
+  // esbuild's setting rather than `@vitejs/plugin-react`, which is already a devDep:
+  // the plugin adds Babel and fast refresh to the transform, and neither does
+  // anything for a test run.
+  esbuild: { jsx: 'automatic' },
   test: {
+    // `node` stays the default: almost every test here is a pure-function test over
+    // main-process parsers, schemas and renderer helpers, and a DOM they never touch
+    // is startup cost on all ~1400 of them. A component test opts in per file with a
+    // `@vitest-environment jsdom` docblock (HTOO-144).
     environment: 'node',
-    include: ['src/**/__tests__/**/*.test.js', 'scripts/**/*.test.mjs'],
+    // `.test.jsx` is collected as well as `.test.js`, so a component test can be
+    // written in JSX. A `.js` file holding JSX is not transformed, so without this a
+    // component test either has to be written in `React.createElement` calls or is
+    // silently never collected.
+    include: ['src/**/__tests__/**/*.test.{js,jsx}', 'scripts/**/*.test.mjs'],
     coverage: {
       provider: 'v8',
       include: ['src/**'],
