@@ -63,6 +63,24 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **Saving an NPC no longer throws away its Location note.** The NPC editor never
+  read the `<!-- Location: -->` line that 572 of the world's 594 NPCs carry, so
+  the field showed as empty and saving deleted the line for good. Location now
+  loads, shows, and is written back where you had it — on the line after the
+  name, next to the comment.
+- **Saving an NPC no longer throws away its pricing.** Bank and Repair lost their
+  Nation and Discount, and Post lost every Surcharge, because the editor had
+  nowhere to keep them. All of them survive a save now. Measured across the whole
+  production world: a save previously dropped 572 Location notes, 31 Nation
+  values and 6 Surcharges; it now drops nothing.
+- **Selected things are visible again on the hybrasyl theme.** The theme's primary
+  colour was the same value as the page background, so anything that marks itself
+  as active or selected painted itself invisible — and it read backwards, because
+  the _unselected_ items kept their grey. The selected chip, the highlighted
+  border in the sprite, icon, sound, effect and portrait pickers, and the
+  monospace snippets on the Lua Helpers page were all affected. Primary is now the
+  legible blue that was already sitting in the palette, with dark label text so
+  button and chip captions meet the accessibility contrast bar.
 - **Names holding an `&` are no longer escaped twice.** A name like
   `The Crow & Cask` was read out of the world index still carrying its `&amp;`,
   so picking it from a list and saving wrote `&amp;amp;` — a value that matches
