@@ -1,7 +1,11 @@
 // Renderer-side helpers for reading Dark Ages client files via dalib-ts.
 //
 // Architecture:
-//   - Main process serves raw bytes via window.electronAPI.readBinaryFile()
+//   - Main process serves raw bytes via window.electronAPI.readClientFile(),
+//     which takes the client root plus a relative name and resolves the on-disk
+//     casing before reading (HTOO-287, src/main/fsCase.js). The renderer passes
+//     the lowercase literal it has always passed and cannot list a directory, so
+//     it cannot resolve the casing itself.
 //   - dalib-ts parsing happens here in the renderer (DataArchive instances
 //     aren't serializable across IPC)
 //   - Module-level cache keeps parsed archives in memory until the user
@@ -11,6 +15,10 @@ import { DataArchive } from '@eriscorp/dalib-ts'
 
 const archiveCache = new Map() // key: full archive path, value: DataArchive
 
+// Build a display/cache key for a client file. NOT a path to read with — reads
+// go through readClientFile so main can resolve the casing. The key is built from
+// the lowercase literal on purpose, so one archive has one cache entry whatever
+// the install capitalises it as.
 export function joinPath(clientPath, relative) {
   // Both '/' and '\' work on Windows for fs APIs. Normalize separators in the
   // relative part so callers can pass either.
@@ -29,8 +37,7 @@ export function joinPath(clientPath, relative) {
  */
 export async function readClientFile(clientPath, relative) {
   if (!clientPath) throw new Error('Dark Ages client path not configured')
-  const fullPath = joinPath(clientPath, relative)
-  const buffer = await window.electronAPI.readBinaryFile(fullPath)
+  const buffer = await window.electronAPI.readClientFile(clientPath, relative)
   // IPC returns a Node Buffer; wrap in Uint8Array for dalib-ts.
   return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
 }

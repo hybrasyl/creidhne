@@ -5,6 +5,7 @@ Generated: 2026-07-19T22:40 UTC
 **567** documentation gaps across **30** Lua-exposed types.
 
 ## StatInfo (124 gaps)
+
 Source: `Objects/StatInfo.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -133,6 +134,7 @@ Source: `Objects/StatInfo.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## HybrasylTime (61 gaps)
+
 Source: `Subsystems/Time.cs`
 
 - [ ] `HybrasylTime` — Missing property summary
@@ -198,6 +200,7 @@ Source: `Subsystems/Time.cs`
 - [ ] `FromDateTimestring → return` — Missing return description
 
 ## ThreatInfo (42 gaps)
+
 Source: `Objects/ThreatInfo.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -244,6 +247,7 @@ Source: `Objects/ThreatInfo.cs`
 - [ ] `OnNearbyHeal → amount` — Missing param description
 
 ## HybrasylUser (38 gaps)
+
 Source: `Subsystems/Scripting/HybrasylUser.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -286,6 +290,7 @@ Source: `Subsystems/Scripting/HybrasylUser.cs`
 - [ ] `RemoveAllStatuses(0 params)` — Missing method summary
 
 ## HybrasylUtility (36 gaps)
+
 Source: `Subsystems/Scripting/HybrasylUtility.cs`
 
 - [ ] `HybrasylUtility` — Missing property summary
@@ -326,6 +331,7 @@ Source: `Subsystems/Scripting/HybrasylUtility.cs`
 - [ ] `CreateMonster → aggro` — Missing param description
 
 ## HybrasylItemObject (35 gaps)
+
 Source: `Subsystems/Scripting/HybrasylItem.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -365,6 +371,7 @@ Source: `Subsystems/Scripting/HybrasylItem.cs`
 - [ ] `DialogSprite` — Missing property summary
 
 ## AsyncDialogSession (32 gaps)
+
 Source: `Subsystems/Dialogs/AsyncDialogSession.cs`
 
 - [ ] `Source` — Missing property summary
@@ -401,6 +408,7 @@ Source: `Subsystems/Dialogs/AsyncDialogSession.cs`
 - [ ] `ShowTo → return` — Missing return description
 
 ## ElementalModifiers (21 gaps)
+
 Source: `Objects/ElementalResistance.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -426,6 +434,7 @@ Source: `Objects/ElementalResistance.cs`
 - [ ] `Remove → elementalModifiers` — Missing param description
 
 ## HybrasylWorldObject (19 gaps)
+
 Source: `Subsystems/Scripting/HybrasylWorldObject.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -449,6 +458,7 @@ Source: `Subsystems/Scripting/HybrasylWorldObject.cs`
 - [ ] `TeleportToCoords → y` — Missing param description
 
 ## DamageEvent (18 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -471,6 +481,7 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## HybrasylMap (16 gaps)
+
 Source: `Subsystems/Scripting/HybrasylMap.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -491,6 +502,7 @@ Source: `Subsystems/Scripting/HybrasylMap.cs`
 - [ ] `GetMonsterAt → return` — Missing return description
 
 ## HybrasylMonster (16 gaps)
+
 Source: `Subsystems/Scripting/HybrasylMonster.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -511,6 +523,7 @@ Source: `Subsystems/Scripting/HybrasylMonster.cs`
 - [ ] `GetGMMonsterInfo → return` — Missing return description
 
 ## QuestMetadata (12 gaps)
+
 Source: `Internals/Metafiles/QuestMetadata.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -527,6 +540,7 @@ Source: `Internals/Metafiles/QuestMetadata.cs`
 - [ ] `AddClass → c` — Missing param description
 
 ## CastableObject (12 gaps)
+
 Source: `Subsystems/Casting/CastableObject.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -543,6 +557,7 @@ Source: `Subsystems/Casting/CastableObject.cs`
 - [ ] `DialogSequences` — Missing property summary
 
 ## HybrasylWorld (11 gaps)
+
 Source: `Subsystems/Scripting/HybrasylWorld.cs`
 
 - [ ] `HybrasylWorld` — Missing property summary
@@ -558,6 +573,7 @@ Source: `Subsystems/Scripting/HybrasylWorld.cs`
 - [ ] `SpawnMonster → displayName` — Missing param description
 
 ## StatusEvent (10 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -572,6 +588,7 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## Coordinate (8 gaps)
+
 Source: `Subsystems/Scripting/Tile.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -584,6 +601,7 @@ Source: `Subsystems/Scripting/Tile.cs`
 - [ ] `FromInt → return` — Missing return description
 
 ## LootEvent (7 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -595,6 +613,7 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## CreatureSnapshot (6 gaps)
+
 Source: `Objects/CreatureSnapshot.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -605,6 +624,7 @@ Source: `Objects/CreatureSnapshot.cs`
 - [ ] `GetUserObject → return` — Missing return description
 
 ## HybrasylInteractable (6 gaps)
+
 Source: `Subsystems/Scripting/HybrasylInteractable.cs`
 
 - [ ] `RegisterDialogSequence(1 params)` — Missing method summary
@@ -615,6 +635,7 @@ Source: `Subsystems/Scripting/HybrasylInteractable.cs`
 - [ ] `SetCreatureSprite → sprite` — Missing param description
 
 ## HybrasylReactor (6 gaps)
+
 Source: `Subsystems/Scripting/HybrasylReactor.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -625,6 +646,7 @@ Source: `Subsystems/Scripting/HybrasylReactor.cs`
 - [ ] `Expiration` — Missing property summary
 
 ## HealEvent (5 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -634,6 +656,7 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## NoLootEvent (5 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -643,6 +666,7 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## ScriptLogger (5 gaps)
+
 Source: `Subsystems/Scripting/ScriptLogger.cs`
 
 - [ ] `ScriptName` — Missing property summary
@@ -652,6 +676,7 @@ Source: `Subsystems/Scripting/ScriptLogger.cs`
 - [ ] `Error → message` — Missing param description
 
 ## StatChangeEvent (4 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -660,6 +685,7 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `ToString → return` — Missing return description
 
 ## SpokenEvent (3 gaps)
+
 Source: `Subsystems/Messaging/SpokenEvent.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -667,6 +693,7 @@ Source: `Subsystems/Messaging/SpokenEvent.cs`
 - [ ] `Source` — Missing property summary
 
 ## HybrasylDialog (3 gaps)
+
 Source: `Subsystems/Scripting/HybrasylDialog.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -674,6 +701,7 @@ Source: `Subsystems/Scripting/HybrasylDialog.cs`
 - [ ] `AssociateDialogWithSequence → sequence` — Missing param description
 
 ## HybrasylDialogSequence (3 gaps)
+
 Source: `Subsystems/Scripting/HybrasylDialogSequence.cs`
 
 - [ ] `(class)` — Missing class summary
@@ -681,12 +709,14 @@ Source: `Subsystems/Scripting/HybrasylDialogSequence.cs`
 - [ ] `SetDisplayName → displayName` — Missing param description
 
 ## DodgeEvent (2 gaps)
+
 Source: `Objects/CombatEvents.cs`
 
 - [ ] `(class)` — Missing class summary
 - [ ] `EventType` — Missing property summary
 
 ## HybrasylDialogOptions (1 gaps)
+
 Source: `Subsystems/Scripting/HybrasylDialogOptions.cs`
 
 - [ ] `HybrasylDialogOptions` — Missing property summary

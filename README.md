@@ -21,6 +21,31 @@ Built with Electron + React + MUI.
 
 Pre-built releases for Windows are available on the [releases page](https://github.com/hybrasyl/creidhne/releases).
 
+### Over Remote Desktop
+
+A Remote Desktop session has no GPU, so Creidhne turns hardware acceleration off and
+drops the themes' panel blur when it detects one. Window dragging and scrolling stay
+smooth as a result.
+
+**Detection can miss a reconnected session, and this is the case to know about.**
+Windows writes `%SESSIONNAME%` when you log on and never revises it. If you connect
+to a machine that already has your session open at the console, Windows _reconnects_
+that session instead of creating a new one — so every program keeps reporting
+`Console` while running over Remote Desktop. That is what happens to anyone who
+leaves a machine logged in and connects to it later.
+
+Set `CREIDHNE_DISABLE_GPU=1` before you start Creidhne to force software rendering,
+or `CREIDHNE_DISABLE_GPU=0` to force acceleration back on if the detection is wrong
+on your machine.
+
+```cmd
+set CREIDHNE_DISABLE_GPU=1
+creidhne.exe
+```
+
+Parsec, Sunshine, VNC and other non-Remote-Desktop tools are not detected. Use the
+variable there too.
+
 ## Building from source
 
 ```bash
