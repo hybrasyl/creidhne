@@ -420,6 +420,12 @@ function generateTodo(allClasses) {
 
   for (const { name, file, gaps } of classGaps) {
     lines.push(`## ${name} (${gaps.length} gaps)`)
+    // Blank line after the heading, because prettier inserts one and this file
+    // is committed. Without it, `prettier --check .` fails on every fresh
+    // regeneration and `npm run format` produces a diff on a clean tree — which
+    // is exactly the acceptance criterion HTOO-236 asks for. Formatting the
+    // output instead of the generator would just lose the fix on the next run.
+    lines.push('')
     lines.push(`Source: \`${file}\``)
     lines.push('')
     for (const gap of gaps) {
