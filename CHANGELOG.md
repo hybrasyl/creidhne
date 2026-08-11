@@ -114,6 +114,13 @@ first section written to the rules above.
 
 ### Fixed
 
+- **The duplicate-name warning sees a server config that you saved in the same session.**
+  The Server Configs page did not rebuild the world index after a save. The name of a new
+  server config stayed out of the index until the next index build. The duplicate-name
+  warning reads the index, so it reported a free name for a name that you had already used.
+  Two files with one name make one of them unreachable on the server. Every other editor
+  page rebuilt its index section after a save. The Server Configs page now does the same.
+
 - **Creidhne keeps the NPC Location note when you save.** The NPC editor did not read the
   `<!-- Location: -->` line. 572 of the 594 NPCs in the production world carry that line.
   The field showed as empty, and a save deleted the line. Creidhne now loads the Location,

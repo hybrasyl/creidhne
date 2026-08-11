@@ -155,7 +155,11 @@ function ServerConfigPage() {
       }
 
       markClean()
-      if (activeLibrary) await loadFiles(activeLibrary)
+      if (activeLibrary) {
+        await loadFiles(activeLibrary)
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, SUBDIR)
+        setLibraryIndex((prev) => ({ ...prev, ...section }))
+      }
     } catch (err) {
       console.error('Failed to save server config:', err)
       setSnackbar({ message: `Failed to save: ${err?.message}`, severity: 'error' })
