@@ -25,6 +25,8 @@ magick build/creidhne-logo.png -resize 192x192 -strip -quality 90 \
 
 echo "Regenerated resources/creidhne-splash.webp and src/renderer/src/assets/creidhne.webp"
 
-# macOS app icon, from its own master. Insets the squircle onto Apple's icon
-# grid and packs every required size into build/icon.icns.
-node scripts/make-mac-icns.mjs
+# Every committed icon artifact: the Linux hicolor set in build/icons/ and the
+# Windows/runtime PNG from the star, plus the macOS .icns from the squircle (inset
+# onto Apple's icon grid). scripts/icons.test.mjs checks the results, so a
+# regeneration that goes wrong is caught by `npm test` rather than by a release.
+node scripts/make-icons.mjs

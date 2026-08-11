@@ -126,6 +126,13 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   click recorded the version as permanently dismissed, so the banner never came back
   for that release. There is now a real close button, which is the only thing that
   records the dismissal; clicking elsewhere does nothing.
+- **Crisper icons, and a real icon set on Linux.** The app icon was a single hand-made
+  256-pixel image whose edges were hard steps rather than a smooth outline, and which was
+  a pixel short of its own canvas. Every size is now generated from the 1024-pixel
+  master, so the taskbar and the window both look right. Linux installs get the full set
+  of sizes it expects instead of one, and the window is properly associated with its
+  desktop entry — so the taskbar and the app switcher show the Creidhne icon rather than
+  a generic one.
 
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was

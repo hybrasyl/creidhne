@@ -129,5 +129,31 @@ linux:
     - AppImage
   category: Development
   maintainer: Hybrasyl Maintainers <hybrasyl@eris.co>
-  icon: resources/icon.png
+  # A DIRECTORY, not a file (HTOO-38). electron-builder never resamples a single PNG:
+  # it collects every `NxN.png` in the directory it is pointed at and installs each
+  # into the matching hicolor path. `resources/icon.png` alone therefore shipped one
+  # size, and it was a hand-made 256 with 2 alpha levels and a one-pixel-off bounding
+  # box. `scripts/make-icons.mjs` writes all eight from the 1024 star master.
+  #
+  # Only files matching /^(\d+)(?:x\d+)?\.png$/i are collected
+  # (app-builder-lib `iconConverter.js`, `collectIconsFromDir`), so a stray
+  # `1024x1024.png` left in there by an experiment is silently shipped.
+  # `scripts/icons.test.mjs` asserts the directory holds exactly the eight and nothing
+  # else -- do not add a file here without adding it there.
+  icon: build/icons
+  # The window-manager association (HTOO-63). Without it a `.desktop` entry and the
+  # running window can disagree, and the taskbar and switcher fall back to a generic
+  # icon however good the hicolor set is -- so 38 without 63 produces an app that
+  # passes the payload check and looks wrong in use.
+  #
+  # Set explicitly as a PAIR rather than relying on the default: electron-builder 27
+  # flips this on, and stating both makes that a no-op instead of a silent rename.
+  #
+  # The other half is `desktopName` and it lives in **package.json**, not here --
+  # `LinuxTargetHelper` reads `packager.info.metadata.desktopName`, and Electron
+  # derives `app_id` / `WM_CLASS` from the same field, which is the whole reason the
+  # two must agree. Without it electron-builder falls back to `executableName` for the
+  # filename and to `productName` for `StartupWMClass`, which is `creidhne` against
+  # `Creidhne` -- and a mismatch there is exactly the generic-icon symptom.
+  syncDesktopName: true
 npmRebuild: false

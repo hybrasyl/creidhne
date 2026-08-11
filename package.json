@@ -5,6 +5,7 @@
   "main": "./out/main/index.js",
   "author": "Sabrael (http://www.github.com/Caeldeth)",
   "homepage": "https://github.com/hybrasyl/creidhne",
+  "desktopName": "creidhne.desktop",
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.include=src/**",
