@@ -16,6 +16,12 @@ build/*
 # squircle drawn for the macOS Dock. Both are committed inputs, not output.
 !build/creidhne-logo.png
 !build/creidhne-mac-icon.png
+# The Linux hicolor set, generated from the star by scripts/make-icons.mjs and
+# committed for the same reason as the .icns and the splash: CI has no ImageMagick.
+# `electron-builder.yml` points `linux.icon` at the directory, so an untracked copy
+# fails the .deb and AppImage build and nothing else -- which only a release notices.
+!build/icons/
+!build/icons/*.png
 # The portable target's NSIS extraction splash. electron-builder.yml points at
 # it, and CI has neither ImageMagick nor a step that regenerates it, so it has
 # to be committed rather than built on demand.

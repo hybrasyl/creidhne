@@ -60,6 +60,14 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
   box — most visibly over Remote Desktop, where everything is slower. Each launch
   now unpacks to its own directory, so the second copy simply hands you the window
   you already have.
+- **Crisper icons, and a real icon set on Linux.** The app icon was a single hand-made
+  256-pixel image whose edges were hard steps rather than a smooth outline, and which was
+  a pixel short of its own canvas. Every size is now generated from the 1024-pixel
+  master, so the taskbar and the window both look right. Linux installs get the full set
+  of sizes it expects instead of one, and the window is properly associated with its
+  desktop entry — so the taskbar and the app switcher show the Creidhne icon rather than
+  a generic one.
+
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was
   lost when the Formulas list moved onto the shared file list, so a category was
