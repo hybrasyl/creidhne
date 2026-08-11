@@ -44,6 +44,16 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **Saving an NPC no longer throws away its Location note.** The NPC editor never
+  read the `<!-- Location: -->` line that 572 of the world's 594 NPCs carry, so
+  the field showed as empty and saving deleted the line for good. Location now
+  loads, shows, and is written back where you had it — on the line after the
+  name, next to the comment.
+- **Saving an NPC no longer throws away its pricing.** Bank and Repair lost their
+  Nation and Discount, and Post lost every Surcharge, because the editor had
+  nowhere to keep them. All of them survive a save now. Measured across the whole
+  production world: a save previously dropped 572 Location notes, 31 Nation
+  values and 6 Surcharges; it now drops nothing.
 - **Names holding an `&` are no longer escaped twice.** A name like
   `The Crow & Cask` was read out of the world index still carrying its `&amp;`,
   so picking it from a list and saving wrote `&amp;amp;` — a value that matches

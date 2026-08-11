@@ -1,5 +1,11 @@
 import xml2js from 'xml2js'
-import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js'
+import {
+  extractComment,
+  extractLocation,
+  extractMeta,
+  injectMeta,
+  injectNameAnnotations
+} from './xmlCommentUtils.js'
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
@@ -14,17 +20,18 @@ const omitEmpty = (obj) =>
 
 const NPC_META_DEFAULTS = { job: '', location: '' }
 
+// `location` has two sources and they are not equivalent. The legacy
+// `<!-- Location: -->` annotation is what 572 of the world's 594 NPCs actually
+// carry; `creidhne:meta` is what Creidhne writes, and exactly one file has one.
+// So meta wins when present (it is the newer, deliberate value) and the legacy
+// annotation is the fallback — which means opening any untouched NPC now shows
+// its Location instead of an empty field.
 function extractNpcMeta(xmlString) {
-  const raw = extractMeta(xmlString)
-  return { job: raw.job || '', location: raw.location || '' }
-}
-
-function injectNpcMeta(xml, meta) {
-  if (!meta || (!meta.job && !meta.location)) return xml
-  const payload = {}
-  if (meta.job) payload.job = meta.job
-  if (meta.location) payload.location = meta.location
-  return xml.replace(/(<Npc[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`)
+  const raw = extractMeta(xmlString, NPC_META_DEFAULTS)
+  return {
+    job: raw.job || '',
+    location: raw.location || extractLocation(xmlString)
+  }
 }
 
 // =============================================================================
@@ -74,6 +81,8 @@ function mapXmlToNpc(result, comment, meta) {
       disableForget: toBool(a(roles, 'DisableForget'), false),
       bank: roles?.Bank?.[0]
         ? {
+            nation: a(roles.Bank[0], 'Nation', ''),
+            discount: a(roles.Bank[0], 'Discount', ''),
             exceptCookie: a(roles.Bank[0], 'ExceptCookie', ''),
             onlyCookie: a(roles.Bank[0], 'OnlyCookie', ''),
             adjustments: (roles.Bank[0].CostAdjustment || []).map((adj) => ({
@@ -87,6 +96,10 @@ function mapXmlToNpc(result, comment, meta) {
             nation: a(post, 'Nation', ''),
             exceptCookie: a(post, 'ExceptCookie', ''),
             onlyCookie: a(post, 'OnlyCookie', ''),
+            surcharges: (post.Surcharge || []).map((s) => ({
+              nation: a(s, 'Nation', ''),
+              percent: a(s, 'Percent', '')
+            })),
             adjustments: (post.CostAdjustment || []).map((adj) => ({
               nation: a(adj, 'Nation', ''),
               value: typeof adj === 'string' ? adj : adj._ || ''
@@ -95,6 +108,8 @@ function mapXmlToNpc(result, comment, meta) {
         : null,
       repair: roles?.Repair?.[0]
         ? {
+            nation: a(roles.Repair[0], 'Nation', ''),
+            discount: a(roles.Repair[0], 'Discount', ''),
             type: a(roles.Repair[0], 'Type', ''),
             exceptCookie: a(roles.Repair[0], 'ExceptCookie', ''),
             onlyCookie: a(roles.Repair[0], 'OnlyCookie', ''),
@@ -147,8 +162,16 @@ export function serializeNpcXml(npc) {
     xmldec: { version: '1.0' },
     renderOpts: { pretty: true, indent: '  ', newline: '\n' }
   })
-  let xml = injectComment(builder.buildObject(buildXmlObject(npc)), npc.comment, 'Npc')
-  xml = injectNpcMeta(xml, npc.meta)
+  let xml = builder.buildObject(buildXmlObject(npc))
+  // Location and Comment go after <Name>, where the world repo keeps them.
+  xml = injectNameAnnotations(xml, npc.meta?.location || '', npc.comment)
+  // `job` is the only NPC meta key with neither an XML element nor a legacy
+  // annotation, so it is the only one left in creidhne:meta. Writing `location`
+  // here as well would duplicate it, and writing it here INSTEAD would retire
+  // the `<!-- Location: -->` line on 572 files to say the same thing in a form
+  // no human wrote — so the legacy annotation stays the home for it, and the two
+  // files that currently keep location in meta converge onto it on next save.
+  xml = injectMeta(xml, { job: npc.meta?.job || '' }, 'Npc')
   return xml + '\n'
 }
 
@@ -190,9 +213,16 @@ function buildXmlObject(npc) {
         _: adj.value
       }))
 
+    // Attribute order follows the world repo's own files (Nation, Discount,
+    // then Type where it applies), so a save produces no gratuitous diff.
     if (bank !== null) {
       const bankEl = {
-        $: omitEmpty({ ExceptCookie: bank.exceptCookie, OnlyCookie: bank.onlyCookie })
+        $: omitEmpty({
+          Nation: bank.nation,
+          Discount: bank.discount,
+          ExceptCookie: bank.exceptCookie,
+          OnlyCookie: bank.onlyCookie
+        })
       }
       if (bank.adjustments?.length) bankEl.CostAdjustment = serializeAdjustments(bank.adjustments)
       rolesNode.Bank = [bankEl]
@@ -206,6 +236,11 @@ function buildXmlObject(npc) {
           OnlyCookie: post.onlyCookie
         })
       }
+      if (post.surcharges?.length) {
+        postEl.Surcharge = post.surcharges.map((s) => ({
+          $: omitEmpty({ Nation: s.nation, Percent: s.percent })
+        }))
+      }
       if (post.adjustments?.length) postEl.CostAdjustment = serializeAdjustments(post.adjustments)
       rolesNode.Post = [postEl]
     }
@@ -213,6 +248,8 @@ function buildXmlObject(npc) {
     if (repair !== null) {
       const repairEl = {
         $: omitEmpty({
+          Nation: repair.nation,
+          Discount: repair.discount,
           Type: repair.type,
           ExceptCookie: repair.exceptCookie,
           OnlyCookie: repair.onlyCookie
