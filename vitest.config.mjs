@@ -19,7 +19,20 @@ export default defineConfig({
     include: ['src/**/__tests__/**/*.test.{js,jsx}', 'scripts/**/*.test.mjs'],
     coverage: {
       provider: 'v8',
-      include: ['src/**'],
+      // Source extensions, not `src/**` (HTOO-127). A bare `src/**` sweeps in
+      // index.html, the CSS, the webp and the JSON, and v8 then hands each to Rollup
+      // to remap — which printed `Expression expected` on index.html every run. The
+      // outcome was correct (an HTML file has no coverage to report, and it was
+      // excluded), but a parse warning nobody can act on trains people to ignore
+      // parse warnings.
+      //
+      // Naming the extensions pins the exclusion by construction rather than by a
+      // deny-list that has to grow with every new asset type.
+      //
+      // Do NOT re-add `--coverage.include` to the `test:coverage` script: a CLI flag
+      // OVERRIDES this, which is why the warning survived this setting for so long.
+      // A brace glob would also be expanded by the shell before vitest saw it.
+      include: ['src/**/*.{js,jsx}'],
       exclude: [
         'src/**/__tests__/**',
         // Release tooling, not app code — has its own unit test but shouldn't
