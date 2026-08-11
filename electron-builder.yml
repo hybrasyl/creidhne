@@ -63,6 +63,48 @@ portable:
   # Frozen frame of resources/splash.html shown while the exe extracts to %TEMP%
   # (before electron exists). Regenerate with scripts/make-portable-splash.mjs.
   splashImage: build/portable-splash.bmp
+  # Extract to a directory unique to each LAUNCH, not to each BUILD.
+  #
+  # Left unset, electron-builder bakes one KSUID into the exe at build time, so
+  # every copy of a given build extracts to the same $TEMP\<ksuid>. Launch a
+  # second copy and portable.nsi does `RMDir /r $INSTDIR` on the directory the
+  # RUNNING app is executing from, then CopyFiles into it -- which fails on the
+  # locked exe and DLLs. extractAppPackage.nsh retries 5 times a second apart and
+  # then shows NSIS's own MB_RETRYCANCEL "Creidhne cannot be closed" box. One more
+  # Retry and it overwrites a live app non-atomically with errors ignored.
+  #
+  # None of that is reachable from our side: portable.nsi never inserts
+  # CHECK_APP_RUNNING (only installSection.nsh and uninstaller.nsh do), and
+  # PortableOptions has no `include`/`script` field, so there is no hook for a
+  # customCheckAppRunning macro and no way to change those buttons. Removing the
+  # collision is the fix -- the second launch then reaches Electron, loses
+  # requestSingleInstanceLock, and app.exit(0)s while the first window comes
+  # forward. That is the whole intended behaviour, with no dialog in it.
+  #
+  # TRUE, not the documented `false`. app-builder-lib 26.15.3 resolves this as
+  #   if (typeof unpackDirName === "string" || !unpackDirName)
+  #     defines.UNPACK_DIR_NAME = unpackDirName || generateKsuid()
+  # so `false` takes the branch (`!false`) and still gets a build-time KSUID --
+  # the documented value does not produce the documented behaviour. Only a truthy
+  # non-string skips the branch, leaving UNPACK_DIR_NAME undefined so portable.nsi
+  # falls back to $PLUGINSDIR\app, which NSIS makes unique per process. Do not
+  # "correct" this to `false`; that silently restores the collision.
+  #
+  # Measured, not read: three portable exes built off this one config key. The
+  # marker build proves the technique -- an explicitly named unpack dir is NOT
+  # findable as a string in the exe (the NSIS header is LZMA-compressed), so
+  # "the name is absent" could never have been the evidence. Artifact sizes are:
+  #   true                      90,713,628   <- smallest; the !ifdef block is elided
+  #   CREIDHNEPROBEMARKERXYZ    90,713,662   22-char name
+  #   false                     90,713,671   27-char name
+  # generateKsuid() returns exactly 27 chars, and false lands 9 bytes above the
+  # 22-char marker -- so `false` demonstrably received a KSUID rather than the
+  # per-launch $PLUGINSDIR the docs promise. Owed: launch two copies and confirm
+  # two distinct directories under %TEMP%. That needs a GUI and is not done here.
+  #
+  # Cost is one extraction per launch, which we were paying anyway -- portable.nsi
+  # RMDir /r's and re-extracts on every launch regardless of the directory name.
+  unpackDirName: true
 mac:
   category: public.app-category.developer-tools
   icon: build/icon.icns

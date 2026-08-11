@@ -33,6 +33,13 @@ verbatim record; 1.0.0 shipped without notes, hence the bare stub.
 
 ### Fixed
 
+- **The portable build no longer shows "Creidhne cannot be closed."** Launching a
+  second copy of the portable exe made its launcher try to unpack over the copy
+  already running, and after a few seconds of failing it raised that Retry/Cancel
+  box — most visibly over Remote Desktop, where everything is slower. Each launch
+  now unpacks to its own directory, so the second copy simply hands you the window
+  you already have.
+
 - **Formulas show their category again.** Each formula in the list carries its
   colored category chip, the same one the formula picker shows. The chip was
   lost when the Formulas list moved onto the shared file list, so a category was
