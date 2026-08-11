@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -23,6 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import CreatureSpriteCanvas from '../shared/CreatureSpriteCanvas'
 import SpritePickerDialog from '../shared/SpritePickerDialog'
@@ -510,7 +511,6 @@ function CreatureEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useStoreValue(libraryIndexState)
   const [data, setData] = useState(creature)
   const [fileName, setFileName] = useState(
     initialFileName || computeCreatureFilename(creature.meta?.family || '', creature.name)
@@ -526,20 +526,12 @@ function CreatureEditor({
   const isDirtyRef = useRef(false)
 
   // ── Duplicate detection ────────────────────────────────────────────────────
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? creature.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.creatures || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedCreatures || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-
-    return null
-  }, [data.name, libraryIndex, isExisting, creature.name])
+  const dupStatus = useDuplicateName({
+    type: 'creatures',
+    name: data.name,
+    originalName: creature.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {

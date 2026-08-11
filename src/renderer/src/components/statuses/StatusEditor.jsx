@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -37,6 +37,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import { ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants'
 import { CONDITIONS } from '../../data/statusConstants'
 import CommentField from '../shared/CommentField'
@@ -1048,17 +1049,12 @@ function StatusEditor({
   }
 
   // ── Duplicate detection ───────────────────────────────────────────────────
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? status.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-    const activeNames = libraryIndex?.statuses || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-    const archivedNames = libraryIndex?.archivedStatuses || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-    return null
-  }, [data.name, libraryIndex, isExisting, status.name])
+  const dupStatus = useDuplicateName({
+    type: 'statuses',
+    name: data.name,
+    originalName: status.name,
+    isExisting
+  })
 
   const handleNameBlur = () => {
     if (dupStatus) setDupSnack(dupStatus)

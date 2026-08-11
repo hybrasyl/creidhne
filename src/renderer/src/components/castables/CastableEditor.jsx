@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import ScriptAutocomplete from '../shared/ScriptAutocomplete'
 import EditorHeader from '../shared/EditorHeader'
@@ -145,21 +146,12 @@ function CastableEditor({
 
   // ── Duplicate detection ────────────────────────────────────────────────────
 
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    // Don't flag the castable's own current saved name
-    const originalName = isExisting ? castable.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.castables || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedCastables || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-
-    return null
-  }, [data.name, libraryIndex, isExisting, castable.name])
+  const dupStatus = useDuplicateName({
+    type: 'castables',
+    name: data.name,
+    originalName: castable.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {
