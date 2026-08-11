@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -18,7 +18,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
-import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import { normalizeFolder } from '../../utils/fileTree'
 
 function deriveElementPrefix(fileName, name) {
@@ -59,7 +59,6 @@ function ElementTableEditor({
   const theme = useTheme()
   const headerBg = theme.palette.background.paper
   const borderColor = theme.palette.divider
-  const libraryIndex = useStoreValue(libraryIndexState)
 
   const [name, setName] = useState(table.name)
   const [comment, setComment] = useState(table.comment)
@@ -126,20 +125,12 @@ function ElementTableEditor({
 
   // ── Duplicate detection ──────────────────────────────────────────────────────
 
-  const dupStatus = useMemo(() => {
-    const trimmed = (name || '').trim()
-    if (!trimmed) return null
-    const originalName = isExisting ? table.name || '' : ''
-    if (originalName && trimmed.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.elementtables || []
-    if (activeNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedElementtables || []
-    if (archivedNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())) return 'archived'
-
-    return null
-  }, [name, libraryIndex, isExisting, table.name])
+  const dupStatus = useDuplicateName({
+    type: 'elementtables',
+    name,
+    originalName: table.name,
+    isExisting
+  })
 
   const handleNameBlur = () => {
     if (dupStatus) setDupSnack(dupStatus)

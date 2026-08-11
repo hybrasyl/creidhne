@@ -25,6 +25,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import GridViewIcon from '@mui/icons-material/GridView'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import NpcPortraitCanvas from '../shared/NpcPortraitCanvas'
 import NpcPortraitPickerDialog from '../shared/NpcPortraitPickerDialog'
@@ -205,17 +206,12 @@ function NPCEditor({
   const computedPrefix = deriveNpcPrefix(data.meta?.job || '')
   const computedFileName = computeNpcFilename(computedPrefix, data.name)
   // ── Duplicate detection ────────────────────────────────────────────────────
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? npc.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-    const activeNames = libraryIndex?.npcs || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-    const archivedNames = libraryIndex?.archivedNpcs || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-    return null
-  }, [data.name, libraryIndex, isExisting, npc.name])
+  const dupStatus = useDuplicateName({
+    type: 'npcs',
+    name: data.name,
+    originalName: npc.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import GridViewIcon from '@mui/icons-material/GridView'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import NationCrestCanvas from '../shared/NationCrestCanvas'
@@ -122,7 +123,6 @@ function NationEditor({
   onDirtyChange,
   saveRef
 }) {
-  const libraryIndex = useStoreValue(libraryIndexState)
   const [data, setData] = useState(nation)
   const [prefix, setPrefix] = useState(() => deriveNationPrefix(initialFileName, nation.name))
   const [fileName, setFileName] = useState(
@@ -138,20 +138,12 @@ function NationEditor({
   const isDirtyRef = useRef(false)
 
   // ── Duplicate detection ────────────────────────────────────────────────────
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? nation.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.nations || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedNations || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-
-    return null
-  }, [data.name, libraryIndex, isExisting, nation.name])
+  const dupStatus = useDuplicateName({
+    type: 'nations',
+    name: data.name,
+    originalName: nation.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {

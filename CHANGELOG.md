@@ -120,6 +120,19 @@ first section written to the rules above.
   Creidhne now checks each save before it writes. A refused save gives the reason and changes
   no file. Creidhne also records the reason in `ipc-validation.log`, beside your settings.
 
+- **The duplicate-name warning sees a server config that you saved in the same session.**
+  The Server Configs page did not rebuild the world index after a save. The name of a new
+  server config stayed out of the index until the next index build. The duplicate-name
+  warning reads the index, so it reported a free name for a name that you had already used.
+  Two files with one name make one of them unreachable on the server. Every other editor
+  page rebuilt its index section after a save. The Server Configs page now does the same.
+
+- **The duplicate-name warning uses the same name rule as the server.** Each editor compared
+  names in lowercase. The server compares names in lowercase and in one Unicode form. Two
+  names that differ only in Unicode form are one name to the server. The editor read them as
+  two names and reported no duplicate. All editors now use the rule that the world index
+  uses. The names in the production world are unaffected, because they use plain ASCII.
+
 - **Creidhne keeps the NPC Location note when you save.** The NPC editor did not read the
   `<!-- Location: -->` line. 572 of the 594 NPCs in the production world carry that line.
   The field showed as empty, and a save deleted the line. Creidhne now loads the Location,

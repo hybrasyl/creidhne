@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -14,6 +14,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
+import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
@@ -115,20 +116,12 @@ function RecipeEditor({
 
   // ── Duplicate detection ──────────────────────────────────────────────────────
 
-  const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
-    if (!name) return null
-    const originalName = isExisting ? recipe.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-
-    const activeNames = libraryIndex?.recipes || []
-    if (activeNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'active'
-
-    const archivedNames = libraryIndex?.archivedRecipes || []
-    if (archivedNames.some((n) => n.toLowerCase() === name.toLowerCase())) return 'archived'
-
-    return null
-  }, [data.name, libraryIndex, isExisting, recipe.name])
+  const dupStatus = useDuplicateName({
+    type: 'recipes',
+    name: data.name,
+    originalName: recipe.name,
+    isExisting
+  })
 
   const [dupSnack, setDupSnack] = useState(null)
   const handleNameBlur = () => {

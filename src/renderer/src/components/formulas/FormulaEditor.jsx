@@ -24,6 +24,7 @@ import {
 import SaveIcon from '@mui/icons-material/Save'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useStoreValue, libraryIndexState, activeLibraryState } from '../../store/appStore'
+import { nameCollisionKey } from '@shared/nameCollision.js'
 import CommentField from '../shared/CommentField'
 import StatBlockBuilder from './StatBlockBuilder'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
@@ -305,12 +306,17 @@ function FormulaEditor({
   }, [assembledFormula, effectiveAcquiredLevel, patternUsesAcquiredLevel])
 
   // ── Duplicate detection ───────────────────────────────────────────────────
+  // Not `useDuplicateName`: a formula is not an indexed type. Formulas live in
+  // `formulas.json` and are matched against the in-memory list rather than the
+  // world index, and identity is the formula's `id`, not its filename. The key
+  // rule is shared even so, because two names that key alike for every other
+  // type keying apart here would be its own surprise.
   const dupStatus = useMemo(() => {
-    const name = (data.name || '').trim()
+    const name = nameCollisionKey((data.name || '').trim())
     if (!name) return null
     const originalName = isExisting ? formula.name || '' : ''
-    if (originalName && name.toLowerCase() === originalName.toLowerCase()) return null
-    if (allFormulas.some((f) => f.id !== formula.id && f.name.toLowerCase() === name.toLowerCase()))
+    if (originalName && nameCollisionKey(originalName) === name) return null
+    if (allFormulas.some((f) => f.id !== formula.id && nameCollisionKey(f.name) === name))
       return 'active'
     return null
   }, [data.name, allFormulas, isExisting, formula])
