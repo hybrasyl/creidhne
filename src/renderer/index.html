@@ -4,10 +4,18 @@
     <meta charset="UTF-8" />
     <title>Creidhne</title>
     <link rel="icon" type="image/webp" href="./src/assets/creidhne.webp" />
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!--
+      Defence in depth. The real policy arrives as a response HEADER, set for the
+      whole session by installContentSecurityPolicy in src/main/windowSecurity.js
+      — a meta policy governs only what the parser reaches after it. This copy is
+      kept because a static HTML file cannot import the constant, and it survives
+      a session that code never touches. windowSecurity.test.js asserts the two
+      still match, so they cannot drift.
+      https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+    -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src file: http: https: data:; media-src 'self' blob:;"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';"
     />
   </head>
 
