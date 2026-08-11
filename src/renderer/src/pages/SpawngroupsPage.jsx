@@ -113,6 +113,16 @@ function SpawngroupsPage() {
       const nextFile = () => toSectionFile(`${activeLibrary}/${SPAWN_SUBDIR}`, newRel, wasArchived)
 
       await window.electronAPI.saveSpawngroup(newPath, data)
+
+      // Sync editingSpawngroup to the saved data BEFORE any selectedFile change
+      // (HTOO-130, bug class 6). SpawngroupEditor's reset effect depends on
+      // [spawngroup, initialFileName, initialFolder], and `initialFileName` is
+      // `selectedFile?.name`. So the `setSelectedFile` below fires that effect, which
+      // does `setData(spawngroup)` — and for a first save of a new spawngroup
+      // `editingSpawngroup` is still the empty DEFAULT_SPAWNGROUP. The file on disk
+      // was correct; the editor threw the user's work away in front of them.
+      setEditingSpawngroup(data)
+
       markClean()
 
       if (isRename) {

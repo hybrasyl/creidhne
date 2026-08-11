@@ -131,6 +131,11 @@ first section written to the rules above.
   every size from the 1024-pixel master. A Linux install receives every size it expects
   instead of one. Creidhne also associates its window with its desktop entry. The taskbar
   and the application switcher now show the Creidhne icon.
+- **The spawn group editor keeps your work after the first save.** You created a spawn
+  group, filled it in, and saved. The editor then reset itself to an empty spawn group.
+  The file on disk was correct, but the editor discarded what you had typed. The editor
+  now shows the spawn group you saved. Every other editor already did this.
+
 - **The formula list shows the category chip.** Each formula carries the coloured category
   chip that the formula picker shows. The chip was lost when the formula list moved to the
   shared file list. A category was visible only after you opened the formula.
