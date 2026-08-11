@@ -68,7 +68,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@eriscorp/dalib-ts": "^3.1.0",
+    "@eriscorp/dalib-ts": "^3.1.1",
     "@eslint/js": "^9.39.4",
     "@fontsource/cinzel": "^5.2.8",
     "@fontsource/cinzel-decorative": "^5.2.8",
