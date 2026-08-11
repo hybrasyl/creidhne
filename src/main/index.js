@@ -23,6 +23,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
 import { launchCompanion } from './launchCompanion.js'
 import { createSplashWindow } from './splash.js'
+import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import { parseOrLog } from './schemaLog.js'
@@ -93,6 +94,18 @@ const localBase = join(localAppDataDir(), 'Erisco', 'Creidhne')
 const settingsPath = localBase
 const cachePath = localBase
 app.setPath('userData', cachePath)
+
+// Software rendering under Remote Desktop (HTOO-325). MUST be here, before the
+// `ready` event: app.disableHardwareAcceleration() after ready does not throw and
+// does not warn in a way anybody reads -- it simply stops working. That ordering is
+// the one thing about this fix no unit test could otherwise see, so
+// remoteSession.test.js reads this file and asserts the position.
+//
+// Read ONCE and kept, because createWindow needs the same answer later for the CSS
+// mitigation, and two calls that could disagree is a worse shape than one constant
+// however unlikely the disagreement.
+const softwareRendering = shouldDisableHardwareAcceleration(process.platform, process.env)
+if (softwareRendering) app.disableHardwareAcceleration()
 
 // Single instance. A second copy would run a second world index, a second
 // settings writer and a second session-log rotation over the same local app-data
@@ -233,6 +246,23 @@ function createWindow() {
   // through guardIpc, and the guard fails closed, so registering after the load
   // would reject whatever the renderer sends during hydration.
   registerTrustedWindow(mainWindow)
+
+  // Under software compositing the themes' MuiPaper backdrop blur is the most
+  // expensive thing on screen, so turning the GPU off and leaving it in place would
+  // be half a fix. `dom-ready` fires before first paint, so there is no flash of the
+  // blurred style. The failure is logged rather than thrown -- a window that renders
+  // with one expensive effect still beats no window, and this whole path is a
+  // performance mitigation rather than a correctness one.
+  //
+  // The splash is deliberately not a second call site: it has no MuiPaper and is on
+  // screen for a moment.
+  if (softwareRendering) {
+    mainWindow.webContents.on('dom-ready', () => {
+      mainWindow.webContents.insertCSS(REMOTE_SESSION_CSS).catch((err) => {
+        console.warn('[display] remote-session CSS injection failed:', err?.message ?? err)
+      })
+    })
+  }
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
