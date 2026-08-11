@@ -15,16 +15,12 @@ import {
   Tabs,
   Tab
 } from '@mui/material'
-import SaveIcon from '@mui/icons-material/Save'
-import ArchiveIcon from '@mui/icons-material/Archive'
-import UnarchiveIcon from '@mui/icons-material/Unarchive'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import AutorenewIcon from '@mui/icons-material/Autorenew'
 import CommentField from '../shared/CommentField'
-import FolderSelect from '../shared/FolderSelect'
+import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
 
 // TODO: Fill in variable descriptions for each $ variable
@@ -342,72 +338,28 @@ function LocalizationEditor({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* ── Title + actions ── */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pb: 1,
-          flexShrink: 0
+      <EditorHeader
+        title={data.locale || '(unnamed localization)'}
+        entityLabel="localization"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeFileName(prefix, data.locale)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => {
+          markDirtyLocal()
+          setFileName(val)
+          setFileNameEdited(true)
         }}
-      >
-        <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-          {data.locale || '(unnamed localization)'}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {isExisting && !isArchived && (
-            <Tooltip title="Archive localization">
-              <IconButton size="small" onClick={onArchive}>
-                <ArchiveIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {isExisting && isArchived && (
-            <Tooltip title="Unarchive localization">
-              <IconButton size="small" onClick={onUnarchive}>
-                <UnarchiveIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<SaveIcon />}
-            onClick={() => onSave(data, fileName, normalizeFolder(folder))}
-          >
-            Save
-          </Button>
-        </Box>
-      </Box>
-      {/* ── Filename row ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <TextField
-          size="small"
-          label="Filename"
-          value={fileName}
-          onChange={(e) => {
-            markDirtyLocal()
-            setFileName(e.target.value)
-            setFileNameEdited(true)
-          }}
-          sx={{ flex: 1 }}
-          slotProps={{
-            htmlInput: { spellCheck: false }
-          }}
-        />
-        <Tooltip title="Regenerate from prefix + locale">
-          <IconButton size="small" onClick={handleRegenerate}>
-            <AutorenewIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <FolderSelect
-          value={folder}
-          options={folderOptions ?? []}
-          onChange={handleFolderChange}
-          warn={!!initialFileName && folder !== initialFolder}
-        />
-      </Box>
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
+        onRegenerate={handleRegenerate}
+        onSave={() => onSave(data, fileName, normalizeFolder(folder))}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
       {/* ── Metadata on Paper ── */}
       <Paper variant="outlined" sx={{ p: 2, mb: 1, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>

@@ -6,7 +6,6 @@ import {
   Typography,
   Divider,
   TextField,
-  Tooltip,
   IconButton,
   Paper,
   FormControl,
@@ -22,16 +21,12 @@ import {
   Alert
 } from '@mui/material'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
-import SaveIcon from '@mui/icons-material/Save'
-import AutorenewIcon from '@mui/icons-material/Autorenew'
-import ArchiveIcon from '@mui/icons-material/Archive'
-import UnarchiveIcon from '@mui/icons-material/Unarchive'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import CommentField from '../shared/CommentField'
-import FolderSelect from '../shared/FolderSelect'
+import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
 import { IMMUNITY_TYPES, MESSAGE_TYPES } from '../../data/behaviorSetConstants'
 import { ELEMENT_TYPES } from '../../data/itemConstants'
@@ -995,60 +990,28 @@ function SpawngroupEditor({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 1, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
-            {data.name || '(unnamed spawn group)'}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            {isExisting && !isArchived && (
-              <Tooltip title="Archive spawn group">
-                <IconButton size="small" onClick={onArchive}>
-                  <ArchiveIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {isExisting && isArchived && (
-              <Tooltip title="Unarchive spawn group">
-                <IconButton size="small" onClick={onUnarchive}>
-                  <UnarchiveIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave}>
-              Save
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TextField
-            size="small"
-            label="Filename"
-            value={fileName}
-            onChange={(e) => {
-              markDirty()
-              setFileName(e.target.value)
-              setFileNameEdited(true)
-            }}
-            sx={{ flex: 1 }}
-            slotProps={{
-              htmlInput: { spellCheck: false }
-            }}
-          />
-          <Tooltip title="Regenerate from prefix + name">
-            <IconButton size="small" onClick={handleRegenerate}>
-              <AutorenewIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <FolderSelect
-            value={folder}
-            options={folderOptions ?? []}
-            onChange={handleFolderChange}
-            warn={!!initialFileName && folder !== initialFolder}
-          />
-        </Box>
-      </Box>
+      <EditorHeader
+        title={data.name || '(unnamed spawn group)'}
+        entityLabel="spawn group"
+        fileName={fileName}
+        initialFileName={initialFileName}
+        computedFileName={computeFilename(prefix, data.name)}
+        isExisting={isExisting}
+        isArchived={isArchived}
+        onFileNameChange={(val) => {
+          markDirty()
+          setFileName(val)
+          setFileNameEdited(true)
+        }}
+        folder={folder}
+        folderOptions={folderOptions}
+        initialFolder={initialFolder}
+        onFolderChange={handleFolderChange}
+        onRegenerate={handleRegenerate}
+        onSave={handleSave}
+        onArchive={onArchive}
+        onUnarchive={onUnarchive}
+      />
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {/* ── Basic fields ── */}
