@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (~1530 tests incl. scripts/; node env by default)
+npm test             # vitest run (~1620 tests incl. scripts/; node env by default)
 npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
@@ -57,12 +57,14 @@ src/
                updateCheck.js, indexService.js + indexWorker.js (index build off the main
                thread), worldData.js (world/.creidhne paths), constantsJson.js +
                formulasJson.js + reportsFile.js (the three .creidhne files),
-               exportCastables.js, schemas/ (Zod), and per-domain XML (de)serializers:
-               itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
+               exportCastables.js, schemas/ (Zod — incl. worldEntity.js for the 14 xml:save
+               payloads and ipcArgs.js for the argument-shaped ones), and per-domain XML
+               (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
   shared/      electron-free code BOTH processes import, via the `@shared` alias:
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
-               exportSerializers.js, externalUrl.js, scrub.js, appIdentity.js, …
+               exportSerializers.js, nameCollision.js (the server's name-key rule + the editors'
+               duplicate check), externalUrl.js, scrub.js, appIdentity.js, …
                Nothing here may import `electron` — main runs it under node and the renderer
                bundles it.
   preload/     index.js — contextBridge, exposes window.electronAPI. `electron` is the ONLY
@@ -119,6 +121,21 @@ e2e/           Playwright specs against the built app
   self-healed on load. `world/.creidhne/` holds the three authoritative files Creidhne owns:
   `constants.json`, `formulas.json` and `reports.json` (user report definitions, WP2). A report
   goes with the world so it is shareable through the world repo.
+
+  **Every save refreshes the section it wrote** (HTOO-372) — page saves call
+  `buildIndexSection` and merge the result into the store; archive/unarchive/delete/duplicate
+  get it from `useBulkFileActions`. Both halves matter: the worker persists to the on-disk
+  cache either way, so rebuilding without merging leaves the renderer stale for the session.
+
+- **A `<Name>` is a key, and one rule decides when two names collide** (HTOO-375).
+  `useDuplicateName` (renderer) over `@shared/nameCollision.js`; never a hand-rolled
+  `toLowerCase()`. The rule is the server's — `Normalize().ToLower()`, whitespace NOT
+  collapsed — and it is restated in `shared/` only because the renderer cannot import
+  `@eriscorp/hybindex-ts` (its entry point imports `fs`/`path`/`crypto`/`os`). An agreement
+  test pins the copy to the package; if you touch one, run it.
+
+  A rename does NOT rewrite the files that refer to the old name — that gap is HTOO-378.
+
 - **`src/shared/` is electron-free, and its `@shared` alias lives in TWO config files** —
   `electron.vite.config.mjs` (renderer) and `vitest.config.mjs`. Vitest does not read the
   electron-vite config, and the error from a missing alias names the import rather than the
@@ -150,15 +167,23 @@ e2e/           Playwright specs against the built app
   matching it, a page restating a string it should import. Each produces a working app and a green
   gate. So the guard asserts the **artifact or the source**, not the intent —
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
-  `remoteSession.test.js`'s call-site position, and three under
-  `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js` and
-  `reportPresetSource.test.js`.
+  `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
+  and five under `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
+  `reportPresetSource.test.js`, `indexRefreshOnSave.test.js` and `duplicateNameSource.test.js`.
 
   **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
-  Three separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
-  editors used the shared header (HTOO-159), and one page held a second copy of six preset
-  strings (WP2). None could fail loudly, because each site looks correct read on its own. When you
-  apply a pattern, count the sites and assert the count.
+  Five separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
+  editors used the shared header (HTOO-159), one page held a second copy of six preset strings
+  (WP2), 13 of 14 pages refreshed the index on save (HTOO-372), and 13 editors held one
+  hand-rolled name comparison each (HTOO-375). None could fail loudly, because each site looks
+  correct read on its own. When you apply a pattern, count the sites and assert the count.
+
+  **HTOO-370 is the same shape one level up, and its lesson is different: a count in a document
+  cannot hold a boundary.** That card was filed as "4 of 89 handlers" and found at 7 of 92 — it
+  had moved, in the good direction, unnoticed. A sweep does not stay swept. So the guard does not
+  assert a number; it requires every channel to carry a decision (validated, or exempt with a
+  reason), which no edit to a number can satisfy. Prefer that shape whenever the thing being
+  guarded is a set that grows.
 
   Three conventions these share, learned the hard way and worth keeping:
   1. **Guard the guard.** Every one asserts it found something to check. A walk that returns
