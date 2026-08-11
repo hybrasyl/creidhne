@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (node project; ~1080 tests incl. scripts/)
+npm test             # vitest run (~1480 tests incl. scripts/; node env by default)
 npm run test:coverage
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
@@ -42,7 +42,8 @@ There is **no `typecheck`** — Creidhne is JavaScript, not TypeScript. Gate bef
 
 electron-vite 5 · Electron 41 · **React 19** · **JavaScript (`.jsx`, not TS)** ·
 MUI v9 + Emotion (style via `sx`, never styled-components) · **Zustand 5** · Zod 4 ·
-Vitest 4 (node project) · Playwright (E2E). Package manager: **npm**. Shared packages:
+Vitest 4 (`environment: 'node'` by default; a component test opts into jsdom per file with a
+`@vitest-environment jsdom` docblock) · Playwright (E2E). Package manager: **npm**. Shared packages:
 `@eriscorp/hybindex-ts` (world index cache), `@eriscorp/dalib-ts` (`.datf` asset packs).
 
 ## Layout
@@ -50,15 +51,23 @@ Vitest 4 (node project) · Playwright (E2E). Package manager: **npm**. Shared pa
 ```text
 src/
   main/        main process — the only code that touches disk. index.js (lifecycle + window +
-               IPC wiring), handlerContext.js, fsHandlers.js, pathSafety.js, settingsManager.js,
-               schemaLog.js, splash.js, updateCheck.js, indexService.js + indexWorker.js
-               (index build off the main thread), schemas/ (Zod), and per-domain XML
-               (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
-  preload/     index.js — contextBridge, exposes window.electronAPI (+ toolkit window.electron)
+               IPC wiring), handlerContext.js, fsHandlers.js, pathSafety.js, fsCase.js
+               (client filename casing), companion.js (find/launch Taliesin),
+               remoteSession.js (RDP detection), settingsManager.js, schemaLog.js, splash.js,
+               updateCheck.js, indexService.js + indexWorker.js (index build off the main
+               thread), schemas/ (Zod), and per-domain XML (de)serializers: itemXml.js,
+               castableXml.js, creatureXml.js, npcXml.js, …
+  preload/     index.js — contextBridge, exposes window.electronAPI. `electron` is the ONLY
+               module it may import: the window runs `sandbox: true`, so any package import
+               re-breaks the sandbox, and only in the packaged app. (`@electron-toolkit/preload`
+               and its `window.electron` were removed for exactly that reason — don't re-add.)
   renderer/src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
-scripts/       release + XSD tooling (changelog-extract.mjs, validate-xml.mjs, generate-lua-stubs.js)
+scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
+               generate-lua-stubs.js, make-icons.mjs). Three of its tests run in the ordinary
+               suite: icons.test.mjs (committed icon artifacts), buildPaths.test.mjs (every
+               path electron-builder.yml names is tracked by git), changelog-extract.test.mjs.
 e2e/           Playwright specs against the built app
 ```
 
@@ -82,6 +91,23 @@ e2e/           Playwright specs against the built app
 - **Six themes** — hybrasyl (default) · chadul · danaan · grinneal · mundanes (light corporate) ·
   dubhaimid (dark corporate). `MainToolbar` swaps to flat window-control glyphs for the two
   corporate themes (`PLAIN_CHROME_THEMES`).
+- **Client filenames are resolved, never guessed** (`src/main/fsCase.js`). The DA installer
+  writes `Legend.dat`; every caller spells it lowercase. Windows folds case, Linux/macOS do not,
+  and the failed read lands in a `catch` that means "not present" — so it fails silently. Ask the
+  directory. Client reads go through `fs:readClientFile(clientPath, rel)`, which takes the two
+  halves separately _because_ a joined path can no longer be case-resolved.
+- **The companion is named by identity, not by path** (`src/main/companion.js`). The renderer asks
+  for Taliesin; main resolves override → colocated sibling → installed registration → nothing, and
+  every platform probe is injected so precedence is testable. `spawn` has a far larger blast radius
+  than a file read, so what may be launched is decided in main.
+- **Boot-order calls that fail silently** live above `app.whenReady()` in `src/main/index.js`:
+  `app.setPath('userData', …)`, `requestSingleInstanceLock()`, and
+  `disableHardwareAcceleration()`. After `ready` each is a no-op rather than an error, so
+  `remoteSession.test.js` reads the file and asserts the positions (comments stripped first).
+- **Icons are generated, never hand-edited** — `scripts/make-icons.mjs` writes `build/icons/`
+  (8 Linux sizes), `resources/icon.png` and `build/icon.icns` from the two masters in `build/`.
+  Only files matching `NxN.png` in `build/icons/` are collected by electron-builder, so a stray
+  size there ships; `scripts/icons.test.mjs` asserts the directory holds those eight and no more.
 
 ## Release notes (CHANGELOG-driven)
 
@@ -109,6 +135,9 @@ Prop APIs differ from v5–v7 and fail cryptically:
   silently drops the classes/refs Autocomplete styles itself through — the field renders ~12px
   taller than a plain `size="small"` one and the popup anchors wrong. Always spread:
   `slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps?.htmlInput, … } }}`.
+- `Alert` renders its own close X only when `onClose` is set **and** `action` is absent — `action`
+  replaces it. Passing both compiles, looks right, and produces no close button (HTOO-65). If you
+  supply `action`, put your own close control inside it.
 
 ## Known divergences from the template (intentional / out of scope)
 
@@ -116,4 +145,7 @@ Prop APIs differ from v5–v7 and fail cryptically:
   in the skeleton doc (`ThemeName` union, `augmentation.ts`, `typecheck`).
 - **Bridge name `window.electronAPI`** (template standard is `window.api`) — eventual, not urgent.
 - **`react-window`** for virtualization (template prefers `@tanstack/react-virtual`) — eventual.
-- **Windows portable-only** build target (template ships nsis + portable) — eventual.
+- **Windows portable-only** build target (template ships nsis + portable). Now tracked as
+  **HTOO-373** rather than a note here, because the gap is load-bearing: HTOO-351 was written
+  against an installer Creidhne does not ship, so its prescribed fix could not have worked. The
+  card's deliverable is the decision, not necessarily adding NSIS.

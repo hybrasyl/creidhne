@@ -7,7 +7,7 @@ All notable user-facing changes to Creidhne are recorded here. Format follows
 <!--
 Release process (the notes are authored HERE, not edited on GitHub after the fact):
   1. As you land a PR, add its user-facing change under ## [Unreleased]
-     (Added / Changed / Fixed / Removed / Deprecated / Security).
+     (Added / Changed / Deprecated / Removed / Fixed / Security).
   2. To cut a release: rename ## [Unreleased] to ## [X.Y.Z] - YYYY-MM-DD, add a
      fresh empty ## [Unreleased] above it, and bump package.json to X.Y.Z
      (npm version X.Y.Z --no-git-tag-version).
@@ -16,137 +16,132 @@ Release process (the notes are authored HERE, not edited on GitHub after the fac
      auto-generated PR list below it.
 Keep entries user-facing — internal refactors/tests show up in the appended auto list.
 
+Write entries in ASD-STE100 Simplified Technical English (asd-ste100.org), like the rest of the
+documentation in this repo:
+  - One idea per sentence. Keep sentences below about 25 words.
+  - Present tense, active voice. Name the actor: "Creidhne rebuilds the index", not "the index
+    is rebuilt".
+  - One term for one thing, through the whole file. Do not reach for a synonym for variety.
+  - No idioms, no metaphor, no rhetorical asides. Give the fault, then the behaviour now.
+Keep the section order of Keep a Changelog: Added, Changed, Deprecated, Removed, Fixed, Security.
+One heading of each kind per version.
+
 Entries for 1.0.0–1.7.0 predate this file and were backfilled from the published
 GitHub release notes, condensed into the sections above. Those releases remain the
 verbatim record; 1.0.0 shipped without notes, hence the bare stub.
+
+Sections up to and including 1.10.0 are in the earlier, more conversational style. They are
+the text that was published with those releases, so they stay as they are. 1.11.0 is the
+first section written to the rules above.
 -->
 
 ## [Unreleased]
 
 ### Changed
 
-- **Creidhne now runs as a single instance.** Launching it again brings the window
-  you already have to the front instead of starting a second copy — and if that
-  window was minimized, it is restored rather than just given focus in the
-  taskbar. Two copies previously shared one settings file, one world index and one
-  session log, and raced each other over all three.
+- **Creidhne runs as a single instance.** A second launch brings the window you already
+  have to the front. Creidhne restores that window first if it is minimized. Two copies
+  shared one settings file, one world index and one session log. Each copy wrote over the
+  other's changes.
 
-- **Downloads are named in lowercase**, matching every other Hybrasyl tool —
-  `creidhne-1.10.0-portable.exe` rather than `Creidhne-1.10.0-portable.exe`, and
-  the Windows program itself is now `creidhne.exe`. The app is still called
-  Creidhne everywhere you see its name; only the filenames changed. A desktop
-  shortcut to the old filename needs remaking.
+- **Creidhne uses lowercase filenames for its downloads.** The portable download is now
+  `creidhne-1.10.0-portable.exe`, not `Creidhne-1.10.0-portable.exe`. The Windows program
+  file is now `creidhne.exe`. Every other Hybrasyl tool uses lowercase. The application
+  name is unchanged. Make a new desktop shortcut if you have one to the old filename.
 
-- **Creidhne finds Taliesin on its own.** The Launch Taliesin button in the
-  toolbar, and the Maps and World Maps cards on the Dashboard, used to stay greyed
-  out until you set a path in Settings — even in the usual case, where Taliesin is
-  installed right next to Creidhne. Creidhne now looks beside itself first, then at
-  the installed application, so the button works without being configured. The path
-  in Settings is still there as an override for an unusual install, and any path you
-  already set keeps working.
+- **Creidhne finds Taliesin without configuration.** Creidhne looks next to itself first.
+  It then looks for the installed application. The Launch Taliesin button in the toolbar
+  works immediately, and so do the Maps and World Maps cards on the Dashboard. Before this
+  change all three stayed disabled until you set a path in Settings.
 
-  Settings now says **where** the answer came from, and warns you when a path you
-  chose no longer exists — that used to fall back silently, so the button worked for
-  a reason you did not expect. A launch that fails now says why: three of the four
-  reasons are things you can fix.
+  The path in Settings is now an override for an unusual install. A path you already set
+  continues to work.
 
-  On macOS and Linux the companion could not be configured at all, because the
-  picker only offered `.exe` files and the launch was a plain process spawn. It now
-  accepts a `.app` bundle, an AppImage or a desktop entry, and starts each the way
-  its platform expects — so `open -a` activates a Taliesin window you already have
-  instead of starting a second copy.
+  Settings shows where Creidhne found Taliesin. Settings also warns you when a path you
+  set no longer exists. Before this change Creidhne used a different path and told you
+  nothing. A failed launch now gives the reason.
 
-- **Creidhne adapts to Remote Desktop.** A remote session has no GPU, so Chromium
-  rasterised in software while still paying for GPU compositing, and every repaint was
-  then captured and encoded by RDP on top of that. Creidhne is frameless, so dragging
-  the window took the most expensive path of all under exactly those conditions.
-  Creidhne now turns hardware acceleration off when it detects a remote session, and
-  drops the panel blur four of the six themes use — a blur makes Chromium re-read and
-  re-blur everything behind a panel on every frame of a drag, which is nearly free with
-  a GPU and not free without one.
+  Creidhne starts the companion application on macOS and Linux. The file picker accepts a
+  `.app` bundle, an AppImage or a desktop entry. Before this change it accepted only
+  `.exe` files. Creidhne starts each type the way its platform requires. On macOS Creidhne
+  activates a Taliesin window that is already open.
 
-  Detection can miss a **reconnected** session: Windows writes the session name at
-  logon and never revises it, so connecting to a machine that already has your session
-  open at the console leaves every program reporting a local session while running over
-  Remote Desktop. Set `CREIDHNE_DISABLE_GPU=1` before starting Creidhne to force
-  software rendering, or `CREIDHNE_DISABLE_GPU=0` to force acceleration back on. The
-  README has the detail.
+- **Creidhne turns off hardware acceleration in a remote session.** A remote session has
+  no GPU. Chromium then draws in software but still pays for GPU compositing. Remote
+  Desktop encodes every repaint again after that. Creidhne has no window frame, so a
+  window drag takes the most expensive path. Creidhne also removes the panel blur that
+  four of the six themes use. A blur makes Chromium read and blur the area behind each
+  panel on every frame of a drag.
 
-- **The world index rebuilds itself once, the first time you open a library.**
-  The index format changed, so the old cache is discarded and rebuilt from your
-  world. It happens automatically and the progress pill shows it; nothing needs
-  doing and nothing in the world folder is touched.
+  Creidhne can miss a reconnected session. Windows writes the session name at logon and
+  does not revise it. Windows reconnects your session if you connect to a machine that
+  already has it open at the console. Every program then reports a local session. Set
+  `CREIDHNE_DISABLE_GPU=1` before you start Creidhne to force software rendering. Set
+  `CREIDHNE_DISABLE_GPU=0` to force hardware acceleration on. The README gives the detail.
+
+- **Creidhne rebuilds the world index once, when you first open a library.** The index
+  format changed, so Creidhne discards the old cache. The progress pill shows the rebuild.
+  Creidhne changes no file in the world folder.
 
 ### Fixed
 
-- **Saving an NPC no longer throws away its Location note.** The NPC editor never
-  read the `<!-- Location: -->` line that 572 of the world's 594 NPCs carry, so
-  the field showed as empty and saving deleted the line for good. Location now
-  loads, shows, and is written back where you had it — on the line after the
-  name, next to the comment.
-- **Saving an NPC no longer throws away its pricing.** Bank and Repair lost their
-  Nation and Discount, and Post lost every Surcharge, because the editor had
-  nowhere to keep them. All of them survive a save now. Measured across the whole
-  production world: a save previously dropped 572 Location notes, 31 Nation
-  values and 6 Surcharges; it now drops nothing.
-- **Selected things are visible again on the hybrasyl theme.** The theme's primary
-  colour was the same value as the page background, so anything that marks itself
-  as active or selected painted itself invisible — and it read backwards, because
-  the _unselected_ items kept their grey. The selected chip, the highlighted
-  border in the sprite, icon, sound, effect and portrait pickers, and the
-  monospace snippets on the Lua Helpers page were all affected. Primary is now the
-  legible blue that was already sitting in the palette, with dark label text so
-  button and chip captions meet the accessibility contrast bar.
-- **Names holding an `&` are no longer escaped twice.** A name like
-  `The Crow & Cask` was read out of the world index still carrying its `&amp;`,
-  so picking it from a list and saving wrote `&amp;amp;` — a value that matches
-  no map, which quietly killed the warp pointing at it. Two such warps exist in
-  the production world and both can now be repaired by re-picking the
-  destination.
-- **A missing weapon is back in the weapon pickers.** Weapons that leave the
-  large-damage range at its default, or write `<Damage>` as a paired tag rather
-  than self-closing, were dropped from the index with no error and no way to
-  tell them from a non-weapon. Oak Stick was the one this affected.
-- **The portable build no longer shows "Creidhne cannot be closed."** Launching a
-  second copy of the portable exe made its launcher try to unpack over the copy
-  already running, and after a few seconds of failing it raised that Retry/Cancel
-  box — most visibly over Remote Desktop, where everything is slower. Each launch
-  now unpacks to its own directory, so the second copy simply hands you the window
-  you already have.
-- **The Dark Ages client is found on Linux and macOS.** The client installer
-  writes `Legend.dat` with a capital L, and Creidhne asked for `legend.dat`.
-  Windows ignores the difference; Linux and macOS do not, so a perfectly good
-  install showed a red or yellow client-path indicator and every sprite, icon,
-  sound and portrait picker came up empty. Creidhne now asks the folder how the
-  file is really spelled, so any mix of upper and lower case works.
-- **The update banner can be closed, and a stray click no longer silences it.** Two
-  faults hid each other. The banner had no close button at all — MUI draws its own X
-  only when no other buttons are present, and the "View release" button counted — so
-  the only way to get rid of it was to click somewhere else in the window. And that
-  click recorded the version as permanently dismissed, so the banner never came back
-  for that release. There is now a real close button, which is the only thing that
-  records the dismissal; clicking elsewhere does nothing.
-- **Crisper icons, and a real icon set on Linux.** The app icon was a single hand-made
-  256-pixel image whose edges were hard steps rather than a smooth outline, and which was
-  a pixel short of its own canvas. Every size is now generated from the 1024-pixel
-  master, so the taskbar and the window both look right. Linux installs get the full set
-  of sizes it expects instead of one, and the window is properly associated with its
-  desktop entry — so the taskbar and the app switcher show the Creidhne icon rather than
-  a generic one.
-
-- **Formulas show their category again.** Each formula in the list carries its
-  colored category chip, the same one the formula picker shows. The chip was
-  lost when the Formulas list moved onto the shared file list, so a category was
-  only visible after opening the formula.
+- **Creidhne keeps the NPC Location note when you save.** The NPC editor did not read the
+  `<!-- Location: -->` line. 572 of the 594 NPCs in the production world carry that line.
+  The field showed as empty, and a save deleted the line. Creidhne now loads the Location,
+  shows it, and writes it back on the line after the name.
+- **Creidhne keeps NPC pricing when you save.** Bank and Repair lost their Nation and
+  Discount values. Post lost every Surcharge. The editor had no field for them. Across the
+  production world a save deleted 31 Nation values and 6 Surcharges. A save now deletes
+  none of them.
+- **Selected controls are visible on the hybrasyl theme.** The theme's primary colour was
+  the same value as the page background. A control that shows an active or selected state
+  used the page colour. Unselected controls kept their grey, so the display was reversed.
+  This affected the selected chip, the highlighted border in the sprite, icon, sound,
+  effect and portrait pickers, and the monospace text on the Lua Helpers page. Primary is
+  now the blue that the palette already held. Label text is dark, so button and chip
+  captions meet the contrast requirement.
+- **Creidhne no longer escapes an `&` twice.** The world index reported a name like
+  `The Crow & Cask` as `The Crow &amp; Cask`. Creidhne wrote `&amp;amp;` when you picked
+  that name from a list and saved. No map matches that value, so the warp to it stopped
+  working. The production world holds two such warps. Pick the destination again to repair
+  each one.
+- **The weapon pickers show every weapon.** The world index dropped a weapon that leaves
+  the large-damage range at its default. It also dropped a weapon that writes `<Damage>`
+  as a paired tag instead of a self-closing tag. The index reported no error. Oak Stick is
+  the weapon this affected.
+- **The portable build does not show "Creidhne cannot be closed."** A second copy of the
+  portable exe unpacked over the copy that was already running. The launcher failed for
+  about five seconds and then showed a Retry/Cancel box. This was most common over Remote
+  Desktop, which is slower. Each launch now unpacks to its own directory. The second copy
+  brings the first window to the front.
+- **Creidhne finds the Dark Ages client on Linux and macOS.** The client installer writes
+  `Legend.dat` with a capital L, and Creidhne asked for `legend.dat`. Windows ignores the
+  difference, but Linux and macOS do not. A correct install showed a red or yellow
+  client-path indicator. Every sprite, icon, sound and portrait picker was empty. Creidhne
+  now asks the folder for the real spelling. Any mix of upper and lower case works.
+- **You can close the update banner, and a stray click does not silence it.** The banner
+  had no close button. MUI draws its own close button only when the banner carries no
+  other button, and the View release button counted. The only way to remove the banner was
+  a click elsewhere in the window. That click recorded the version as dismissed, so the
+  banner did not return for that release. The banner now carries a close button. Only that
+  button records the dismissal.
+- **Creidhne generates every icon size, and a Linux install gets a full icon set.** The
+  application icon was one 256-pixel image made by hand. Its edges were hard steps instead
+  of a smooth outline, and it was one pixel short of its canvas. Creidhne now generates
+  every size from the 1024-pixel master. A Linux install receives every size it expects
+  instead of one. Creidhne also associates its window with its desktop entry. The taskbar
+  and the application switcher now show the Creidhne icon.
+- **The formula list shows the category chip.** Each formula carries the coloured category
+  chip that the formula picker shows. The chip was lost when the formula list moved to the
+  shared file list. A category was visible only after you opened the formula.
 
 ### Security
 
-- **Electron updated to 41.10.4**, closing five advisories — among them a
-  context-isolation bypass and a `contextBridge` prototype-setter leak. Creidhne
-  runs its renderer sandboxed, and both of those reach a sandboxed app.
-- **The remaining dependency advisories are cleared**, so `npm audit` reports
-  nothing outstanding. All of them were in build and lint tooling rather than in
-  anything Creidhne ships.
+- **Creidhne uses Electron 41.10.4.** This version closes five advisories. Two of them are
+  a context-isolation bypass and a `contextBridge` prototype-setter leak. Creidhne runs
+  its renderer in a sandbox, and both advisories reach a sandboxed application.
+- **Creidhne clears the remaining dependency advisories.** `npm audit` now reports
+  nothing. Every advisory was in build and lint tooling, not in code that Creidhne ships.
 
 ## [1.10.0] - 2026-08-01
 
