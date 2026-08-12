@@ -13,6 +13,8 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
+import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
+import { useRenameReferences } from '../hooks/useRenameReferences'
 import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
 
 const CREATURES_SUBDIR = 'creatures'
@@ -114,8 +116,23 @@ function CreaturesPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
+  // HTOO-378: a <Name> is a key, so a changed name orphans every file that
+  // names this entity. Offered before the save, so Cancel writes nothing.
+  const { confirmRename, renameDialogProps } = useRenameReferences({
+    activeLibrary,
+    type: 'creatures',
+    setSnackbar,
+    setLibraryIndex
+  })
+
   const handleSave = async (data, fileName, folder) => {
     try {
+      // Before anything is written: the count the user is shown describes
+      // the files as they stand, and Cancel is therefore truthful.
+      const rename = await confirmRename(editingCreature?.name, data.name, {
+        isExisting: !!selectedFile
+      })
+      if (rename.cancelled) return
       const wasArchived = selectedFile?.archived === true
       const { newPath, newRel, isRename } = resolveSavePath(
         activeLibrary,
@@ -150,6 +167,9 @@ function CreaturesPage() {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, CREATURES_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
+      // Last, and only once the entity itself is on disk: a failed entity
+      // save must not leave the world repointed at a name never written.
+      await rename.apply()
     } catch (err) {
       console.error('Failed to save creature:', err)
     }
@@ -252,6 +272,7 @@ function CreaturesPage() {
         )}
         <MultiSelectOverlay count={selectionCount} />
       </Box>
+      <RenameReferencesDialog {...renameDialogProps} />
       <UnsavedChangesDialog
         open={dialogOpen}
         label="Creature"

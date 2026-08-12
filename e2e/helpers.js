@@ -33,7 +33,56 @@ export async function launchApp({ seedSettings, localAppData: reuseDir } = {}) {
   const env = { ...process.env, LOCALAPPDATA: localAppData, NODE_ENV: 'test' }
   delete env.ELECTRON_RUN_AS_NODE
   const electronApp = await electron.launch({ args: [mainEntry], cwd: repoRoot, env })
+  await placeWindowsOffPrimary(electronApp)
   return { electronApp, localAppData }
+}
+
+// Keep the test windows off the monitor someone is working on.
+//
+// An E2E run opens a splash and a main window, sometimes several times in a
+// suite, and every one of them steals focus on whichever display it lands on.
+// The app centres on the primary display, which is normally the one in use.
+//
+// `CREIDHNE_E2E_DISPLAY` picks a display by index (as `screen.getAllDisplays()`
+// orders them); with no value set, the first NON-primary display is used and a
+// single-monitor machine is left alone. Placement is test-harness behaviour and
+// deliberately lives here rather than in the app.
+//
+// Both existing and future windows are moved: the splash is created during
+// `app.whenReady()` and can already exist by the time this runs, while the main
+// window usually does not.
+export async function placeWindowsOffPrimary(electronApp) {
+  const index = process.env.CREIDHNE_E2E_DISPLAY
+  await electronApp.evaluate(({ app, BrowserWindow, screen }, wanted) => {
+    const displays = screen.getAllDisplays()
+    const primary = screen.getPrimaryDisplay()
+    const target =
+      wanted !== undefined && displays[Number(wanted)]
+        ? displays[Number(wanted)]
+        : displays.find((d) => d.id !== primary.id)
+    if (!target) return null // single monitor: leave everything where it is
+
+    const place = (win) => {
+      if (win.isDestroyed()) return
+      const { width, height } = win.getBounds()
+      // Centre it on the target display rather than pinning it to a corner, so a
+      // window near that display's size is still fully on screen.
+      win.setBounds({
+        x: Math.round(target.bounds.x + (target.bounds.width - width) / 2),
+        y: Math.round(target.bounds.y + (target.bounds.height - height) / 2),
+        width,
+        height
+      })
+    }
+    BrowserWindow.getAllWindows().forEach(place)
+    app.on('browser-window-created', (_e, win) => {
+      place(win)
+      // The app calls `center()` on reveal, which would pull it back to the
+      // primary display, so re-place once the window is shown as well.
+      win.once('show', () => place(win))
+    })
+    return target.id
+  }, index)
 }
 
 // Find the real main window and wait until it's actually shown. The app pops a

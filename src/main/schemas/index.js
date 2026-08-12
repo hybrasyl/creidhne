@@ -14,3 +14,4 @@ export {
   addCategoryBulkArgsSchema,
   spellbookApplyArgsSchema
 } from './ipcArgs.js'
+export { refsScanArgsSchema, refsApplyArgsSchema } from './entityRefs.js'

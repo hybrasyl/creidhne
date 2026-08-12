@@ -39,6 +39,28 @@ first section written to the rules above.
 
 ### Added
 
+- **Creidhne offers to correct the other files when you change a name.** A name is a key. The
+  server finds an entity by its name, so a changed name breaks every file that uses the old one.
+  The file you edited is correct. The broken files are somewhere else, and Creidhne gave you no
+  message.
+
+  Creidhne now looks for the files that use the old name before it writes anything. It tells you
+  how many references it found, and in which files. You then choose one of three actions:
+  - **Update** — Creidhne saves the entity and corrects every file in the list.
+  - **Skip** — Creidhne saves the entity. The other files keep the old name.
+  - **Cancel** — Creidhne writes nothing.
+
+  The offer applies to items, castables, creatures, behavior sets, loot sets, spawn groups,
+  statuses, variant groups and nations. Creidhne makes the offer when you change the `<Name>`,
+  whether or not you also change the file name.
+
+  Creidhne corrects only the name inside each reference, so each file gets a one-line change.
+  It also corrects the spawn groups that map files use, which Creidhne has no editor for.
+  Creidhne does not change archived files in `.ignore`.
+
+  If two entities already have the old name, Creidhne cannot tell which one the other files
+  mean. It then saves your change, makes no offer, and tells you the reason.
+
 - **The Exports page is now Reports, and you can build your own report.** Choose the
   castable fields, set their order, filter the rows, and pick CSV or JSON. Creidhne shows
   how many castables match while you work.
