@@ -37,6 +37,8 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-08-11
+
 ### Added
 
 - **You can rename a file and keep one file.** Change the filename, then click Rename. Creidhne
