@@ -39,6 +39,27 @@ first section written to the rules above.
 
 ### Added
 
+- **You can rename a file and keep one file.** Change the filename, then click Rename. Creidhne
+  changes the name of the file. It makes no second file, and it archives nothing.
+
+  Save keeps its behaviour. A Save with a new filename writes a new file and archives the old one.
+  Use Save when you replace an entity and want to keep the old one as a record. Use Rename when
+  you only want a different filename. The text below the Filename field tells you what each button
+  does.
+
+  Rename also writes your other changes to the file. The Rename button shows only when the
+  filename or the folder is different.
+
+  A filename is not the entity name. The server finds an entity by its `<Name>`, so a new filename
+  breaks nothing and needs no correction to other files.
+
+- **The file list can open and close all folders together.** Use the new button beside the folder
+  view button. The button is off while you filter, because a filter opens every folder that has a
+  result.
+
+- **The filter box has a clear button.** Click the X to empty the filter. The X shows only when
+  the filter has text.
+
 - **Creidhne offers to correct the other files when you change a name.** A name is a key. The
   server finds an entity by its name, so a changed name breaks every file that uses the old one.
   The file you edited is correct. The broken files are somewhere else, and Creidhne gave you no
@@ -144,6 +165,12 @@ first section written to the rules above.
   Creidhne changes no file in the world folder.
 
 ### Fixed
+
+- **A change of capital letters in a filename no longer removes the entity.** Windows and macOS
+  read `Bash.xml` and `bash.xml` as one file. Creidhne wrote the new name over the same file, then
+  archived it. The entity then had no active file, and the server did not load it. Creidhne showed
+  a message that the save was correct. Creidhne now sees that the two names are one file and
+  changes the name. Linux was not affected.
 
 - **The circle on the startup screen is round again.** The startup screen put its contents in
   one vertical column. The column was taller than the window on some screens. The circle was

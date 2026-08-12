@@ -522,6 +522,7 @@ function VariantEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={() => onSave(data, fileName, normalizeFolder(folder))}
+        onRenameFile={() => onSave(data, fileName, normalizeFolder(folder), 'rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

@@ -36,12 +36,16 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import ViewListIcon from '@mui/icons-material/ViewList'
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
+import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
+import ClearIcon from '@mui/icons-material/Clear'
 import { useStoreState, fileListViewModeState } from '../../store/appStore'
 import {
   ITEM_HEIGHT,
   FOLDER_HEIGHT,
   INDENT_STEP,
   stripXml,
+  folderKeys,
   displayNameFor,
   filterFiles,
   buildFileTree,
@@ -255,6 +259,17 @@ export default function EditorFileListPanel({
   }, [tree, filtered, expanded, search])
 
   const rowHeight = useMemo(() => rowHeightFor(rows), [rows])
+
+  // Expand/collapse all. `allExpanded` decides which way the one button goes, so
+  // it is measured against the tree's own folder keys rather than a count — a
+  // folder opened, then filtered away, then restored would otherwise leave the
+  // two sets the same size and different.
+  const allFolders = useMemo(() => folderKeys(tree), [tree])
+  const allExpanded = allFolders.length > 0 && allFolders.every((k) => expanded.has(k))
+  const toggleExpandAll = useCallback(
+    () => setExpanded(allExpanded ? new Set() : new Set(allFolders)),
+    [allExpanded, allFolders]
+  )
 
   // Path → file lookup across both tabs, used by the action toolbar to
   // resolve the selectedPaths set into actual file objects.
@@ -503,6 +518,35 @@ export default function EditorFileListPanel({
               )}
             </IconButton>
           </Tooltip>
+          {folderMode && allFolders.length > 0 && (
+            // Disabled while filtering rather than hidden: a live filter forces
+            // every surviving folder open, so the button would appear to do
+            // nothing. Saying why is better than a control that ignores clicks.
+            <Tooltip
+              title={
+                search
+                  ? 'Filtering already shows every match'
+                  : allExpanded
+                    ? 'Collapse all folders'
+                    : 'Expand all folders'
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={toggleExpandAll}
+                  disabled={!!search}
+                  aria-label={allExpanded ? 'Collapse all folders' : 'Expand all folders'}
+                >
+                  {allExpanded ? (
+                    <UnfoldLessIcon fontSize="small" />
+                  ) : (
+                    <UnfoldMoreIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', gap: 0.25 }}>
@@ -637,7 +681,18 @@ export default function EditorFileListPanel({
                 <InputAdornment position="start">
                   <SearchIcon fontSize="small" />
                 </InputAdornment>
-              )
+              ),
+              // Only while there is something to clear, so the field does not
+              // carry a permanent dead control.
+              endAdornment: search ? (
+                <InputAdornment position="end">
+                  <Tooltip title="Clear filter">
+                    <IconButton size="small" edge="end" onClick={() => setSearch('')}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ) : null
             }
           }}
         />

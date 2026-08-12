@@ -257,7 +257,7 @@ function CastableEditor({
     setFileNameEdited(false)
   }
 
-  const handleSave = () => onSave(data, fileName, normalizeFolder(folder))
+  const handleSave = (mode) => onSave(data, fileName, normalizeFolder(folder), mode)
   if (saveRef) saveRef.current = handleSave
 
   // ── Descriptions ───────────────────────────────────────────────────────────
@@ -326,6 +326,7 @@ function CastableEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
+        onRenameFile={() => handleSave('rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

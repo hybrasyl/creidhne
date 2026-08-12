@@ -3,6 +3,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import ArchiveIcon from '@mui/icons-material/Archive'
 import UnarchiveIcon from '@mui/icons-material/Unarchive'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
+import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline'
 import FolderSelect from './FolderSelect'
 
 /**
@@ -22,7 +23,8 @@ import FolderSelect from './FolderSelect'
  *   initialFolder    — the folder the file is in now ('' for a new file)
  *   onFolderChange   — (value: string) => void; omit to hide the picker entirely
  *   onRegenerate     — () => void  — reset fileName to computedFileName
- *   onSave           — () => void
+ *   onSave           — () => void  — supersede: write the new file, archive the old
+ *   onRenameFile     — () => void  — rename the file in place, keeping only one
  *   onArchive        — () => void
  *   onUnarchive      — () => void
  */
@@ -41,22 +43,28 @@ function EditorHeader({
   onFolderChange,
   onRegenerate,
   onSave,
+  onRenameFile,
   onArchive,
   onUnarchive
 }) {
   const recyclePending = !!initialFileName && fileName !== computedFileName
   const willRename = !!initialFileName && fileName !== initialFileName
-  // A move is a rename by another name: it also writes a new file and archives
-  // the old one, so it warns the same way and says the same thing.
+  // A move to another folder is the same operation as a rename — the path
+  // changes — so it warns the same way and both buttons handle it.
   const willMove = !!initialFileName && initialFolder !== undefined && folder !== initialFolder
   const fileNameWarn = recyclePending || willRename || willMove
   const recycleDisabled = fileName === computedFileName
 
   const destination = folder ? `${folder}/${fileName}` : fileName
   const origin = `${initialFolder ? `${initialFolder}/` : ''}${initialFileName}`
+  // Two different intents, and until they had two buttons the first one was the
+  // only one on offer. Save supersedes: it writes a new file and keeps the old
+  // one as an archived record. Rename changes the file's name and nothing else
+  // is left behind. Neither touches `<Name>`, which is the server's key — a
+  // filename is Creidhne's business alone.
   const helperText =
     willRename || willMove
-      ? `Saving will create "${destination}" and archive "${origin}"`
+      ? `Save creates "${destination}" and archives "${origin}" · Rename changes the name in place`
       : recyclePending
         ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)`
         : undefined
@@ -90,7 +98,12 @@ function EditorHeader({
               </IconButton>
             </Tooltip>
           )}
-          <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={onSave}>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<SaveIcon />}
+            onClick={() => onSave()}
+          >
             Save
           </Button>
         </Box>
@@ -122,6 +135,28 @@ function EditorHeader({
             </IconButton>
           </span>
         </Tooltip>
+        {/* Beside the field it acts on, and only once there is a change to
+            apply — an always-present Rename with nothing to rename to is a
+            control that does nothing on most clicks. */}
+        {isExisting && (willRename || willMove) && (
+          <Tooltip
+            title={
+              willMove && !willRename
+                ? `Move "${initialFileName}" to ${folder ? `"${folder}"` : 'the type root'}`
+                : `Rename "${origin}" to "${destination}"`
+            }
+          >
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<DriveFileRenameOutlineIcon />}
+              onClick={() => onRenameFile()}
+              sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+            >
+              Rename
+            </Button>
+          </Tooltip>
+        )}
         {onFolderChange && (
           <FolderSelect
             value={folder ?? ''}

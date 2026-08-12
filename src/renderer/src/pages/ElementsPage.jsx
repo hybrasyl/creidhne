@@ -90,7 +90,7 @@ function ElementsPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
-  const handleSave = async (data, fileName, folder) => {
+  const handleSave = async (data, fileName, folder, mode = 'archive') => {
     try {
       const wasArchived = selectedFile?.archived === true
       const { newPath, newRel, isRename } = resolveSavePath(
@@ -104,10 +104,23 @@ function ElementsPage() {
       // in rather than an ad-hoc object with no treePath.
       const nextFile = () => toSectionFile(`${activeLibrary}/${SUBDIR}`, newRel, wasArchived)
 
+      // Rename: change the file's name before anything is written, so a
+      // collision is refused while both files still exist. `moveFile`
+      // treats a change of capitalisation as the same file, not a clash.
+      if (isRename && mode === 'rename') {
+        const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
+        if (moved?.conflict) {
+          setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
+          return
+        }
+      }
       await window.electronAPI.saveElementTable(newPath, data)
       setEditingTable(data) // #6: sync editor to saved data before any selectedFile change
 
-      if (isRename) {
+      if (isRename && mode === 'rename') {
+        setSelectedFile(nextFile())
+        setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
+      } else if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`

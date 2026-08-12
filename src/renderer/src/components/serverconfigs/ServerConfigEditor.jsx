@@ -1803,6 +1803,7 @@ function ServerConfigEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={() => {}}
         onSave={() => onSave(data, fileName, normalizeFolder(folder))}
+        onRenameFile={() => onSave(data, fileName, normalizeFolder(folder), 'rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

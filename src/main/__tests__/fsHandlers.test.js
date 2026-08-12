@@ -7,7 +7,8 @@ const mockFs = {
   writeFile: vi.fn(),
   access: vi.fn(),
   mkdir: vi.fn(),
-  rename: vi.fn()
+  rename: vi.fn(),
+  realpath: vi.fn()
 }
 
 vi.mock('fs', () => ({ promises: mockFs }))
@@ -46,6 +47,11 @@ beforeEach(() => {
   mockFs.mkdir.mockResolvedValue(undefined)
   mockFs.rename.mockResolvedValue(undefined)
   mockFs.writeFile.mockResolvedValue(undefined)
+  // Distinct paths are distinct files — the case-insensitive default everywhere
+  // except the one test about a change of capitalisation, which overrides it.
+  // Left unset, every path would resolve to `undefined` and `moveFile` would
+  // read two different files as the same one and overwrite.
+  mockFs.realpath.mockImplementation(async (p) => p)
 })
 
 // ─── listSection ─────────────────────────────────────────────────────────────
@@ -130,11 +136,31 @@ describe('moveFile', () => {
     expect(result).toEqual({ success: true })
   })
 
-  it('returns conflict when dest already exists', async () => {
+  it('returns conflict when dest is a DIFFERENT existing file', async () => {
     mockFs.access.mockResolvedValue(undefined) // dest exists
+    mockFs.realpath.mockImplementation(async (p) => p)
     const result = await moveFile('/src/item.xml', '/dest/item.xml')
     expect(mockFs.rename).not.toHaveBeenCalled()
     expect(result).toEqual({ conflict: true })
+  })
+
+  it('renames when dest is the SAME file under another spelling', async () => {
+    // Bash.xml -> bash.xml on a case-insensitive filesystem. `access` succeeds
+    // because it is the same file, so an existence check alone refuses a
+    // legitimate change of capitalisation. realpath reports the on-disk casing
+    // for both, so identity is the question that separates them.
+    mockFs.access.mockResolvedValue(undefined)
+    mockFs.realpath.mockResolvedValue('/items/Bash.xml')
+    const result = await moveFile('/items/Bash.xml', '/items/bash.xml')
+    expect(mockFs.rename).toHaveBeenCalledWith('/items/Bash.xml', '/items/bash.xml')
+    expect(result).toEqual({ success: true })
+  })
+
+  it('moves when realpath cannot be taken, rather than refusing', async () => {
+    mockFs.access.mockResolvedValue(undefined)
+    mockFs.realpath.mockRejectedValue(new Error('ENOENT'))
+    const result = await moveFile('/src/item.xml', '/dest/item.xml')
+    expect(result).toEqual({ success: true })
   })
 
   it('creates destination directory before moving', async () => {
