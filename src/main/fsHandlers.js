@@ -108,12 +108,27 @@ export async function writeFile(filePath, content) {
   await fs.writeFile(filePath, content, 'utf-8')
 }
 
+// Rename a file, refusing to overwrite a different one.
+//
+// "dest exists" is NOT the same question as "dest is another file", and on a
+// case-insensitive filesystem the two come apart. Renaming `Bash.xml` to
+// `bash.xml` on Windows or macOS finds a dest that exists — it is the same file
+// — so a bare existence check refuses a legitimate change of capitalisation.
+// Worse, the archive-on-save path did not check at all: it wrote the new name
+// over the same file and then archived it, leaving nothing in the active tree.
+//
+// So the check is on IDENTITY, via realpath, which reports the on-disk casing.
+// Two different paths for one file resolve equal; on a case-sensitive
+// filesystem, where the two really are separate files, they do not.
 export async function moveFile(src, dest) {
   try {
     await fs.access(dest)
-    return { conflict: true }
+    const [realSrc, realDest] = await Promise.all([fs.realpath(src), fs.realpath(dest)])
+    if (realSrc !== realDest) return { conflict: true }
+    // Same file under another spelling: the rename is the whole point.
   } catch {
-    // dest does not exist, safe to move
+    // dest does not exist, or one of the realpaths could not be taken —
+    // either way there is nothing here to overwrite.
   }
   await fs.mkdir(dirname(dest), { recursive: true })
   await fs.rename(src, dest)

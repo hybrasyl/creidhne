@@ -954,7 +954,7 @@ function SpawngroupEditor({
     setFolder(val)
   }
 
-  const handleSave = () => onSave(data, fileName, normalizeFolder(folder))
+  const handleSave = (mode) => onSave(data, fileName, normalizeFolder(folder), mode)
   if (saveRef) saveRef.current = handleSave
 
   // ── Group Loot ──────────────────────────────────────────────────────────────
@@ -1002,6 +1002,7 @@ function SpawngroupEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
+        onRenameFile={() => handleSave('rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

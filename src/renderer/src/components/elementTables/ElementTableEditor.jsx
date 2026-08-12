@@ -191,11 +191,15 @@ function ElementTableEditor({
 
   const getFileName = () => fileName || computeFileName(prefix, name) || 'element-table.xml'
 
-  const handleSave = useCallback(() => {
-    onSave({ name, comment, elements, matrix }, getFileName(), normalizeFolder(folder))
-    isDirtyRef.current = false
-    onDirtyChange?.(false)
-  }, [name, comment, elements, matrix, isExisting, initialFileName, fileName, folder]) // eslint-disable-line react-hooks/exhaustive-deps
+  const handleSave = useCallback(
+    (mode) => {
+      onSave({ name, comment, elements, matrix }, getFileName(), normalizeFolder(folder), mode)
+      isDirtyRef.current = false
+      onDirtyChange?.(false)
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [name, comment, elements, matrix, isExisting, initialFileName, fileName, folder]
+  )
 
   if (saveRef) saveRef.current = handleSave
 
@@ -276,6 +280,7 @@ function ElementTableEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
+        onRenameFile={() => handleSave('rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

@@ -94,7 +94,7 @@ function StringsPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
-  const handleSave = async (data, fileName, folder) => {
+  const handleSave = async (data, fileName, folder, mode = 'archive') => {
     try {
       const wasArchived = selectedFile?.archived === true
       const { newPath, newRel, isRename } = resolveSavePath(
@@ -109,11 +109,24 @@ function StringsPage() {
       const nextFile = () =>
         toSectionFile(`${activeLibrary}/${LOCALIZATIONS_SUBDIR}`, newRel, wasArchived)
 
+      // Rename: change the file's name before anything is written, so a
+      // collision is refused while both files still exist. `moveFile`
+      // treats a change of capitalisation as the same file, not a clash.
+      if (isRename && mode === 'rename') {
+        const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
+        if (moved?.conflict) {
+          setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
+          return
+        }
+      }
       await window.electronAPI.saveLocalization(newPath, data)
       setEditingLocalization(data)
       markClean()
 
-      if (isRename) {
+      if (isRename && mode === 'rename') {
+        setSelectedFile(nextFile())
+        setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
+      } else if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
           `${activeLibrary}/${IGNORE_SUBDIR}`

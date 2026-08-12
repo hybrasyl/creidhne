@@ -474,7 +474,7 @@ function BehaviorSetEditor({
     setFileNameEdited(false)
   }
 
-  const handleSave = () => onSave(data, fileName, normalizeFolder(folder))
+  const handleSave = (mode) => onSave(data, fileName, normalizeFolder(folder), mode)
   if (saveRef) saveRef.current = handleSave
 
   // ── Immunities ──────────────────────────────────────────────────────────────
@@ -602,6 +602,7 @@ function BehaviorSetEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
+        onRenameFile={() => handleSave('rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />

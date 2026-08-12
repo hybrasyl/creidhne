@@ -233,6 +233,28 @@ export function flattenTree(nodes, expanded, expandAll = false) {
   return rows
 }
 
+/**
+ * Every folder key in a built tree, depth-first — what "expand all" needs, and
+ * what "is everything already expanded?" is measured against.
+ *
+ * Derived from the tree rather than from the file list, because a folder exists
+ * here only if `buildFileTree` made a node for it; collecting `relDir` values
+ * instead would invent keys for folders the tree does not have and leave the
+ * expand-all set permanently unequal to the expanded set.
+ */
+export function folderKeys(nodes) {
+  const keys = []
+  const walk = (list) => {
+    for (const node of list ?? []) {
+      if (node.kind !== 'folder') continue
+      keys.push(node.key)
+      walk(node.children)
+    }
+  }
+  walk(nodes)
+  return keys
+}
+
 /** Flat view: every file at depth 0, no folder rows. */
 export function flattenFlat(files) {
   return files.map((file) => ({ kind: 'file', key: file.path, file, depth: 0 }))

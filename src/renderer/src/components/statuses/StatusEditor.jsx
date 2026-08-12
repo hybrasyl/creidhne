@@ -1125,7 +1125,7 @@ function StatusEditor({
     setFileNameEdited(false)
   }
 
-  const handleSave = () => {
+  const handleSave = (mode) => {
     const saveData = {
       ...data,
       onRemove: {
@@ -1139,7 +1139,7 @@ function StatusEditor({
         conditions: computedConditions
       }
     }
-    onSave(saveData, fileName, normalizeFolder(folder))
+    onSave(saveData, fileName, normalizeFolder(folder), mode)
   }
 
   if (saveRef) saveRef.current = handleSave
@@ -1166,6 +1166,7 @@ function StatusEditor({
         onFolderChange={handleFolderChange}
         onRegenerate={handleRegenerate}
         onSave={handleSave}
+        onRenameFile={() => handleSave('rename')}
         onArchive={onArchive}
         onUnarchive={onUnarchive}
       />
