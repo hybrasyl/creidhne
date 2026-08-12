@@ -202,10 +202,12 @@ first section written to the rules above.
   `<!-- Location: -->` line. 572 of the 594 NPCs in the production world carry that line.
   The field showed as empty, and a save deleted the line. Creidhne now loads the Location,
   shows it, and writes it back on the line after the name.
+
 - **Creidhne keeps NPC pricing when you save.** Bank and Repair lost their Nation and
   Discount values. Post lost every Surcharge. The editor had no field for them. Across the
   production world a save deleted 31 Nation values and 6 Surcharges. A save now deletes
   none of them.
+
 - **Selected controls are visible on the hybrasyl theme.** The theme's primary colour was
   the same value as the page background. A control that shows an active or selected state
   used the page colour. Unselected controls kept their grey, so the display was reversed.
@@ -213,37 +215,44 @@ first section written to the rules above.
   effect and portrait pickers, and the monospace text on the Lua Helpers page. Primary is
   now the blue that the palette already held. Label text is dark, so button and chip
   captions meet the contrast requirement.
+
 - **Creidhne no longer escapes an `&` twice.** The world index reported a name like
   `The Crow & Cask` as `The Crow &amp; Cask`. Creidhne wrote `&amp;amp;` when you picked
   that name from a list and saved. No map matches that value, so the warp to it stopped
   working. The production world holds two such warps. Pick the destination again to repair
   each one.
+
 - **The weapon pickers show every weapon.** The world index dropped a weapon that leaves
   the large-damage range at its default. It also dropped a weapon that writes `<Damage>`
   as a paired tag instead of a self-closing tag. The index reported no error. Oak Stick is
   the weapon this affected.
+
 - **The portable build does not show "Creidhne cannot be closed."** A second copy of the
   portable exe unpacked over the copy that was already running. The launcher failed for
   about five seconds and then showed a Retry/Cancel box. This was most common over Remote
   Desktop, which is slower. Each launch now unpacks to its own directory. The second copy
   brings the first window to the front.
+
 - **Creidhne finds the Dark Ages client on Linux and macOS.** The client installer writes
   `Legend.dat` with a capital L, and Creidhne asked for `legend.dat`. Windows ignores the
   difference, but Linux and macOS do not. A correct install showed a red or yellow
   client-path indicator. Every sprite, icon, sound and portrait picker was empty. Creidhne
   now asks the folder for the real spelling. Any mix of upper and lower case works.
+
 - **You can close the update banner, and a stray click does not silence it.** The banner
   had no close button. MUI draws its own close button only when the banner carries no
   other button, and the View release button counted. The only way to remove the banner was
   a click elsewhere in the window. That click recorded the version as dismissed, so the
   banner did not return for that release. The banner now carries a close button. Only that
   button records the dismissal.
+
 - **Creidhne generates every icon size, and a Linux install gets a full icon set.** The
   application icon was one 256-pixel image made by hand. Its edges were hard steps instead
   of a smooth outline, and it was one pixel short of its canvas. Creidhne now generates
   every size from the 1024-pixel master. A Linux install receives every size it expects
   instead of one. Creidhne also associates its window with its desktop entry. The taskbar
   and the application switcher now show the Creidhne icon.
+
 - **The spawn group editor keeps your work after the first save.** You created a spawn
   group, filled it in, and saved. The editor then reset itself to an empty spawn group.
   The file on disk was correct, but the editor discarded what you had typed. The editor
@@ -280,6 +289,7 @@ first section written to the rules above.
 - **Creidhne uses Electron 41.10.4.** This version closes five advisories. Two of them are
   a context-isolation bypass and a `contextBridge` prototype-setter leak. Creidhne runs
   its renderer in a sandbox, and both advisories reach a sandboxed application.
+
 - **Creidhne clears the remaining dependency advisories.** `npm audit` now reports
   nothing. Every advisory was in build and lint tooling, not in code that Creidhne ships.
 
