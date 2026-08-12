@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (~1690 tests incl. scripts/; node env by default)
+npm test             # vitest run (~1725 tests incl. scripts/; node env by default)
 npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
@@ -34,6 +34,10 @@ npm run build:win    # packaged Windows build — NSIS installer + portable exe 
 npm run e2e          # build, then Playwright-drives the built app (local-only, needs a GUI)
 npm run e2e:only     # E2E against the existing out/ build
 ```
+
+E2E windows open on the first NON-primary display, so a run does not steal focus from the monitor
+someone is working on; `CREIDHNE_E2E_DISPLAY=<index>` picks one, and a single-monitor machine is
+left alone.
 
 There is **no `typecheck`** — Creidhne is JavaScript, not TypeScript. Gate before committing:
 `npm run lint:check && npm test && npm run build`.
@@ -57,14 +61,18 @@ src/
                updateCheck.js, indexService.js + indexWorker.js (index build off the main
                thread), worldData.js (world/.creidhne paths), constantsJson.js +
                formulasJson.js + reportsFile.js (the three .creidhne files),
-               exportCastables.js, schemas/ (Zod — incl. worldEntity.js for the 14 xml:save
-               payloads and ipcArgs.js for the argument-shaped ones), and per-domain XML
+               exportCastables.js, entityRefScan.js + entityRefRepair.js (rename repair —
+               find/rewrite, then the disk walk), schemas/ (Zod — incl. worldEntity.js for the
+               14 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
+               for the two bulk-rewrite channels), and per-domain XML
                (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
   shared/      electron-free code BOTH processes import, via the `@shared` alias:
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
                exportSerializers.js, nameCollision.js (the server's name-key rule + the editors'
-               duplicate check), externalUrl.js, scrub.js, appIdentity.js, …
+               duplicate check), entityReferences.js (the declared reference graph) +
+               renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
+               appIdentity.js, …
                Nothing here may import `electron` — main runs it under node and the renderer
                bundles it.
   preload/     index.js — contextBridge, exposes window.electronAPI. `electron` is the ONLY
@@ -143,7 +151,24 @@ e2e/           Playwright specs against the built app
   `@eriscorp/hybindex-ts` (its entry point imports `fs`/`path`/`crypto`/`os`). An agreement
   test pins the copy to the package; if you touch one, run it.
 
-  A rename does NOT rewrite the files that refer to the old name — that gap is HTOO-378.
+- **A rename offers to repoint the files that named the entity** (HTOO-378), and the trigger is
+  the `<Name>` VALUE — never `isRename`, which `resolveSavePath` computes from the FILENAME. The
+  two come apart the moment a user hand-edits a filename, and the miss is silent in other files.
+  `shouldOfferRepair` (`@shared/renameRepair.js`) therefore takes no filename at all.
+
+  Three parts, and each is load-bearing. `src/shared/entityReferences.js` is the **declared
+  reference table** — target type → `{source type, element, attribute}` — measured against the
+  production world, not reasoned out; it is also what an inbound-references panel or an orphan
+  report would read. `src/main/entityRefScan.js` matches **anchored on the element, never on the
+  attribute alone**: `<Item Name="Lorica"/>` in an npc is a reference and `<Item Name="Lorica">`
+  at an item root is identity, and a rewrite keyed on the attribute would corrupt the referring
+  file. `useRenameReferences` scans and asks **before** the entity save (so Cancel writes nothing
+  and the count is current) and repoints **after** it (so a failed save cannot leave the world
+  pointing at a name never written); `renameRepairSites.test.js` pins that order.
+
+  Nine of the fourteen file-backed pages need it, and the set is derived from the table.
+  Comparison is on the DECODED value, `.ignore/` is never scanned, and a repair refreshes the
+  index sections it wrote — it edits OTHER types, which carry the cross-references.
 
 - **`src/shared/` is electron-free, and its `@shared` alias lives in TWO config files** —
   `electron.vite.config.mjs` (renderer) and `vitest.config.mjs`. Vitest does not read the
@@ -177,9 +202,10 @@ e2e/           Playwright specs against the built app
   gate. So the guard asserts the **artifact or the source**, not the intent —
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
-  `src/main/__tests__/splashLayout.test.js`, and five under
+  `src/main/__tests__/splashLayout.test.js`, and six under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
-  `reportPresetSource.test.js`, `indexRefreshOnSave.test.js` and `duplicateNameSource.test.js`.
+  `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`
+  and `renameRepairSites.test.js`.
 
   **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
   Five separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
@@ -187,6 +213,14 @@ e2e/           Playwright specs against the built app
   (WP2), 13 of 14 pages refreshed the index on save (HTOO-372), and 13 editors held one
   hand-rolled name comparison each (HTOO-375). None could fail loudly, because each site looks
   correct read on its own. When you apply a pattern, count the sites and assert the count.
+
+  **HTOO-378 is the first one written with the guard rather than after it**, and it shows what
+  that buys: the required set is READ from `src/shared/entityReferences.js` rather than listed,
+  so the nine wired pages are a consequence of the measured table and not a number anyone has to
+  maintain. Give a type an inbound edge and its page fails until it is wired. The exclusions earn
+  their place the same way — `npcs` names a great many things and nothing names it, so it is
+  pinned as NOT needing the offer, because otherwise its absence reads as the sixth instance of
+  the shape above.
 
   **The splash spinner is a third variant: the defect was not in the source at all.** `body` is
   a flex column, so it absorbs overflow by squashing whichever child CAN squash — and only the
