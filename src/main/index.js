@@ -26,6 +26,7 @@ import { launchCompanion, resolveCompanion, pickerFilters, nodeProbe } from './c
 import { createSplashWindow } from './splash.js'
 import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
+import { scanReferences, applyRename } from './entityRefRepair.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import { parseOrLog } from './schemaLog.js'
 import {
@@ -44,7 +45,9 @@ import {
   writeFileArgsSchema,
   saveDialogArgsSchema,
   addCategoryBulkArgsSchema,
-  spellbookApplyArgsSchema
+  spellbookApplyArgsSchema,
+  refsScanArgsSchema,
+  refsApplyArgsSchema
 } from './schemas/index.js'
 import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
 import { installGlobalErrorHandlers } from './errorHandlers.js'
@@ -729,6 +732,31 @@ app.whenReady().then(async () => {
   ipc.handle('index:buildSection', (_, libraryPath, section) =>
     buildSectionInWorker(validatePath(libraryPath), section)
   )
+
+  // ── Rename repair (HTOO-378) ───────────────────────────────────────────────
+  // A `<Name>` is a key, so changing one leaves every file that names the entity
+  // pointing at nothing — silently, and in OTHER files. These two answer "who
+  // names this" and "repoint them", over the declared table in
+  // src/shared/entityReferences.js.
+  //
+  // Validate BEFORE either walk. `refs:apply` is the widest write in the app:
+  // one message rewrites every file in the world that names an entity. A
+  // rejection discovered part-way through that loop leaves the world in a state
+  // neither name describes.
+  ipc.handle('refs:scan', (_, libraryPath, type, oldName) => {
+    const p = parseOrLog(schemaCtx, 'refs:scan', refsScanArgsSchema, { libraryPath, type, oldName })
+    return scanReferences(validatePath(p.libraryPath), p.type, p.oldName)
+  })
+
+  ipc.handle('refs:apply', (_, libraryPath, type, oldName, newName) => {
+    const p = parseOrLog(schemaCtx, 'refs:apply', refsApplyArgsSchema, {
+      libraryPath,
+      type,
+      oldName,
+      newName
+    })
+    return applyRename(validatePath(p.libraryPath), p.type, p.oldName, p.newName)
+  })
 
   ipc.handle('index:load', (_, libraryPath) => loadIndex(validatePath(libraryPath)))
   ipc.handle('index:status', (_, libraryPath) => getIndexStatus(validatePath(libraryPath)))

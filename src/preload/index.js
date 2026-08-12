@@ -86,6 +86,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadIndex: (libraryPath) => ipcRenderer.invoke('index:load', libraryPath),
   getIndexStatus: (libraryPath) => ipcRenderer.invoke('index:status', libraryPath),
   deleteIndex: (libraryPath) => ipcRenderer.invoke('index:delete', libraryPath),
+  // Rename repair (HTOO-378): who names this entity, and repoint them.
+  scanEntityReferences: (libraryPath, type, oldName) =>
+    ipcRenderer.invoke('refs:scan', libraryPath, type, oldName),
+  applyEntityRename: (libraryPath, type, oldName, newName) =>
+    ipcRenderer.invoke('refs:apply', libraryPath, type, oldName, newName),
   addConstantValue: (libraryPath, type, value) =>
     ipcRenderer.invoke('constants:addValue', libraryPath, type, value),
   loadXsdTypes: () => ipcRenderer.invoke('constants:loadXsdTypes'),
