@@ -123,6 +123,13 @@ first section written to the rules above.
 
 ### Fixed
 
+- **The circle on the startup screen is round again.** The startup screen put its contents in
+  one vertical column. The column was taller than the window on some screens. The circle was
+  the only item that could get smaller, so it took all of the difference and showed as an
+  oval. The amount changed with the screen scale and with the font, so the shape was different
+  on Windows and on Linux. Creidhne now holds every item at its own size. The logo is also a
+  little smaller, so the column fits.
+
 - **Creidhne refuses a bad save instead of writing a broken world file.** Six of the fourteen
   entity types wrote a file for any value that reached the save handler. A castable written
   this way had an empty name. The file loads, and the server then keys it against nothing.

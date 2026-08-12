@@ -22,7 +22,8 @@ const GRAD_INNER = '#1b2c48' // radial 0%
 const GRAD_OUTER = '#0c1524' // radial 100%
 const GRAD_CX = 0.5
 const GRAD_CY = 0.32 // circle at 50% 32%
-const LOGO = 172 // .logo width
+const LOGO = 148 // .logo width
+const LOGO_MB = 14 // .logo margin-bottom
 const TITLE = 'CREIDHNE'
 const TITLE_FILL = '#e8eefb'
 const SUB = 'Loading…'
@@ -30,10 +31,12 @@ const SUB_FILL = '#7f8fb0'
 const SEMIBOLD = 'C:/Windows/Fonts/seguisb.ttf'
 const REGULAR = 'C:/Windows/Fonts/segoeui.ttf'
 
-// Vertical layout: column centred in H. logo + 16 + title(~29) + 6 + sub(~16).
-const blockH = LOGO + 16 + 29 + 6 + 16
+// Vertical layout: column centred in H. logo + LOGO_MB + title(~29) + 6 + sub(~16).
+// The spinner is deliberately absent -- a BMP cannot animate -- so it is left out
+// of the block height as well.
+const blockH = LOGO + LOGO_MB + 29 + 6 + 16
 const logoTop = Math.round((H - blockH) / 2)
-const titleTop = logoTop + LOGO + 16
+const titleTop = logoTop + LOGO + LOGO_MB
 const subTop = titleTop + 29 + 6
 
 // Radial gradient centred at (50%, 32%): render a square big enough that the

@@ -39,10 +39,32 @@
         user-select: none;
         cursor: default;
       }
+      /*
+        Nothing in this column may shrink. `body` is a flex column, so every
+        child has `flex-shrink: 1` by default and the column absorbs any
+        overflow by squashing its items -- but only the items that CAN squash.
+        The image is a replaced element and the two text nodes have content, so
+        each has an automatic minimum size and holds its height. `.spinner` is
+        an EMPTY div, so its automatic minimum is 0, and it therefore absorbs
+        100% of the overflow on its own: a 32px circle became a 32x27 oval that
+        still spins, which reads as a rendering fault rather than a layout one.
+
+        How much overflow there is depends on the platform, which is why this
+        looked like a Linux problem. The content box is not the size asked for:
+        on a 1.5x Windows display a 420x300 frameless window measures 392x288,
+        and the fallback font where 'Segoe UI' is absent has taller line boxes
+        again. Measured, at 300px tall: 32x26.7 here, 32x17.6 with a taller
+        fallback font.
+
+        So: state `flex-shrink: 0`, and keep the natural content height well
+        under the smallest box we have measured (288) so `overflow: hidden`
+        never clips instead.
+      */
       .logo {
-        width: 172px;
+        width: 148px;
         height: auto;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
+        flex-shrink: 0;
         filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
       }
       .title {
@@ -50,17 +72,20 @@
         letter-spacing: 3px;
         font-weight: 600;
         color: #e8eefb;
+        flex-shrink: 0;
       }
       .sub {
         margin-top: 6px;
         font-size: 12px;
         letter-spacing: 1px;
         color: #7f8fb0;
+        flex-shrink: 0;
       }
       .spinner {
-        margin-top: 22px;
+        margin-top: 18px;
         width: 26px;
         height: 26px;
+        flex-shrink: 0;
         border-radius: 50%;
         border: 3px solid rgba(255, 255, 255, 0.14);
         border-top-color: #5b8def;
