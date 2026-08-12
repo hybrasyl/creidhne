@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (~1620 tests incl. scripts/; node env by default)
+npm test             # vitest run (~1690 tests incl. scripts/; node env by default)
 npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
@@ -75,7 +75,8 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs). Six of its tests run
+               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs,
+               make-portable-splash.mjs). Six of its tests run
                in the ordinary suite: icons.test.mjs (committed icon artifacts),
                buildPaths.test.mjs (every path electron-builder.yml names is tracked by git),
                testCollection.test.mjs (no test file sits where the runner won't find it),
@@ -116,7 +117,12 @@ e2e/           Playwright specs against the built app
 - **Frameless window + custom chrome** (`MainToolbar.jsx` inside an `AppBar`); window controls
   message main via `minimize/maximize/close-window`.
 - **Splash + `app:ready` reveal handshake**: the main window stays hidden until `App.jsx` finishes
-  hydrating settings and calls `window.electronAPI.appReady()`.
+  hydrating settings and calls `window.electronAPI.appReady()`. `resources/splash.html` is a flex
+  column and **no child of it may shrink** — the one that could took the whole overflow and
+  rendered the spinner as an oval (`splashLayout.test.js`). Its content must also stay well under
+  the window height, because the content box is smaller than the size asked for: a 420x300
+  frameless window measures 392x288 on a 1.5x display. `build/portable-splash.bmp` is a frozen
+  frame of the same document, so resizing the logo means regenerating it too.
 - **Crash-safe JSON settings** under `%LOCALAPPDATA%\Erisco\Creidhne` (atomic tmp→rename + `.bak`).
   The renderer save effect is gated on `settingsLoaded` so defaults never clobber the real file.
 - **World index is a rebuildable cache** outside the world's git folder
@@ -171,7 +177,8 @@ e2e/           Playwright specs against the built app
   gate. So the guard asserts the **artifact or the source**, not the intent —
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
-  and five under `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
+  `src/main/__tests__/splashLayout.test.js`, and five under
+  `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
   `reportPresetSource.test.js`, `indexRefreshOnSave.test.js` and `duplicateNameSource.test.js`.
 
   **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
@@ -180,6 +187,18 @@ e2e/           Playwright specs against the built app
   (WP2), 13 of 14 pages refreshed the index on save (HTOO-372), and 13 editors held one
   hand-rolled name comparison each (HTOO-375). None could fail loudly, because each site looks
   correct read on its own. When you apply a pattern, count the sites and assert the count.
+
+  **The splash spinner is a third variant: the defect was not in the source at all.** `body` is
+  a flex column, so it absorbs overflow by squashing whichever child CAN squash — and only the
+  spinner could, being an empty div with an automatic minimum size of 0. It took 100% of a 5px
+  overflow, and a 32px circle rendered 32x26.7. Every declaration in that stylesheet is correct
+  read on its own; the fault is a size the browser computed, so there is no wrong line to find
+  and no gate that could go red. It also varies with display scale and with the fallback font,
+  which is how it was first read as a Linux problem and then as a regression from the new CSP
+  header — the header makes no difference, which was settled by rendering the document in
+  Electron with it and without it. **When the artifact is a computed layout, assert the source
+  property that makes the computation safe** (`flex-shrink: 0` on every child, derived from the
+  markup) rather than the appearance, which no unit test can see.
 
   **HTOO-370 is the same shape one level up, and its lesson is different: a count in a document
   cannot hold a boundary.** That card was filed as "4 of 89 handlers" and found at 7 of 92 — it
@@ -212,9 +231,19 @@ section atop the GitHub release body (`generate_release_notes` appends the auto 
 
 ## Verifying changes
 
-`npm run dev` and `npm run e2e` launch a real Electron window and **cannot run
-headless/sandboxed** — verify logic via `npm test` and `npm run build`, and hand GUI
-click-throughs (and E2E runs) to the user.
+`npm run dev` and `npm run e2e` launch a real Electron window, and they **do** run from an agent
+shell. The long-standing note here said otherwise; it was wrong. The symptom behind it was
+`ELECTRON_RUN_AS_NODE=1` in the environment, which makes the Electron binary a plain Node
+interpreter, so `require('electron')` returns a stub with no `app` and the first line of the main
+process throws `Cannot read properties of undefined (reading 'isPackaged')`. That reads as a
+broken environment rather than a set variable.
+
+**`unset ELECTRON_RUN_AS_NODE` first**, in the same shell call, and `npm run dev`,
+`npm run e2e:only` and a throwaway main script with `show: false` all work. The third is how the
+splash oval was measured: load the document, then read `getBoundingClientRect` back through
+`executeJavaScript`. Prefer an `e2e/` spec over an owed manual check whenever the assertion is
+mechanical. Still hand over what needs a human eye — whether a layout _looks_ right, an installer
+click-through, a real remote-desktop session.
 
 ## MUI v9 gotchas
 
