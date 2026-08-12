@@ -151,6 +151,26 @@ e2e/           Playwright specs against the built app
   `@eriscorp/hybindex-ts` (its entry point imports `fs`/`path`/`crypto`/`os`). An agreement
   test pins the copy to the package; if you touch one, run it.
 
+- **A filename and a `<Name>` are different things, and each has its own button.** The server
+  keys on `<Name>`, so a filename is Creidhne's business alone: renaming a file breaks no
+  references and needs no repair. In the shared header, **Save supersedes** — write the new
+  file, archive the old one, which is right when you replace an entity and want the old one
+  kept — and **Rename** changes the file's name, leaving one file. The mode reaches the page as
+  a fourth `handleSave` argument defaulting to `'archive'`, because `saveRef.current()` is
+  called with no arguments from the unsaved-changes dialog and from navigating away.
+
+  Two things that are not free to change. **Rename also writes pending edits**, because typing
+  in the Filename field marks the editor dirty, so the button is only ever reachable in a dirty
+  editor; a pure disk operation there would fire the reset effect (which keys on
+  `initialFileName`) and discard the user's work — HTOO-130 exactly. And **the rename happens
+  before the write**, while both names still exist, or the collision check has nothing to
+  compare. `renameFileSites.test.js` pins both across the 28 sites.
+
+  **"Does the destination exist" is not "is the destination another file."** On Windows and
+  macOS `Bash.xml` and `bash.xml` are one file, so the old copy-then-archive path wrote over the
+  original and then archived it, leaving nothing active while reporting success. `moveFile`
+  compares identity with `realpath`, which reports the on-disk casing.
+
 - **A rename offers to repoint the files that named the entity** (HTOO-378), and the trigger is
   the `<Name>` VALUE — never `isRename`, which `resolveSavePath` computes from the FILENAME. The
   two come apart the moment a user hand-edits a filename, and the miss is silent in other files.
@@ -202,10 +222,10 @@ e2e/           Playwright specs against the built app
   gate. So the guard asserts the **artifact or the source**, not the intent —
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
-  `src/main/__tests__/splashLayout.test.js`, and six under
+  `src/main/__tests__/splashLayout.test.js`, and seven under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
-  `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`
-  and `renameRepairSites.test.js`.
+  `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`,
+  `renameRepairSites.test.js` and `renameFileSites.test.js`.
 
   **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
   Five separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
