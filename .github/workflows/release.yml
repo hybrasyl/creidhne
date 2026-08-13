@@ -6,12 +6,31 @@ name: Release
 #   APPLE_API_KEY_P8_BASE64 / APPLE_API_KEY_ID / APPLE_API_ISSUER  (App Store Connect, notarize)
 #   DISCORD_WEBHOOK_URL                                            (release announcement)
 
+# TAGS AND MANUAL ONLY (HTOO-390). This used to fire on `pull_request` AND on
+# every push to `main`, and the second was the expensive one by a wide margin:
+# the build jobs are guarded only by `github.event_name != 'pull_request'`, so a
+# push to main ran build-windows, build-linux AND build-mac in full -- and then
+# skipped `release`, because that one checks `ref_type == 'tag'`. Every merge
+# built three platforms' artifacts and threw them away.
+#
+# GitHub bills macOS runners at 10x and windows at 2x. One day of house-wide CI
+# on 2026-08-12 exhausted the shared Actions allowance and hit the account's
+# spending limit mid-merge; this workflow was the largest single contributor.
+#
+# What replaces the lost per-PR check is a LOCAL gate: `npm run validate` via
+# .githooks/pre-push, armed by the "prepare" script setting core.hooksPath, plus
+# `npm run validate:linux` for real Linux through WSL.
+#
+# Everything below still runs on a `v*` tag and on workflow_dispatch, including
+# validate, so a release is still gated and the macOS and Linux artifacts are
+# still built -- neither can be built on the dev box at all.
+#
+# Fire it by hand when a change is platform-shaped:
+#   gh workflow run release.yml --ref <branch>
 on:
   push:
     tags:
       - 'v*'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,28 @@
+#!/bin/sh
+# The gate, now that GitHub Actions no longer runs one on every push.
+#
+# Portable across the house Electron repos: it shells `npm run validate` and
+# nothing else, so a repo adopts it by having that script.
+#
+# WHY A HOOK AND NOT "REMEMBER TO RUN IT". The thing CI provided for a lone
+# developer was never cleverness, it was that it ran whether or not anyone
+# remembered. A checklist is not a substitute for that; a hook is. If this ever
+# becomes something people routinely bypass with --no-verify, the honest fix is
+# to make `validate` faster, not to delete the hook.
+#
+# Deliberately pre-PUSH rather than pre-commit. A commit is a local, cheap,
+# often-half-finished thing and gating it makes people commit less, which is
+# worse. A push is where work becomes everyone else's problem.
+#
+# Skipping is possible with `git push --no-verify`, and that is on purpose: the
+# escape hatch is what stops a broken hook blocking a hotfix. Use it knowingly.
+
+set -e
+
+# Nothing to validate when the push deletes a ref.
+if [ -z "$(git rev-list --max-count=1 HEAD 2>/dev/null)" ]; then
+  exit 0
+fi
+
+echo "pre-push: npm run validate"
+npm run validate

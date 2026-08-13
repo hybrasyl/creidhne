@@ -7,6 +7,9 @@
   "homepage": "https://github.com/hybrasyl/creidhne",
   "desktopName": "creidhne.desktop",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || exit 0",
+    "validate": "npm run lint:check && npm test",
+    "validate:linux": "node scripts/validate-linux.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
