@@ -37,6 +37,17 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Creidhne finds Taliesin when it is a downloaded release file.** Creidhne looked for a file named
+  exactly `taliesin.exe`, which is the name only an installed copy has. A release file carries its
+  version, for example `taliesin-2.11.0-portable.exe`, so a copy next to Creidhne was not found.
+  Creidhne now accepts the release names. It does not accept the installer, `-setup.exe`, because
+  that file starts an installation and does not start Taliesin.
+- **A Taliesin path you select by hand takes effect immediately.** Creidhne asked the main process
+  where Taliesin is before it wrote your selection to disk, so the answer was about the previous
+  value. The Launch button stayed off until you left the page and came back.
+
 ## [1.11.0] - 2026-08-11
 
 ### Added
