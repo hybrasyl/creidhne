@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useStoreValue, taliesinPathState } from '../store/appStore'
+import { useStoreValue, taliesinPathState, settingsSavedNonceState } from '../store/appStore'
 
 /**
  * Where Taliesin is, as main resolved it.
@@ -25,6 +25,10 @@ import { useStoreValue, taliesinPathState } from '../store/appStore'
  */
 export function useCompanionStatus() {
   const taliesinPath = useStoreValue(taliesinPathState)
+  // Main reads the override from settings on disk, so the query has to follow
+  // the write rather than the state change that caused it -- App's save effect
+  // runs AFTER the effects of the components using this hook.
+  const settingsSavedNonce = useStoreValue(settingsSavedNonceState)
   const [status, setStatus] = useState({ resolved: null, staleOverride: false })
   const [nonce, setNonce] = useState(0)
 
@@ -43,7 +47,7 @@ export function useCompanionStatus() {
     return () => {
       cancelled = true
     }
-  }, [taliesinPath, nonce])
+  }, [taliesinPath, settingsSavedNonce, nonce])
 
   return { ...status, found: !!status.resolved, refresh }
 }

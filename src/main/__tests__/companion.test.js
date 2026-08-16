@@ -5,7 +5,9 @@ import {
   launchCompanion,
   launcherDir,
   parseInstallLocations,
-  pickerFilters
+  pickerFilters,
+  isCompanionEntry,
+  preferredCompanionEntry
 } from '../companion.js'
 
 /**
@@ -70,6 +72,61 @@ describe('launcherDir', () => {
 })
 
 // ─── resolution precedence ───────────────────────────────────────────────────
+
+describe('release-artifact naming', () => {
+  // Both apps ship `${name}-${version}-portable.${ext}` and
+  // `${name}-${version}.${ext}`. The exact-name list only ever matched an
+  // installed executable, so a downloaded portable beside Creidhne was invisible
+  // -- symmetrically, since Creidhne's own releases are named the same way.
+  it('accepts the shipped artifact names', () => {
+    expect(isCompanionEntry('taliesin', 'win32', 'taliesin.exe')).toBe(true)
+    expect(isCompanionEntry('taliesin', 'win32', 'taliesin-2.11.0-portable.exe')).toBe(true)
+    expect(isCompanionEntry('taliesin', 'win32', 'taliesin-2.11.0.exe')).toBe(true)
+    expect(isCompanionEntry('taliesin', 'win32', 'Taliesin-2.11.0-Portable.EXE')).toBe(true)
+    expect(isCompanionEntry('taliesin', 'linux', 'taliesin-2.11.0.AppImage')).toBe(true)
+    expect(isCompanionEntry('taliesin', 'darwin', 'Taliesin.app')).toBe(true)
+  })
+
+  it('refuses the installer, which is the dangerous near-match', () => {
+    // Launching this would start an install, not the companion -- and it is the
+    // file most likely to be in the same downloads folder as the portable.
+    expect(isCompanionEntry('taliesin', 'win32', 'taliesin-2.11.0-setup.exe')).toBe(false)
+    expect(isCompanionEntry('taliesin', 'win32', 'Uninstall Taliesin.exe')).toBe(false)
+  })
+
+  it('refuses names that merely start with the id', () => {
+    expect(isCompanionEntry('taliesin', 'win32', 'taliesin-helper.exe')).toBe(false)
+    expect(isCompanionEntry('taliesin', 'win32', 'taliesinx.exe')).toBe(false)
+    expect(isCompanionEntry('taliesin', 'win32', 'creidhne.exe')).toBe(false)
+  })
+
+  it('prefers the unversioned name, else the highest version', () => {
+    expect(preferredCompanionEntry(['taliesin-2.9.0-portable.exe', 'taliesin.exe'])).toBe(
+      'taliesin.exe'
+    )
+    // Numeric compare, or 2.9.0 would beat 2.10.0 on a plain string sort.
+    expect(
+      preferredCompanionEntry(['taliesin-2.9.0-portable.exe', 'taliesin-2.10.0-portable.exe'])
+    ).toBe('taliesin-2.10.0-portable.exe')
+    expect(preferredCompanionEntry([])).toBeNull()
+  })
+
+  it('finds a versioned portable sitting beside the launcher', async () => {
+    const probe = makeProbe({
+      readdir: async () => [
+        'creidhne-1.11.0-portable.exe',
+        'taliesin-2.11.0-setup.exe',
+        'taliesin-2.11.0-portable.exe'
+      ]
+    })
+    const status = await resolveCompanion(probe, 'taliesin', null)
+    expect(status.resolved).toEqual({
+      target: join('C:', 'Program Files', 'Creidhne', 'taliesin-2.11.0-portable.exe'),
+      kind: 'binary',
+      source: 'sibling'
+    })
+  })
+})
 
 describe('resolution precedence', () => {
   it('prefers an override that still exists', async () => {

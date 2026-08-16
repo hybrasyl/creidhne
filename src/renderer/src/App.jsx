@@ -3,6 +3,7 @@ import { ThemeProvider, CssBaseline, GlobalStyles } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import {
   useStoreState,
+  useSetStoreValue,
   themeState,
   librariesState,
   currentPageState,
@@ -10,6 +11,7 @@ import {
   dirtyEditorState,
   clientPathState,
   taliesinPathState,
+  settingsSavedNonceState,
   brigidAssetsPathState,
   activePacksState,
   packCoverageState,
@@ -80,6 +82,7 @@ function App() {
   const [activeLibrary, setActiveLibrary] = useStoreState(activeLibraryState)
   const [clientPath, setClientPath] = useStoreState(clientPathState)
   const [taliesinPath, setTaliesinPath] = useStoreState(taliesinPathState)
+  const setSettingsSavedNonce = useSetStoreValue(settingsSavedNonceState)
   const [brigidAssetsPath, setBrigidAssetsPath] = useStoreState(brigidAssetsPathState)
   const [dirtyEditor, setDirtyEditor] = useStoreState(dirtyEditorState)
   const [, setActivePacks] = useStoreState(activePacksState)
@@ -191,20 +194,29 @@ function App() {
   // the default atom values on every mount.
   useEffect(() => {
     if (!settingsLoaded) return
-    window.electronAPI.saveSettings({
-      libraries,
-      activeLibrary,
-      theme,
-      clientPath,
-      taliesinPath,
-      brigidAssetsPath,
-      iconPickerMode,
-      nationCrestPickerMode,
-      npcPortraitPickerMode,
-      soundPickerMode,
-      creaturePickerMode,
-      fileListViewMode
-    })
+    // Awaited, then acknowledged. Main answers questions like companionStatus
+    // from the settings on DISK, and this effect is the only thing that puts
+    // them there -- so anything asking main about a setting has to wait for the
+    // write, not for the state change. Child effects run before this one, which
+    // is exactly how a freshly-picked Taliesin path got read back as the old one.
+    void Promise.resolve(
+      window.electronAPI.saveSettings({
+        libraries,
+        activeLibrary,
+        theme,
+        clientPath,
+        taliesinPath,
+        brigidAssetsPath,
+        iconPickerMode,
+        nationCrestPickerMode,
+        npcPortraitPickerMode,
+        soundPickerMode,
+        creaturePickerMode,
+        fileListViewMode
+      })
+    )
+      .catch((err) => console.error('[settings] save failed:', err))
+      .finally(() => setSettingsSavedNonce((n) => n + 1))
   }, [
     settingsLoaded,
     theme,
@@ -218,7 +230,10 @@ function App() {
     npcPortraitPickerMode,
     soundPickerMode,
     creaturePickerMode,
-    fileListViewMode
+    fileListViewMode,
+    // Stable across renders (a zustand setter), so listing it costs nothing and
+    // keeps the rule honest rather than disabled.
+    setSettingsSavedNonce
   ])
 
   // Stop any sound preview on page navigation — keeps playback from bleeding
