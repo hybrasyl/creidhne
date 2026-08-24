@@ -30,9 +30,12 @@ describe('rename-repair payloads', () => {
     expect(refsScanArgsSchema.safeParse({ ...scan, oldName: '  ' }).success).toBe(false)
   })
 
-  it('refuses a type the reference table has no edges for', () => {
+  it('refuses a type the reference table has no entry for', () => {
+    // `worldmaps` is a real index type with no entry in the table — the case a
+    // renderer bug would most plausibly send. npcs was the example here until
+    // the second sweep found the maps edge and made it legal.
     expect(refsApplyArgsSchema.safeParse({ ...apply, type: 'nonsense' }).success).toBe(false)
-    expect(refsApplyArgsSchema.safeParse({ ...apply, type: 'npcs' }).success).toBe(false)
+    expect(refsApplyArgsSchema.safeParse({ ...apply, type: 'worldmaps' }).success).toBe(false)
   })
 
   it('takes its type vocabulary from the table rather than restating it', () => {

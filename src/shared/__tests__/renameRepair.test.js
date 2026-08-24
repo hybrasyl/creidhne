@@ -57,13 +57,14 @@ describe('shouldOfferRepair (HTOO-378)', () => {
   it('does not offer for a type nothing can reference', () => {
     // Four indexed types were measured to have no inbound edges at all. Read
     // from the table, so a type that gains an edge starts offering with no
-    // further change here.
+    // further change here — which is exactly what happened to npcs, the
+    // example this test used before the second sweep found the maps edge.
     expect(
       shouldOfferRepair({ ...base, type: 'recipes', oldName: 'Bread', newName: 'Loaf' })
     ).toEqual({ offer: false, reason: 'no-references-possible' })
-    expect(shouldOfferRepair({ ...base, type: 'npcs', oldName: 'Shop', newName: 'Store' })).toEqual(
-      { offer: false, reason: 'no-references-possible' }
-    )
+    expect(
+      shouldOfferRepair({ ...base, type: 'localizations', oldName: 'Shop', newName: 'Store' })
+    ).toEqual({ offer: false, reason: 'no-references-possible' })
   })
 
   it('declines rather than guesses when the old name is not unique', () => {

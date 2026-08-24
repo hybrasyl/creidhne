@@ -57,21 +57,22 @@ describe('rename repair reaches every page that needs it (HTOO-378)', () => {
     ).toEqual([])
   })
 
-  it('requires the offer on every type with inbound references, and finds nine', () => {
-    // A floor and a spot check rather than an exact list. Nine is what the
-    // production-world survey found; a tenth is legitimate and is picked up by
-    // the tests below on its own.
+  it('requires the offer on every type with inbound references, and finds ten', () => {
+    // A floor and a spot check rather than an exact list. Ten is what the two
+    // production-world surveys found; an eleventh is legitimate and is picked
+    // up by the tests below on its own.
     const needing = pagesNeedingRepair()
       .map((p) => p.type)
       .sort()
-    expect(needing.length).toBeGreaterThanOrEqual(9)
+    expect(needing.length).toBeGreaterThanOrEqual(10)
     expect(needing).toContain('items')
     expect(needing).toContain('creaturebehaviorsets')
     expect(needing).toContain('nations')
-    // NPCs name a great many things and nothing names an NPC, so the page is a
-    // source and never a target. Measured, and worth pinning: it is the one page
-    // whose absence from this list looks like an oversight.
-    expect(needing).not.toContain('npcs')
+    // The first survey pinned npcs as a source and never a target — "nothing
+    // names an NPC". The second sweep overturned it: maps place NPCs by name,
+    // 318 active sites, every one resolving. Pinned positively now, because
+    // this page's absence from the list WAS the miss.
+    expect(needing).toContain('npcs')
   })
 
   it('wires the hook and renders the dialog on each of them', () => {
