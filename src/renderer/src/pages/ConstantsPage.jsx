@@ -42,6 +42,7 @@ const EMPTY_CONSTANTS = {
   statusCategories: [],
   cookies: [],
   npcJobs: [],
+  npcSpecies: [],
   creatureFamilies: [],
   motions: [],
   spellBooks: [],
@@ -769,19 +770,28 @@ function CategoryTab({
           }}
         >
           {label} defined in this library.
-          {scanData === null ? ' Scan to populate counts.' : ` ${scanData.length} found in XML.`}
+          {!scanResultKey
+            ? ''
+            : scanData === null
+              ? ' Scan to populate counts.'
+              : ` ${scanData.length} found in XML.`}
         </Typography>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
-          onClick={handleScan}
-          disabled={scanning || !activeLibrary}
-        >
-          Scan XML
-        </Button>
+        {/* A list with nothing in the XML to scan for (NPC species lives only
+            in creidhne:meta) gets no scan button rather than one that always
+            finds zero. */}
+        {scanResultKey && (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={scanning ? <CircularProgress size={14} /> : <RefreshIcon />}
+            onClick={handleScan}
+            disabled={scanning || !activeLibrary}
+          >
+            Scan XML
+          </Button>
+        )}
       </Box>
-      {!activeLibrary && (
+      {!activeLibrary && scanResultKey && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Set an active library to scan for categories.
         </Alert>
@@ -812,7 +822,9 @@ function CategoryTab({
             color: 'text.secondary'
           }}
         >
-          No categories defined. Click "Scan XML" to discover from files.
+          {scanResultKey
+            ? 'No categories defined. Click "Scan XML" to discover from files.'
+            : 'Nothing defined. Add an entry above.'}
         </Typography>
       ) : (
         <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -1394,6 +1406,7 @@ const TABS = [
   { label: 'Simple Types' },
   { label: 'Vendor Tabs' },
   { label: 'NPC Jobs' },
+  { label: 'NPC Species' },
   { label: 'Creature Families' },
   { label: 'Item Categories' },
   { label: 'Castable Categories' },
@@ -1457,6 +1470,7 @@ function ConstantsPage() {
         ...rawIndex,
         vendorTabs: dedup(rawIndex.vendorTabs, userConstants.vendorTabs),
         npcJobs: dedup(rawIndex.npcJobs, userConstants.npcJobs),
+        npcSpecies: dedup(rawIndex.npcSpecies, userConstants.npcSpecies),
         creatureFamilies: dedup(rawIndex.creatureFamilies, userConstants.creatureFamilies),
         itemCategories: dedup(rawIndex.itemCategories, userConstants.itemCategories),
         castableCategories: dedup(rawIndex.castableCategories, userConstants.castableCategories),
@@ -1481,6 +1495,7 @@ function ConstantsPage() {
         ...prev,
         vendorTabs: dedup(prev.vendorTabs, userConstants.vendorTabs),
         npcJobs: dedup(prev.npcJobs, userConstants.npcJobs),
+        npcSpecies: dedup(prev.npcSpecies, userConstants.npcSpecies),
         creatureFamilies: dedup(prev.creatureFamilies, userConstants.creatureFamilies),
         itemCategories: dedup(prev.itemCategories, userConstants.itemCategories),
         castableCategories: dedup(prev.castableCategories, userConstants.castableCategories),
@@ -1559,6 +1574,18 @@ function ConstantsPage() {
           />
         )}
         {tab === 3 && (
+          // No scanResultKey: species lives only in creidhne:meta, so there is
+          // no XML shape to scan for. The list is seeded from the lore repo
+          // (see shared/npcSpecies.js) and grows from the NPC editor.
+          <CategoryTab
+            label="NPC species"
+            categories={userConstants.npcSpecies || []}
+            onChange={(names) => handleCategoryChange('npcSpecies', names)}
+            activeLibrary={activeLibrary}
+            onIndexUpdated={handleIndexUpdated}
+          />
+        )}
+        {tab === 4 && (
           <CreatureFamiliesTab
             creatureFamilies={userConstants.creatureFamilies || []}
             onChange={(families) => handleCategoryChange('creatureFamilies', families)}
@@ -1567,7 +1594,7 @@ function ConstantsPage() {
             onIndexUpdated={handleIndexUpdated}
           />
         )}
-        {tab === 4 && (
+        {tab === 5 && (
           <CategoryTab
             label="Item categories"
             scanResultKey="items"
@@ -1578,7 +1605,7 @@ function ConstantsPage() {
             initialDetails={libraryIndex.itemCategoryDetails}
           />
         )}
-        {tab === 5 && (
+        {tab === 6 && (
           <CategoryTab
             label="Castable categories"
             scanResultKey="castables"
@@ -1589,7 +1616,7 @@ function ConstantsPage() {
             initialDetails={libraryIndex.castableCategoryDetails}
           />
         )}
-        {tab === 6 && (
+        {tab === 7 && (
           <CategoryTab
             label="Status categories"
             scanResultKey="statuses"
@@ -1600,15 +1627,15 @@ function ConstantsPage() {
             initialDetails={libraryIndex.statusCategoryDetails}
           />
         )}
-        {tab === 7 && (
+        {tab === 8 && (
           <CookiesTab
             userConstants={userConstants}
             onChange={handleChange}
             activeLibrary={activeLibrary}
           />
         )}
-        {tab === 8 && <MotionsTab userConstants={userConstants} onChange={handleChange} />}
-        {tab === 9 && <WeaponsTab userConstants={userConstants} onChange={handleChange} />}
+        {tab === 9 && <MotionsTab userConstants={userConstants} onChange={handleChange} />}
+        {tab === 10 && <WeaponsTab userConstants={userConstants} onChange={handleChange} />}
       </Box>
     </Box>
   )

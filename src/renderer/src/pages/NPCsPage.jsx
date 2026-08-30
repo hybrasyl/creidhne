@@ -22,7 +22,7 @@ const DEFAULT_NPC = {
   name: '',
   displayName: '',
   comment: '',
-  meta: { job: '', location: '' },
+  meta: { job: '', species: '', location: '' },
   sprite: '',
   portrait: '',
   allowDead: false,

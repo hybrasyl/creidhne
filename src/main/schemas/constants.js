@@ -4,7 +4,7 @@ import { z } from 'zod'
 // constants:addValue handler accepts arbitrary `type` keys, so the
 // schema doesn't pin the key set. Known categories vary in shape:
 //   - string[]:   vendorTabs, itemCategories, castableCategories,
-//                 statusCategories, npcJobs, creatureFamilies
+//                 statusCategories, npcJobs, npcSpecies, creatureFamilies
 //   - object[]:   cookies ({ name, sourceFile, comment }),
 //                 motions ({ id, speed, name }),
 //                 weapons ({ name, minDmg, maxDmg }),

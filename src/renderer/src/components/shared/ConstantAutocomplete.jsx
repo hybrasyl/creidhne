@@ -12,7 +12,7 @@ const filter = createFilterOptions()
  * Drop-in replacement for TextField on fields backed by a constants index key.
  *
  * indexKey: 'itemCategories' | 'castableCategories' | 'statusCategories' | 'cookieNames'
- *           | 'npcJobs' | 'vendorTabs'
+ *           | 'npcJobs' | 'npcSpecies' | 'vendorTabs'
  * onChange: (value: string) => void          — single mode (default)
  * onChange: (value: string[]) => void        — multiple mode
  * multiple: boolean — when true, value/onChange work with string arrays
