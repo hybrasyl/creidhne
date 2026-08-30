@@ -34,6 +34,7 @@ export function useLibraryIndexHydration() {
         ...(index || {}),
         vendorTabs: dedup(index?.vendorTabs, constants?.vendorTabs),
         npcJobs: dedup(index?.npcJobs, constants?.npcJobs),
+        npcSpecies: dedup(index?.npcSpecies, constants?.npcSpecies),
         itemCategories: dedup(index?.itemCategories, constants?.itemCategories),
         castableCategories: dedup(index?.castableCategories, constants?.castableCategories),
         statusCategories: dedup(index?.statusCategories, constants?.statusCategories),

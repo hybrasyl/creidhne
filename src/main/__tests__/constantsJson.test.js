@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { join } from 'path'
+import { DEFAULT_NPC_SPECIES } from '../../shared/npcSpecies.js'
 
 const mockFs = {
   readFile: vi.fn(),
@@ -24,6 +25,9 @@ const EMPTY_SHAPE = {
   statusCategories: [],
   cookies: [],
   npcJobs: [],
+  // The one seeded key: species has no XML element and no filename prefix to
+  // scan for, so an empty start would leave the picker with nothing to offer.
+  npcSpecies: [...DEFAULT_NPC_SPECIES],
   creatureFamilies: [],
   motions: [],
   weapons: []
@@ -63,6 +67,15 @@ describe('loadConstants', () => {
     // Defaults retained for keys not in saved data
     expect(result.itemCategories).toEqual([])
     expect(result.cookies).toEqual([])
+    expect(result.npcSpecies).toEqual([...DEFAULT_NPC_SPECIES])
+  })
+
+  it('lets a world trim the species seed, even to nothing', async () => {
+    // A key present in the file wins over the seed, `[]` included. The seed
+    // only STARTS the list; the world's own file is the record.
+    mockFs.readFile.mockResolvedValue(JSON.stringify({ npcSpecies: [] }))
+    const result = await loadConstants('/worlds/test/xml')
+    expect(result.npcSpecies).toEqual([])
   })
 })
 

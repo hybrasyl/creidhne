@@ -582,13 +582,22 @@ function NPCEditor({
                 />
               </Box>
 
-              {/* Row 2: Job | Location */}
+              {/* Row 2: Job | Species | Location */}
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <ConstantAutocomplete
                   indexKey="npcJobs"
                   label="Job"
                   value={data.meta?.job || ''}
                   onChange={setMetaField('job')}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  inputProps={{ maxLength: 64 }}
+                />
+                <ConstantAutocomplete
+                  indexKey="npcSpecies"
+                  label="Species"
+                  value={data.meta?.species || ''}
+                  onChange={setMetaField('species')}
                   size="small"
                   sx={{ flex: 1 }}
                   inputProps={{ maxLength: 64 }}

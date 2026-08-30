@@ -18,7 +18,7 @@ const omitEmpty = (obj) =>
     Object.entries(obj).filter(([, v]) => v !== '' && v !== null && v !== undefined)
   )
 
-const NPC_META_DEFAULTS = { job: '', location: '' }
+const NPC_META_DEFAULTS = { job: '', species: '', location: '' }
 
 // `location` has two sources and they are not equivalent. The legacy
 // `<!-- Location: -->` annotation is what 572 of the world's 594 NPCs actually
@@ -30,6 +30,7 @@ function extractNpcMeta(xmlString) {
   const raw = extractMeta(xmlString, NPC_META_DEFAULTS)
   return {
     job: raw.job || '',
+    species: raw.species || '',
     location: raw.location || extractLocation(xmlString)
   }
 }
@@ -165,13 +166,13 @@ export function serializeNpcXml(npc) {
   let xml = builder.buildObject(buildXmlObject(npc))
   // Location and Comment go after <Name>, where the world repo keeps them.
   xml = injectNameAnnotations(xml, npc.meta?.location || '', npc.comment)
-  // `job` is the only NPC meta key with neither an XML element nor a legacy
-  // annotation, so it is the only one left in creidhne:meta. Writing `location`
-  // here as well would duplicate it, and writing it here INSTEAD would retire
-  // the `<!-- Location: -->` line on 572 files to say the same thing in a form
-  // no human wrote — so the legacy annotation stays the home for it, and the two
+  // `job` and `species` have neither an XML element nor a legacy annotation,
+  // so they are what creidhne:meta holds. Writing `location` here as well would
+  // duplicate it, and writing it here INSTEAD would retire the
+  // `<!-- Location: -->` line on 572 files to say the same thing in a form no
+  // human wrote — so the legacy annotation stays the home for it, and the two
   // files that currently keep location in meta converge onto it on next save.
-  xml = injectMeta(xml, { job: npc.meta?.job || '' }, 'Npc')
+  xml = injectMeta(xml, { job: npc.meta?.job || '', species: npc.meta?.species || '' }, 'Npc')
   return xml + '\n'
 }
 

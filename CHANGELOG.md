@@ -37,6 +37,14 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Added
+
+- **An NPC has a Species field.** It sits between Job and Location in the NPC editor. Pick a
+  species from the list or type a new one, and Creidhne adds it to the list. The list starts with
+  the 27 species from the lore notes, and you can edit it on the Constants page under NPC Species.
+  Creidhne records the species the way it records the job, in the `creidhne:meta` annotation, so
+  the server sees no change.
+
 ### Fixed
 
 - **A rename now repairs five more kinds of reference.** When you change a `<Name>`, Creidhne

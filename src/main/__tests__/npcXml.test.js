@@ -17,7 +17,7 @@ import xml2js from 'xml2js'
 const FULL_XML = `<?xml version="1.0"?>
 <!-- Comment: The innkeeper -->
 <Npc xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
-  <!-- creidhne:meta {"job":"Innkeeper","location":"Mileth Inn"} -->
+  <!-- creidhne:meta {"job":"Innkeeper","species":"Human","location":"Mileth Inn"} -->
   <Name>maid-marion</Name>
   <DisplayName>Maid Marion</DisplayName>
   <Appearance Sprite="42" Portrait="marion.png" />
@@ -107,9 +107,10 @@ describe('Field coverage — all fields', () => {
     expect(npc.comment).toBe('The innkeeper')
   })
 
-  it('parses meta job and location', async () => {
+  it('parses meta job, species and location', async () => {
     const npc = await parseNpcXml(FULL_XML)
     expect(npc.meta.job).toBe('Innkeeper')
+    expect(npc.meta.species).toBe('Human')
     expect(npc.meta.location).toBe('Mileth Inn')
   })
 
@@ -221,9 +222,9 @@ describe('Field coverage — minimal', () => {
     expect(npc.comment).toBe('')
   })
 
-  it('defaults meta job and location to empty string', async () => {
+  it('defaults meta job, species and location to empty string', async () => {
     const npc = await parseNpcXml(MINIMAL_XML)
-    expect(npc.meta).toEqual({ job: '', location: '' })
+    expect(npc.meta).toEqual({ job: '', species: '', location: '' })
   })
 
   it('defaults sprite and portrait to empty string', async () => {
@@ -430,10 +431,22 @@ describe('Output structure', () => {
     expect(xml).toContain('"job":"Merchant"')
   })
 
-  it('meta comment is omitted when job and location are both empty', async () => {
-    const noMeta = { ...npc, meta: { job: '', location: '' } }
+  it('meta comment is omitted when job, species and location are all empty', async () => {
+    const noMeta = { ...npc, meta: { job: '', species: '', location: '' } }
     const xml = serializeNpcXml(noMeta)
     expect(xml).not.toContain('creidhne:meta')
+  })
+
+  it('writes species into creidhne:meta beside job, and round-trips it', async () => {
+    // Species is recorded the way job is: an annotation, not an element, because
+    // the server has no field for it. An empty species is dropped from the
+    // annotation rather than written as "".
+    const withSpecies = { ...npc, meta: { job: 'Merchant', species: 'Dwarf', location: '' } }
+    const xml = serializeNpcXml(withSpecies)
+    expect(xml).toContain('"species":"Dwarf"')
+    const back = await parseNpcXml(xml)
+    expect(back.meta.species).toBe('Dwarf')
+    expect(serializeNpcXml(npc)).not.toContain('species')
   })
 })
 
