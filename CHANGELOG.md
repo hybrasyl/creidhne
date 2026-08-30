@@ -39,6 +39,13 @@ first section written to the rules above.
 
 ### Fixed
 
+- **A rename now repairs five more kinds of reference.** When you change a `<Name>`, Creidhne
+  offers to update the files that use the old name. A new survey of the production world found
+  five places the offer did not cover: maps that place an NPC (318 references), items that
+  require a castable or modify one cast (71), items that add or remove a status on use (3),
+  recipes that name an item as output or ingredient, and variants that require a castable. The
+  NPC editor now makes the offer, and the other places repair with the offer their editors
+  already make.
 - **Creidhne finds Taliesin when it is a downloaded release file.** Creidhne looked for a file named
   exactly `taliesin.exe`, which is the name only an installed copy has. A release file carries its
   version, for example `taliesin-2.11.0-portable.exe`, so a copy next to Creidhne was not found.

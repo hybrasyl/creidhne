@@ -9,8 +9,8 @@
  * ## This table is the deliverable, not a lookup convenience
  *
  * Creidhne's reference graph is many-to-many across twelve editable types.
- * Written per type by hand it is sixteen scanners; written once as data it is
- * one. It also pays for more than the rename check — an inbound-references
+ * Written per type by hand it is twenty-two scanners; written once as data it
+ * is one. It also pays for more than the rename check — an inbound-references
  * panel ("what uses this item?") and orphan detection both read the same table.
  *
  * ## The edges are measured, not assumed
@@ -34,6 +34,15 @@
  *   reported as the largest edge in the graph. Every one of them is under
  *   `.ignore/`. Counting archived files is the easiest possible way to
  *   mis-measure this graph, and it happened on the first pass.
+ *
+ * A second sweep (2026-08, prompted by Taliesin discovering its own missing
+ * nation edge) found five edges the first survey did not: `npcs ← maps`
+ * (318 sites, every one resolving — and the first survey had pinned npcs as
+ * having NO inbound edges), `castables ← items` (70 text sites plus one
+ * `<Match Castable="…">`), `statuses ← items` (3), `items ← recipes` (1) and
+ * `castables ← variantgroups` (0 sites, but the XSD carries the shape). A
+ * survey is only as complete as the shapes it greps for, so treat "measured
+ * and empty" as an invitation to re-measure, not a settled fact.
  *
  * ## Two shapes, and the attribute one is the dangerous half
  *
@@ -67,7 +76,21 @@ export const REFERENCE_SITES = Object.freeze({
     // 194 sites, 193 resolving: an NPC's Train role lists what it teaches.
     { type: 'npcs', element: 'Castable', attribute: 'Name' },
     // 36 sites: a behavior set's rotation names the castables it uses.
-    { type: 'creaturebehaviorsets', element: 'Castable', attribute: null }
+    { type: 'creaturebehaviorsets', element: 'Castable', attribute: null },
+    // 70 sites, 4 distinct names, all resolving: an item's equip requirements —
+    // `<Restrictions><Castables><Castable>…`. Second-sweep find; the first
+    // survey missed items as a source for castables entirely.
+    { type: 'items', element: 'Castable', attribute: null },
+    // 1 active site: an item's cast modifiers can target one castable by name,
+    // `<CastModifiers><Match Castable="…">`. The `Group` attribute on the same
+    // element names a castable CATEGORY, not a castable, and must not be
+    // rewritten — same trap as IsCategory, avoided here by naming the attribute.
+    { type: 'items', element: 'Match', attribute: 'Castable' },
+    // ZERO active sites, and the row stays, like the spawngroups row under
+    // items: a variant's properties can carry the same `<Restrictions>`
+    // castable list an item can (VariantProperties.Restrictions in the XSD),
+    // so the first variant that uses it is covered.
+    { type: 'variantgroups', element: 'Castable', attribute: null }
   ],
   items: [
     // 3121 sites, 2280 resolving: a merchant's Vend inventory. The largest edge.
@@ -81,7 +104,12 @@ export const REFERENCE_SITES = Object.freeze({
     // 655 sites, 514 resolving: a loot set's contents.
     { type: 'lootsets', element: 'Item', attribute: null },
     // 803 sites, 470 resolving: a castable's learning requirements.
-    { type: 'castables', element: 'Item', attribute: null }
+    { type: 'castables', element: 'Item', attribute: null },
+    // 1 active site (a test recipe), in two shapes: the crafted output and each
+    // ingredient. Kept the way the zero-site spawngroups row above is — the
+    // shape is what the XSD allows, and the recipes that will exist carry it.
+    { type: 'recipes', element: 'Item', attribute: 'Name' },
+    { type: 'recipes', element: 'Ingredient', attribute: 'Name' }
   ],
   lootsets: [
     // A creature's or spawn's `<Loot><Set Name="…"/></Loot>`: 198 and 881.
@@ -126,7 +154,12 @@ export const REFERENCE_SITES = Object.freeze({
     // must not be rewritten when a status is renamed, and a status and a
     // category can legitimately share a string.
     { type: 'castables', element: 'Add', attribute: null, unless: 'IsCategory' },
-    { type: 'castables', element: 'Remove', attribute: null, unless: 'IsCategory' }
+    { type: 'castables', element: 'Remove', attribute: null, unless: 'IsCategory' },
+    // 3 active sites: an item's `<Use><Statuses>` block, the same Add/Remove
+    // shape as the castable rows above. No item carries `IsCategory` today; the
+    // guard stays because the schema allows it there too.
+    { type: 'items', element: 'Add', attribute: null, unless: 'IsCategory' },
+    { type: 'items', element: 'Remove', attribute: null, unless: 'IsCategory' }
   ],
   variantgroups: [
     // 874 sites, all resolving: an item's `<Variants><Group>…</Group></Variants>`.
@@ -141,6 +174,16 @@ export const REFERENCE_SITES = Object.freeze({
     { type: 'npcs', element: 'Repair', attribute: 'Nation' },
     { type: 'npcs', element: 'CostAdjustment', attribute: 'Nation' },
     { type: 'npcs', element: 'Surcharge', attribute: 'Nation' }
+  ],
+  npcs: [
+    // 318 active sites, 312 distinct names, every one resolving — the largest
+    // fully-resolving edge in the graph, and the second sweep's headline find:
+    // the first survey recorded npcs as having no inbound edges at all, and the
+    // guard test pinned it. A map places an NPC by name:
+    // `<Npc Name="…" X="…" Y="…" Direction="…"/>`. Creidhne has no map editor,
+    // but that is already true of the spawngroups edge above — maps are scanned
+    // as referrer files either way.
+    { type: 'maps', element: 'Npc', attribute: 'Name' }
   ],
   // Measured and genuinely empty. Recorded rather than omitted, so "no edge" is
   // distinguishable from "nobody looked" — an omitted key and an empty one read

@@ -12,7 +12,7 @@ import { findReferences, rewriteReferences, scanPlan } from '../entityRefScan.js
  * HTOO-378, part one: the reference table and the scanner over it.
  *
  * The blast radius here is the largest in the app — a rename can rewrite
- * hundreds of files across four directories at once — so the cases below are
+ * hundreds of files across five directories at once — so the cases below are
  * the ones that would corrupt a world rather than merely miss a reference.
  */
 
@@ -55,8 +55,15 @@ describe('reference table (HTOO-378)', () => {
     expect(REFERENCED_TYPES).toContain('castables')
     expect(REFERENCED_TYPES).toContain('spawngroups')
     expect(REFERENCED_TYPES).toContain('creaturebehaviorsets')
+    // The second sweep's find: maps place NPCs by name, so npcs is a target
+    // after all. Pinned here as well as in renameRepairSites so removing the
+    // edge cannot read as a tidy-up.
+    expect(REFERENCED_TYPES).toContain('npcs')
     expect(REFERENCE_SITES.elementtables).toEqual([])
+    // Recipes as a TARGET stays empty — nothing names a recipe. Recipes as a
+    // SOURCE is real: a recipe names its output item and its ingredients.
     expect(REFERENCE_SITES.recipes).toEqual([])
+    expect(sourceTypesFor('items')).toContain('recipes')
   })
 
   it('resolves a scan plan without duplicate source reads', () => {

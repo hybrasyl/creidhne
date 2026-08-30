@@ -5,7 +5,7 @@ import { REFERENCED_TYPES } from '../../shared/entityReferences.js'
  * The rename-repair payloads (HTOO-378).
  *
  * `refs:apply` is the widest write in the app: one message rewrites every file
- * in the world that names an entity, across up to four directories. That places
+ * in the world that names an entity, across up to five directories. That places
  * it in the same class as `castable:addCategoryBulk` and `spellbook:apply`, and
  * it takes the same rule — **validate before the scan, never inside the write
  * loop.** A payload worth rejecting must be rejected before the first file is
