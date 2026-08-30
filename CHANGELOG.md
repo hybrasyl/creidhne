@@ -37,6 +37,8 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-29
+
 ### Added
 
 - **An NPC has a Species field.** It sits between Job and Location in the NPC editor. Pick a
