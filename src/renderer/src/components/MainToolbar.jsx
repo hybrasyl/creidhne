@@ -73,18 +73,31 @@ const MainToolbar = ({ navigate }) => {
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const isPlain = PLAIN_CHROME_THEMES.includes(themeName)
 
-  // Gamified chrome (stylized themes): a crisp solid-black keyline stroke plus a
-  // SINGLE depth drop-shadow to match the wordmark's lift. SVG glyphs can't take
-  // text-shadow, so the outline comes from the stroke; chaining the four keyline
-  // offsets as drop-shadows too would compound and wash out the depth (oghma's
-  // lesson). On the plain navy chrome the stroke just greys the glyphs, so drop
-  // both. strokeWidth is in the icon's own ~512 viewbox units (react-icons/gi).
-  const iconSx = {
+  // Title-bar glyphs (window controls) on the gamified chrome: a crisp
+  // solid-black keyline stroke plus a SINGLE depth drop-shadow to match the
+  // wordmark's lift. SVG glyphs can't take text-shadow, so the outline comes
+  // from the stroke; chaining the four keyline offsets as drop-shadows too
+  // would compound and wash out the depth (oghma's lesson). On the plain navy
+  // chrome the stroke just greys the glyphs, so drop both. strokeWidth is in
+  // the icon's own ~512 viewbox units (react-icons/gi). Mirrors taliesin's
+  // TitleBar.
+  const titleIconSx = {
     '& svg': {
       fontSize: '1.4em',
       stroke: isPlain ? 'transparent' : '#000',
       strokeWidth: isPlain ? 0 : 11,
       filter: isPlain ? 'none' : `drop-shadow(${DEPTH})`
+    }
+  }
+  // Nav-bar glyphs: a soft translucent stroke and no drop-shadow, on every
+  // theme. Copied verbatim from taliesin's NavToolbar so the two apps' page
+  // icons look identical side by side (the Settings knobs are the shared
+  // reference glyph).
+  const navIconSx = {
+    '& svg': {
+      fontSize: '1.4em',
+      stroke: 'rgba(0,0,0,0.25)',
+      strokeWidth: 44
     }
   }
   const hoverSx = isPlain
@@ -98,7 +111,7 @@ const MainToolbar = ({ navigate }) => {
     WebkitAppRegion: 'no-drag',
     mx: -0.5,
     color: chromeColor,
-    ...iconSx,
+    ...navIconSx,
     '&:hover': hoverSx
   }
 
@@ -114,7 +127,7 @@ const MainToolbar = ({ navigate }) => {
   const winBtnSx = {
     WebkitAppRegion: 'no-drag',
     color: chromeColor,
-    ...iconSx,
+    ...titleIconSx,
     '&:hover': hoverSx
   }
   const closeBtnSx = {
