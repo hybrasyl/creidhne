@@ -29,6 +29,7 @@ const ConstantsPage = lazy(() => import('../pages/ConstantsPage'))
 const ServerConfigPage = lazy(() => import('../pages/ServerConfigPage'))
 const ReportsPage = lazy(() => import('../pages/ReportsPage'))
 const DamageCalculatorPage = lazy(() => import('../pages/DamageCalculatorPage'))
+const DialogsPage = lazy(() => import('../pages/DialogsPage'))
 
 const pageFallback = (
   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -115,6 +116,9 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       break
     case 'damage-calculator':
       page = <DamageCalculatorPage />
+      break
+    case 'dialogs':
+      page = <DialogsPage />
       break
     default:
       page = <DashboardPage />
