@@ -251,11 +251,37 @@ function createWindow() {
     }
   })
 
+  // A window keeps its native background — Electron's default white, because no
+  // `backgroundColor` can be right for six themes of which two are light — while
+  // the renderer's compositor tears down. That background is what paints for the
+  // last frame or two before the window leaves the screen, which reads as a white
+  // flash on quit. Hiding the window takes it off screen first; `close` runs
+  // before the teardown, and the close itself proceeds as normal after this
+  // returns. Covers every close path (title-bar button, Alt+F4, app quit),
+  // because they all raise `close`. Mirrors taliesin.
+  //
+  // Unsaved-changes guard. The first `close` of a live, revealed renderer is
+  // turned into a question: the event is cancelled and the renderer is asked
+  // (`app:check-close`). It answers with `app:confirm-close` once nothing is
+  // dirty, or the user has saved or discarded; that sets `closeConfirmed` and
+  // closes again, and the second `close` falls through to the hide below.
+  //
+  // The guard fails OPEN. A renderer that is gone, hung, or not yet revealed
+  // cannot answer, and a close that waits on an answer that never comes is a
+  // window the user cannot get rid of — so those cases skip the question.
+  mainWindow.webContents.on('render-process-gone', () => {
+    closeConfirmed = true
+  })
+  mainWindow.webContents.on('unresponsive', () => {
+    closeConfirmed = true
+  })
   mainWindow.on('close', (e) => {
-    if (!closeConfirmed) {
+    if (!closeConfirmed && mainWindowRevealed && !mainWindow.webContents.isDestroyed()) {
       e.preventDefault()
       mainWindow.webContents.send('app:check-close')
+      return
     }
+    mainWindow.hide()
   })
 
   // Trusted before it loads: registerTrustedWindow is what lets this window's IPC
@@ -376,6 +402,11 @@ app.whenReady().then(async () => {
     const window = BrowserWindow.getFocusedWindow()
     if (window) {
       closeConfirmed = true
+      // Hide here, synchronously, rather than only in the `close` handler:
+      // between this IPC handler and that event the compositor can paint a
+      // frame of the default background, which is exactly the flash the hide
+      // prevents.
+      window.hide()
       window.close()
     }
   })

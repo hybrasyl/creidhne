@@ -37,6 +37,28 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Changed
+
+- **The toolbar icons match Taliesin.** The page icons carried the same heavy black outline and
+  drop shadow as the window controls. They now use the soft outline and no shadow that Taliesin
+  uses for its page icons. The window controls keep their outline and shadow, which match
+  Taliesin's title bar.
+- **Server Config picks names from the world.** Death Map and each New Player Start Map offer
+  the map names in the world index. Coma offers the status names; its label is now Coma Status,
+  because the server reads the value as a status name. World Data Directory has a folder button
+  that opens the system folder dialog. Each field still accepts a typed value.
+
+### Fixed
+
+- **The window no longer flashes white when you close Creidhne.** The window has no fixed
+  background colour, because two of the six themes are light, so the system painted its default
+  white for the last frame before the window left the screen. Creidhne now hides the window before
+  it closes. This applies to the close button, Alt+F4 and quit.
+- **Creidhne closes when its editor process has stopped.** The close button asked the editor
+  whether there was unsaved work and waited for the answer. If the editor process had crashed or
+  stopped responding, the answer never came and the window could not be closed. Creidhne now
+  skips the question in that case, the same as Taliesin.
+
 ## [1.12.0] - 2026-08-29
 
 ### Added
