@@ -16,11 +16,14 @@ import {
   FormControl,
   InputLabel,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  InputAdornment
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import EditorHeader from '../shared/EditorHeader'
 import EffectPicker from '../shared/EffectPicker'
+import IndexNamePicker from '../shared/IndexNamePicker'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
@@ -249,6 +252,10 @@ function NetworkInfoRow({ label, value, onChange }) {
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function GeneralTab({ data, updateData }) {
   const setField = (field) => (e) => updateData((d) => ({ ...d, [field]: e.target.value }))
+  const browseWorldDataDir = async () => {
+    const dir = await window.electronAPI.openDirectory()
+    if (dir) updateData((d) => ({ ...d, worldDataDir: dir }))
+  }
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -309,7 +316,16 @@ function GeneralTab({ data, updateData }) {
           onChange={setField('worldDataDir')}
           helperText="Server-side path to the world data folder (not in schema, but read by the server)"
           slotProps={{
-            htmlInput: { spellCheck: false }
+            htmlInput: { spellCheck: false },
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton size="small" edge="end" onClick={browseWorldDataDir}>
+                    <FolderOpenIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }
           }}
         />
       </Box>
@@ -982,11 +998,11 @@ function HandlersTab({ data, updateData }) {
                 Death Map
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                <TextField
-                  size="small"
+                <IndexNamePicker
+                  section="maps"
                   label="Map Name"
                   value={death.map.value}
-                  onChange={setDeathSub('map', 'value')}
+                  onChange={(val) => setDeathSub('map', 'value')({ target: { value: val } })}
                   sx={{ flex: 1 }}
                 />
                 <TextField
@@ -1015,11 +1031,11 @@ function HandlersTab({ data, updateData }) {
                 Coma
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                <TextField
-                  size="small"
-                  label="Coma Text"
+                <IndexNamePicker
+                  section="statuses"
+                  label="Coma Status"
                   value={death.coma.value}
-                  onChange={setDeathSub('coma', 'value')}
+                  onChange={(val) => setDeathSub('coma', 'value')({ target: { value: val } })}
                   sx={{ flex: 1 }}
                 />
                 <TextField
@@ -1131,11 +1147,11 @@ function HandlersTab({ data, updateData }) {
       >
         {startMaps.map((sm, i) => (
           <Box key={i} sx={{ display: 'flex', gap: 1, mb: 0.75 }}>
-            <TextField
-              size="small"
+            <IndexNamePicker
+              section="maps"
               label="Map Name"
               value={sm.value}
-              onChange={(e) => setStartMap(i, 'value', e.target.value)}
+              onChange={(val) => setStartMap(i, 'value', val)}
               sx={{ flex: 1 }}
             />
             <TextField
