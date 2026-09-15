@@ -37,6 +37,18 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Added
+
+- **A Dialog Builder page.** Compose an NPC dialog in a form: sequences, text, options, jumps,
+  function calls, text input, pursuits and global sequences. Creidhne saves the dialog as JSON in
+  the world under `.creidhne/dialogs/`, so you can reopen and edit it. Export renders the Lua for
+  you to paste into the NPC script. Creidhne refuses to export while the dialog has a fault a
+  player would find in game: a jump to a sequence that does not exist, a sequence name used
+  twice, an option with nowhere to go, an options dialog with no options. Creidhne writes nothing
+  under `scripts/`. A second export mode renders the dialog as a Lua module for
+  `scripts/modules/dialogs/`, with text slots a host NPC can fill, so several NPCs can share one
+  dialog with their own voice. The Scripts tile on the dashboard opens the page.
+
 ### Changed
 
 - **The toolbar icons match Taliesin.** The page icons carried the same heavy black outline and
