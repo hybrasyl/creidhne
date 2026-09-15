@@ -12,7 +12,9 @@ import luaparse from 'luaparse'
 // AssociateWithScript. Anything else is ignored.
 
 export function dialogCallTree(source, { tableAlias = {} } = {}) {
-  const ast = luaparse.parse(source, { comments: false })
+  // 5.2: the corpus uses `\z` in long strings (MoonSharp accepts it), which
+  // luaparse's 5.1 default refuses as an unfinished string.
+  const ast = luaparse.parse(source, { comments: false, luaVersion: '5.2' })
   const rawTables = new Map() // name → { positional: [], keyed: {} }
   // `tableAlias` lets a module's `text[…]` (the merged copy, built at runtime)
   // read through to its `defaults` table.
