@@ -127,6 +127,7 @@ const EXEMPT = {
   'formulas:load': { category: 'path-only', reason: 'validatePath' },
   'formulas:import': { category: 'path-only', reason: 'validatePath; reads, does not write' },
   'reports:load': { category: 'path-only', reason: 'validatePath; the file is validated on load' },
+  'dialogs:list': { category: 'path-only', reason: 'validatePath; each file is validated on read' },
   'export:castablesBalancingCsv': {
     category: 'path-only',
     reason: 'validatePath; the preset id is a literal fixed in main'
@@ -209,6 +210,9 @@ const MUST_VALIDATE = [
   'formulas:save',
   'reports:save',
   'reports:preview',
+  'dialogs:load',
+  'dialogs:save',
+  'dialogs:delete',
   'export:castablesReport',
   'diagnostics:reportRendererError',
   'diagnostics:openIssue',

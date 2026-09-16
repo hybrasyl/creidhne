@@ -122,6 +122,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   runCastableReport: (libraryPath, definition) =>
     ipcRenderer.invoke('export:castablesReport', libraryPath, definition),
   saveFile: (defaultName, content) => ipcRenderer.invoke('dialog:saveFile', defaultName, content),
+  // Dialog builder (HTOO-458). A document travels whole; main checks its shape.
+  listDialogs: (libraryPath) => ipcRenderer.invoke('dialogs:list', libraryPath),
+  loadDialog: (libraryPath, name) => ipcRenderer.invoke('dialogs:load', libraryPath, name),
+  saveDialog: (libraryPath, document, previousName) =>
+    ipcRenderer.invoke('dialogs:save', libraryPath, document, previousName),
+  deleteDialog: (libraryPath, name) => ipcRenderer.invoke('dialogs:delete', libraryPath, name),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
   revealSettings: () => ipcRenderer.invoke('app:revealSettings'),
