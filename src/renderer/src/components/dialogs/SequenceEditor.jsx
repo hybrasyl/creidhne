@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   ButtonGroup,
@@ -25,6 +26,7 @@ import {
 } from '@shared/dialogDocument.js'
 import DialogRow from './DialogRow'
 import { fieldProblem } from './DialogEditor'
+import { helpProps } from './FieldHelp'
 
 const SCOPE_HELP = {
   local: 'Registered on the NPC; reached by a jump.',
@@ -35,6 +37,12 @@ const SCOPE_HELP = {
 function SequenceEditor({ sequence, sequenceNames, problems, onChange, onRemove }) {
   const mine = (p) => p.sequenceId === sequence.id && !p.dialogId
   const problem = (field) => fieldProblem(problems, mine, field)
+  // The banner: every sequence-level warning, and any sequence-level error
+  // that has no field to be marked on. Errors with a field are marked inline.
+  const banner = [
+    ...problems.errors.filter((p) => mine(p) && !p.field),
+    ...problems.warnings.filter(mine)
+  ]
   const set = (field) => (e) =>
     onChange({
       ...sequence,
@@ -65,14 +73,13 @@ function SequenceEditor({ sequence, sequenceNames, problems, onChange, onRemove 
             value={sequence.name}
             onChange={set('name')}
             error={!!problems.errors.find((p) => mine(p) && p.field === 'name')}
-            helperText={
-              problem('name')?.message ??
-              (sequence.scope === 'pursuit'
-                ? 'The menu label the player sees.'
-                : 'The key other dialogs jump to.')
-            }
+            helperText={problems.errors.find((p) => mine(p) && p.field === 'name')?.message}
             sx={{ width: 300 }}
-            slotProps={{ htmlInput: { spellCheck: false } }}
+            slotProps={helpProps(
+              sequence.scope === 'pursuit'
+                ? 'The label the player sees in the NPC menu. Also the key a script starts it by.'
+                : 'The key jumps and scripts use to reach this sequence.'
+            )}
           />
           <FormControl size="small" sx={{ width: 140 }}>
             <InputLabel>Scope</InputLabel>
@@ -96,20 +103,30 @@ function SequenceEditor({ sequence, sequenceNames, problems, onChange, onRemove 
             </IconButton>
           </Tooltip>
         </Box>
+        {banner.map((p, i) => (
+          <Alert
+            key={i}
+            severity={p.level === 'error' ? 'error' : 'warning'}
+            variant="outlined"
+            sx={{ mt: 1.5, py: 0 }}
+          >
+            {p.message}
+          </Alert>
+        ))}
         {sequence.scope === 'pursuit' && (
           <TextField
             size="small"
             fullWidth
-            label="Menu check"
+            label="Menu check (optional)"
             value={sequence.menuCheck}
             onChange={set('menuCheck')}
             error={!!problems.errors.find((p) => mine(p) && p.field === 'menuCheck')}
-            helperText={
-              problem('menuCheck')?.message ??
-              'Optional Lua returning true when the menu entry should show, e.g. return priest_oaths_available() == true'
-            }
+            helperText={problems.errors.find((p) => mine(p) && p.field === 'menuCheck')?.message}
             sx={{ mt: 2 }}
-            slotProps={{ htmlInput: { spellCheck: false, style: { fontFamily: 'monospace' } } }}
+            slotProps={helpProps(
+              'Lua that returns true when this entry should appear in the menu, e.g. return priest_oaths_available() == true',
+              { mono: true }
+            )}
           />
         )}
         {sequence.scope === 'global' && (
@@ -119,8 +136,8 @@ function SequenceEditor({ sequence, sequenceNames, problems, onChange, onRemove 
               label="Display name"
               value={sequence.displayName}
               onChange={set('displayName')}
-              helperText="Optional; the speaker's name in the dialog frame."
               sx={{ width: 260 }}
+              slotProps={helpProps("Optional. The speaker's name shown in the dialog frame.")}
             />
             <TextField
               size="small"
@@ -128,9 +145,12 @@ function SequenceEditor({ sequence, sequenceNames, problems, onChange, onRemove 
               value={sequence.sprite}
               onChange={set('sprite')}
               error={!!problem('sprite')}
-              helperText={problem('sprite')?.message ?? 'Optional NPC display sprite.'}
+              helperText={problem('sprite')?.message}
               sx={{ width: 120 }}
-              slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+              slotProps={{
+                ...helpProps('Optional. The NPC sprite shown with a global sequence.'),
+                htmlInput: { inputMode: 'numeric' }
+              }}
             />
             <FormControlLabel
               control={

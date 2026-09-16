@@ -25,6 +25,7 @@ import {
   newOption
 } from '@shared/dialogDocument.js'
 import { fieldProblem } from './DialogEditor'
+import { helpProps } from './FieldHelp'
 
 const mono = { htmlInput: { spellCheck: false, style: { fontFamily: 'monospace' } } }
 
@@ -109,41 +110,29 @@ function DialogRow({
             fullWidth
             multiline
             minRows={2}
-            label={dialog.slot ? `Text (default for slot "${dialog.slot}")` : 'Text'}
+            label={dialog.required ? 'Text (placeholder; the host supplies it)' : 'Text'}
             value={dialog.text}
             onChange={set('text')}
             error={isError('text')}
             helperText={problem('text')?.message}
             slotProps={{ htmlInput: { maxLength: 65534 } }}
           />
-          <Box sx={{ width: 200, flexShrink: 0 }}>
+          <Tooltip
+            title="Module export only: the NPC that installs this dialog must supply this line. Leave the text empty, or write a placeholder."
+            placement="top"
+          >
             <FormControlLabel
+              sx={{ flexShrink: 0, alignSelf: 'flex-start' }}
               control={
                 <Checkbox
                   size="small"
-                  checked={dialog.slot !== ''}
-                  onChange={(e) => onChange({ ...dialog, slot: e.target.checked ? 'line' : '' })}
+                  checked={!!dialog.required}
+                  onChange={(e) => onChange({ ...dialog, required: e.target.checked })}
                 />
               }
-              label={
-                <Tooltip title="A slot is text the host NPC supplies when this dialog is exported as a module. The text here is the default.">
-                  <Typography variant="body2">Slot</Typography>
-                </Tooltip>
-              }
+              label={<Typography variant="body2">Required from host</Typography>}
             />
-            {dialog.slot !== '' && (
-              <TextField
-                size="small"
-                fullWidth
-                label="Slot name"
-                value={dialog.slot}
-                onChange={set('slot')}
-                error={isError('slot')}
-                helperText={problem('slot')?.message}
-                slotProps={mono}
-              />
-            )}
-          </Box>
+          </Tooltip>
         </Box>
       )}
 
@@ -155,9 +144,9 @@ function DialogRow({
           value={dialog.callback}
           onChange={set('callback')}
           error={isError('callback')}
-          helperText={problem('callback')?.message ?? 'Lua run when this dialog is shown.'}
+          helperText={problem('callback')?.message}
           sx={{ mt: 1.5 }}
-          slotProps={mono}
+          slotProps={helpProps('Lua run when this dialog is shown.', { mono: true })}
         />
       )}
 
@@ -178,9 +167,11 @@ function DialogRow({
             value={dialog.callback}
             onChange={set('callback')}
             error={isError('callback')}
-            helperText={problem('callback')?.message ?? 'Lua run as the jump happens.'}
+            helperText={problem('callback')?.message}
             sx={{ flex: 1 }}
-            slotProps={mono}
+            slotProps={helpProps('Lua run as the jump happens, e.g. a CompletionAward.', {
+              mono: true
+            })}
           />
         </Box>
       )}
@@ -193,11 +184,11 @@ function DialogRow({
           value={dialog.expr}
           onChange={set('expr')}
           error={isError('expr')}
-          helperText={
-            problem('expr')?.message ??
-            'Run in place of showing a dialog, e.g. source.EndDialog() or priest_oaths_check()'
-          }
-          slotProps={mono}
+          helperText={problem('expr')?.message}
+          slotProps={helpProps(
+            'Run instead of showing a dialog: source.EndDialog(), or a function in the script that decides what happens next.',
+            { mono: true }
+          )}
         />
       )}
 
@@ -223,9 +214,12 @@ function DialogRow({
             value={dialog.maxLength}
             onChange={(e) => onChange({ ...dialog, maxLength: Number(e.target.value) || 0 })}
             error={isError('maxLength')}
-            helperText={problem('maxLength')?.message ?? `1–${INPUT_MAX_LENGTH}`}
+            helperText={problem('maxLength')?.message}
             sx={{ width: 110 }}
-            slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+            slotProps={{
+              ...helpProps(`1 to ${INPUT_MAX_LENGTH} characters.`),
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
           <TextField
             size="small"
@@ -233,11 +227,14 @@ function DialogRow({
             value={dialog.handler}
             onChange={set('handler')}
             error={isError('handler')}
-            helperText={
-              problem('handler')?.message ?? 'Lua run with the answer in player_response.'
-            }
+            helperText={problem('handler')?.message}
             sx={{ flex: 1, minWidth: 200 }}
-            slotProps={mono}
+            slotProps={helpProps(
+              'Lua run when the player submits; the answer is in player_response.',
+              {
+                mono: true
+              }
+            )}
           />
           <TextField
             size="small"
@@ -245,9 +242,9 @@ function DialogRow({
             value={dialog.callback}
             onChange={set('callback')}
             error={isError('callback')}
-            helperText={problem('callback')?.message ?? 'Lua run when shown.'}
+            helperText={problem('callback')?.message}
             sx={{ flex: 1, minWidth: 200 }}
-            slotProps={mono}
+            slotProps={helpProps('Lua run when this dialog is shown.', { mono: true })}
           />
         </Box>
       )}
@@ -354,8 +351,10 @@ function OptionsList({ dialog, sequenceId, sequenceNames, problems, onChange }) 
               onChange={(e) => updateOption(option.id, { ...option, check: e.target.value })}
               error={isError('check')}
               helperText={problem('check')?.message}
-              sx={{ width: 180 }}
-              slotProps={mono}
+              sx={{ width: 200 }}
+              slotProps={helpProps('Lua returning true when this option is offered.', {
+                mono: true
+              })}
             />
             <IconButton size="small" color="error" onClick={() => removeOption(option.id)}>
               <DeleteIcon fontSize="small" />
@@ -385,9 +384,8 @@ function OptionsList({ dialog, sequenceId, sequenceNames, problems, onChange }) 
                 p.field === 'handler'
             )
           }
-          helperText="Lua run when an option is picked."
           sx={{ flex: 1, minWidth: 200 }}
-          slotProps={mono}
+          slotProps={helpProps('Lua run when the player picks any option.', { mono: true })}
         />
         <TextField
           size="small"
@@ -403,9 +401,8 @@ function OptionsList({ dialog, sequenceId, sequenceNames, problems, onChange }) 
                 p.field === 'callback'
             )
           }
-          helperText="Lua run when shown."
           sx={{ flex: 1, minWidth: 200 }}
-          slotProps={mono}
+          slotProps={helpProps('Lua run when this dialog is shown.', { mono: true })}
         />
       </Box>
     </Box>

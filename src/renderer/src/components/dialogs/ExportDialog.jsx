@@ -16,7 +16,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { emitInline, emitModule } from '@shared/dialogLua.js'
 import { validateDialogDocument } from '@shared/dialogValidate.js'
-import { collectSlots } from '@shared/dialogDocument.js'
+import { hasRequiredText } from '@shared/dialogDocument.js'
 
 // Export renders the document to Lua for the writer to paste (HTOO-458).
 // Creidhne writes nothing under scripts/. Two targets over one document:
@@ -71,7 +71,7 @@ function ExportDialog({ open, onClose, doc }) {
   const [mode, setMode] = useState('inline')
   const result = useMemo(() => validateDialogDocument(doc, { mode }), [doc, mode])
   const canExport = result.errors.length === 0
-  const slots = useMemo(() => collectSlots(doc), [doc])
+  const required = useMemo(() => hasRequiredText(doc), [doc])
   const output = useMemo(() => {
     if (!canExport) return null
     return mode === 'inline' ? emitInline(doc) : emitModule(doc)
@@ -116,12 +116,10 @@ function ExportDialog({ open, onClose, doc }) {
               hint="Paste inside function OnSpawn(), after any other dialogs."
               code={output.onSpawn}
             />
-            {slots.length > 0 && (
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Inline export writes each slot&apos;s default text. Export as a module to let an NPC
-                supply its own.
-              </Typography>
-            )}
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Text is keyed by sequence, so <code>{doc.name}.menu</code> is the menu text. To let
+              several NPCs share this dialog with their own words, export as a module.
+            </Typography>
           </>
         )}
 
@@ -135,9 +133,9 @@ function ExportDialog({ open, onClose, doc }) {
             <CodeBlock
               title="2. In each NPC's OnSpawn"
               hint={
-                slots.length > 0
-                  ? 'Fill the required slots; remove optional ones to keep the default.'
-                  : 'The whole install; this dialog has no slots to fill.'
+                required
+                  ? 'Every text key with its default. Fill the required ones; delete any you keep as is.'
+                  : 'Every text key with its default. Edit for this NPC; delete any you keep as is.'
               }
               code={output.host}
             />

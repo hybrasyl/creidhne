@@ -35,7 +35,7 @@ test.describe('Dialog builder', () => {
     await page.getByLabel('Name', { exact: true }).fill('greet')
     await page.getByLabel('Title', { exact: true }).fill('Greeting')
 
-    await page.getByRole('button', { name: 'Add the first sequence' }).click()
+    await page.getByRole('button', { name: 'Add a sequence' }).click()
     await page.getByLabel('Sequence name').fill('Greet')
     // MUI's Select is a combobox whose label is not an association Playwright sees.
     await page.getByRole('combobox').filter({ hasText: 'Local' }).click()
@@ -60,8 +60,10 @@ test.describe('Dialog builder', () => {
     const exportDialog = page.getByRole('dialog', { name: 'Export Greeting' })
     await expect(exportDialog).toBeVisible()
     await expect(exportDialog.getByText('greet = {')).toBeVisible()
-    await expect(exportDialog.getByText('"Well met, traveller.",')).toBeVisible()
-    await expect(exportDialog.getByText('greet_lecture = world.NewDialogSequence("Greet",')).toBeVisible()
+    await expect(exportDialog.getByText('lecture = "Well met, traveller.",')).toBeVisible()
+    await expect(
+      exportDialog.getByText('greet_lecture = world.NewDialogSequence("Greet",')
+    ).toBeVisible()
     await expect(exportDialog.getByText('origin.AddPursuit(greet_lecture)')).toBeVisible()
 
     // Module export is the same document, wrapped for require().

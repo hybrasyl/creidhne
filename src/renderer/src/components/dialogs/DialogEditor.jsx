@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   Box,
-  Button,
   Chip,
   IconButton,
   List,
@@ -17,6 +16,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { newSequence, SEQUENCE_SCOPE_LABELS } from '@shared/dialogDocument.js'
 import SequenceEditor from './SequenceEditor'
+import { helpProps } from './FieldHelp'
 
 /** The problems (errors + warnings) about one sequence, or the document itself. */
 export function problemsFor(problems, match) {
@@ -77,20 +77,21 @@ function DialogEditor({ doc, onChange, problems }) {
             value={doc.name}
             onChange={setField('name')}
             error={!!docProblem('name')}
-            helperText={
-              docProblem('name')?.message ??
-              'Lower snake case. Names the file, the Lua text table, and the module.'
-            }
+            helperText={docProblem('name')?.message}
             sx={{ width: 260 }}
-            slotProps={{ htmlInput: { spellCheck: false } }}
+            slotProps={helpProps(
+              'Lower snake case, e.g. on_honey. Names the saved file, the Lua text table, and the module.'
+            )}
           />
           <TextField
             size="small"
             label="Title"
             value={doc.title}
             onChange={setField('title')}
-            helperText="Shown in the list and the generated comment."
             sx={{ width: 260 }}
+            slotProps={helpProps(
+              'Shown in the list and in the generated comment. Not used by the server.'
+            )}
           />
           <TextField
             size="small"
@@ -98,6 +99,9 @@ function DialogEditor({ doc, onChange, problems }) {
             value={doc.description}
             onChange={setField('description')}
             sx={{ flex: 1, minWidth: 240 }}
+            slotProps={helpProps(
+              'Notes for the next writer. Saved with the dialog, never exported.'
+            )}
           />
         </Box>
       </Paper>
@@ -186,11 +190,9 @@ function DialogEditor({ doc, onChange, problems }) {
             })}
           </List>
           {doc.sequences.length === 0 && (
-            <Box sx={{ p: 2 }}>
-              <Button size="small" startIcon={<AddIcon />} onClick={addSequence}>
-                Add the first sequence
-              </Button>
-            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary', px: 2, pb: 2 }}>
+              No sequences yet. Add one with +.
+            </Typography>
           )}
         </Paper>
 
