@@ -7,9 +7,10 @@
 // the module system that card describes consume THIS document, so those phases
 // promote files rather than convert them.
 //
-// A text field may be a SLOT: "the host supplies this". A slot has a name and
-// its `text` is the default (possibly empty). Slots are what make a document
-// exportable as a module; a document with none is still a valid module.
+// Text is keyed BY SEQUENCE when emitted (`on_honey.menu`, `on_honey.intro[2]`),
+// so in a module export every sequence's text is a key a host may override. A
+// text may be marked REQUIRED: the host must supply it, and the `text` here is
+// only a placeholder. A document with nothing required is still a valid module.
 //
 // Every id here is for the UI (React keys, selection). The server never sees
 // one: it keys sequences on `name`.
@@ -79,9 +80,16 @@ export function newDialog(kind) {
   const base = { id: newId(), kind }
   switch (kind) {
     case 'text':
-      return { ...base, text: '', slot: '', callback: '' }
+      return { ...base, text: '', required: false, callback: '' }
     case 'options':
-      return { ...base, text: '', slot: '', options: [newOption()], callback: '', handler: '' }
+      return {
+        ...base,
+        text: '',
+        required: false,
+        options: [newOption()],
+        callback: '',
+        handler: ''
+      }
     case 'jump':
       return { ...base, sequence: '', callback: '' }
     case 'function':
@@ -90,7 +98,7 @@ export function newDialog(kind) {
       return {
         ...base,
         text: '',
-        slot: '',
+        required: false,
         topCaption: '',
         bottomCaption: '',
         maxLength: INPUT_MAX_LENGTH,
@@ -112,21 +120,11 @@ export function hasText(kind) {
   return kind === 'text' || kind === 'options' || kind === 'input'
 }
 
-/**
- * Every slot the document declares, in emission order: `{ name, default }`.
- * Two dialogs may share a slot name on purpose (the same line in two places);
- * the first occurrence's text is the default.
- */
-export function collectSlots(doc) {
-  const seen = new Map()
-  for (const seq of doc.sequences ?? []) {
-    for (const d of seq.dialogs ?? []) {
-      if (hasText(d.kind) && d.slot && !seen.has(d.slot)) {
-        seen.set(d.slot, { name: d.slot, default: d.text ?? '' })
-      }
-    }
-  }
-  return [...seen.values()]
+/** True when any text in the document is marked required (host must supply). */
+export function hasRequiredText(doc) {
+  return (doc.sequences ?? []).some((s) =>
+    (s.dialogs ?? []).some((d) => hasText(d.kind) && d.required)
+  )
 }
 
 /**
@@ -156,7 +154,8 @@ export function normalizeDocument(raw) {
         for (const key of Object.keys(dialog)) {
           if (key === 'id' || key === 'kind' || key === 'options') continue
           if (d[key] !== undefined && d[key] !== null) {
-            dialog[key] = key === 'maxLength' ? Number(d[key]) : String(d[key])
+            dialog[key] =
+              key === 'maxLength' ? Number(d[key]) : key === 'required' ? !!d[key] : String(d[key])
           }
         }
         if (d.kind === 'options') {

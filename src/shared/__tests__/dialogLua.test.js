@@ -13,7 +13,7 @@ import {
   newEndDialog,
   newOption,
   normalizeDocument,
-  collectSlots
+  hasRequiredText
 } from '../dialogDocument.js'
 
 const here = join(fileURLToPath(import.meta.url), '..')
@@ -111,10 +111,12 @@ describe('the Narve Oaths acceptance case', () => {
 
   it('inline export reads like the corpus', () => {
     const { table, onSpawn } = emitInline(doc)
-    // The test document is name-sorted, so the first sequence with text is
-    // priest_oaths_already_taken; a pursuit with only a function dialog adds
-    // no text and no comment.
-    expect(table).toMatch(/^-- .*\noaths = \{\n {2}-- priest_oaths_already_taken\n {2}"Oh, you've/)
+    // Text is keyed by sequence with the shared `priest_oaths_` prefix dropped;
+    // one line is a string, several are an array. (The test document is
+    // name-sorted, so already_taken comes first.)
+    expect(table).toMatch(/^-- .*\noaths = \{\n {2}already_taken = "Oh, you've/)
+    expect(table).toContain('  dawn_info = {\n    "Ah, the Oath of Dawn!')
+    expect(table).toContain('  menu = "So, what\'ll it be?')
     expect(onSpawn).toContain('  priest_oaths_menu_options = world.NewDialogOptions()')
     expect(onSpawn).toContain(
       '  priest_oaths_menu_options.AddOption("Let me think on this", world.NewJumpDialog("priest_oaths_think_it_over"))'
@@ -125,8 +127,11 @@ describe('the Narve Oaths acceptance case', () => {
       '  oaths_lecture.AddMenuCheckExpression("return priest_oaths_available() == true")'
     )
     expect(onSpawn.trimEnd().endsWith('origin.AddPursuit(oaths_lecture)')).toBe(true)
-    // The text table is referenced, not inlined.
-    expect(onSpawn).toContain('world.NewDialog(oaths[1])')
+    // The text table is referenced by key, not inlined and not by position.
+    expect(onSpawn).toContain('world.NewDialog(oaths.already_taken)')
+    expect(onSpawn).toContain('world.NewDialog(oaths.dawn_info[1])')
+    expect(onSpawn).toContain('world.NewOptionsDialog(oaths.menu, priest_oaths_menu_options)')
+    expect(onSpawn).not.toMatch(/oaths\[\d+\]/)
     expect(onSpawn).not.toContain('Ah, an Aisling!')
   })
 
@@ -137,7 +142,13 @@ describe('the Narve Oaths acceptance case', () => {
     expect(module.trimEnd().endsWith('return M')).toBe(true)
     expect(module).toContain('function M.install(opts)')
     expect(module).toContain('  local priest_oaths_menu_options = world.NewDialogOptions()')
-    expect(host).toBe('  oaths = require("dialogs/oaths")\n  oaths.install()')
+    // The host piece lists every key with its default, so giving an NPC its
+    // own voice is editing in place; nothing is required here.
+    expect(host).toMatch(
+      /^ {2}oaths = require\("dialogs\/oaths"\)\n {2}oaths\.install\(\{\n {4}text = \{\n {6}already_taken = "Oh/
+    )
+    expect(host).toContain('      dawn_info = {\n        "Ah, the Oath of Dawn!')
+    expect(host).not.toContain('-- required')
   })
 
   it('a re-export of the same document is byte-identical', () => {
@@ -199,14 +210,16 @@ describe('emitter details the corpus exercises', () => {
 
     expect(validateDialogDocument(doc).errors).toEqual([])
     const { onSpawn } = emitInline(doc)
+    // Two text-bearing sequences share the `asynctest_` prefix, so the keys are
+    // `send` and `menu`.
     expect(onSpawn).toContain(
-      'world.NewTextDialog(asynctest[1], "The name", "To receive", 16, "", "async_handler()")'
+      'world.NewTextDialog(asynctest.send, "The name", "To receive", 16, "", "async_handler()")'
     )
     expect(onSpawn).toContain(
       'asynctest_menu_options.AddOption("Stuff", "async_target_response()", "return source.Level > 5")'
     )
     expect(onSpawn).toContain(
-      'world.NewOptionsDialog(asynctest[2], asynctest_menu_options, "", "on_pick()")'
+      'world.NewOptionsDialog(asynctest.menu, asynctest_menu_options, "", "on_pick()")'
     )
     expect(onSpawn).toContain('world.NewFunctionDialog("source.EndDialog()")')
     expect(onSpawn).toContain('asynctest_send_dialog.SetDisplayName("Async Send Test")')
@@ -245,39 +258,65 @@ describe('emitter details the corpus exercises', () => {
     ).toBe('y')
   })
 
-  it('slots: inline emits the default, module keys the text and lists the slot for the host', () => {
+  it('required text: inline refuses an empty one, module keys it and marks it for the host', () => {
     const doc = newDocument('greet')
     const seq = newSequence('greet_intro')
     seq.scope = 'pursuit'
     const hello = newDialog('text')
-    Object.assign(hello, { text: 'Well met.', slot: 'hello' })
+    Object.assign(hello, { text: 'Well met.' })
     const voice = newDialog('text')
-    Object.assign(voice, { text: '', slot: 'voice' })
-    const plain = newDialog('text')
-    plain.text = 'Farewell.'
-    seq.dialogs = [hello, voice, plain, newEndDialog()]
-    doc.sequences = [seq]
+    Object.assign(voice, { text: '', required: true })
+    seq.dialogs = [hello, voice, newEndDialog()]
+    const bye = newSequence('greet_bye')
+    bye.dialogs = [{ ...newDialog('text'), text: 'Farewell.' }, newEndDialog()]
+    doc.sequences = [seq, bye]
 
-    expect(collectSlots(doc)).toEqual([
-      { name: 'hello', default: 'Well met.' },
-      { name: 'voice', default: '' }
-    ])
-    // Inline cannot emit an empty default.
+    expect(hasRequiredText(doc)).toBe(true)
+    // Inline has no host to supply it.
     expect(validateDialogDocument(doc, { mode: 'inline' }).errors.map((e) => e.field)).toEqual([
       'text'
     ])
     expect(validateDialogDocument(doc, { mode: 'module' }).errors).toEqual([])
 
     const { module, host } = emitModule(doc)
-    expect(module).toContain('  hello = "Well met.",')
-    expect(module).toContain('  voice = "",')
-    expect(module).toContain('  "Farewell.",')
-    expect(module).toContain('world.NewDialog(text.hello)')
-    expect(module).toContain('world.NewDialog(text.voice)')
-    expect(module).toContain('world.NewDialog(text[1])')
-    expect(host).toContain('hello = "Well met.", -- optional; remove to keep the default')
-    expect(host).toContain('voice = "", -- required')
+    // One sequence's lines are one key: an array when there are several.
+    expect(module).toContain('  intro = {\n    "Well met.",\n    "",\n  },')
+    expect(module).toContain('  bye = "Farewell.",')
+    expect(module).toContain('world.NewDialog(text.intro[1])')
+    expect(module).toContain('world.NewDialog(text.intro[2])')
+    expect(module).toContain('world.NewDialog(text.bye)')
+    expect(host).toContain(
+      '      intro = { -- required\n        "Well met.",\n        "",\n      },'
+    )
+    expect(host).toContain('      bye = "Farewell.",')
     expect(() => luaparse.parse(module)).not.toThrow()
+  })
+
+  it('the document name is dropped as a prefix; a pursuit named for the document is keyed lecture', () => {
+    const doc = newDocument('solo')
+    const only = newSequence('solo_only')
+    only.scope = 'pursuit'
+    only.dialogs = [{ ...newDialog('text'), text: 'Hi.' }, newEndDialog()]
+    doc.sequences = [only]
+    const { table, onSpawn } = emitInline(doc)
+    // No shared prefix with only one sequence, but the document's own name is
+    // still dropped: `solo.only`, not `solo.solo_only`.
+    expect(table).toContain('  only = "Hi.",')
+    expect(onSpawn).toContain('world.NewDialog(solo.only)')
+
+    const doc2 = newDocument('two')
+    const a = newSequence('two_a')
+    a.dialogs = [{ ...newDialog('text'), text: 'A' }, newEndDialog()]
+    const p = newSequence('two')
+    p.scope = 'pursuit'
+    p.dialogs = [
+      { ...newDialog('text'), text: 'P' },
+      { ...newDialog('jump'), sequence: 'two_a' }
+    ]
+    doc2.sequences = [a, p]
+    const out = emitInline(doc2)
+    expect(out.table).toContain('  a = "A",')
+    expect(out.table).toContain('  lecture = "P",')
   })
 })
 
@@ -315,10 +354,13 @@ describe('validation refuses what a player would otherwise find', () => {
       field: 'target'
     })
     expect(errors[0].message).toContain('"t_nowhere"')
-    // And the sequence nothing reaches any more is warned about, not refused.
-    expect(validateDialogDocument(doc).warnings.map((w) => w.message)).toEqual([
-      'Sequence "t_go" is never jumped to; nothing reaches it.'
-    ])
+    // And the sequence nothing reaches any more is warned about, not refused —
+    // in words that allow for StartSequence, which the document cannot see.
+    const [w] = validateDialogDocument(doc).warnings
+    expect(w).toMatchObject({ sequenceId: doc.sequences[1].id })
+    expect(w.field).toBeUndefined()
+    expect(w.message).toContain('Nothing in this dialog jumps to "t_go"')
+    expect(w.message).toContain('source.StartSequence("t_go")')
   })
 
   it('a duplicate sequence name is refused; a case-only difference is warned', () => {
@@ -379,9 +421,10 @@ describe('validation refuses what a player would otherwise find', () => {
     doc.sequences[0].menuCheck = 'return true'
     const { errors, warnings } = validateDialogDocument(doc)
     expect(errors).toEqual([])
-    expect(warnings.map((w) => w.field ?? w.dialogId)).toEqual(
-      expect.arrayContaining(['menuCheck', doc.sequences[1].dialogs[0].id])
+    expect(warnings.map((w) => w.field ?? w.sequenceId)).toEqual(
+      expect.arrayContaining(['menuCheck', doc.sequences[1].id])
     )
+    expect(warnings.find((w) => !w.field).message).toMatch(/^Ends on a text dialog/)
   })
 })
 
@@ -402,7 +445,7 @@ describe('normalizeDocument', () => {
     expect(doc.sequences[0].dialogs[0]).toMatchObject({
       kind: 'text',
       text: 'hi',
-      slot: '',
+      required: false,
       callback: ''
     })
     expect(doc.sequences[0].id).toBeTruthy()

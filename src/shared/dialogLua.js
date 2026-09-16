@@ -6,8 +6,7 @@ import { hasText } from './dialogDocument.js'
 //
 //   inline  — what every NPC script looks like today: a string table above
 //             OnSpawn, and inside it the sequences constructed, then registered,
-//             then the pursuits. The writer pastes the two pieces. Slots emit
-//             their default text.
+//             then the pursuits. The writer pastes the two pieces.
 //   module  — scripts/modules/dialogs/<name>.lua in the shape of
 //             scripts/modules/specialization.lua: `local M = {}`, `M.install(opts)`
 //             that merges `opts.text` over the defaults and registers the
@@ -18,7 +17,9 @@ import { hasText } from './dialogDocument.js'
 // unchanged document is a no-op diff, and a test can pin the text.
 //
 // Variable naming follows the corpus: `<slug>_dialog` for a sequence,
-// `<slug>_lecture` for a pursuit, `<slug>_options` for an options table.
+// `<slug>_lecture` for a pursuit, `<slug>_options` for an options table. Text
+// is keyed by sequence (see catalogueText), which the corpus mostly is not —
+// that is deliberate; see the note there.
 
 const INDENT = '  '
 
@@ -57,47 +58,65 @@ function namer() {
 }
 
 /**
- * Walks the document's text in emission order and assigns each dialog a table
- * reference. A slot is keyed by its name (first occurrence sets the default);
- * every other text takes the next positional index. Returns the entries to
- * emit and a lookup from dialog id to the Lua expression that reads it.
+ * The common `foo_bar_` prefix of the sequences that carry text, so keys can
+ * drop it: `on_honey_menu` reads as `menu` inside the `on_honey` table. Cut at
+ * an underscore, never mid-word.
+ */
+function commonPrefix(slugs) {
+  if (slugs.length < 2) return ''
+  let prefix = slugs[0]
+  for (const s of slugs.slice(1)) {
+    let i = 0
+    while (i < prefix.length && i < s.length && prefix[i] === s[i]) i++
+    prefix = prefix.slice(0, i)
+  }
+  const cut = prefix.lastIndexOf('_')
+  return cut > 0 ? prefix.slice(0, cut + 1) : ''
+}
+
+/**
+ * Keys the document's text BY SEQUENCE, the way the specialization trainers
+ * are written by hand (`styles.intro[1]`, `styles.menu`): a sequence with one
+ * line is a string, with several an array. Positional `oaths[7]` is the
+ * corpus norm and nobody can follow it.
+ *
+ * Returns the table entries to emit and a lookup from dialog id to the Lua
+ * expression that reads it. A sequence's key is its slug minus the prefix the
+ * text-bearing sequences share; a collision takes a numeric suffix.
  */
 function catalogueText(doc, tableExpr) {
-  const entries = [] // { comment?, key?: string, index?: number, text }
+  const withText = doc.sequences.filter((s) => s.dialogs.some((d) => hasText(d.kind)))
+  const prefix = commonPrefix(withText.map((s) => slug(s.name)))
+  const nextKey = namer()
+  const entries = [] // { key, lines: [{ text, required }] }
   const refs = new Map() // dialog id → Lua expression
-  const slotSeen = new Set()
-  let index = 0
-  for (const seq of doc.sequences) {
-    let first = true
-    for (const d of seq.dialogs) {
-      if (!hasText(d.kind)) continue
-      if (d.slot) {
-        refs.set(d.id, `${tableExpr}.${d.slot}`)
-        if (slotSeen.has(d.slot)) continue
-        slotSeen.add(d.slot)
-        entries.push({ comment: first ? seq.name : undefined, key: d.slot, text: d.text ?? '' })
-      } else {
-        index += 1
-        refs.set(d.id, `${tableExpr}[${index}]`)
-        entries.push({ comment: first ? seq.name : undefined, index, text: d.text ?? '' })
-      }
-      first = false
-    }
+  for (const seq of withText) {
+    let base = slug(seq.name)
+    if (prefix && base.startsWith(prefix)) base = base.slice(prefix.length)
+    // The document's own name is a prefix too: `two.two_a` reads as `two.a`.
+    if (base.startsWith(`${doc.name}_`)) base = base.slice(doc.name.length + 1)
+    if (base === doc.name) base = ''
+    if (!base) base = seq.scope === 'pursuit' ? 'lecture' : 'main'
+    const key = nextKey(base)
+    const lines = seq.dialogs.filter((d) => hasText(d.kind))
+    lines.forEach((d, i) => {
+      refs.set(d.id, lines.length === 1 ? `${tableExpr}.${key}` : `${tableExpr}.${key}[${i + 1}]`)
+    })
+    entries.push({ key, lines: lines.map((d) => ({ text: d.text ?? '', required: !!d.required })) })
   }
   return { entries, refs }
 }
 
 function renderTableBody(entries, indent) {
   const lines = []
-  let lastComment
   for (const e of entries) {
-    if (e.comment && e.comment !== lastComment) {
-      lines.push(`${indent}-- ${e.comment}`)
-      lastComment = e.comment
+    if (e.lines.length === 1) {
+      lines.push(`${indent}${e.key} = ${luaString(e.lines[0].text)},`)
+    } else {
+      lines.push(`${indent}${e.key} = {`)
+      for (const l of e.lines) lines.push(`${indent}${INDENT}${luaString(l.text)},`)
+      lines.push(`${indent}},`)
     }
-    lines.push(
-      e.key ? `${indent}${e.key} = ${luaString(e.text)},` : `${indent}${luaString(e.text)},`
-    )
   }
   return lines
 }
@@ -221,13 +240,12 @@ export function emitInline(doc) {
 /**
  * Module export: `{ module, host }`. `module` is the whole file for
  * scripts/modules/dialogs/<name>.lua; `host` is what an NPC pastes into its
- * OnSpawn to use it, with every slot listed so the writer sees what is theirs
- * to fill.
+ * OnSpawn to use it, with every text key and its default listed so giving the
+ * NPC its own voice is editing in place; required keys are marked.
  */
 export function emitModule(doc) {
   const { entries, refs } = catalogueText(doc, 'text')
   const heading = doc.title || doc.name
-  const slots = entries.filter((e) => e.key)
   const module = [
     `-- dialogs/${doc.name}: ${heading}`,
     `-- Generated by Creidhne from .creidhne/dialogs/${doc.name}.json.`,
@@ -235,7 +253,8 @@ export function emitModule(doc) {
     `-- callbacks line is regenerated; keep hand-written functions below it.`,
     'local M = {}',
     '',
-    '-- Default text. A host overrides a slot through install({ text = { … } }).',
+    '-- Default text, keyed by sequence. A host overrides any key, whole, through',
+    '-- install({ text = { key = … } }). A required key has no usable default.',
     'local defaults = {',
     ...renderTableBody(entries, INDENT),
     '}',
@@ -258,14 +277,24 @@ export function emitModule(doc) {
   ].join('\n')
 
   const hostLines = [`${INDENT}${doc.name} = require("dialogs/${doc.name}")`]
-  if (slots.length === 0) {
+  if (entries.length === 0) {
     hostLines.push(`${INDENT}${doc.name}.install()`)
   } else {
     hostLines.push(`${INDENT}${doc.name}.install({`)
     hostLines.push(`${INDENT}${INDENT}text = {`)
-    for (const s of slots) {
-      const note = s.text ? '-- optional; remove to keep the default' : '-- required'
-      hostLines.push(`${INDENT}${INDENT}${INDENT}${s.key} = ${luaString(s.text)}, ${note}`)
+    for (const e of entries) {
+      const required = e.lines.some((l) => l.required)
+      const note = required ? ' -- required' : ''
+      if (e.lines.length === 1) {
+        hostLines.push(
+          `${INDENT}${INDENT}${INDENT}${e.key} = ${luaString(e.lines[0].text)},${note}`
+        )
+      } else {
+        hostLines.push(`${INDENT}${INDENT}${INDENT}${e.key} = {${note}`)
+        for (const l of e.lines)
+          hostLines.push(`${INDENT}${INDENT}${INDENT}${INDENT}${luaString(l.text)},`)
+        hostLines.push(`${INDENT}${INDENT}${INDENT}},`)
+      }
     }
     hostLines.push(`${INDENT}${INDENT}}`)
     hostLines.push(`${INDENT}})`)

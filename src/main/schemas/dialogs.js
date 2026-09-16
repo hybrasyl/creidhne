@@ -36,7 +36,7 @@ const Dialog = z
     id: nonEmpty,
     kind: z.enum(DIALOG_KINDS),
     text: str,
-    slot: str,
+    required: z.boolean().default(false),
     callback: str,
     handler: str,
     sequence: str,

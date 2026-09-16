@@ -22,9 +22,9 @@ import {
 /**
  * @param {object} doc      a normalized document
  * @param {object} [opts]
- * @param {'inline'|'module'} [opts.mode='inline']  inline export emits a slot's
- *        default, so an empty default is an error there; a module leaves it for
- *        the host to supply.
+ * @param {'inline'|'module'} [opts.mode='inline']  inline export emits every
+ *        text as written, so an empty required text is an error there; a
+ *        module leaves it for the host to supply.
  * @returns {{ errors: Problem[], warnings: Problem[] }}
  */
 export function validateDialogDocument(doc, { mode = 'inline' } = {}) {
@@ -125,22 +125,16 @@ export function validateDialogDocument(doc, { mode = 'inline' } = {}) {
       if (hasText(d.kind)) {
         const text = (d.text ?? '').trim()
         if (!text) {
-          if (d.slot && mode === 'module') {
-            // A slot with no default: the host must supply it. Fine for a module.
-          } else if (d.slot) {
-            error(`Slot "${d.slot}" has no default text, and inline export emits the default.`, {
+          if (d.required && mode === 'module') {
+            // Required with no placeholder: the host supplies it. Fine for a module.
+          } else if (d.required) {
+            error('This text is required from the host, and inline export has no host.', {
               ...where,
               field: 'text'
             })
           } else {
             error('Dialog has no text.', { ...where, field: 'text' })
           }
-        }
-        if (d.slot && !/^[a-z][a-z0-9_]*$/.test(d.slot)) {
-          error('Slot name must be lower snake case starting with a letter.', {
-            ...where,
-            field: 'slot'
-          })
         }
         checkExpr(d.callback, 'Callback', where, 'callback')
       }
@@ -201,27 +195,29 @@ export function validateDialogDocument(doc, { mode = 'inline' } = {}) {
           break
       }
     }
-    // A sequence whose tail shows text and then stops leaves the player on a
-    // dialog with nowhere to go. Usually a missed "End dialog"; not always.
+    // A sequence whose tail shows text and then stops: the conversation closes
+    // when the player clicks past it. That is how every "thank you" line in the
+    // corpus ends, so it is only worth a word.
     const last = dialogs[dialogs.length - 1]
     if (last && (last.kind === 'text' || last.kind === 'input')) {
-      warn('Sequence ends on a text dialog with no jump, options or end.', {
-        sequenceId: seq.id,
-        dialogId: last.id
-      })
+      warn(
+        'Ends on a text dialog: the conversation closes when the player clicks past it. Add a jump or End dialog if that is not what you meant.',
+        { sequenceId: seq.id }
+      )
     }
   }
 
-  // Reachability. Pursuits and globals are roots (the NPC menu and
-  // StartSequence reach them); everything else must be jumped to.
+  // Reachability. Pursuits and globals are roots; a local sequence is reached
+  // by a jump in this document, or by a script calling StartSequence — which
+  // the document cannot see. So this says what IS known and no more.
   for (const seq of sequences) {
     const name = (seq.name ?? '').trim()
     if (!name || seq.scope !== 'local') continue
     if (!jumpTargets.has(name)) {
-      warn(`Sequence "${name}" is never jumped to; nothing reaches it.`, {
-        sequenceId: seq.id,
-        field: 'name'
-      })
+      warn(
+        `Nothing in this dialog jumps to "${name}". That is fine if a script starts it with source.StartSequence("${name}"); otherwise no player can reach it.`,
+        { sequenceId: seq.id }
+      )
     }
   }
 

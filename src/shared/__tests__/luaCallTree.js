@@ -36,6 +36,19 @@ export function dialogCallTree(source, { tableAlias = {} } = {}) {
       const i = literal(node.index)
       return t ? t.positional[i - 1] : `<${node.base.name}[${i}]>`
     }
+    // `tbl.key[2]`: a keyed entry that is itself an array (text keyed by sequence).
+    if (
+      node.type === 'IndexExpression' &&
+      node.base.type === 'MemberExpression' &&
+      node.base.base.type === 'Identifier'
+    ) {
+      const t = tables.get(node.base.base.name)
+      const arr = t?.keyed[node.base.identifier.name]
+      const i = literal(node.index)
+      return Array.isArray(arr)
+        ? arr[i - 1]
+        : `<${node.base.base.name}.${node.base.identifier.name}[${i}]>`
+    }
     if (node.type === 'MemberExpression' && node.base.type === 'Identifier') {
       const t = tables.get(node.base.name)
       return t ? t.keyed[node.identifier.name] : `<${node.base.name}.${node.identifier.name}>`
@@ -103,7 +116,12 @@ export function dialogCallTree(source, { tableAlias = {} } = {}) {
           const t = { positional: [], keyed: {} }
           for (const f of init.fields) {
             if (f.type === 'TableValue') t.positional.push(literal(f.value))
-            else if (f.type === 'TableKeyString') t.keyed[f.key.name] = literal(f.value)
+            else if (f.type === 'TableKeyString') {
+              t.keyed[f.key.name] =
+                f.value.type === 'TableConstructorExpression'
+                  ? f.value.fields.map((g) => literal(g.value))
+                  : literal(f.value)
+            }
           }
           tables.set(name, t)
           continue
