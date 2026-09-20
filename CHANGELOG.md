@@ -37,6 +37,8 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-09-20
+
 ### Added
 
 - **A Dialog Builder page.** Compose an NPC dialog in a form: sequences, text, options, jumps,
@@ -45,9 +47,11 @@ first section written to the rules above.
   you to paste into the NPC script. Creidhne refuses to export while the dialog has a fault a
   player would find in game: a jump to a sequence that does not exist, a sequence name used
   twice, an option with nowhere to go, an options dialog with no options. Creidhne writes nothing
-  under `scripts/`. A second export mode renders the dialog as a Lua module for
-  `scripts/modules/dialogs/`, with text slots a host NPC can fill, so several NPCs can share one
-  dialog with their own voice. The Scripts tile on the dashboard opens the page.
+  under `scripts/`. The exported text is keyed by sequence, the way the trainer scripts are
+  written by hand, so `on_honey.menu` is the menu text. A second export mode renders the dialog
+  as a Lua module for `scripts/modules/dialogs/`, where each NPC that installs it can supply its
+  own words for any key, so several NPCs share one dialog with their own voice. The Scripts tile
+  on the dashboard opens the page.
 
 ### Changed
 
