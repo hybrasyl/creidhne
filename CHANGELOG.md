@@ -37,6 +37,21 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Changed
+
+- **Deleting a dialog is a clear step.** The Dialog Builder shows a Delete button for an open
+  dialog and a delete icon on each entry in the list, and asks you to confirm before it removes
+  the file. A new dialog you have not saved has a Discard button instead. Lua you have already
+  pasted into a script is not affected by either.
+
+### Fixed
+
+- **Dependencies are current.** Creidhne updates its packages within their declared ranges,
+  which clears the eight reported vulnerabilities in transitive packages. The application code
+  is unchanged.
+- **The message after a delete is shown.** When you deleted the open dialog, the confirmation
+  message was lost with the editor. It now shows above the page.
+
 ## [1.13.0] - 2026-09-20
 
 ### Added

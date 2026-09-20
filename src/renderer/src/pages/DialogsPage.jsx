@@ -3,6 +3,11 @@ import {
   Alert,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   List,
   ListItemButton,
@@ -44,6 +49,9 @@ function DialogsPage() {
   const [loadedName, setLoadedName] = useState(null)
   const [status, setStatus] = useState(null)
   const [exportOpen, setExportOpen] = useState(false)
+  // The name awaiting a confirmed delete, or null. Deleting removes a file
+  // from the world, so it is never one click.
+  const [pendingDelete, setPendingDelete] = useState(null)
 
   const {
     markDirty,
@@ -127,18 +135,32 @@ function DialogsPage() {
   // The unsaved-changes dialogs call whatever is current.
   saveRef.current = handleSave
 
-  const handleDelete = async () => {
-    if (!activeLibrary || !loadedName) return
-    const result = await window.electronAPI.deleteDialog(activeLibrary, loadedName)
+  // Deletes a saved document by name — the open one, or any entry in the list.
+  // If it is the open one, the editor closes with it.
+  const handleDelete = async (name) => {
+    setPendingDelete(null)
+    if (!activeLibrary || !name) return
+    const result = await window.electronAPI.deleteDialog(activeLibrary, name)
     if (result?.error) {
       setStatus({ type: 'error', message: result.error })
       return
     }
+    if (name === loadedName) {
+      setDoc(null)
+      setLoadedName(null)
+      markClean()
+    }
+    setStatus({ type: 'info', message: `Deleted ${name}.json.` })
+    await refreshList()
+  }
+
+  // A new document that was never saved has no file; discarding it is just
+  // closing the editor, and the unsaved-changes guard has nothing to protect.
+  const handleDiscard = () => {
     setDoc(null)
     setLoadedName(null)
-    setStatus({ type: 'info', message: `Deleted ${loadedName}.json.` })
+    setStatus(null)
     markClean()
-    await refreshList()
   }
 
   if (!activeLibrary) {
@@ -192,12 +214,31 @@ function DialogsPage() {
                 key={entry.name}
                 selected={loadedName === entry.name}
                 onClick={() => openDocument(entry.name)}
+                sx={{
+                  pr: 0.5,
+                  '& .delete-entry': { opacity: 0 },
+                  '&:hover .delete-entry': { opacity: 1 }
+                }}
               >
                 <ListItemText
                   primary={entry.title || entry.name}
                   secondary={`${entry.name} · ${entry.sequences} sequence${entry.sequences === 1 ? '' : 's'}`}
                   slotProps={{ primary: { variant: 'body2' }, secondary: { variant: 'caption' } }}
                 />
+                <Tooltip title={`Delete ${entry.name}.json`}>
+                  <IconButton
+                    className="delete-entry"
+                    size="small"
+                    aria-label={`Delete ${entry.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setPendingDelete(entry.name)
+                    }}
+                    sx={{ '&:focus-visible': { opacity: 1 } }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </ListItemButton>
             ))}
           </List>
@@ -214,6 +255,11 @@ function DialogsPage() {
       <Box
         sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
       >
+        {status && (
+          <Alert severity={status.type} onClose={() => setStatus(null)} sx={{ mb: 1 }}>
+            {status.message}
+          </Alert>
+        )}
         {doc ? (
           <>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -256,19 +302,23 @@ function DialogsPage() {
                   </Button>
                 </span>
               </Tooltip>
-              {loadedName && (
-                <Tooltip title="Delete this dialog's file">
-                  <IconButton size="small" color="error" onClick={handleDelete}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+              {loadedName ? (
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => setPendingDelete(loadedName)}
+                >
+                  Delete
+                </Button>
+              ) : (
+                <Tooltip title="Close this new dialog without saving it">
+                  <Button size="small" color="inherit" onClick={handleDiscard}>
+                    Discard
+                  </Button>
                 </Tooltip>
               )}
             </Box>
-            {status && (
-              <Alert severity={status.type} onClose={() => setStatus(null)} sx={{ mb: 1 }}>
-                {status.message}
-              </Alert>
-            )}
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               <DialogEditor doc={doc} onChange={updateDoc} problems={problems} />
             </Box>
@@ -296,6 +346,21 @@ function DialogsPage() {
         onDiscard={handleDialogDiscard}
         onCancel={handleDialogCancel}
       />
+      <Dialog open={!!pendingDelete} onClose={() => setPendingDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete {pendingDelete}?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This removes <code>.creidhne/dialogs/{pendingDelete}.json</code> from the world. Lua you
+            have already pasted into a script is not affected.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => handleDelete(pendingDelete)}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

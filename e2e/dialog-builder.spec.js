@@ -70,5 +70,15 @@ test.describe('Dialog builder', () => {
     await exportDialog.getByRole('tab', { name: /Module/ }).click()
     await expect(exportDialog.getByText('function M.install(opts)')).toBeVisible()
     await expect(exportDialog.getByText('greet = require("dialogs/greet")')).toBeVisible()
+    await exportDialog.getByRole('button', { name: 'Close' }).click()
+
+    // Delete from the list entry, through the confirm; the file goes with it.
+    await page.getByRole('button', { name: 'Delete greet', exact: true }).click()
+    const confirm = page.getByRole('dialog', { name: 'Delete greet?' })
+    await expect(confirm).toBeVisible()
+    await confirm.getByRole('button', { name: 'Delete' }).click()
+    await expect(page.getByText('Deleted greet.json.')).toBeVisible()
+    expect(existsSync(file)).toBe(false)
+    await expect(page.getByText('No dialogs saved yet. Start one with +.')).toBeVisible()
   })
 })
