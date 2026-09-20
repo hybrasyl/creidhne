@@ -37,6 +37,8 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-09-20
+
 ### Changed
 
 - **Deleting a dialog is a clear step.** The Dialog Builder shows a Delete button for an open
