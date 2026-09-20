@@ -15,6 +15,8 @@ import { parseCastableXml, serializeCastableXml } from './castableXml'
 import { resolveSpellbook, nextCategories, sameCategorySet, affectedCastables } from './spellbook'
 import { runCastableExport, runReport, renderReport, collectRecords } from './reportRun.js'
 import { loadReports, saveReports } from './reportsFile.js'
+import { listDialogs, loadDialog, saveDialog, deleteDialog, dialogExists } from './dialogsFile.js'
+import { dialogDocumentSchema, dialogNameSchema } from './schemas/dialogs.js'
 import { loadConstants, saveConstants } from './constantsJson.js'
 import { loadFormulas, saveFormulas, importFormulas } from './formulasJson.js'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from './behaviorSetXml'
@@ -1459,6 +1461,58 @@ app.whenReady().then(async () => {
       if (error) return { error }
       const { total, matched } = renderReport(records, parsed)
       return { total, matched }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  // ── Dialog builder (HTOO-458) ─────────────────────────────────────────────
+  // Documents under world/.creidhne/dialogs/. A save takes a whole document and
+  // is validated for SHAPE only: a draft with a dangling jump must be saveable.
+  // The semantic gate (shared validateDialogDocument) guards export, in the
+  // renderer, and export writes nothing — the writer pastes.
+
+  ipc.handle('dialogs:list', async (_, libraryPath) => {
+    if (!libraryPath) return { dialogs: [], problems: [] }
+    return listDialogs(validatePath(libraryPath))
+  })
+
+  ipc.handle('dialogs:load', async (_, libraryPath, name) => {
+    try {
+      parseOrLog(schemaCtx, 'dialogs:load', dialogNameSchema, name)
+      return { document: await loadDialog(validatePath(libraryPath), name) }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  ipc.handle('dialogs:save', async (_, libraryPath, document, previousName) => {
+    if (!libraryPath) return { error: 'No library selected.' }
+    try {
+      const parsed = parseOrLog(schemaCtx, 'dialogs:save', dialogDocumentSchema, document)
+      const root = validatePath(libraryPath)
+      // A rename must not silently replace another document. The check and the
+      // write are not atomic, but two writers on one machine is not the case
+      // this guards; a hand-edited duplicate is.
+      if (previousName && previousName !== parsed.name && (await dialogExists(root, parsed.name))) {
+        return { error: `A dialog named "${parsed.name}" already exists.` }
+      }
+      const saved = await saveDialog(root, parsed)
+      if (previousName && previousName !== parsed.name) {
+        parseOrLog(schemaCtx, 'dialogs:save', dialogNameSchema, previousName)
+        await deleteDialog(root, previousName)
+      }
+      return { document: saved }
+    } catch (err) {
+      return { error: err.message }
+    }
+  })
+
+  ipc.handle('dialogs:delete', async (_, libraryPath, name) => {
+    try {
+      parseOrLog(schemaCtx, 'dialogs:delete', dialogNameSchema, name)
+      await deleteDialog(validatePath(libraryPath), name)
+      return { ok: true }
     } catch (err) {
       return { error: err.message }
     }

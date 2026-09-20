@@ -40,7 +40,9 @@ const INDEX_TYPES = [
   { key: 'elementtables', label: 'Element Tables', page: 'elements' },
   { key: 'localizations', label: 'Localizations', page: 'strings' },
   { key: 'serverconfigs', label: 'Server Configs', page: 'serverconfig' },
-  { key: 'scripts', label: 'Scripts', page: null, tooltip: 'Coming Soon!' },
+  // The count is the index's Lua script count; the page is the dialog builder
+  // (HTOO-458), which is the first tool that writes for those scripts.
+  { key: 'scripts', label: 'Scripts', page: 'dialogs', tooltip: 'Dialog builder' },
   { key: 'maps', label: 'Maps', page: null, launch: 'taliesin' },
   { key: 'worldmaps', label: 'World Maps', page: null, launch: 'taliesin' }
 ]

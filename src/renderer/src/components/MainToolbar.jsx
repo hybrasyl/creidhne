@@ -30,6 +30,7 @@ import {
   GiCalculator,
   GiPull,
   GiBootKick,
+  GiConversation,
   GiDoubleDiaphragm,
   GiSettingsKnobs,
   GiAnvil,
@@ -300,6 +301,11 @@ const MainToolbar = ({ navigate }) => {
         <Tooltip title="Lua Helpers">
           <IconButton onClick={() => navigate('helpers')} sx={pageSx('helpers')}>
             <GiPull />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Dialog Builder">
+          <IconButton onClick={() => navigate('dialogs')} sx={pageSx('dialogs')}>
+            <GiConversation />
           </IconButton>
         </Tooltip>
         <Tooltip title="Reports">
