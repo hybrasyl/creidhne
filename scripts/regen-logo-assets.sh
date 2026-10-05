@@ -8,9 +8,9 @@
 # rounded up to something tidy. Requires ImageMagick 7 (`magick`).
 #
 # Two masters, not one. build/creidhne-logo.png is the star used by the app
-# chrome, Windows and Linux; build/creidhne-mac-icon.png is a separate squircle
-# drawn for the macOS Dock. Everything below comes from the star except the
-# .icns at the end.
+# chrome and Windows; build/creidhne-mac-icon.png is the navy-and-gold tile used
+# by macOS and Linux. The two webp files below come from the star; make-icons.mjs
+# at the end builds from both.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -25,8 +25,8 @@ magick build/creidhne-logo.png -resize 192x192 -strip -quality 90 \
 
 echo "Regenerated resources/creidhne-splash.webp and src/renderer/src/assets/creidhne.webp"
 
-# Every committed icon artifact: the Linux hicolor set in build/icons/ and the
-# Windows/runtime PNG from the star, plus the macOS .icns from the squircle (inset
-# onto Apple's icon grid). scripts/icons.test.mjs checks the results, so a
+# Every committed icon artifact: the Windows PNG from the star; the Linux hicolor
+# set in build/icons/, the Linux window icon and the macOS .icns from the tile (the
+# .icns alone inset onto Apple's icon grid). scripts/icons.test.mjs checks the results, so a
 # regeneration that goes wrong is caught by `npm test` rather than by a release.
 node scripts/make-icons.mjs

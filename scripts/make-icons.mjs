@@ -16,18 +16,31 @@
 // directory of sizes, so one file meant one icon size in the .deb payload.
 //
 // **Two masters, not one, and that is deliberate.** `build/creidhne-logo.png` is the
-// star that Windows, Linux and the app chrome use. `build/creidhne-mac-icon.png` is a
-// separate squircle drawn for the macOS Dock -- different artwork, not a crop of the
-// star. Balor's one-master-one-generator shape does not apply here for that reason;
-// what applies is the part that matters, which is that no size is produced by hand.
+// star that Windows and the app chrome use. `build/creidhne-mac-icon.png` is the
+// navy-and-gold compass tile -- different artwork, not a crop of the star -- and it
+// serves macOS AND Linux. That is the house shape (balor, 2026-08-06; epona and
+// taliesin follow it): the square tile for the two platforms that draw square icons,
+// the app's own artwork for Windows. Creidhne first gave Linux the star, so the .deb
+// and the AppImage showed the Windows icon. On a desktop of square tiles (Cinnamon
+// among them) a star with transparent corners also reads as a smaller icon.
+//
+// **The tile here is the plain `macros/Creidhne.png`, NOT `Creidhne_fixed.png`.** For
+// the sibling apps the `_fixed` variant is the one with real alpha. For Creidhne it is
+// the reverse: measured, `Creidhne.png` carries 219 alpha levels and `_fixed` carries
+// 2, which is the hard-stepped edge HTOO-38 removed. `build/creidhne-mac-icon.png` is
+// byte-identical to `Creidhne.png`. Do not re-vendor `_fixed` over it.
 //
 // Outputs, all committed:
 //
 //   build/creidhne-logo.png  (1024, star)
-//        |-- resources/icon.png    256    Windows .ico source + the runtime window icon
-//        `-- build/icons/NxN.png   8 sizes  Linux, via `linux.icon: build/icons`
-//   build/creidhne-mac-icon.png (1254, squircle)
-//        `-- build/icon.icns      10 types  macOS, inset onto Apple's grid
+//        `-- resources/icon.png        256     Windows .ico source + the window icon
+//                                              on Windows
+//   build/creidhne-mac-icon.png (1254, tile)
+//        |-- build/icons/NxN.png       8 sizes Linux, via `linux.icon: build/icons`,
+//        |                                     full-bleed (no Apple inset)
+//        |-- resources/icon-linux.png  256     the window icon on Linux, so the
+//        |                                     taskbar agrees with the launcher
+//        `-- build/icon.icns           10 types macOS, inset onto Apple's grid
 //
 // Requires ImageMagick 7 (`magick`). Run via `bash scripts/regen-logo-assets.sh`, or
 // directly:
@@ -44,6 +57,7 @@ const STAR = join(repoRoot, 'build', 'creidhne-logo.png')
 const SQUIRCLE = join(repoRoot, 'build', 'creidhne-mac-icon.png')
 const ICONS_DIR = join(repoRoot, 'build', 'icons')
 const WIN_ICON = join(repoRoot, 'resources', 'icon.png')
+const LINUX_WINDOW_ICON = join(repoRoot, 'resources', 'icon-linux.png')
 const ICNS = join(repoRoot, 'build', 'icon.icns')
 
 // The hicolor sizes a `.deb` install wants. **This list and nothing else may live in
@@ -55,7 +69,8 @@ const ICNS = join(repoRoot, 'build', 'icon.icns')
 export const LINUX_SIZES = [16, 24, 32, 48, 64, 128, 256, 512]
 
 // The Windows .ico source and the BrowserWindow icon. 256 is what a .ico tops out
-// at, and electron-builder converts up from this file.
+// at, and electron-builder converts up from this file. The Linux window icon uses
+// the same size, which is the largest one an X11 `_NET_WM_ICON` is usually drawn at.
 const WIN_SIZE = 256
 
 // Apple's macOS app-icon grid: the artwork occupies 824 of a 1024 canvas. Skipping
@@ -111,8 +126,11 @@ function buildLinuxSet() {
   // size nobody chose.
   rmSync(ICONS_DIR, { recursive: true, force: true })
   mkdirSync(ICONS_DIR, { recursive: true })
+  // Full-bleed: the tile fills the whole canvas. The 824/1024 inset is Apple's grid
+  // and belongs to the .icns alone; on Linux it would make the icon smaller than
+  // its neighbours, which is the fault moving off the star exists to fix.
   for (const size of LINUX_SIZES) {
-    resize(STAR, size, join(ICONS_DIR, `${size}x${size}.png`), FORCE_RGBA)
+    resize(SQUIRCLE, size, join(ICONS_DIR, `${size}x${size}.png`), FORCE_RGBA)
   }
   console.log(`Wrote build/icons/ (${readdirSync(ICONS_DIR).length} files)`)
   for (const size of LINUX_SIZES) console.log(`  ${size}x${size}.png`)
@@ -121,6 +139,14 @@ function buildLinuxSet() {
 function buildWindowsIcon() {
   resize(STAR, WIN_SIZE, WIN_ICON, FORCE_RGBA)
   console.log(`Wrote resources/icon.png (${WIN_SIZE}x${WIN_SIZE})`)
+}
+
+// The BrowserWindow icon on Linux. Some window managers draw the window's own icon
+// (`_NET_WM_ICON` on X11) in the taskbar and switcher rather than the `.desktop`
+// one, so a star here would bring back the Windows icon on exactly those desktops.
+function buildLinuxWindowIcon() {
+  resize(SQUIRCLE, WIN_SIZE, LINUX_WINDOW_ICON, FORCE_RGBA)
+  console.log(`Wrote resources/icon-linux.png (${WIN_SIZE}x${WIN_SIZE})`)
 }
 
 function buildIcns() {
@@ -173,5 +199,6 @@ function buildIcns() {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   buildLinuxSet()
   buildWindowsIcon()
+  buildLinuxWindowIcon()
   buildIcns()
 }

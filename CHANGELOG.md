@@ -37,6 +37,12 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Linux icon matches the macOS icon.** The .deb and the AppImage installed the Windows
+  star icon. They now install the navy-and-gold tile, as macOS does. On Linux, the window also
+  uses the tile, so the taskbar shows the same icon as the launcher.
+
 ## [1.13.1] - 2026-09-20
 
 ### Changed

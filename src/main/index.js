@@ -239,7 +239,13 @@ function createWindow() {
     show: false,
     autoHideMenuBar: true,
     frame: false,
-    icon: join(__dirname, '../../resources/icon.png'),
+    // Linux gets the tile its .deb and AppImage install, because some window
+    // managers draw this icon in the taskbar rather than the .desktop one. macOS
+    // ignores this and uses the bundle's .icns. See scripts/make-icons.mjs.
+    icon: join(
+      __dirname,
+      process.platform === 'linux' ? '../../resources/icon-linux.png' : '../../resources/icon.png'
+    ),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

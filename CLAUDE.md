@@ -211,7 +211,11 @@ e2e/           Playwright specs against the built app
   `disableHardwareAcceleration()`. After `ready` each is a no-op rather than an error, so
   `remoteSession.test.js` reads the file and asserts the positions (comments stripped first).
 - **Icons are generated, never hand-edited** — `scripts/make-icons.mjs` writes `build/icons/`
-  (8 Linux sizes), `resources/icon.png` and `build/icon.icns` from the two masters in `build/`.
+  (8 Linux sizes), `resources/icon.png`, `resources/icon-linux.png` and `build/icon.icns` from
+  the two masters in `build/`. The star is Windows only; macOS **and Linux** take the
+  navy-and-gold tile (the house shape), and the window icon follows the platform. The tile is
+  the plain `macros/Creidhne.png`, NOT `_fixed` — for Creidhne alone `_fixed` is the
+  hard-edged one.
   Only files matching `NxN.png` in `build/icons/` are collected by electron-builder, so a stray
   size there ships; `scripts/icons.test.mjs` asserts the directory holds those eight and no more.
 - **Structural guards, for faults whose failure mode is silence.** Several bugs here could not

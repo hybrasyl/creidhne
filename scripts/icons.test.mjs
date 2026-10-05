@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'fs'
+import { inflateSync } from 'zlib'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { LINUX_SIZES } from './make-icons.mjs'
@@ -39,6 +40,70 @@ function readPng(file) {
   }
 }
 
+/**
+ * The RGBA of one pixel, decoded with nothing but zlib.
+ *
+ * Covers what make-icons.mjs writes and nothing more: 8-bit RGBA (FORCE_RGBA),
+ * non-interlaced. Anything else fails loudly here rather than decoding as noise.
+ */
+function pixelAt(file, x, y) {
+  const buf = readFileSync(file)
+  const { width, bitDepth, colorType } = readPng(file)
+  expect(bitDepth, `${file}: decoder handles 8-bit only`).toBe(8)
+  expect(colorType, `${file}: decoder handles RGBA only`).toBe(6)
+  expect(buf[28], `${file}: decoder handles non-interlaced only`).toBe(0)
+
+  const idat = []
+  for (let off = 8; off < buf.length;) {
+    const len = buf.readUInt32BE(off)
+    if (buf.subarray(off + 4, off + 8).toString('ascii') === 'IDAT') {
+      idat.push(buf.subarray(off + 8, off + 8 + len))
+    }
+    off += len + 12
+  }
+  const raw = inflateSync(Buffer.concat(idat))
+
+  // Undo the per-row filters down to row y. Each row is one filter byte + 4*width.
+  const stride = width * 4
+  let prev = Buffer.alloc(stride)
+  let row
+  for (let r = 0; r <= y; r++) {
+    const start = r * (stride + 1)
+    const filter = raw[start]
+    row = Buffer.from(raw.subarray(start + 1, start + 1 + stride))
+    for (let i = 0; i < stride; i++) {
+      const a = i >= 4 ? row[i - 4] : 0
+      const b = prev[i]
+      const c = i >= 4 ? prev[i - 4] : 0
+      let pred = 0
+      if (filter === 1) pred = a
+      else if (filter === 2) pred = b
+      else if (filter === 3) pred = (a + b) >> 1
+      else if (filter === 4) {
+        const p = a + b - c
+        const pa = Math.abs(p - a)
+        const pb = Math.abs(p - b)
+        const pc = Math.abs(p - c)
+        pred = pa <= pb && pa <= pc ? a : pb <= pc ? b : c
+      }
+      row[i] = (row[i] + pred) & 0xff
+    }
+    prev = row
+  }
+  const [r, g, b, a] = row.subarray(x * 4, x * 4 + 4)
+  return { r, g, b, a }
+}
+
+/**
+ * A point just inside the middle of the left edge. The tile is opaque navy there.
+ * The star is not: measured, it is transparent there at 256 and an opaque brown
+ * blend at 16, so the test is "opaque AND blue over red", not opacity alone. The
+ * same pixel also catches an Apple inset applied where it does not belong (the
+ * inset leaves ~10% of transparent margin on every side).
+ */
+const edgePoint = (size) => [Math.max(1, Math.round(size * 0.03)), Math.floor(size / 2)]
+const isTile = ({ r, b, a }) => a === 255 && b > r
+
 describe('build/icons', () => {
   it('holds one square RGBA PNG per declared size', () => {
     for (const size of LINUX_SIZES) {
@@ -59,6 +124,19 @@ describe('build/icons', () => {
     // Asserting the contents is the only thing that makes that impossible.
     const expected = LINUX_SIZES.map((s) => `${s}x${s}.png`).sort()
     expect(readdirSync(ICONS_DIR).sort()).toEqual(expected)
+  })
+
+  it('is the full-bleed tile, not the star', () => {
+    // The .deb and the AppImage shipped the star -- the Windows icon -- because the
+    // generator fed the Linux set from it. The house shape gives Linux the same
+    // square tile as macOS, without the Apple inset.
+    for (const size of LINUX_SIZES) {
+      const px = pixelAt(join(ICONS_DIR, `${size}x${size}.png`), ...edgePoint(size))
+      expect(
+        isTile(px),
+        `${size}x${size}.png is not the full-bleed tile: ${JSON.stringify(px)}`
+      ).toBe(true)
+    }
   })
 
   it('covers the hicolor sizes a .deb install wants', () => {
@@ -91,6 +169,30 @@ describe('resources/icon.png', () => {
     expect(png.bytes, 'icon.png looks hand-flattened again — regenerate it').toBeGreaterThan(
       40 * 1024
     )
+  })
+})
+
+describe('the window icon, per platform', () => {
+  const STAR_ICON = join(repoRoot, 'resources', 'icon.png')
+  const LINUX_ICON = join(repoRoot, 'resources', 'icon-linux.png')
+
+  it('resources/icon.png is the star (Windows)', () => {
+    // Guard the guard: the edge probe must see the star as NOT a tile, or the
+    // build/icons assertion above would pass whatever it was given.
+    expect(isTile(pixelAt(STAR_ICON, ...edgePoint(256)))).toBe(false)
+  })
+
+  it('resources/icon-linux.png is a 256 RGBA tile', () => {
+    const png = readPng(LINUX_ICON)
+    expect([png.width, png.height, png.colorType]).toEqual([256, 256, 6])
+    expect(isTile(pixelAt(LINUX_ICON, ...edgePoint(256)))).toBe(true)
+  })
+
+  it('main gives the Linux window the tile', () => {
+    // Some window managers draw the window's own icon rather than the .desktop one,
+    // so a packaging fix alone leaves the star in the taskbar there.
+    const main = readFileSync(join(repoRoot, 'src', 'main', 'index.js'), 'utf8')
+    expect(main).toMatch(/process\.platform === 'linux'[^\n]*\n?[^\n]*icon-linux\.png/)
   })
 })
 
