@@ -3,7 +3,7 @@ const path = require('path')
 const xml2js = require('xml2js')
 
 // Define paths
-const xsdPath = path.join(__dirname, '..', 'xsd', 'src', 'xsd')
+const xsdPath = path.join(__dirname, '..', 'xsd', 'src', 'XSD')
 const outputJsonPath = path.join(
   __dirname,
   '..',
@@ -16,7 +16,7 @@ const outputJsonPath = path.join(
 )
 
 // Files to ignore
-const ignoreFiles = ['maps.xsd', 'hybrasyl.xsd', 'serverconfig.xsd', 'hybrasyl.designer.cs']
+const ignoreFiles = ['Map.xsd', 'Hybrasyl.xsd', 'ServerConfig.xsd', 'Hybrasyl.Designer.cs']
 
 // Function to extract and log simple types
 const extractSimpleTypes = async () => {

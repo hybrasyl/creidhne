@@ -3,7 +3,7 @@ const path = require('path')
 const xml2js = require('xml2js')
 
 // Define paths
-const xsdPath = path.join(__dirname, '..', 'xsd', 'src', 'xsd')
+const xsdPath = path.join(__dirname, '..', 'xsd', 'src', 'XSD')
 const outputJsonPath = path.join(
   __dirname,
   '..',
