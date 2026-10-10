@@ -26,6 +26,20 @@ electronFuses:
   enableNodeCliInspectArguments: false
   enableNodeOptionsEnvironmentVariable: false
   onlyLoadAppFromAsar: true
+  # Electron checks app.asar against the hash electron-builder embeds in the
+  # executable, file by file as it reads (HTOO-381; house decision, Sabrael,
+  # 2026-09-28). The build side already ran without it: electron-builder writes the
+  # per-file block hashes and the embedded hash whatever the fuse says, so this only
+  # makes Electron enforce them. Enforced on Windows and macOS; Linux ignores it.
+  #
+  # A changed asar is then a DEAD app: exit code 1 and `ASAR Integrity Violation`
+  # on stderr only, no window and no message. That is why it lands WITH the reader:
+  # scripts/verify-fuses.mjs asserts index 4 in each release build job, and the
+  # release process starts the packaged build before `publish:version`. The
+  # asarUnpack'd trees (lua-annotations, lua-stubs, xsd) are outside the check.
+  # Cost (HTOO-399, measured in oghma): nothing warm, 10-25 ms on a launch from
+  # new files, which is every portable start.
+  enableEmbeddedAsarIntegrityValidation: true
   resetAdHocDarwinSignature: true
 # Allowlist, not a denylist. electron-builder packages the whole project dir
 # minus `files` excludes; a denylist silently leaks every new top-level tree
