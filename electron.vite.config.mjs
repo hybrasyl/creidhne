@@ -13,7 +13,11 @@ export default defineConfig({
         },
         output: {
           entryFileNames: '[name].js'
-        }
+        },
+        // `original-fs` is an Electron built-in (the fs without the asar patch),
+        // not a package. Rollup cannot resolve it, and externalizeDepsPlugin does
+        // not list it. The portable sweep needs it; see src/main/portableSweep.js.
+        external: ['original-fs']
       }
     }
   },
