@@ -59,14 +59,15 @@ import { fileURLToPath } from 'url'
 export const SENTINEL = 'dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX'
 export const FUSE_STATE = { DISABLE: 0x30, ENABLE: 0x31, REMOVED: 0x72, INHERIT: 0x90 }
 
-// Position on the V1 wire → name. The full list is longer; these are the four
-// electron-builder.yml sets that reach the wire, and the only four asserted.
+// Position on the V1 wire → name. The full list is longer; these are the five
+// electron-builder.yml sets that reach the wire, and the only five asserted.
 // Position matters more than the name does — the wire is an array of bytes and
 // nothing in it is labelled.
 export const EXPECTED = [
   { index: 0, name: 'RunAsNode', state: FUSE_STATE.DISABLE },
   { index: 2, name: 'EnableNodeOptionsEnvironmentVariable', state: FUSE_STATE.DISABLE },
   { index: 3, name: 'EnableNodeCliInspectArguments', state: FUSE_STATE.DISABLE },
+  { index: 4, name: 'EnableEmbeddedAsarIntegrityValidation', state: FUSE_STATE.ENABLE },
   { index: 5, name: 'OnlyLoadAppFromAsar', state: FUSE_STATE.ENABLE }
 ]
 

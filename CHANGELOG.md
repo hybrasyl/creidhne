@@ -65,6 +65,10 @@ first section written to the rules above.
   uses the tile, so the taskbar shows the same icon as the launcher.
 - **The portable exe removes the folders that earlier launches left in `%TEMP%`.** The portable exe unpacks Creidhne into a new `%TEMP%\ns*.tmp` folder at each launch, and deletes that folder when Creidhne closes. If the portable exe process was stopped before Creidhne closed, the folder stayed, and no later launch removed it. Each folder holds a full copy of Creidhne. Now, 30 seconds after a portable launch, Creidhne deletes these folders. It deletes only a folder that holds a copy of Creidhne, that is older than ten minutes, and that no running copy uses.
 
+### Security
+
+- **Creidhne refuses to start from a changed app archive.** On Windows and macOS, Creidhne checks its app archive against a hash that the build puts in the executable. If the archive changed after the build, Creidhne does not start.
+
 ## [1.13.1] - 2026-09-20
 
 ### Changed

@@ -33,7 +33,7 @@ const require = createRequire(import.meta.url)
 describe('electron-builder.yml electronFuses', () => {
   const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf8')
 
-  it('asks for the five house fuses, with the house values', () => {
+  it('asks for the six house fuses, with the house values', () => {
     // Read out of the file rather than parsed with a YAML library, because there
     // is no YAML dependency here and the block is flat. The anchor is the key at
     // column 0, so a `runAsNode` in a comment cannot satisfy it — and the block
@@ -54,6 +54,7 @@ describe('electron-builder.yml electronFuses', () => {
       enableNodeCliInspectArguments: false,
       enableNodeOptionsEnvironmentVariable: false,
       onlyLoadAppFromAsar: true,
+      enableEmbeddedAsarIntegrityValidation: true,
       resetAdHocDarwinSignature: true
     })
   })
@@ -118,14 +119,14 @@ function wire(states, { version = 1, prefix = 'padding', suffix = 'tail' } = {})
   ])
 }
 
-// A wire as electron-builder leaves it: eight fuses, the four Creidhne sets in
+// A wire as electron-builder leaves it: eight fuses, the five Creidhne sets in
 // their configured states, the rest inherited.
 const GOOD = [
   FUSE_STATE.DISABLE, // 0 RunAsNode
   FUSE_STATE.INHERIT, // 1 EnableCookieEncryption
   FUSE_STATE.DISABLE, // 2 EnableNodeOptionsEnvironmentVariable
   FUSE_STATE.DISABLE, // 3 EnableNodeCliInspectArguments
-  FUSE_STATE.INHERIT, // 4 EnableEmbeddedAsarIntegrityValidation
+  FUSE_STATE.ENABLE, //  4 EnableEmbeddedAsarIntegrityValidation (HTOO-381)
   FUSE_STATE.ENABLE, //  5 OnlyLoadAppFromAsar
   FUSE_STATE.INHERIT, // 6 LoadBrowserProcessSpecificV8Snapshot
   FUSE_STATE.INHERIT //  7 GrantFileProtocolExtraPrivileges
@@ -173,16 +174,21 @@ describe('checkWires', () => {
   it('fails every fuse when the block is dropped from the config', () => {
     // The regression this whole file exists for. With no `electronFuses`, the
     // binary ships Electron's defaults — RunAsNode, NodeOptions and
-    // NodeCliInspect enabled, OnlyLoadAppFromAsar disabled — and all four are
-    // named, rather than the first one found.
+    // NodeCliInspect enabled, EmbeddedAsarIntegrityValidation and
+    // OnlyLoadAppFromAsar disabled — and all five are named, rather than the
+    // first one found.
     const defaults = [...GOOD]
     defaults[0] = FUSE_STATE.ENABLE
     defaults[2] = FUSE_STATE.ENABLE
     defaults[3] = FUSE_STATE.ENABLE
+    defaults[4] = FUSE_STATE.DISABLE
     defaults[5] = FUSE_STATE.DISABLE
 
     const problems = checkWires(decodeFuseWires(wire(defaults)))
-    expect(problems).toHaveLength(4)
+    expect(problems).toHaveLength(5)
+    expect(problems.join('\n')).toContain(
+      'EnableEmbeddedAsarIntegrityValidation is DISABLE, expected ENABLE'
+    )
     expect(problems.join('\n')).toContain('RunAsNode is ENABLE, expected DISABLE')
     expect(problems.join('\n')).toContain('OnlyLoadAppFromAsar is DISABLE, expected ENABLE')
   })
@@ -205,10 +211,13 @@ describe('checkWires', () => {
   })
 
   it('reports a fuse that falls off the end of a short wire', () => {
-    // An Electron too old to carry OnlyLoadAppFromAsar. `undefined` would
+    // An Electron too old to carry the last two asserted fuses. `undefined` would
     // otherwise stringify into a message nobody can act on.
     const problems = checkWires(decodeFuseWires(wire(GOOD.slice(0, 4))))
-    expect(problems).toEqual(['OnlyLoadAppFromAsar is off the end of the wire, expected ENABLE'])
+    expect(problems).toEqual([
+      'EnableEmbeddedAsarIntegrityValidation is off the end of the wire, expected ENABLE',
+      'OnlyLoadAppFromAsar is off the end of the wire, expected ENABLE'
+    ])
   })
 })
 
