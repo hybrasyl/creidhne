@@ -103,10 +103,14 @@ const PORTABLE_SWEEP_DELAY_MS = 30_000
 // actually returns the ROAMING dir (Windows has no standard per-user cache dir,
 // so Chromium falls back to %APPDATA%) — so resolve %LOCALAPPDATA% explicitly.
 // macOS/Linux have no roaming concept; appData is already the right local dir.
+//
+// LOCALAPPDATA is read on EVERY platform (HTOO-543). Nothing sets it on Linux or
+// macOS except the e2e helper, which points it at a temp dir. Read on Windows
+// only, the redirect did nothing there, and every spec read and wrote the real
+// settings. No other variable moves appData on macOS.
 function localAppDataDir() {
-  if (process.platform === 'win32') {
-    return process.env.LOCALAPPDATA || join(app.getPath('home'), 'AppData', 'Local')
-  }
+  if (process.env.LOCALAPPDATA) return process.env.LOCALAPPDATA
+  if (process.platform === 'win32') return join(app.getPath('home'), 'AppData', 'Local')
   return app.getPath('appData')
 }
 
@@ -149,6 +153,10 @@ if (!gotSingleInstanceLock) app.exit(0)
 // activeLibrary, theme, clientPath/taliesinPath) carries over instead of
 // resetting to defaults. Best-effort: any failure falls through to defaults.
 function migrateSettingsFromRoaming() {
+  // Windows only: roaming is a Windows concept. On Linux and macOS a redirected
+  // LOCALAPPDATA (the e2e helper) makes oldDir differ from settingsPath, and this
+  // would copy the user's real settings into the test's temp dir (HTOO-543).
+  if (process.platform !== 'win32') return
   try {
     const oldDir = join(app.getPath('appData'), 'Erisco', 'Creidhne')
     if (oldDir === settingsPath) return // same location (e.g. non-Windows) — nothing to do
