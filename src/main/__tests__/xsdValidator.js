@@ -58,6 +58,13 @@ let cachedPreload = null
 
 async function loadPreload() {
   if (cachedPreload) return cachedPreload
+  // xsd/ is gitignored and fetched, so a fresh clone has none. Say what to run,
+  // or seven tests fail on a bare ENOENT that names a path and not the cause.
+  try {
+    await fs.access(XSD_DIR)
+  } catch {
+    throw new Error(`No XSDs at ${XSD_DIR}. Run \`npm run fetch-xsd\` once after cloning.`)
+  }
   const preload = []
   for (const name of XSD_FILES) {
     const raw = await fs.readFile(join(XSD_DIR, name), 'utf-8')
