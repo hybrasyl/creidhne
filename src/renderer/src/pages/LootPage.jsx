@@ -16,23 +16,13 @@ import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
 import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { emptyLootTable } from '@shared/lootModel.js'
 
 const LOOT_SUBDIR = 'lootsets'
 const IGNORE_SUBDIR = 'lootsets/.ignore'
 
-const DEFAULT_LOOT = {
-  name: '',
-  inInventory: false,
-  comment: '',
-  table: {
-    rolls: '',
-    chance: '',
-    inInventory: false,
-    gold: { min: '', max: '' },
-    xp: { min: '', max: '' },
-    items: { rolls: '', chance: '', entries: [] }
-  }
-}
+// A new loot set: the XSD requires one table, so it starts with one.
+const newLoot = () => ({ name: '', inInventory: false, comment: '', tables: [emptyLootTable()] })
 
 function LootPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
@@ -78,10 +68,7 @@ function LootPage() {
   const doNew = () => {
     setSelectedFile(null)
     setLoadError(null)
-    setEditingLoot({
-      ...DEFAULT_LOOT,
-      table: { ...DEFAULT_LOOT.table, items: { ...DEFAULT_LOOT.table.items, entries: [] } }
-    })
+    setEditingLoot(newLoot())
   }
   const handleNew = () => guard(doNew)
 

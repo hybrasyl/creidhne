@@ -30,6 +30,7 @@ import SpritePickerDialog from '../shared/SpritePickerDialog'
 import GridViewIcon from '@mui/icons-material/GridView'
 import OpenScriptByNameButton from '../shared/OpenScriptByNameButton'
 import { normalizeFolder } from '../../utils/fileTree'
+import InlineLootNotice from '../shared/InlineLootNotice'
 
 function computeCreatureFilename(prefix, name) {
   const safe = (name || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '')
@@ -143,7 +144,7 @@ function LootSetPicker({ value, onChange, sx }) {
 }
 
 // ── Loot section content ──────────────────────────────────────────────────────
-function LootContent({ loot, onChange }) {
+function LootContent({ loot, inline, onChange }) {
   const add = () => onChange([...loot, { name: '', rolls: '', chance: '' }])
   const set = (i, field, val) =>
     onChange(loot.map((l, idx) => (idx === i ? { ...l, [field]: val } : l)))
@@ -151,6 +152,7 @@ function LootContent({ loot, onChange }) {
 
   return (
     <>
+      <InlineLootNotice inline={inline} />
       {loot.map((entry, i) => (
         <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
           <LootSetPicker
@@ -476,7 +478,11 @@ function SubtypeAccordion({ data, index, onChange, onRemove }) {
 
           {/* Nested sections */}
           <Section title="Loot" open={openLoot} onToggle={() => setOpenLoot((v) => !v)}>
-            <LootContent loot={data.loot} onChange={(val) => set('loot', val)} />
+            <LootContent
+              loot={data.loot}
+              inline={data.lootInline}
+              onChange={(val) => set('loot', val)}
+            />
           </Section>
           <Section
             title="Hostility"
@@ -793,6 +799,7 @@ function CreatureEditor({
         <Section title="Loot" open={openLoot} onToggle={() => setOpenLoot((v) => !v)}>
           <LootContent
             loot={data.loot}
+            inline={data.lootInline}
             onChange={(val) => updateData((d) => ({ ...d, loot: val }))}
           />
         </Section>

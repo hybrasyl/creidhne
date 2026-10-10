@@ -23,6 +23,7 @@ import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
+import { emptyItemsList, emptyLootEntry, emptyLootTable } from '@shared/lootModel.js'
 
 function deriveLootPrefix(fileName, name) {
   if (!fileName) return 'lts'
@@ -42,7 +43,7 @@ function computeLootFilename(filePrefix, name) {
 }
 
 // ── Collapsible section wrapper ───────────────────────────────────────────────
-function Section({ title, open, onToggle, children }) {
+function Section({ title, open, onToggle, action, children }) {
   return (
     <Paper variant="outlined" sx={{ mb: 2 }}>
       <Box
@@ -59,12 +60,76 @@ function Section({ title, open, onToggle, children }) {
         <Typography variant="subtitle2" sx={{ flex: 1 }}>
           {title}
         </Typography>
+        {action}
         {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
       </Box>
       <Collapse in={open}>
         <Divider />
         <Box sx={{ p: 2 }}>{children}</Box>
       </Collapse>
+    </Paper>
+  )
+}
+
+// ── One item in an Items list ─────────────────────────────────────────────────
+function LootEntry({ entry, itemNames, variantNames, onChange, onRemove }) {
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+        <Autocomplete
+          freeSolo
+          options={itemNames}
+          value={entry.name}
+          onInputChange={(_, val, reason) => {
+            if (reason === 'input') onChange('name', val)
+          }}
+          onChange={(_, val) => {
+            if (val !== null) onChange('name', val)
+          }}
+          size="small"
+          sx={{ flex: 1 }}
+          renderInput={(params) => <TextField {...params} label="Item" />}
+        />
+        <TextField
+          label="Maximum Drop"
+          value={entry.max}
+          size="small"
+          sx={{ width: 120 }}
+          onChange={(e) => onChange('max', e.target.value)}
+        />
+        <IconButton size="small" color="error" onClick={onRemove}>
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Autocomplete
+          multiple
+          options={variantNames}
+          value={entry.variants}
+          onChange={(_, val) => onChange('variants', val)}
+          size="small"
+          sx={{ flex: 1 }}
+          renderInput={(params) => <TextField {...params} label="Variants" />}
+        />
+        {[
+          ['unique', 'Unique'],
+          ['always', 'Always'],
+          ['inInventory', 'In Inventory']
+        ].map(([field, label]) => (
+          <FormControlLabel
+            key={field}
+            label={label}
+            sx={{ ml: 0.5, mr: 0 }}
+            control={
+              <Checkbox
+                size="small"
+                checked={entry[field]}
+                onChange={(e) => onChange(field, e.target.checked)}
+              />
+            }
+          />
+        ))}
+      </Box>
     </Paper>
   )
 }
@@ -94,8 +159,15 @@ function LootEditor({
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
   const [folder, setFolder] = useState(initialFolder)
-  const [openTable, setOpenTable] = useState(true)
-  const [openItems, setOpenItems] = useState(true)
+  // The tables the author has collapsed, by index. All start open.
+  const [collapsed, setCollapsed] = useState(() => new Set())
+  const toggleTable = (ti) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(ti)) next.delete(ti)
+      else next.add(ti)
+      return next
+    })
 
   const isDirtyRef = useRef(false)
 
@@ -164,59 +236,38 @@ function LootEditor({
 
   if (saveRef) saveRef.current = () => onSave(data, fileName, normalizeFolder(folder))
 
-  const setTable = (field, val) =>
-    updateData((d) => ({ ...d, table: { ...d.table, [field]: val } }))
+  // A loot set holds one or more tables, and a table any number of Items
+  // lists (HTOO-522). The editor showed the first of each before, and a save
+  // deleted the rest.
+  const updateTable = (ti, fn) =>
+    updateData((d) => ({ ...d, tables: d.tables.map((t, i) => (i === ti ? fn(t) : t)) }))
+  const setTable = (ti, field, val) => updateTable(ti, (t) => ({ ...t, [field]: val }))
+  const setGold = (ti, field, val) =>
+    updateTable(ti, (t) => ({ ...t, gold: { ...t.gold, [field]: val } }))
+  const setXp = (ti, field, val) =>
+    updateTable(ti, (t) => ({ ...t, xp: { ...t.xp, [field]: val } }))
+  const addTable = () => updateData((d) => ({ ...d, tables: [...d.tables, emptyLootTable()] }))
+  const removeTable = (ti) => {
+    updateData((d) => ({ ...d, tables: d.tables.filter((_, i) => i !== ti) }))
+    setCollapsed(new Set())
+  }
 
-  const setGold = (field, val) =>
-    updateData((d) => ({ ...d, table: { ...d.table, gold: { ...d.table.gold, [field]: val } } }))
+  const updateList = (ti, li, fn) =>
+    updateTable(ti, (t) => ({ ...t, lists: t.lists.map((l, i) => (i === li ? fn(l) : l)) }))
+  const setListField = (ti, li, field, val) => updateList(ti, li, (l) => ({ ...l, [field]: val }))
+  const addList = (ti) => updateTable(ti, (t) => ({ ...t, lists: [...t.lists, emptyItemsList()] }))
+  const removeList = (ti, li) =>
+    updateTable(ti, (t) => ({ ...t, lists: t.lists.filter((_, i) => i !== li) }))
 
-  const setXp = (field, val) =>
-    updateData((d) => ({ ...d, table: { ...d.table, xp: { ...d.table.xp, [field]: val } } }))
-
-  const setItemsField = (field, val) =>
-    updateData((d) => ({ ...d, table: { ...d.table, items: { ...d.table.items, [field]: val } } }))
-
-  const addEntry = () =>
-    updateData((d) => ({
-      ...d,
-      table: {
-        ...d.table,
-        items: {
-          ...d.table.items,
-          entries: [
-            ...d.table.items.entries,
-            { name: '', variants: [], unique: false, always: false, inInventory: false, max: '' }
-          ]
-        }
-      }
+  const addEntry = (ti, li) =>
+    updateList(ti, li, (l) => ({ ...l, entries: [...l.entries, emptyLootEntry()] }))
+  const setEntry = (ti, li, ei, field, val) =>
+    updateList(ti, li, (l) => ({
+      ...l,
+      entries: l.entries.map((e, i) => (i === ei ? { ...e, [field]: val } : e))
     }))
-
-  const setEntry = useCallback(
-    (i, field, val) =>
-      updateData((d) => ({
-        ...d,
-        table: {
-          ...d.table,
-          items: {
-            ...d.table.items,
-            entries: d.table.items.entries.map((e, idx) => (idx === i ? { ...e, [field]: val } : e))
-          }
-        }
-      })),
-    [updateData]
-  )
-
-  const removeEntry = (i) =>
-    updateData((d) => ({
-      ...d,
-      table: {
-        ...d.table,
-        items: {
-          ...d.table.items,
-          entries: d.table.items.entries.filter((_, idx) => idx !== i)
-        }
-      }
-    }))
+  const removeEntry = (ti, li, ei) =>
+    updateList(ti, li, (l) => ({ ...l, entries: l.entries.filter((_, i) => i !== ei) }))
 
   const computedFileName = computeLootFilename(prefix, data.name)
 
@@ -309,167 +360,149 @@ function LootEditor({
           </Box>
         </Paper>
 
-        {/* ── Table ── */}
-        <Section title="Table" open={openTable} onToggle={() => setOpenTable((v) => !v)}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <TextField
-                label="Number of Rolls"
-                value={data.table.rolls}
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => setTable('rolls', e.target.value)}
-              />
-              <TextField
-                label="Chance"
-                value={data.table.chance}
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => setTable('chance', e.target.value)}
-              />
-              <FormControlLabel
-                label="In Inventory"
-                sx={{ m: 0, flexShrink: 0 }}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={data.table.inInventory}
-                    onChange={(e) => setTable('inInventory', e.target.checked)}
-                  />
-                }
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label="Gold Min"
-                value={data.table.gold.min}
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => setGold('min', e.target.value)}
-              />
-              <TextField
-                label="Gold Max"
-                value={data.table.gold.max}
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => setGold('max', e.target.value)}
-              />
-              <TextField
-                label="XP Min"
-                value={data.table.xp.min}
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => setXp('min', e.target.value)}
-              />
-              <TextField
-                label="XP Max"
-                value={data.table.xp.max}
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => setXp('max', e.target.value)}
-              />
-            </Box>
-          </Box>
-        </Section>
-
-        {/* ── Items ── */}
-        <Section title="Items" open={openItems} onToggle={() => setOpenItems((v) => !v)}>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              label="Number of Rolls"
-              value={data.table.items.rolls}
-              size="small"
-              sx={{ flex: 1 }}
-              onChange={(e) => setItemsField('rolls', e.target.value)}
-            />
-            <TextField
-              label="Chance"
-              value={data.table.items.chance}
-              size="small"
-              sx={{ flex: 1 }}
-              onChange={(e) => setItemsField('chance', e.target.value)}
-            />
-          </Box>
-
-          {data.table.items.entries.map((entry, i) => (
-            <Paper key={i} variant="outlined" sx={{ p: 1.5, mb: 1.5 }}>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
-                <Autocomplete
-                  freeSolo
-                  options={itemNames}
-                  value={entry.name}
-                  onInputChange={(_, val, reason) => {
-                    if (reason === 'input') setEntry(i, 'name', val)
-                  }}
-                  onChange={(_, val) => {
-                    if (val !== null) setEntry(i, 'name', val)
-                  }}
+        {/* ── Tables ── */}
+        {data.tables.map((table, ti) => (
+          <Section
+            key={ti}
+            title={data.tables.length > 1 ? `Table ${ti + 1}` : 'Table'}
+            open={!collapsed.has(ti)}
+            onToggle={() => toggleTable(ti)}
+            action={
+              // The XSD requires one table, so the last one cannot be removed.
+              data.tables.length > 1 && (
+                <IconButton
                   size="small"
-                  sx={{ flex: 1 }}
-                  renderInput={(params) => <TextField {...params} label="Item" />}
-                />
-                <TextField
-                  label="Maximum Drop"
-                  value={entry.max}
-                  size="small"
-                  sx={{ width: 120 }}
-                  onChange={(e) => setEntry(i, 'max', e.target.value)}
-                />
-                <IconButton size="small" color="error" onClick={() => removeEntry(i)}>
+                  color="error"
+                  aria-label={`Remove table ${ti + 1}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeTable(ti)
+                  }}
+                  sx={{ mr: 1 }}
+                >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <Autocomplete
-                  multiple
-                  options={variantNames}
-                  value={entry.variants}
-                  onChange={(_, val) => setEntry(i, 'variants', val)}
+              )
+            }
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <TextField
+                  label="Number of Rolls"
+                  value={table.rolls}
                   size="small"
                   sx={{ flex: 1 }}
-                  renderInput={(params) => <TextField {...params} label="Variants" />}
+                  onChange={(e) => setTable(ti, 'rolls', e.target.value)}
                 />
-                <FormControlLabel
-                  label="Unique"
-                  sx={{ ml: 0.5, mr: 0 }}
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={entry.unique}
-                      onChange={(e) => setEntry(i, 'unique', e.target.checked)}
-                    />
-                  }
-                />
-                <FormControlLabel
-                  label="Always"
-                  sx={{ ml: 0.5, mr: 0 }}
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={entry.always}
-                      onChange={(e) => setEntry(i, 'always', e.target.checked)}
-                    />
-                  }
+                <TextField
+                  label="Chance"
+                  value={table.chance}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  onChange={(e) => setTable(ti, 'chance', e.target.value)}
                 />
                 <FormControlLabel
                   label="In Inventory"
-                  sx={{ ml: 0.5, mr: 0 }}
+                  sx={{ m: 0, flexShrink: 0 }}
                   control={
                     <Checkbox
                       size="small"
-                      checked={entry.inInventory}
-                      onChange={(e) => setEntry(i, 'inInventory', e.target.checked)}
+                      checked={table.inInventory}
+                      onChange={(e) => setTable(ti, 'inInventory', e.target.checked)}
                     />
                   }
                 />
               </Box>
-            </Paper>
-          ))}
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <TextField
+                  label="Gold Min"
+                  value={table.gold.min}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  onChange={(e) => setGold(ti, 'min', e.target.value)}
+                />
+                <TextField
+                  label="Gold Max"
+                  value={table.gold.max}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  onChange={(e) => setGold(ti, 'max', e.target.value)}
+                />
+                <TextField
+                  label="XP Min"
+                  value={table.xp.min}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  onChange={(e) => setXp(ti, 'min', e.target.value)}
+                />
+                <TextField
+                  label="XP Max"
+                  value={table.xp.max}
+                  size="small"
+                  sx={{ flex: 1 }}
+                  onChange={(e) => setXp(ti, 'max', e.target.value)}
+                />
+              </Box>
 
-          <Button size="small" startIcon={<AddIcon />} onClick={addEntry}>
-            Add Item
-          </Button>
-        </Section>
+              {table.lists.map((list, li) => (
+                <Paper key={li} variant="outlined" sx={{ p: 1.5 }}>
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ width: 64, flexShrink: 0 }}>
+                      {table.lists.length > 1 ? `Items ${li + 1}` : 'Items'}
+                    </Typography>
+                    <TextField
+                      label="Number of Rolls"
+                      value={list.rolls}
+                      size="small"
+                      sx={{ flex: 1 }}
+                      onChange={(e) => setListField(ti, li, 'rolls', e.target.value)}
+                    />
+                    <TextField
+                      label="Chance"
+                      value={list.chance}
+                      size="small"
+                      sx={{ flex: 1 }}
+                      onChange={(e) => setListField(ti, li, 'chance', e.target.value)}
+                    />
+                    <IconButton
+                      size="small"
+                      color="error"
+                      aria-label={`Remove items list ${li + 1}`}
+                      onClick={() => removeList(ti, li)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+
+                  {list.entries.map((entry, ei) => (
+                    <LootEntry
+                      key={ei}
+                      entry={entry}
+                      itemNames={itemNames}
+                      variantNames={variantNames}
+                      onChange={(field, val) => setEntry(ti, li, ei, field, val)}
+                      onRemove={() => removeEntry(ti, li, ei)}
+                    />
+                  ))}
+
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => addEntry(ti, li)}>
+                    Add Item
+                  </Button>
+                </Paper>
+              ))}
+
+              <Box>
+                <Button size="small" startIcon={<AddIcon />} onClick={() => addList(ti)}>
+                  Add Items List
+                </Button>
+              </Box>
+            </Box>
+          </Section>
+        ))}
+
+        <Button size="small" startIcon={<AddIcon />} onClick={addTable}>
+          Add Table
+        </Button>
 
         <Box sx={{ height: 32 }} />
       </Box>

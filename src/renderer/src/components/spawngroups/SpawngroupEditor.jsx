@@ -29,6 +29,7 @@ import AddIcon from '@mui/icons-material/Add'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
+import InlineLootNotice from '../shared/InlineLootNotice'
 import { IMMUNITY_TYPES, MESSAGE_TYPES } from '../../data/behaviorSetConstants'
 import { ELEMENT_TYPES } from '../../data/itemConstants'
 
@@ -220,7 +221,7 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
   )
 }
 
-function LootContent({ loot, lootsetOptions, onChange }) {
+function LootContent({ loot, inline, lootsetOptions, onChange }) {
   const add = () => onChange([...loot, { name: '', rolls: '', chance: '' }])
   const set = (i, field, val) =>
     onChange(loot.map((l, idx) => (idx === i ? { ...l, [field]: val } : l)))
@@ -228,6 +229,7 @@ function LootContent({ loot, lootsetOptions, onChange }) {
 
   return (
     <>
+      <InlineLootNotice inline={inline} />
       {loot.map((entry, i) => (
         <Box
           key={i}
@@ -563,6 +565,7 @@ const SpawnAccordion = memo(function SpawnAccordion({
           <Section title="Spawn Loot" open={openLoot} onToggle={() => setOpenLoot((v) => !v)}>
             <LootContent
               loot={spawn.loot}
+              inline={spawn.lootInline}
               lootsetOptions={lootsetOptions}
               onChange={(val) => set('loot', val)}
             />
@@ -1097,6 +1100,7 @@ function SpawngroupEditor({
         >
           <LootContent
             loot={data.loot}
+            inline={data.lootInline}
             lootsetOptions={lootsetOptions}
             onChange={(val) => updateData((d) => ({ ...d, loot: val }))}
           />
