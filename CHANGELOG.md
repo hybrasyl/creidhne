@@ -60,10 +60,9 @@ first section written to the rules above.
 - **Creidhne closes when it is not the active window.** A close from the taskbar while another window had focus did nothing, and a quit did not finish.
 - **⌘Q quits Creidhne on macOS.** The unsaved-changes check stopped the quit, and Creidhne stayed open with no window.
 - **⌘-click selects files on macOS.** Control-click is a right-click on macOS, so the file list now uses ⌘-click to add a file to the selection, as Finder does.
-- **The Linux icon matches the macOS icon.** The .deb and the AppImage installed the Windows
-  star icon. They now install the navy-and-gold tile, as macOS does. On Linux, the window also
-  uses the tile, so the taskbar shows the same icon as the launcher.
+- **The Linux icon matches the macOS icon.** The .deb and the AppImage installed the Windows star icon. They now install the navy-and-gold tile, as macOS does. On Linux, the window also uses the tile, so the taskbar shows the same icon as the launcher.
 - **The portable exe removes the folders that earlier launches left in `%TEMP%`.** The portable exe unpacks Creidhne into a new `%TEMP%\ns*.tmp` folder at each launch, and deletes that folder when Creidhne closes. If the portable exe process was stopped before Creidhne closed, the folder stayed, and no later launch removed it. Each folder holds a full copy of Creidhne. Now, 30 seconds after a portable launch, Creidhne deletes these folders. It deletes only a folder that holds a copy of Creidhne, that is older than ten minutes, and that no running copy uses.
+- **Dialog export makes Lua that parses for every sequence name.** A text key is the sequence name without the prefix that the sequences share. That key could become a Lua keyword (`farewell_end` gave `end`) or start with a digit (`quest_1` gave `1`), and the exported script did not parse, so the server disabled the NPC's script. Such a key now starts with `s_`, for example `s_end`. The validator also refuses a dialog name that is a Lua keyword, or one of the names the server gives every script (`world`, `logger`, `utility`, `this_script`).
 
 ### Security
 

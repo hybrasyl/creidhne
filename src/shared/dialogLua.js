@@ -1,4 +1,4 @@
-import { hasText } from './dialogDocument.js'
+import { hasText, LUA_KEYWORDS } from './dialogDocument.js'
 
 // Lua emission for a dialog document (HTOO-458).
 //
@@ -43,6 +43,18 @@ export function slug(name) {
   if (!s) s = 'seq'
   if (/^\d/.test(s)) s = `s_${s}`
   return s
+}
+
+/**
+ * A text key that is safe as a bare Lua field name: `s_` goes in front of a
+ * Lua keyword or a leading digit. slug() alone is not enough, because
+ * catalogueText removes the shared prefix after it, and the removal can make
+ * either one (`farewell_end` becomes `end`, `quest_1` becomes `1`). The export
+ * then does not parse (HTOO-498). A variable needs only slug(), because its
+ * `_dialog`, `_lecture` or `_options` suffix makes a keyword safe.
+ */
+function fieldName(s) {
+  return /^\d/.test(s) || LUA_KEYWORDS.has(s) ? `s_${s}` : s
 }
 
 /** Hands out variable names, suffixing a repeat with _2, _3, … */
@@ -97,7 +109,7 @@ function catalogueText(doc, tableExpr) {
     if (base.startsWith(`${doc.name}_`)) base = base.slice(doc.name.length + 1)
     if (base === doc.name) base = ''
     if (!base) base = seq.scope === 'pursuit' ? 'lecture' : 'main'
-    const key = nextKey(base)
+    const key = nextKey(fieldName(base))
     const lines = seq.dialogs.filter((d) => hasText(d.kind))
     lines.forEach((d, i) => {
       refs.set(d.id, lines.length === 1 ? `${tableExpr}.${key}` : `${tableExpr}.${key}[${i + 1}]`)

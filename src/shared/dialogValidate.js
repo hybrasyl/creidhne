@@ -3,6 +3,8 @@ import {
   INPUT_MAX_LENGTH,
   SEQUENCE_SCOPES,
   DIALOG_KINDS,
+  LUA_KEYWORDS,
+  SERVER_SCRIPT_GLOBALS,
   hasText
 } from './dialogDocument.js'
 
@@ -37,6 +39,16 @@ export function validateDialogDocument(doc, { mode = 'inline' } = {}) {
     error('Name must be lower snake case starting with a letter (it becomes the Lua table name).', {
       field: 'name'
     })
+  } else if (LUA_KEYWORDS.has(doc.name)) {
+    // The pattern accepts `end`, and `end = {` does not parse (HTOO-498).
+    error(`Name "${doc.name}" is a Lua keyword, so it cannot be the Lua table name.`, {
+      field: 'name'
+    })
+  } else if (SERVER_SCRIPT_GLOBALS.includes(doc.name)) {
+    error(
+      `Name "${doc.name}" is a global the server gives every script. The text table would replace it.`,
+      { field: 'name' }
+    )
   }
 
   const sequences = doc.sequences ?? []

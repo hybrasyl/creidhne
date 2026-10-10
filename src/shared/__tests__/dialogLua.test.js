@@ -13,7 +13,9 @@ import {
   newEndDialog,
   newOption,
   normalizeDocument,
-  hasRequiredText
+  hasRequiredText,
+  LUA_KEYWORDS,
+  SERVER_SCRIPT_GLOBALS
 } from '../dialogDocument.js'
 
 const here = join(fileURLToPath(import.meta.url), '..')
@@ -317,6 +319,76 @@ describe('emitter details the corpus exercises', () => {
     const out = emitInline(doc2)
     expect(out.table).toContain('  a = "A",')
     expect(out.table).toContain('  lecture = "P",')
+  })
+})
+
+// HTOO-498. The Narve case passes because none of its names is awkward, so a
+// fixture alone cannot find this. Each case is a set of sequence names that
+// slug() and the prefix removal turn into a Lua keyword or a leading digit.
+// luaVersion 5.3, because the server runs Lua 5.4 and 5.1 does not reserve
+// `goto`.
+describe('awkward sequence names still export Lua that parses', () => {
+  const parse = (source) => luaparse.parse(source, { luaVersion: '5.3' })
+  const docWith = (name, sequenceNames) => {
+    const doc = newDocument(name)
+    doc.sequences = sequenceNames.map((n) => {
+      const seq = newSequence(n)
+      seq.scope = 'pursuit'
+      seq.dialogs = [{ ...newDialog('text'), text: n }, newEndDialog()]
+      return seq
+    })
+    return doc
+  }
+  const CASES = [
+    ['keyword after the shared prefix', 'farewell', ['farewell_start', 'farewell_end']],
+    ['a lone keyword', 'npc', ['End']],
+    ['digits after the shared prefix', 'npc', ['quest_1', 'quest_2']],
+    ['a digit after the document name', 'quest', ['quest_1']],
+    ['a leading digit in the name', 'npc', ['7th Day']],
+    ['a keyword and its s_ form', 'npc', ['x_end', 'x_s_end']],
+    ...[...LUA_KEYWORDS].map((k) => [`every keyword: ${k}`, 'npc', [`ask_${k}`, `ask_${k}_x`]]),
+    ...[...LUA_KEYWORDS].map((k) => [`every lone keyword: ${k}`, 'npc', [k]])
+  ]
+
+  it('covers every keyword', () => {
+    // Guard the guard: an empty set would leave only the six named cases.
+    expect(LUA_KEYWORDS.size).toBe(22)
+  })
+
+  it.each(CASES)('%s', (_label, name, sequenceNames) => {
+    const doc = normalizeDocument(docWith(name, sequenceNames))
+    expect(validateDialogDocument(doc).errors).toEqual([])
+    const inline = emitInline(doc)
+    expect(() => parse(inlineScript(inline))).not.toThrow()
+    const { module, host } = emitModule(doc)
+    expect(() => parse(module)).not.toThrow()
+    expect(() => parse(`function OnSpawn()\n${host}\nend\n`)).not.toThrow()
+    // Every text reaches the call it belongs to: no key was dropped or shared.
+    const tree = dialogCallTree(inlineScript(inline))
+    for (const n of sequenceNames) expect(tree[n].dialogs[0].text).toBe(n)
+  })
+
+  it('prefixes a keyword or digit key with s_, and the collision suffix still applies', () => {
+    expect(emitInline(docWith('farewell', ['farewell_start', 'farewell_end'])).table).toContain(
+      '  s_end = "farewell_end",'
+    )
+    expect(emitInline(docWith('npc', ['quest_1', 'quest_2'])).onSpawn).toContain(
+      'world.NewDialog(npc.s_1)'
+    )
+    const { table } = emitInline(docWith('npc', ['x_end', 'x_s_end']))
+    expect(table).toContain('  s_end = "x_end",')
+    expect(table).toContain('  s_end_2 = "x_s_end",')
+  })
+
+  it('refuses a document name that is a keyword or a global the server sets', () => {
+    for (const name of ['end', 'goto', ...SERVER_SCRIPT_GLOBALS]) {
+      const errors = validateDialogDocument(docWith(name, ['a'])).errors
+      expect(
+        errors.map((e) => e.field),
+        name
+      ).toEqual(['name'])
+    }
+    expect(validateDialogDocument(docWith('ending', ['a'])).errors).toEqual([])
   })
 })
 
