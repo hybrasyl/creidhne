@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, session } from 'electron'
-import { basename, join } from 'path'
+import { basename, dirname, join } from 'path'
 import { promises as fs, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
@@ -26,6 +26,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
 import { launchCompanion, resolveCompanion, pickerFilters, nodeProbe } from './companion.js'
 import { createSplashWindow } from './splash.js'
+import { pickerStartPath, pickedFolder } from './pickerStart.js'
 import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { scanReferences, applyRename } from './entityRefRepair.js'
@@ -385,13 +386,22 @@ app.whenReady().then(async () => {
   // keep `ipcMain` unused past this point.
   const ipc = guardIpc(ipcMain)
 
-  ipc.on('minimize-window', () => {
-    const window = BrowserWindow.getFocusedWindow()
+  // Each of these acts on the window that SENT it, not on the focused window.
+  // getFocusedWindow() is null whenever Creidhne is not the foreground app: a
+  // close from the taskbar while another app has focus, or an e2e window placed
+  // on a second display. For `app:confirm-close` that is a lost answer: the guard
+  // has cancelled the close and waits for it, so the window never closes and a
+  // quit never ends. Electron 44 made that common enough to hang one e2e run in
+  // three in `electronApp.close()` (HTOO-553); Electron 41 hid it.
+  const senderWindow = (e) => BrowserWindow.fromWebContents(e.sender)
+
+  ipc.on('minimize-window', (e) => {
+    const window = senderWindow(e)
     if (window) window.minimize()
   })
 
-  ipc.on('maximize-window', () => {
-    const window = BrowserWindow.getFocusedWindow()
+  ipc.on('maximize-window', (e) => {
+    const window = senderWindow(e)
     if (window) {
       if (window.isMaximized()) {
         window.unmaximize()
@@ -401,13 +411,13 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipc.on('close-window', () => {
-    const window = BrowserWindow.getFocusedWindow()
+  ipc.on('close-window', (e) => {
+    const window = senderWindow(e)
     if (window) window.webContents.send('app:check-close')
   })
 
-  ipc.on('app:confirm-close', () => {
-    const window = BrowserWindow.getFocusedWindow()
+  ipc.on('app:confirm-close', (e) => {
+    const window = senderWindow(e)
     if (window) {
       closeConfirmed = true
       // Hide here, synchronously, rather than only in the `close` handler:
@@ -1328,12 +1338,14 @@ app.whenReady().then(async () => {
     const window = BrowserWindow.getFocusedWindow()
     const { canceled, filePaths } = await dialog.showOpenDialog(window, {
       title: 'Import Formula Library',
+      defaultPath: await pickerStart(libraryPath),
       filters: [{ name: 'Lua Files', extensions: ['lua'] }],
       properties: ['openFile']
     })
     if (canceled || !filePaths[0]) return null
     // Auto-bless the just-picked file so any subsequent reads of it pass.
     bless(filePaths[0])
+    rememberPicked(filePaths[0], false)
     const existing = await loadFormulas(libraryPath)
     return importFormulas(filePaths[0], existing)
   })
@@ -1387,11 +1399,15 @@ app.whenReady().then(async () => {
     // make the user pick a destination for it.
     parseOrLog(schemaCtx, 'dialog:saveFile', saveDialogArgsSchema, { defaultName, content })
     const window = BrowserWindow.getFocusedWindow()
+    // A bare file name gets a folder, or Electron 43+ puts it in Downloads. A name
+    // that already carries a folder is kept as the caller gave it.
+    const startDir = basename(defaultName) === defaultName ? await pickerStart() : undefined
     const { canceled, filePath } = await dialog.showSaveDialog(window, {
-      defaultPath: defaultName,
+      defaultPath: startDir ? join(startDir, defaultName) : defaultName,
       filters: saveFiltersFor(defaultName)
     })
     if (canceled || !filePath) return { canceled: true }
+    rememberPicked(filePath, false)
     // The user just picked this path — bless its parent so the write succeeds
     // and any follow-up read goes through validation cleanly.
     bless(filePath)
@@ -1562,14 +1578,43 @@ app.on('window-all-closed', () => {
   }
 })
 
+// Where each picker opens (HTOO-553). Since Electron 43 a dialog with no
+// `defaultPath` opens in Downloads, not in the last folder used. So main keeps the
+// last folder picked in this session, and a picker opens at its own most specific
+// folder first, then that one, then the active world, then Documents.
+let lastPickedDir = null
+
+async function pickerStart(...preferred) {
+  let activeLibrary = null
+  try {
+    activeLibrary = (await settingsManager.load())?.activeLibrary ?? null
+  } catch {
+    /* no settings yet: fall through to Documents */
+  }
+  return pickerStartPath([
+    ...preferred,
+    lastPickedDir,
+    activeLibrary,
+    app.getPath('documents'),
+    app.getPath('home')
+  ])
+}
+
+function rememberPicked(path, isDirectory) {
+  lastPickedDir = pickedFolder(path, isDirectory)
+}
+
 // File handling functions. Each picker auto-blesses the path the user picked
 // so any subsequent fs:* / xml:* handler can read or write that location
 // without a separate "set active" round-trip — matches the user's mental
 // model ("I picked it, of course I can read it").
 async function handleFileOpen() {
-  const { canceled, filePaths } = await dialog.showOpenDialog({})
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    defaultPath: await pickerStart()
+  })
   if (!canceled) {
     bless(filePaths[0])
+    rememberPicked(filePaths[0], false)
     return filePaths[0]
   }
 }
@@ -1584,20 +1629,32 @@ async function handleFileOpen() {
 // both properties, and `treatPackageAsDirectory` must stay off so the bundle comes
 // back whole instead of being browsed into.
 async function handleExeFileOpen() {
+  let current = null
+  try {
+    current = (await settingsManager.load())?.taliesinPath ?? null
+  } catch {
+    /* no override set */
+  }
   const { canceled, filePaths } = await dialog.showOpenDialog({
+    defaultPath: await pickerStart(current ? dirname(current) : null),
     properties: process.platform === 'darwin' ? ['openFile', 'openDirectory'] : ['openFile'],
     filters: pickerFilters(process.platform)
   })
   if (!canceled) {
     bless(filePaths[0])
+    rememberPicked(filePaths[0], false)
     return filePaths[0]
   }
 }
 
 async function handleDirectoryOpen() {
-  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    defaultPath: await pickerStart(),
+    properties: ['openDirectory']
+  })
   if (!canceled) {
     bless(filePaths[0])
+    rememberPicked(filePaths[0], true)
     return filePaths[0]
   }
 }

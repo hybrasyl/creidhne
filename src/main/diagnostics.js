@@ -45,8 +45,11 @@ export function buildDiagnostics({ version } = {}) {
  * value only when that label already exists on the repo, so unbounded version labels
  * would silently no-op. The version already rides along in the diagnostics body.
  */
-export function openIssue({ title, body }) {
-  clipboard.writeText(body)
+export async function openIssue({ title, body }) {
+  // Awaited: since Electron 44 the main-process clipboard returns a Promise. The
+  // browser page tells the user to paste the report, so it must not open before
+  // the report is on the clipboard (HTOO-553).
+  await clipboard.writeText(body)
   const labels = [appIdentity.appLabel]
   const { url, truncated } = truncateBodyForUrl(
     { owner: appIdentity.intakeOwner, repo: appIdentity.intakeRepo, title, body, labels },
@@ -59,7 +62,7 @@ export function openIssue({ title, body }) {
 }
 
 /** Always-works fallback: put the full report on the clipboard. */
-export function copyReport({ body }) {
-  clipboard.writeText(body)
+export async function copyReport({ body }) {
+  await clipboard.writeText(body)
   return { ok: true }
 }
