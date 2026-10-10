@@ -53,6 +53,7 @@ first section written to the rules above.
 
 - **Creidhne runs on Electron 44.** Electron 41 gets no more security fixes.
 - **File and folder pickers open in the last folder you picked.** Electron 44 opens a picker in Downloads when the app gives it no folder. Each picker now opens in its own folder when it has one (for example, the world for Import Formula Library), then in the last folder you picked, then in the active world, then in Documents.
+- **The app no longer has a channel that writes any text to any world file.** Nothing in Creidhne used it. Every world file is now written by the save for its type, which serializes the data first.
 
 ### Fixed
 

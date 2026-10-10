@@ -45,7 +45,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.send('close-window'),
   listSection: (libraryPath, type) => ipcRenderer.invoke('fs:listSection', libraryPath, type),
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
-  writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   // Client archives are addressed as root + lowercase relative name, never as a
   // full path: main resolves the on-disk casing, which the renderer cannot see
   // (HTOO-287, src/main/fsCase.js).

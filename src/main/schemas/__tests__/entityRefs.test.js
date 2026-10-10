@@ -47,7 +47,7 @@ describe('rename-repair payloads', () => {
   })
 
   it('refuses a non-string name instead of coercing it', () => {
-    // The `fs:writeFile` lesson: an argument that coerces is an argument that
+    // The `fs.writeFile` lesson: an argument that coerces is an argument that
     // reaches disk as `[object Object]` with the write reporting success.
     expect(refsApplyArgsSchema.safeParse({ ...apply, newName: 42 }).success).toBe(false)
     expect(refsApplyArgsSchema.safeParse({ ...apply, newName: { name: 'x' } }).success).toBe(false)

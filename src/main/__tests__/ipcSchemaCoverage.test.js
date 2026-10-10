@@ -200,7 +200,6 @@ const MUST_VALIDATE = [
   'xml:saveBehaviorSet',
   'xml:saveSpawngroup',
   'xml:saveServerConfig',
-  'fs:writeFile',
   'dialog:saveFile',
   'castable:addCategoryBulk',
   'spellbook:apply',
