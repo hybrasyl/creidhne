@@ -92,6 +92,11 @@ import {
   resolveAsset,
   resolveAssetUrl
 } from './assetPacks/index.js'
+import originalFs from 'original-fs'
+import { sweepPortableLeftovers } from './portableSweep.js'
+
+/** The time after boot that the portable sweep waits (see portableSweep.js). */
+const PORTABLE_SWEEP_DELAY_MS = 30_000
 
 // Local per-user app-data root. On Windows, Electron's app.getPath('cache')
 // actually returns the ROAMING dir (Windows has no standard per-user cache dir,
@@ -1548,6 +1553,24 @@ app.whenReady().then(async () => {
   setTimeout(revealMainWindow, 15000)
 
   createWindow()
+
+  // Portable exe only: delete the %TEMP% unpack folders that killed launches
+  // left. The delay keeps the sweep off the disk during boot, and unref() stops
+  // the timer from keeping the process alive. portableSweep.js gives the reason
+  // for each of its rules (HTOO-494).
+  //
+  // Only a failure goes to the session log. A removed or skipped folder is not
+  // an error, and a packaged app has no console to show it.
+  setTimeout(() => {
+    void sweepPortableLeftovers({
+      // original-fs, not fs: the patched fs opens the app.asar of a leftover and
+      // keeps it open, so Windows refuses each rename.
+      fs: originalFs.promises,
+      execPath: process.execPath,
+      isPortable: app.isPackaged && Boolean(process.env['PORTABLE_EXECUTABLE_DIR']),
+      onError: (message) => captureError({ source: 'portable-sweep', message })
+    })
+  }, PORTABLE_SWEEP_DELAY_MS).unref()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

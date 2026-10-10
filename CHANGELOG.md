@@ -42,6 +42,7 @@ first section written to the rules above.
 - **The Linux icon matches the macOS icon.** The .deb and the AppImage installed the Windows
   star icon. They now install the navy-and-gold tile, as macOS does. On Linux, the window also
   uses the tile, so the taskbar shows the same icon as the launcher.
+- **The portable exe removes the folders that earlier launches left in `%TEMP%`.** The portable exe unpacks Creidhne into a new `%TEMP%\ns*.tmp` folder at each launch, and deletes that folder when Creidhne closes. If the portable exe process was stopped before Creidhne closed, the folder stayed, and no later launch removed it. Each folder holds a full copy of Creidhne. Now, 30 seconds after a portable launch, Creidhne deletes these folders. It deletes only a folder that holds a copy of Creidhne, that is older than ten minutes, and that no running copy uses.
 
 ## [1.13.1] - 2026-09-20
 
