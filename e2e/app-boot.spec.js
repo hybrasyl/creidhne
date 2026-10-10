@@ -20,7 +20,8 @@ test.describe('App boots', () => {
     // The hydrated app root is shown (window only reveals after app:ready).
     await expect(page.getByTestId('app-root')).toBeVisible()
 
-    // The chrome toolbar rendered with the app wordmark.
-    await expect(page.getByText('Creidhne', { exact: true }).first()).toBeVisible()
+    // The chrome title bar rendered. Not the wordmark: macOS draws no name in the
+    // bar (title-bar.spec.js owns what each platform shows there).
+    await expect(page.getByTestId('title-bar')).toBeVisible()
   })
 })
