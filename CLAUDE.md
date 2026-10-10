@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm test             # vitest run (~1725 tests incl. scripts/; node env by default)
+npm test             # vitest run (~1870 tests incl. scripts/; node env by default)
 npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
 npm run lint         # eslint --fix
@@ -44,7 +44,7 @@ There is **no `typecheck`** — Creidhne is JavaScript, not TypeScript. Gate bef
 
 ## Stack
 
-electron-vite 5 · Electron 41 · **React 19** · **JavaScript (`.jsx`, not TS)** ·
+electron-vite 5 · Electron 44 · **React 19** · **JavaScript (`.jsx`, not TS)** ·
 MUI v9 + Emotion (style via `sx`, never styled-components) · **Zustand 5** · Zod 4 ·
 Vitest 4 (`environment: 'node'` by default; a component test opts into jsdom per file with a
 `@vitest-environment jsdom` docblock) · Playwright (E2E). Package manager: **npm** — 12 on the dev
@@ -65,7 +65,10 @@ src/
                updateCheck.js, indexService.js + indexWorker.js (index build off the main
                thread), worldData.js (world/.creidhne paths), constantsJson.js +
                formulasJson.js + reportsFile.js (the three .creidhne files),
-               exportCastables.js, entityRefScan.js + entityRefRepair.js (rename repair —
+               exportCastables.js, appMenu.js (the macOS menu template + its state schema),
+               pickerStart.js (where every picker opens), portableSweep.js (removes the
+               %TEMP% unpack folders a killed portable launch leaves),
+               entityRefScan.js + entityRefRepair.js (rename repair —
                find/rewrite, then the disk walk), schemas/ (Zod — incl. worldEntity.js for the
                14 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
                for the two bulk-rewrite channels), and per-domain XML
@@ -76,13 +79,17 @@ src/
                exportSerializers.js, nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
-               appIdentity.js, …
+               appIdentity.js, appMenu.js (the macOS menu's channels and Go pages; it imports
+               nothing, because the preload bundles it), …
                Nothing here may import `electron` — main runs it under node and the renderer
                bundles it.
   preload/     index.js — contextBridge, exposes window.electronAPI. `electron` is the ONLY
                module it may import: the window runs `sandbox: true`, so any package import
                re-breaks the sandbox, and only in the packaged app. (`@electron-toolkit/preload`
                and its `window.electron` were removed for exactly that reason — don't re-add.)
+               A RELATIVE import is bundled into the file and is fine, if what it imports
+               imports nothing. After a build, `grep -o 'require("[^"]*")' out/preload/index.js`
+               must print `require("electron")` only.
   renderer/src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
@@ -128,6 +135,9 @@ e2e/           Playwright specs against the built app
 
 - **Frameless window + custom chrome** (`MainToolbar.jsx` inside an `AppBar`); window controls
   message main via `minimize/maximize/close-window`.
+
+  **macOS is different on purpose, and two close-path rules hold on every platform** (HTOO-553, house doc `macos-chrome.md`). On macOS the window uses `titleBarStyle: 'hiddenInset'`, the title bar is an empty drag region padded 78px past the native stoplights, and `src/main/appMenu.js` installs Creidhne's own menu, built from the state the renderer reports (`useAppMenu`). A menu command navigates through App's guarded `navigate` and does nothing while a modal is open. The Go menu must list the toolbar's pages (`macosSources.test.js` compares them), and a command-key test goes through `utils/modKey.js`, never `ctrlKey || metaKey`. Rule one: the window-control handlers act on `BrowserWindow.fromWebContents(event.sender)`, never `getFocusedWindow()`, which is null when Creidhne is not in front, so the renderer's close confirmation was lost and a quit never ended (`e2e/close-unfocused.spec.js`). Rule two: the unsaved-changes guard cancels the first `close`, which also cancels `app.quit()`, so `before-quit` records the quit and `window-all-closed` finishes it on macOS (`e2e/app-menu.spec.js`, run on a Mac).
+
 - **Splash + `app:ready` reveal handshake**: the main window stays hidden until `App.jsx` finishes
   hydrating settings and calls `window.electronAPI.appReady()`. `resources/splash.html` is a flex
   column and **no child of it may shrink** — the one that could took the whole overflow and
@@ -230,10 +240,11 @@ e2e/           Playwright specs against the built app
   gate. So the guard asserts the **artifact or the source**, not the intent —
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
-  `src/main/__tests__/splashLayout.test.js`, and seven under
+  `src/main/__tests__/splashLayout.test.js`, `pickerStart.test.js` (every picker has a
+  `defaultPath`), and eight under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
   `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`,
-  `renameRepairSites.test.js` and `renameFileSites.test.js`.
+  `renameRepairSites.test.js`, `renameFileSites.test.js` and `macosSources.test.js`.
 
   **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
   Five separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
