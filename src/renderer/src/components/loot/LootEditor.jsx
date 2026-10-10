@@ -42,6 +42,21 @@ function computeLootFilename(filePrefix, name) {
   return `${filePrefix || 'lts'}_${safe}.xml`
 }
 
+// A set with many tables opens with them collapsed: the Mileth Crypt sets give
+// each item its own table, and twenty open tables are a very long page.
+const COLLAPSE_ABOVE = 3
+const initialCollapsed = (tables) =>
+  new Set(tables.length > COLLAPSE_ABOVE ? tables.map((_, i) => i) : [])
+
+// The section title names the table's items, so a collapsed table can be found.
+function tableTitle(table, ti, count) {
+  const label = count > 1 ? `Table ${ti + 1}` : 'Table'
+  const names = table.lists.flatMap((l) => l.entries.map((e) => e.name).filter(Boolean))
+  if (!names.length) return label
+  const shown = names.slice(0, 3).join(', ')
+  return `${label} · ${shown}${names.length > 3 ? ` +${names.length - 3}` : ''}`
+}
+
 // ── Collapsible section wrapper ───────────────────────────────────────────────
 function Section({ title, open, onToggle, action, children }) {
   return (
@@ -159,8 +174,8 @@ function LootEditor({
   )
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
   const [folder, setFolder] = useState(initialFolder)
-  // The tables the author has collapsed, by index. All start open.
-  const [collapsed, setCollapsed] = useState(() => new Set())
+  // The tables the author has collapsed, by index.
+  const [collapsed, setCollapsed] = useState(() => initialCollapsed(loot.tables))
   const toggleTable = (ti) =>
     setCollapsed((prev) => {
       const next = new Set(prev)
@@ -174,6 +189,7 @@ function LootEditor({
   useEffect(() => {
     const derivedPrefix = deriveLootPrefix(initialFileName, loot.name)
     setData(loot)
+    setCollapsed(initialCollapsed(loot.tables))
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeLootFilename(derivedPrefix, loot.name))
     setFileNameEdited(!!initialFileName)
@@ -249,7 +265,10 @@ function LootEditor({
   const addTable = () => updateData((d) => ({ ...d, tables: [...d.tables, emptyLootTable()] }))
   const removeTable = (ti) => {
     updateData((d) => ({ ...d, tables: d.tables.filter((_, i) => i !== ti) }))
-    setCollapsed(new Set())
+    // Collapse state is by index, so the tables after the removed one move up.
+    setCollapsed(
+      (prev) => new Set([...prev].filter((i) => i !== ti).map((i) => (i > ti ? i - 1 : i)))
+    )
   }
 
   const updateList = (ti, li, fn) =>
@@ -364,7 +383,7 @@ function LootEditor({
         {data.tables.map((table, ti) => (
           <Section
             key={ti}
-            title={data.tables.length > 1 ? `Table ${ti + 1}` : 'Table'}
+            title={tableTitle(table, ti, data.tables.length)}
             open={!collapsed.has(ti)}
             onToggle={() => toggleTable(ti)}
             action={

@@ -53,9 +53,10 @@ test.describe('Loot set tables', () => {
       .first()
       .click()
 
-    // Both tables, and both lists of the first, are on the page.
-    await expect(page.getByText('Table 1', { exact: true })).toBeVisible()
-    await expect(page.getByText('Table 2', { exact: true })).toBeVisible()
+    // Both tables, and both lists of the first, are on the page. A table's
+    // title names its items, so a collapsed one can be found.
+    await expect(page.getByText('Table 1 · Bone, Dust', { exact: true })).toBeVisible()
+    await expect(page.getByText('Table 2 · Crypt Key', { exact: true })).toBeVisible()
     await expect(page.getByText('Items 2', { exact: true })).toBeVisible()
     await expect(page.locator('input[value="Crypt Key"]')).toBeVisible()
 
