@@ -42,6 +42,19 @@ export const END_DIALOG_EXPR = 'source.EndDialog()'
  *  the string table's name, the module's name and the file's basename. */
 export const DOCUMENT_NAME_PATTERN = /^[a-z][a-z0-9_]*$/
 
+/** The Lua 5.4 reserved words. A name in this set does not parse as a field
+ *  name or a variable (HTOO-498). */
+export const LUA_KEYWORDS = new Set(
+  'and break do else elseif end false for function goto if in local nil not or repeat return then true until while'.split(
+    ' '
+  )
+)
+
+/** The globals the server sets before it runs a script (`Script.SetGlobals`).
+ *  Inline export makes the document name a global, so a document with one of
+ *  these names replaces it, and `world.NewDialog` then fails at OnSpawn. */
+export const SERVER_SCRIPT_GLOBALS = ['world', 'logger', 'utility', 'this_script']
+
 /** Max input length the server accepts for a text dialog. */
 export const INPUT_MAX_LENGTH = 254
 
