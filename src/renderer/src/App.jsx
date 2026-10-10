@@ -33,6 +33,8 @@ import {
 } from './themes'
 import { useLibraryIndexHydration } from './hooks/useLibraryIndexHydration'
 import { loadPackState } from './hooks/usePackRescan'
+import { useAppMenu } from './hooks/useAppMenu'
+import { useMenuStore } from './store/menuStore'
 
 const themes = {
   hybrasyl: hybrasylTheme,
@@ -263,7 +265,9 @@ function App() {
       // markClean is called inside the editor's save handler; navigate after
       setCurrentPage(page)
     } catch {
-      // save failed — stay on current page
+      // save failed — stay on current page, so a menu request waiting for the
+      // page is dropped too (see menuStore.clear)
+      useMenuStore.getState().clear()
     }
   }, [pendingNav, dirtyEditor, setCurrentPage])
 
@@ -278,7 +282,12 @@ function App() {
   const handleNavCancel = useCallback(() => {
     setNavDialogOpen(false)
     setPendingNav(null)
+    useMenuStore.getState().clear()
   }, [])
+
+  // The macOS application menu (no-op elsewhere). It navigates through the same
+  // guarded handleNavigate as the toolbar.
+  useAppMenu(settingsLoaded, handleNavigate)
 
   // Keep ref in sync so the close listener always sees current dirty state
   useEffect(() => {

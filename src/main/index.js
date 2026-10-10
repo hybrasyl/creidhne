@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog, session } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, session, Menu } from 'electron'
 import { basename, dirname, join } from 'path'
 import { promises as fs, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { parseItemXml, serializeItemXml } from './itemXml'
@@ -27,6 +27,9 @@ import { createSettingsManager } from './settingsManager'
 import { launchCompanion, resolveCompanion, pickerFilters, nodeProbe } from './companion.js'
 import { createSplashWindow } from './splash.js'
 import { pickerStartPath, pickedFolder } from './pickerStart.js'
+import { buildMenuTemplate, menuStateSchema } from './appMenu.js'
+import { INITIAL_MENU_STATE, MENU_COMMAND_CHANNEL, MENU_STATE_CHANNEL } from '../shared/appMenu.js'
+import { appIdentity } from '../shared/appIdentity.js'
 import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { scanReferences, applyRename } from './entityRefRepair.js'
@@ -212,6 +215,18 @@ const schemaCtx = { settingsPath }
 
 let closeConfirmed = false
 
+// macOS ⌘Q (the menu's Quit). `app.quit()` closes each window, and the guard
+// below cancels the first `close` to ask the renderer about unsaved edits. A
+// cancelled `close` cancels the quit, and macOS keeps an app running when its
+// last window closes. So without this, a confirmed ⌘Q closed the window and
+// left Creidhne running with no window. `before-quit` comes before the windows'
+// `close` events, so the guard can record which kind of close it is asking about.
+let quitRequested = false
+let quitAfterClose = false
+app.on('before-quit', () => {
+  quitRequested = true
+})
+
 // Splash + reveal coordination. The main window is created hidden and only
 // shown once the renderer signals it has hydrated its settings ('app:ready'),
 // so the first visible frame is already populated (no flash of empty UI).
@@ -244,6 +259,33 @@ function focusMainWindow() {
 // the lock, which can land before this instance has finished booting.
 app.on('second-instance', focusMainWindow)
 
+// ── The macOS application menu ──────────────────────────────────────────────
+// A Creidhne item sends `menu:command` to the main window. The renderer reports
+// what to grey out and mark (`app:setMenuState`), and the menu is rebuilt when
+// that changes. Windows and Linux keep Electron's default menu, hidden with the
+// frame. See src/main/appMenu.js.
+let menuState = INITIAL_MENU_STATE
+
+function sendMenuCommand(msg) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(MENU_COMMAND_CHANNEL, msg)
+  }
+  // Rebuild from the last report. A checkbox item ticks itself when it is
+  // clicked, and a Go command can be cancelled (the unsaved-changes dialog), so
+  // the page does not change and no new report comes to correct the tick.
+  setImmediate(applyAppMenu)
+}
+
+function applyAppMenu() {
+  if (process.platform !== 'darwin') return
+  const template = buildMenuTemplate(menuState, {
+    appName: appIdentity.productName,
+    isDev: !app.isPackaged,
+    send: sendMenuCommand
+  })
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1024,
@@ -252,7 +294,12 @@ function createWindow() {
     minHeight: 768,
     show: false,
     autoHideMenuBar: true,
-    frame: false,
+    // macOS keeps the native stoplights, inset into Creidhne's own title bar, which
+    // MainToolbar leaves empty there. `y: 10` centres them in its 36 px bar.
+    // Windows and Linux stay frameless with the renderer's buttons.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 12, y: 10 } }
+      : { frame: false }),
     // Linux gets the tile its .deb and AppImage install, because some window
     // managers draw this icon in the taskbar rather than the .desktop one. macOS
     // ignores this and uses the bundle's .icns. See scripts/make-icons.mjs.
@@ -300,6 +347,10 @@ function createWindow() {
   mainWindow.on('close', (e) => {
     if (!closeConfirmed && mainWindowRevealed && !mainWindow.webContents.isDestroyed()) {
       e.preventDefault()
+      // Kept for this question only: a Cancel in the renderer sends nothing, so
+      // a later ⌘W must not inherit the quit.
+      quitAfterClose = quitRequested
+      quitRequested = false
       mainWindow.webContents.send('app:check-close')
       return
     }
@@ -427,6 +478,21 @@ app.whenReady().then(async () => {
   ipc.on('close-window', (e) => {
     const window = senderWindow(e)
     if (window) window.webContents.send('app:check-close')
+  })
+
+  // The renderer's menu state (macOS only; nothing else sends it). Fire-and-forget,
+  // so a bad report is logged next to settings and dropped, and the menu keeps
+  // the last good one.
+  ipc.on(MENU_STATE_CHANNEL, (_e, payload) => {
+    let state
+    try {
+      state = parseOrLog(schemaCtx, MENU_STATE_CHANNEL, menuStateSchema, payload)
+    } catch {
+      return
+    }
+    if (JSON.stringify(state) === JSON.stringify(menuState)) return
+    menuState = state
+    applyAppMenu()
   })
 
   ipc.on('app:confirm-close', (e) => {
@@ -1576,6 +1642,9 @@ app.whenReady().then(async () => {
   ipc.on('app:ready', revealMainWindow)
   setTimeout(revealMainWindow, 15000)
 
+  // Before the window, so the first frame on macOS has Creidhne's menu and not
+  // Electron's default (whose Reload drops unsaved edits).
+  applyAppMenu()
   createWindow()
 
   // Portable exe only: delete the %TEMP% unpack folders that killed launches
@@ -1596,15 +1665,26 @@ app.whenReady().then(async () => {
     })
   }, PORTABLE_SWEEP_DELAY_MS).unref()
 
+  // macOS: a click on the Dock icon after ⌘W closed the window. The new window
+  // goes through the same hidden-until-ready reveal as the first one, so the
+  // flags that the first window used up are reset.
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
+      closeConfirmed = false
+      mainWindowRevealed = false
+      menuState = INITIAL_MENU_STATE
+      applyAppMenu()
+      splashWindow = createSplashWindow()
       createWindow()
+      setTimeout(revealMainWindow, 15000)
     }
   })
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // On macOS the app stays running with no window, unless the close was a
+  // confirmed ⌘Q (see `quitAfterClose`).
+  if (process.platform !== 'darwin' || quitAfterClose) {
     app.quit()
   }
 })

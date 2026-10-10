@@ -64,6 +64,17 @@ const TITLE_TEXT_SHADOW = [...KEYLINE, DEPTH].join(', ')
 
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
+// On macOS the title bar is an empty drag region that holds the native stoplights
+// (main sets `titleBarStyle: 'hiddenInset'`): no logo, no name, no window buttons.
+// The left padding clears the lights, which end near x = 66 (three 14 px lights,
+// 6 px apart, from x = 12), so anything added to the bar later sits beside them.
+//
+// `disableGutters`, and both paddings in sx. The Toolbar's gutters are a media
+// query (24px from `sm` up), and an sx padding with no breakpoint does not beat
+// it: the `px: 1.5` this bar had always rendered as 24px (measured in e2e). So
+// Windows and Linux keep the 24px they actually had.
+const MAC_LIGHTS_CLEARANCE = '78px'
+
 const MainToolbar = ({ navigate }) => {
   // Resolved by main, not read from settings: the button must work before anyone
   // visits Settings, because Taliesin is usually found beside Creidhne without
@@ -73,6 +84,7 @@ const MainToolbar = ({ navigate }) => {
   const themeName = useStoreValue(themeState)
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const isPlain = PLAIN_CHROME_THEMES.includes(themeName)
+  const isMac = window.electronAPI?.platform === 'darwin'
 
   // Title-bar glyphs (window controls) on the gamified chrome: a crisp
   // solid-black keyline stroke plus a SINGLE depth drop-shadow to match the
@@ -162,35 +174,49 @@ const MainToolbar = ({ navigate }) => {
   return (
     <>
       {/* Title Bar */}
-      <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 36, px: 1.5 }}>
-        <img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 'bold',
-            flexGrow: 0,
-            textShadow: isPlain ? 'none' : TITLE_TEXT_SHADOW
-          }}
-          style={{ fontSize: '1.5rem' }}
-        >
-          Creidhne
-        </Typography>
-        <Box sx={{ flexGrow: 1 }} />
-        <Tooltip title="Minimize">
-          <IconButton size="small" sx={winBtnSx} onClick={handleMinimize}>
-            {isPlain ? <RemoveIcon /> : <GiContract />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Maximize">
-          <IconButton size="small" sx={winBtnSx} onClick={handleMaximize}>
-            {isPlain ? <CropSquareIcon /> : <GiExpand />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Close">
-          <IconButton size="small" sx={closeBtnSx} onClick={handleClose}>
-            {isPlain ? <CloseIcon /> : <GiDeathSkull />}
-          </IconButton>
-        </Tooltip>
+      <Toolbar
+        variant="dense"
+        disableGutters
+        data-testid="title-bar"
+        sx={{
+          bgcolor: 'secondary.main',
+          minHeight: 36,
+          pl: isMac ? MAC_LIGHTS_CLEARANCE : 3,
+          pr: 3
+        }}
+      >
+        {!isMac && (
+          <>
+            <img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 'bold',
+                flexGrow: 0,
+                textShadow: isPlain ? 'none' : TITLE_TEXT_SHADOW
+              }}
+              style={{ fontSize: '1.5rem' }}
+            >
+              Creidhne
+            </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            <Tooltip title="Minimize">
+              <IconButton size="small" sx={winBtnSx} onClick={handleMinimize}>
+                {isPlain ? <RemoveIcon /> : <GiContract />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Maximize">
+              <IconButton size="small" sx={winBtnSx} onClick={handleMaximize}>
+                {isPlain ? <CropSquareIcon /> : <GiExpand />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Close">
+              <IconButton size="small" sx={closeBtnSx} onClick={handleClose}>
+                {isPlain ? <CloseIcon /> : <GiDeathSkull />}
+              </IconButton>
+            </Tooltip>
+          </>
+        )}
       </Toolbar>
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
