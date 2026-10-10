@@ -52,14 +52,6 @@ signing steps only run in CI.
       with unsaved edits it should ask first. E2E covers this, but the taskbar
       click itself is only real on Windows.
 
-## Pending: Linux
-
-- [ ] **The icon is the navy-and-gold tile.** Install the `.deb`, and run the
-      AppImage. The launcher entry and the taskbar should both show the
-      navy-and-gold tile, not the Windows star.
-- [ ] **A smoke test of both packages.** The `.deb` and the AppImage start, open a
-      world, and save a file.
-
 ## Done
 
 These were checked on 2026-10-10.
@@ -70,6 +62,14 @@ These were checked on 2026-10-10.
 - [x] ⌘1–⌘9 open the Go menu's pages, ⌘S saves and ⌘, opens Settings. Menu commands
       do nothing while a dialog is open.
 - [x] The `.dmg` installs, and Creidhne refuses a changed app archive.
+
+**Linux**
+
+- [x] The icon is the navy-and-gold tile. Install the `.deb`, and run the
+      AppImage. The launcher entry and the taskbar should both show the
+      navy-and-gold tile, not the Windows star.
+- [x] A smoke test of both packages. The `.deb` and the AppImage start, open a
+      world, and save a file.
 
 **Any platform**
 
