@@ -29,7 +29,6 @@ import { join } from 'path'
 
 const ROOT = join(import.meta.dirname, '../../..')
 const splashHtml = readFileSync(join(ROOT, 'resources/splash.html'), 'utf8')
-const plateScript = readFileSync(join(ROOT, 'scripts/make-portable-splash.mjs'), 'utf8')
 
 /** The body of a `.foo { … }` rule, or undefined when there is no such rule. */
 function ruleBody(css, selector) {
@@ -86,17 +85,5 @@ describe('splash layout', () => {
       declaration(splashHtml, 'spinner', 'height')
     )
     expect(declaration(splashHtml, 'spinner', 'width')).toBeGreaterThan(0)
-  })
-
-  it('keeps the portable extraction plate agreeing with the logo it copies', () => {
-    // build/portable-splash.bmp is a frozen frame of this document, shown while
-    // the portable exe extracts. The two are meant to read as one boot, so a
-    // logo resized in the stylesheet and not in the generator produces a visible
-    // jump — and the plate is a committed binary, so nothing else would notice.
-    const plateLogo = Number(plateScript.match(/^const LOGO = (\d+)/m)?.[1])
-    const plateMargin = Number(plateScript.match(/^const LOGO_MB = (\d+)/m)?.[1])
-    expect(plateLogo, 'LOGO not found in make-portable-splash.mjs').toBeGreaterThan(0)
-    expect(plateLogo).toBe(declaration(splashHtml, 'logo', 'width'))
-    expect(plateMargin).toBe(declaration(splashHtml, 'logo', 'margin-bottom'))
   })
 })

@@ -73,8 +73,9 @@ describe('electron-builder.yml build inputs', () => {
     expect(paths.length, 'the scan found no paths at all — it has stopped working').toBeGreaterThan(
       3
     )
-    // The two the 1.10.0 near-miss and this branch are about.
-    expect(paths).toContain('build/portable-splash.bmp')
+    // Two the scan must always see. The 1.10.0 near-miss was build/portable-splash.bmp,
+    // which HTOO-466 removed with the portable splash image.
+    expect(paths).toContain('build/entitlements.mac.plist')
     expect(paths).toContain('build/icons')
   })
 

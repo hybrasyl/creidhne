@@ -102,9 +102,21 @@ nsis:
   allowToChangeInstallationDirectory: true
 portable:
   artifactName: ${name}-${version}-portable.${ext}
-  # Frozen frame of resources/splash.html shown while the exe extracts to %TEMP%
-  # (before electron exists). Regenerate with scripts/make-portable-splash.mjs.
-  splashImage: build/portable-splash.bmp
+  # NO `splashImage`, on purpose (HTOO-466). With one, the NSIS stub runs in GUI
+  # mode: it paints the bitmap, hides its own "Setup" dialog, extracts, runs the
+  # app, and -- when the app exits -- re-shows that hidden dialog for its completion
+  # step before `AutoCloseWindow` closes it. That re-show is a blank window that
+  # flashes after the app's own window has gone, on every close of the portable
+  # exe. There is no hook to stop it: electron-builder reads `portable.nsi`
+  # verbatim for this target.
+  #
+  # Without it the stub runs `SetSilent silent` and owns no window. The cost is a
+  # busy cursor, and no image, while the stub extracts the app to %TEMP% on each
+  # launch. The in-app splash (`resources/splash.html`) covers everything from
+  # electron's first frame on. Do not add the image back to fill that gap: it is
+  # the flash's cause. The template, oghma, mabon and balor made the same change.
+  # scripts/portable-config.test.mjs pins the absence.
+  #
   # Extract to a directory unique to each LAUNCH, not to each BUILD.
   #
   # Left unset, electron-builder bakes one KSUID into the exe at build time, so
