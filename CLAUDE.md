@@ -94,14 +94,14 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs,
-               make-portable-splash.mjs). Six of its tests run
+               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs). Seven of its tests run
                in the ordinary suite: icons.test.mjs (committed icon artifacts),
                buildPaths.test.mjs (every path electron-builder.yml names is tracked by git),
                testCollection.test.mjs (no test file sits where the runner won't find it),
                changelog-extract.test.mjs, verify-fuses.test.mjs (the electronFuses block, the
                copied @electron/fuses constants, and the packed artifact when one exists),
-               release-artifacts.test.mjs (every declared target has a release glob, and back).
+               release-artifacts.test.mjs (every declared target has a release glob, and back),
+               portable-config.test.mjs (no portable splashImage, and unpackDirName: true).
 e2e/           Playwright specs against the built app
 ```
 
@@ -143,8 +143,8 @@ e2e/           Playwright specs against the built app
   column and **no child of it may shrink** — the one that could took the whole overflow and
   rendered the spinner as an oval (`splashLayout.test.js`). Its content must also stay well under
   the window height, because the content box is smaller than the size asked for: a 420x300
-  frameless window measures 392x288 on a 1.5x display. `build/portable-splash.bmp` is a frozen
-  frame of the same document, so resizing the logo means regenerating it too.
+  frameless window measures 392x288 on a 1.5x display. The portable exe has NO splash image
+  (HTOO-466): with one, the NSIS stub flashes its blank Setup dialog on every close.
 - **Crash-safe JSON settings** under `%LOCALAPPDATA%\Erisco\Creidhne` (atomic tmp→rename + `.bak`).
   The renderer save effect is gated on `settingsLoaded` so defaults never clobber the real file.
 - **World index is a rebuildable cache** outside the world's git folder

@@ -56,6 +56,7 @@ first section written to the rules above.
 
 ### Fixed
 
+- **The portable exe no longer flashes a blank window when Creidhne closes.** The portable exe showed a splash image while it unpacked Creidhne. That image made it show its own blank Setup window again for a moment after Creidhne closed. The image is gone. While the portable exe unpacks, you now see a busy cursor and no image, until the Creidhne splash appears.
 - **Creidhne closes when it is not the active window.** A close from the taskbar while another window had focus did nothing, and a quit did not finish.
 - **⌘Q quits Creidhne on macOS.** The unsaved-changes check stopped the quit, and Creidhne stayed open with no window.
 - **⌘-click selects files on macOS.** Control-click is a right-click on macOS, so the file list now uses ⌘-click to add a file to the selection, as Finder does.
