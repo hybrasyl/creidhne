@@ -73,6 +73,7 @@ src/
                14 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
                for the two bulk-rewrite channels), and per-domain XML
                (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
+               lootTableXml.js maps <Table> and <Loot> for the three parsers that hold loot
   shared/      electron-free code BOTH processes import, via the `@shared` alias:
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
@@ -80,7 +81,7 @@ src/
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
                appIdentity.js, appMenu.js (the macOS menu's channels and Go pages; it imports
-               nothing, because the preload bundles it), …
+               nothing, because the preload bundles it), lootModel.js (the loot table model), …
                Nothing here may import `electron` — main runs it under node and the renderer
                bundles it.
   preload/     index.js — contextBridge, exposes window.electronAPI. `electron` is the ONLY
@@ -138,6 +139,7 @@ e2e/           Playwright specs against the built app
 
   **macOS is different on purpose, and two close-path rules hold on every platform** (HTOO-553, house doc `macos-chrome.md`). On macOS the window uses `titleBarStyle: 'hiddenInset'`, the title bar is an empty drag region padded 78px past the native stoplights, and `src/main/appMenu.js` installs Creidhne's own menu, built from the state the renderer reports (`useAppMenu`). A menu command navigates through App's guarded `navigate` and does nothing while a modal is open. The Go menu must list the toolbar's pages (`macosSources.test.js` compares them), and a command-key test goes through `utils/modKey.js`, never `ctrlKey || metaKey`. Rule one: the window-control handlers act on `BrowserWindow.fromWebContents(event.sender)`, never `getFocusedWindow()`, which is null when Creidhne is not in front, so the renderer's close confirmation was lost and a quit never ended (`e2e/close-unfocused.spec.js`). Rule two: the unsaved-changes guard cancels the first `close`, which also cancels `app.quit()`, so `before-quit` records the quit and `window-all-closed` finishes it on macOS (`e2e/app-menu.spec.js`, run on a Mac).
 
+- **A save writes back every element it read** (HTOO-137 bug class 3, HTOO-522). A parser that maps only what its editor shows deletes the rest on the first save, silently, and the file stays XSD-valid. The loot parsers read the first `<Table>` of a set and only the `<Set>`s of a creature's `<Loot>`, so a save kept one item of twenty in the ceridwen Mileth Crypt sets. When an editor does not show a shape, carry it through unchanged (`lootInline` on a creature, a type, a spawn group and a spawn) and say so on the page (`InlineLootNotice`). `lootRoundTrip.test.js` compares the loot trees before and after a save with no edit; measure a change like this against the ceridwen and world corpora, `.ignore/` included.
 - **Splash + `app:ready` reveal handshake**: the main window stays hidden until `App.jsx` finishes
   hydrating settings and calls `window.electronAPI.appReady()`. `resources/splash.html` is a flex
   column and **no child of it may shrink** — the one that could took the whole overflow and

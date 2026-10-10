@@ -1,10 +1,12 @@
 import xml2js from 'xml2js'
 import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js'
+import { buildLootList, mapLootInline, mapLootSets } from './lootTableXml.js'
 
-// Design note: LootList intentionally only supports <Set> (named loot-set imports).
-// The XSD also defines <Table> (inline loot tables), <Gold>, and an Xp attribute,
-// but by design all creature loot is managed centrally through named LootSets.
-// Inline tables and gold/xp overrides on individual creatures are not supported.
+// Design note: the editor shows only the <Set> imports of a <Loot>, because
+// creature loot is managed through named loot sets. The XSD also allows inline
+// <Table>s, a <Gold> and an Xp attribute. The editor does not edit those, but a
+// save writes them back unchanged (`lootInline`, HTOO-522); it deleted them
+// before.
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
@@ -104,15 +106,6 @@ export function parseCreatureXml(xmlString) {
   })
 }
 
-function mapLoot(lootNode) {
-  if (!lootNode) return []
-  return (lootNode.Set || []).map((s) => ({
-    name: a(s, 'Name', ''),
-    rolls: a(s, 'Rolls', ''),
-    chance: a(s, 'Chance', '')
-  }))
-}
-
 function mapHostility(hosNode) {
   if (!hosNode) {
     return {
@@ -156,7 +149,8 @@ function mapSubtype(typeNode, subtypeMetas) {
     maxDmg: a(typeNode, 'MaxDmg', ''),
     assailSound: a(typeNode, 'AssailSound', ''),
     description: first(typeNode.Description, ''),
-    loot: mapLoot(first(typeNode.Loot)),
+    loot: mapLootSets(first(typeNode.Loot)),
+    lootInline: mapLootInline(first(typeNode.Loot)),
     hostility: mapHostility(first(typeNode.Hostility)),
     cookies: mapCookies(first(typeNode.SetCookies)),
     meta: subtypeMetas[name] || { ...SUBTYPE_META_DEFAULTS }
@@ -175,7 +169,8 @@ function mapXmlToCreature(result, comment, meta, subtypeMetas) {
     comment,
     meta: meta || { ...CREATURE_META_DEFAULTS },
     description: first(root.Description, ''),
-    loot: mapLoot(first(root.Loot)),
+    loot: mapLootSets(first(root.Loot)),
+    lootInline: mapLootInline(first(root.Loot)),
     hostility: mapHostility(first(root.Hostility)),
     cookies: mapCookies(first(root.SetCookies)),
     subtypes: (root.Types?.[0]?.Type || []).map((t) => mapSubtype(t, subtypeMetas))
@@ -198,17 +193,6 @@ export function serializeCreatureXml(creature) {
   xml = injectSubtypeMetas(xml, creature.subtypes)
 
   return xml + '\n'
-}
-
-function buildLoot(lootArr) {
-  if (!lootArr?.length) return undefined
-  return [
-    {
-      Set: lootArr.map((s) => ({
-        $: omitEmpty({ Name: s.name, Rolls: s.rolls, Chance: s.chance })
-      }))
-    }
-  ]
 }
 
 function buildHostility(hos) {
@@ -249,7 +233,7 @@ function buildSubtype(sub) {
     )
   }
   if (sub.description) node.Description = [sub.description]
-  const loot = buildLoot(sub.loot)
+  const loot = buildLootList(sub.loot, sub.lootInline)
   if (loot) node.Loot = loot
   const hos = buildHostility(sub.hostility)
   if (hos) node.Hostility = hos
@@ -274,7 +258,7 @@ function buildXmlObject(creature) {
 
   if (creature.description) root.Description = [creature.description]
 
-  const loot = buildLoot(creature.loot)
+  const loot = buildLootList(creature.loot, creature.lootInline)
   if (loot) root.Loot = loot
 
   const hos = buildHostility(creature.hostility)

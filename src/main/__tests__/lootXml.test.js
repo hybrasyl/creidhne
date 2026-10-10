@@ -72,20 +72,20 @@ describe('Field coverage — all fields', () => {
 
   it('parses table rolls and chance', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.rolls).toBe('2')
-    expect(l.table.chance).toBe('75')
+    expect(l.tables[0].rolls).toBe('2')
+    expect(l.tables[0].chance).toBe('75')
   })
 
   it('parses gold min and max', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.gold.min).toBe('10')
-    expect(l.table.gold.max).toBe('100')
+    expect(l.tables[0].gold.min).toBe('10')
+    expect(l.tables[0].gold.max).toBe('100')
   })
 
   it('parses xp min and max', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.xp.min).toBe('5')
-    expect(l.table.xp.max).toBe('50')
+    expect(l.tables[0].xp.min).toBe('5')
+    expect(l.tables[0].xp.max).toBe('50')
   })
 
   it('parses LootSet InInventory as boolean', async () => {
@@ -95,68 +95,68 @@ describe('Field coverage — all fields', () => {
 
   it('parses LootTable InInventory as boolean', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.inInventory).toBe(true)
+    expect(l.tables[0].inInventory).toBe(true)
   })
 
   it('parses items rolls and chance', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.rolls).toBe('1')
-    expect(l.table.items.chance).toBe('50')
+    expect(l.tables[0].lists[0].rolls).toBe('1')
+    expect(l.tables[0].lists[0].chance).toBe('50')
   })
 
   it('parses item count', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries).toHaveLength(2)
+    expect(l.tables[0].lists[0].entries).toHaveLength(2)
   })
 
   it('parses item name from element text content', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[0].name).toBe('Iron Sword')
+    expect(l.tables[0].lists[0].entries[0].name).toBe('Iron Sword')
   })
 
   it('parses item variants as an array', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[0].variants).toEqual(['Blessed', 'Holy'])
+    expect(l.tables[0].lists[0].entries[0].variants).toEqual(['Blessed', 'Holy'])
   })
 
   it('parses explicit unique=false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[0].unique).toBe(false)
+    expect(l.tables[0].lists[0].entries[0].unique).toBe(false)
   })
 
   it('parses explicit always=false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[0].always).toBe(false)
+    expect(l.tables[0].lists[0].entries[0].always).toBe(false)
   })
 
   it('parses explicit inInventory=true', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[0].inInventory).toBe(true)
+    expect(l.tables[0].lists[0].entries[0].inInventory).toBe(true)
   })
 
   it('parses item max', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[0].max).toBe('3')
+    expect(l.tables[0].lists[0].entries[0].max).toBe('3')
   })
 
   it('absent Variants attribute defaults to empty array', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[1].variants).toEqual([])
+    expect(l.tables[0].lists[0].entries[1].variants).toEqual([])
   })
 
   it('absent Unique attribute defaults to false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[1].unique).toBe(false)
+    expect(l.tables[0].lists[0].entries[1].unique).toBe(false)
   })
 
   it('absent Always attribute defaults to false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[1].always).toBe(false)
+    expect(l.tables[0].lists[0].entries[1].always).toBe(false)
   })
 
   it('absent InInventory attribute defaults to false', async () => {
     const l = await parseLootXml(FULL_XML)
-    expect(l.table.items.entries[1].inInventory).toBe(false)
+    expect(l.tables[0].lists[0].entries[1].inInventory).toBe(false)
   })
 })
 
@@ -177,29 +177,29 @@ describe('Field coverage — minimal', () => {
 
   it('defaults table rolls to empty string', async () => {
     const l = await parseLootXml(MINIMAL_XML)
-    expect(l.table.rolls).toBe('')
+    expect(l.tables[0].rolls).toBe('')
   })
 
   it('defaults table chance to empty string', async () => {
     const l = await parseLootXml(MINIMAL_XML)
-    expect(l.table.chance).toBe('')
+    expect(l.tables[0].chance).toBe('')
   })
 
   it('defaults gold min and max to empty string', async () => {
     const l = await parseLootXml(MINIMAL_XML)
-    expect(l.table.gold.min).toBe('')
-    expect(l.table.gold.max).toBe('')
+    expect(l.tables[0].gold.min).toBe('')
+    expect(l.tables[0].gold.max).toBe('')
   })
 
   it('defaults xp min and max to empty string', async () => {
     const l = await parseLootXml(MINIMAL_XML)
-    expect(l.table.xp.min).toBe('')
-    expect(l.table.xp.max).toBe('')
+    expect(l.tables[0].xp.min).toBe('')
+    expect(l.tables[0].xp.max).toBe('')
   })
 
-  it('defaults items entries to empty array', async () => {
+  it('has no items lists', async () => {
     const l = await parseLootXml(MINIMAL_XML)
-    expect(l.table.items.entries).toEqual([])
+    expect(l.tables[0].lists).toEqual([])
   })
 })
 
@@ -216,27 +216,31 @@ describe('Output structure', () => {
     name: 'DropLoot',
     inInventory: true,
     comment: '',
-    table: {
-      inInventory: true,
-      rolls: '3',
-      chance: '100',
-      gold: { min: '50', max: '200' },
-      xp: { min: '10', max: '40' },
-      items: {
-        rolls: '1',
-        chance: '80',
-        entries: [
+    tables: [
+      {
+        inInventory: true,
+        rolls: '3',
+        chance: '100',
+        gold: { min: '50', max: '200' },
+        xp: { min: '10', max: '40' },
+        lists: [
           {
-            name: 'Short Sword',
-            variants: ['Rusty'],
-            unique: false,
-            always: false,
-            inInventory: true,
-            max: '1'
+            rolls: '1',
+            chance: '80',
+            entries: [
+              {
+                name: 'Short Sword',
+                variants: ['Rusty'],
+                unique: false,
+                always: false,
+                inInventory: true,
+                max: '1'
+              }
+            ]
           }
         ]
       }
-    }
+    ]
   }
 
   it('root element is LootSet', async () => {
@@ -304,19 +308,19 @@ describe('Output structure', () => {
   })
 
   it('LootTable InInventory is omitted when false', async () => {
-    const noInv = { ...loot, table: { ...loot.table, inInventory: false } }
+    const noInv = { ...loot, tables: [{ ...loot.tables[0], inInventory: false }] }
     const parsed = await parseRaw(serializeLootXml(noInv))
     expect(parsed.LootSet.Table?.[0]?.$?.InInventory).toBeUndefined()
   })
 
   it('omits Gold element when both min and max are empty', async () => {
-    const noGold = { ...loot, table: { ...loot.table, gold: { min: '', max: '' } } }
+    const noGold = { ...loot, tables: [{ ...loot.tables[0], gold: { min: '', max: '' } }] }
     const parsed = await parseRaw(serializeLootXml(noGold))
     expect(parsed.LootSet.Table?.[0]?.Gold).toBeUndefined()
   })
 
   it('omits Xp element when both min and max are empty', async () => {
-    const noXp = { ...loot, table: { ...loot.table, xp: { min: '', max: '' } } }
+    const noXp = { ...loot, tables: [{ ...loot.tables[0], xp: { min: '', max: '' } }] }
     const parsed = await parseRaw(serializeLootXml(noXp))
     expect(parsed.LootSet.Table?.[0]?.Xp).toBeUndefined()
   })
@@ -324,7 +328,7 @@ describe('Output structure', () => {
   it('omits Items element when entries is empty and no rolls/chance', async () => {
     const noItems = {
       ...loot,
-      table: { ...loot.table, items: { rolls: '', chance: '', entries: [] } }
+      tables: [{ ...loot.tables[0], lists: [{ rolls: '', chance: '', entries: [] }] }]
     }
     const parsed = await parseRaw(serializeLootXml(noItems))
     expect(parsed.LootSet.Table?.[0]?.Items).toBeUndefined()

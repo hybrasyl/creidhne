@@ -1,5 +1,6 @@
 import xml2js from 'xml2js'
 import { extractComment, injectComment } from './xmlCommentUtils.js'
+import { buildLootList, mapLootInline, mapLootSets } from './lootTableXml.js'
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
@@ -36,15 +37,6 @@ function mapImmunities(immsArr) {
     value: typeof imm === 'string' ? imm : imm._ || '',
     messageType: a(imm, 'MessageType', 'Say'),
     message: a(imm, 'Message', '')
-  }))
-}
-
-function mapLoot(lootNode) {
-  if (!lootNode) return []
-  return (lootNode.Set || []).map((s) => ({
-    name: a(s, 'Name', ''),
-    rolls: a(s, 'Rolls', ''),
-    chance: a(s, 'Chance', '')
   }))
 }
 
@@ -97,7 +89,8 @@ function mapSpawn(spawnNode) {
     activeTo: a(spawnNode, 'ActiveTo', ''),
     despawnLoot: a(spawnNode, 'DespawnLoot', 'false') === 'true',
     immunities: mapImmunities(spawnNode.Immunities),
-    loot: mapLoot(first(spawnNode.Loot)),
+    loot: mapLootSets(first(spawnNode.Loot)),
+    lootInline: mapLootInline(first(spawnNode.Loot)),
     coordinates: (coordsNode?.Coordinate || []).map((c) => ({
       x: a(c, 'X', ''),
       y: a(c, 'Y', '')
@@ -143,7 +136,8 @@ function mapXmlToSpawngroup(result, comment) {
     despawnAfter: a(root, 'DespawnAfter', ''),
     disabled: a(root, 'Disabled', 'false') === 'true',
     comment,
-    loot: mapLoot(lootNode),
+    loot: mapLootSets(lootNode),
+    lootInline: mapLootInline(lootNode),
     spawns: (spawnsNode?.Spawn || []).map(mapSpawn)
   }
 }
@@ -168,17 +162,6 @@ function buildImmunities(immunities) {
       Immunity: immunities.map((imm) => ({
         _: imm.value,
         $: omitEmpty({ Type: imm.type, MessageType: imm.messageType, Message: imm.message })
-      }))
-    }
-  ]
-}
-
-function buildLoot(lootArr) {
-  if (!lootArr?.length) return undefined
-  return [
-    {
-      Set: lootArr.map((s) => ({
-        $: omitEmpty({ Name: s.name, Rolls: s.rolls, Chance: s.chance })
       }))
     }
   ]
@@ -226,7 +209,7 @@ function buildSpawn(spawn) {
   const immunities = buildImmunities(spawn.immunities)
   if (immunities) node.Immunities = immunities
 
-  const loot = buildLoot(spawn.loot)
+  const loot = buildLootList(spawn.loot, spawn.lootInline)
   if (loot) node.Loot = loot
 
   if (spawn.coordinates?.length) {
@@ -295,7 +278,7 @@ function buildXmlObject(sg) {
     node.SpawnGroup.Spawns = [{ Spawn: sg.spawns.map(buildSpawn) }]
   }
 
-  const loot = buildLoot(sg.loot)
+  const loot = buildLootList(sg.loot, sg.lootInline)
   if (loot) node.SpawnGroup.Loot = loot
 
   return node
