@@ -9,8 +9,26 @@
 // (and an empty `window.api`) that nothing in the renderer read. Removing it is
 // what made the sandbox reachable.
 import { contextBridge, ipcRenderer } from 'electron'
+// A relative import is bundled into this file, so it is not a module the sandbox
+// has to load. src/shared/appMenu.js has no imports of its own, and must keep it
+// that way: anything it imported would be bundled here too.
+import { MENU_COMMAND_CHANNEL, MENU_STATE_CHANNEL } from '../shared/appMenu.js'
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // The renderer draws a different title bar on macOS (native stoplights, no
+  // logo, name or window buttons), and runs the application menu there. A
+  // sandboxed preload has `process.platform`.
+  platform: process.platform,
+  // The macOS application menu. The listener is wrapped so the IpcRendererEvent
+  // never crosses the bridge; onCommand returns the unsubscribe.
+  menu: {
+    onCommand: (callback) => {
+      const listener = (_, msg) => callback(msg)
+      ipcRenderer.on(MENU_COMMAND_CHANNEL, listener)
+      return () => ipcRenderer.removeListener(MENU_COMMAND_CHANNEL, listener)
+    },
+    setState: (state) => ipcRenderer.send(MENU_STATE_CHANNEL, state)
+  },
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
   openExeFile: () => ipcRenderer.invoke('dialog:openExeFile'),
   // Companion app. The renderer names no path: it asks for the companion, and

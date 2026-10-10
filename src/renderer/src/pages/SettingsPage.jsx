@@ -16,6 +16,7 @@ import TaliesinPathSection from '../components/TaliesinPathSection'
 import BrigidAssetsPathSection from '../components/BrigidAssetsPathSection'
 import AboutDialog from '../components/AboutDialog'
 import WhatsNewDialog from '../components/WhatsNewDialog'
+import { useMenuRequest } from '../hooks/useMenuRequest'
 import ThemePicker from '../components/ThemePicker'
 
 // Right-sized WebP, hashed into the bundle by Vite (shared with the toolbar).
@@ -33,6 +34,9 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [whatsNewOpen, setWhatsNewOpen] = useState(false)
+  // The macOS menu's About and What's New go to this page and leave a request.
+  useMenuRequest('about', () => setAboutOpen(true))
+  useMenuRequest('whatsNew', () => setWhatsNewOpen(true))
   const [version, setVersion] = useState('')
 
   useEffect(() => {

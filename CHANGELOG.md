@@ -37,6 +37,10 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Added
+
+- **Creidhne has macOS window controls and a macOS menu.** On macOS the title bar shows the native close, minimize and zoom buttons at the left, and no logo or name. The menu bar has Creidhne's own commands: Settings (⌘,), Save (⌘S), Launch Taliesin, the reference panel, and every page in a Go menu (⌘1 to ⌘9 for the first nine). Electron's default menu, which had a Reload item that discarded unsaved edits, is gone. Windows and Linux do not change.
+
 ### Changed
 
 - **Creidhne runs on Electron 44.** Electron 41 gets no more security fixes.
@@ -45,7 +49,8 @@ first section written to the rules above.
 ### Fixed
 
 - **Creidhne closes when it is not the active window.** A close from the taskbar while another window had focus did nothing, and a quit did not finish.
-
+- **⌘Q quits Creidhne on macOS.** The unsaved-changes check stopped the quit, and Creidhne stayed open with no window.
+- **⌘-click selects files on macOS.** Control-click is a right-click on macOS, so the file list now uses ⌘-click to add a file to the selection, as Finder does.
 - **The Linux icon matches the macOS icon.** The .deb and the AppImage installed the Windows
   star icon. They now install the navy-and-gold tile, as macOS does. On Linux, the window also
   uses the tile, so the taskbar shows the same icon as the launcher.

@@ -40,6 +40,7 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
 import ClearIcon from '@mui/icons-material/Clear'
 import { useStoreState, fileListViewModeState } from '../../store/appStore'
+import { isModKey } from '../../utils/modKey'
 import {
   ITEM_HEIGHT,
   FOLDER_HEIGHT,
@@ -323,8 +324,9 @@ export default function EditorFileListPanel({
 
   const handleRowClick = useCallback(
     (e, file) => {
-      // Ctrl/Cmd-click — toggle membership; do NOT open editor.
-      if (e.ctrlKey || e.metaKey) {
+      // Ctrl/Cmd-click — toggle membership; do NOT open editor. On macOS it is
+      // ⌘-click alone: a Control-click there is a right-click (the context menu).
+      if (isModKey(e, window.electronAPI?.platform)) {
         const next = new Set(selectedPaths)
         if (next.has(file.path)) next.delete(file.path)
         else next.add(file.path)

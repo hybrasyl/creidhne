@@ -16,6 +16,11 @@ import { useStoreValue, taliesinPathState, settingsSavedNonceState } from '../st
  * override has to fall back to discovery visibly**, rather than leaving three
  * buttons describing the answer from before.
  *
+ * `enabled: false` asks main nothing and reports "not found". The macOS menu
+ * uses it: the hook must be called on every platform (rules of hooks), and the
+ * question is worth asking only where the menu exists.
+ *
+ * @param {{ enabled?: boolean }} [options]
  * @returns {{
  *   resolved: { target: string, kind: string, source: string } | null,
  *   staleOverride: boolean,
@@ -23,7 +28,7 @@ import { useStoreValue, taliesinPathState, settingsSavedNonceState } from '../st
  *   refresh: () => void
  * }}
  */
-export function useCompanionStatus() {
+export function useCompanionStatus({ enabled = true } = {}) {
   const taliesinPath = useStoreValue(taliesinPathState)
   // Main reads the override from settings on disk, so the query has to follow
   // the write rather than the state change that caused it -- App's save effect
@@ -37,6 +42,7 @@ export function useCompanionStatus() {
   const refresh = useCallback(() => setNonce((n) => n + 1), [])
 
   useEffect(() => {
+    if (!enabled) return
     let cancelled = false
     window.electronAPI
       .companionStatus()
@@ -47,7 +53,7 @@ export function useCompanionStatus() {
     return () => {
       cancelled = true
     }
-  }, [taliesinPath, settingsSavedNonce, nonce])
+  }, [enabled, taliesinPath, settingsSavedNonce, nonce])
 
   return { ...status, found: !!status.resolved, refresh }
 }
