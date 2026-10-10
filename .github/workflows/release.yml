@@ -17,9 +17,9 @@ name: Release
 # on 2026-08-12 exhausted the shared Actions allowance and hit the account's
 # spending limit mid-merge; this workflow was the largest single contributor.
 #
-# What replaces the lost per-PR check is a LOCAL gate: `npm run validate` via
-# .githooks/pre-push, armed by the "prepare" script setting core.hooksPath, plus
-# `npm run validate:linux` for real Linux through WSL.
+# What replaces the lost per-PR check is a LOCAL gate, run by hand before a
+# push: `npm run validate`, plus `npm run validate:linux` for real Linux
+# through WSL.
 #
 # Everything below still runs on a `v*` tag and on workflow_dispatch, including
 # validate, so a release is still gated and the macOS and Linux artifacts are

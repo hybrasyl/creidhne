@@ -37,7 +37,7 @@
  * ## What it validates, stated because it is easy to assume otherwise
  *
  * **Committed state only — HEAD, not the working tree.** That is exactly right
- * for the pre-push gate this backs up, since HEAD is what a push sends. Run it
+ * for a check before a push, since HEAD is what a push sends. Run it
  * with uncommitted work in progress and that work is not what was checked.
  */
 import { execFileSync, spawnSync } from 'child_process'
