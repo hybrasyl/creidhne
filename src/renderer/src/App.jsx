@@ -47,7 +47,7 @@ const themes = {
 import MainLayout from './components/MainLayout'
 import PageRenderer from './components/PageRenderer'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog'
-import UpdateSnackbar from './components/UpdateSnackbar'
+import UpdateNotice from './components/UpdateNotice'
 import ReportIssueDialog from './components/ReportIssueDialog'
 import ReferencePanel from './components/reference/ReferencePanel'
 import { stopSound } from './data/soundData'
@@ -360,7 +360,7 @@ function App() {
         onDiscard={handleCloseDiscard}
         onCancel={handleCloseCancel}
       />
-      <UpdateSnackbar />
+      <UpdateNotice />
       <ReportIssueDialog open={reportIssueOpen} onClose={() => setReportIssueOpen(false)} />
     </ThemeProvider>
   )

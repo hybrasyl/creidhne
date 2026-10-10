@@ -54,6 +54,7 @@ describe('buildMenuTemplate', () => {
     expect(app.find((i) => i.role === 'quit').label).toBe('Quit Creidhne')
     expect(app.find((i) => i.role === 'hide').label).toBe('Hide Creidhne')
     expect(byId(build(), 'about').label).toBe('About Creidhne')
+    expect(byId(build(), 'checkForUpdates').label).toBe('Check for Updates…')
     expect(byId(build(), 'settings').accelerator).toBe('Cmd+,')
   })
 

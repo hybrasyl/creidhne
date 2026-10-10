@@ -29,6 +29,8 @@ export function runMenuCommand(msg, actions) {
   }
   switch (command) {
     case 'settings':
+    case 'checkForUpdates':
+      // The Check for updates button is on the Settings About card.
       actions.navigate('settings')
       return
     case 'about':

@@ -74,6 +74,12 @@ describe('runMenuCommand', () => {
     expect(isModalOpen()).toBe(false)
   })
 
+  it('Check for Updates goes to Settings, where the button is', () => {
+    const a = actions()
+    runMenuCommand({ command: 'checkForUpdates' }, a)
+    expect(a.navigate).toHaveBeenCalledWith('settings')
+  })
+
   it.each(['about', 'whatsNew'])('%s leaves a request and goes to Settings', (command) => {
     const a = actions()
     runMenuCommand({ command }, a)
