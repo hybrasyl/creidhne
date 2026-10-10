@@ -24,7 +24,7 @@ The specs below run these on every `npm run e2e`, so they need no manual pass:
 Use a packaged build from `npm run build:win` or from the release workflow. The
 signing steps only run in CI.
 
-- [ ] **The portable exe does not flash on close (HTOO-466).** Launch
+- [x] **The portable exe does not flash on close (HTOO-466).** _Sabrael, 2026-10-10, 1.14.0 release build._ Launch
       `creidhne-<version>-portable.exe`. While it unpacks you should see a busy
       cursor and no image, then the Creidhne splash. Close Creidhne. No blank Setup
       window should appear afterwards. Repeat a few times; the old flash came on
@@ -40,14 +40,14 @@ signing steps only run in CI.
 - [x] **Creidhne refuses a changed app archive (HTOO-381).** _Fintan, 2026-10-10, unsigned `--dir` package: one changed byte in the main bundle exits with code 1, no window, `ASAR Integrity Violation` on stderr; the unchanged build opens._ Install a build. Change one
       byte of `resources\app.asar` in the install folder, keeping a backup. Creidhne
       should not start. Put the original file back, and Creidhne should start again.
-- [ ] **The files are signed.** Open Properties → Digital Signatures on the
+- [x] **The files are signed.** _Sabrael, 2026-10-10, 1.14.0 release build._ Open Properties → Digital Signatures on the
       installer, the portable exe and the installed `Creidhne.exe`. Each should
       show a valid signature. This is the first release signed with CodeSignTool.
-- [ ] **The NSIS installer works end to end.** Install fresh, then upgrade over
+- [x] **The NSIS installer works end to end.** _Sabrael, 2026-10-10, 1.14.0 release build._ Install fresh, then upgrade over
       1.13.1. Settings and the world path should survive the upgrade. Uninstall
       afterwards. Run the installer once while Creidhne is open, and it should ask
       you to close it.
-- [ ] **Closing from the taskbar.** With another window in front, right-click
+- [x] **Closing from the taskbar.** _Sabrael, 2026-10-10, 1.14.0 release build._ With another window in front, right-click
       Creidhne in the taskbar and choose Close window. Creidhne should close, and
       with unsaved edits it should ask first. E2E covers this, but the taskbar
       click itself is only real on Windows.
