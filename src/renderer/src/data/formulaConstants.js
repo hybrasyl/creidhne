@@ -1,5 +1,10 @@
 // ── Budget Modifier Modes ────────────────────────────────────────────────────
-export const BUDGET_MODES = ['none', 'linearStep', 'binary', 'steppedTiers']
+// Every mode here must change a coefficient in resolveCoefficient: a listed mode
+// that falls through returns the base value, the same as 'none', with no warning
+// (HTOO-132). 'steppedTiers' was listed with no tier data and no resolver; it
+// returns when it is designed and built. normalizeBudgetModifier loads a saved
+// mode that is not listed as 'none', which is what it computed as.
+export const BUDGET_MODES = ['none', 'linearStep', 'binary']
 export const BUDGET_APPLICATIONS = ['additive', 'multiplicative']
 
 export const DEFAULT_BUDGET_MODIFIER = {

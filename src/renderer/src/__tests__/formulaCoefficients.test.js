@@ -3,9 +3,14 @@ import {
   ASSAIL_KEY,
   buildCoefficientKey,
   resolveCoefficient,
-  applyHybridSplit
+  applyHybridSplit,
+  normalizeBudgetModifier
 } from '../utils/formulaCoefficients'
-import { ALL_COEFFICIENT_KEYS } from '../data/formulaConstants'
+import {
+  ALL_COEFFICIENT_KEYS,
+  BUDGET_MODES,
+  DEFAULT_BUDGET_MODIFIER
+} from '../data/formulaConstants'
 
 // ── buildCoefficientKey ──────────────────────────────────────────────────────
 
@@ -103,6 +108,53 @@ describe('resolveCoefficient', () => {
     const ref = { budgetDimension: 'cd', cooldown: 100 }
     // delta would be 0.94, capped to 0.02 → 1.02
     expect(resolveCoefficient(coeffs, 'DMG_ST', 'spell', bm, ref)).toBe(1.02)
+  })
+})
+
+// ── Every selectable budget mode does something (HTOO-132) ───────────────────
+
+describe('budget modes', () => {
+  // 'steppedTiers' was selectable with no resolver behind it, so it returned the
+  // base value, the same as 'none', and nothing said so. This holds the rule for
+  // every mode in the list: on a castable off its baseline, it changes the
+  // coefficient. A new mode fails here until resolveCoefficient handles it.
+  const coeffs = { DMG_ST: { spell: 1.0, skill: 0.8 } }
+  const configured = (mode) => ({
+    mode,
+    application: 'additive',
+    lines: { baseline: 4, step: 0.03, cap: null, bonus: 0.1, penalty: 0.1 },
+    cooldown: { baseline: 6, step: 0.01, cap: null, bonus: 0.1, penalty: 0.1 }
+  })
+  const offBaseline = { budgetDimension: 'cd', cooldown: 10 }
+
+  it('lists none and at least one mode that applies', () => {
+    // Guard the guard: an empty list would pass the loop below vacuously.
+    expect(BUDGET_MODES).toContain('none')
+    expect(BUDGET_MODES.length).toBeGreaterThan(1)
+  })
+
+  it.each(BUDGET_MODES.filter((m) => m !== 'none'))('%s changes the coefficient', (mode) => {
+    expect(resolveCoefficient(coeffs, 'DMG_ST', 'spell', configured(mode), offBaseline)).not.toBe(
+      1.0
+    )
+  })
+
+  it('loads a saved mode that is not listed as none, keeping the rest', () => {
+    const saved = { ...configured('steppedTiers'), application: 'multiplicative' }
+    const bm = normalizeBudgetModifier(saved)
+    expect(bm.mode).toBe('none')
+    expect(bm.application).toBe('multiplicative')
+    // It computed as 'none' before, and still does.
+    expect(resolveCoefficient(coeffs, 'DMG_ST', 'spell', saved, offBaseline)).toBe(1.0)
+    expect(resolveCoefficient(coeffs, 'DMG_ST', 'spell', bm, offBaseline)).toBe(1.0)
+  })
+
+  it('keeps a listed mode and fills defaults', () => {
+    expect(normalizeBudgetModifier({ mode: 'linearStep' })).toEqual({
+      ...DEFAULT_BUDGET_MODIFIER,
+      mode: 'linearStep'
+    })
+    expect(normalizeBudgetModifier(undefined)).toEqual(DEFAULT_BUDGET_MODIFIER)
   })
 })
 

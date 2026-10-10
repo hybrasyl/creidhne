@@ -34,16 +34,16 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import {
   BUDGET_MODES,
   BUDGET_APPLICATIONS,
-  DEFAULT_BUDGET_MODIFIER,
   COEFFICIENT_GROUPS,
   FORMULA_CONSTANTS,
   FORMULA_CONSTANT_KEYS
 } from '../../data/formulaConstants'
 import BUILTIN_PATTERNS from '../../data/formulaPatterns'
+import { normalizeBudgetModifier } from '../../utils/formulaCoefficients'
 
 function mergeSettings(saved) {
   return {
-    budgetModifier: { ...DEFAULT_BUDGET_MODIFIER, ...saved?.budgetModifier },
+    budgetModifier: normalizeBudgetModifier(saved?.budgetModifier),
     customVariables: { ...(saved?.customVariables || {}) },
     coefficients: { ...(saved?.coefficients || {}) },
     defaultPatternId: saved?.defaultPatternId ?? null
@@ -53,8 +53,7 @@ function mergeSettings(saved) {
 const MODE_LABELS = {
   none: 'None',
   linearStep: 'Linear Step',
-  binary: 'Binary',
-  steppedTiers: 'Stepped Tiers'
+  binary: 'Binary'
 }
 const APP_LABELS = { additive: 'Additive', multiplicative: 'Multiplicative' }
 
@@ -392,17 +391,6 @@ function BudgetModifierTab({ settings, onChange }) {
             }}
           >
             No budget modifier applied. Coefficients are used as-is.
-          </Typography>
-        )}
-
-        {bm.mode === 'steppedTiers' && (
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary'
-            }}
-          >
-            Stepped tiers configuration coming soon.
           </Typography>
         )}
       </Box>
