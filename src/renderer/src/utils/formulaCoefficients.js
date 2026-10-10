@@ -4,7 +4,19 @@
 // the numeric coefficients the user enters in the Globals dialog
 // (settings.coefficients, keyed by the catalog keys in formulaConstants.js).
 
+import { BUDGET_MODES, DEFAULT_BUDGET_MODIFIER } from '../data/formulaConstants'
+
 export const ASSAIL_KEY = 'DMG_ASSAIL'
+
+/**
+ * A saved budget modifier over the defaults. A mode that is not in
+ * BUDGET_MODES loads as 'none': resolveCoefficient already computed it as
+ * 'none', and the selector cannot show a mode it does not list (HTOO-132).
+ */
+export function normalizeBudgetModifier(saved) {
+  const bm = { ...DEFAULT_BUDGET_MODIFIER, ...saved }
+  return BUDGET_MODES.includes(bm.mode) ? bm : { ...bm, mode: 'none' }
+}
 
 // Hybrid deliveries: a paired direct hit (HDIR) + over-time portion (HYOT),
 // each carrying a split percentage of the total budget.
