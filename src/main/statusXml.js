@@ -1,5 +1,5 @@
 import xml2js from 'xml2js'
-import { extractComment, injectComment } from './xmlCommentUtils.js'
+import { extractComment, injectComment, injectAfter } from './xmlCommentUtils.js'
 
 // ── Status-specific meta (creidhne:meta comment) ──────────────────────────────
 // Stores string keys for prohibited message and per-block message channels.
@@ -44,7 +44,7 @@ function injectStatusMeta(xml, status) {
   if (Object.keys(fnBlocks).length) payload.formulaNames = fnBlocks
 
   if (!Object.keys(payload).length) return xml
-  return xml.replace(/(<Status[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`)
+  return injectAfter(xml, /<Status[^>]*>/, `\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`)
 }
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'

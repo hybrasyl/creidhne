@@ -1,4 +1,15 @@
 /**
+ * Inserts `text` after the first match of `re`. Every annotation goes in this
+ * way, and it uses a replacer FUNCTION on purpose: `replace` expands `$&`,
+ * `$'`, `` $` ``, `$1` and `$$` in a replacement STRING, so a comment, a
+ * location or a meta value that held one was corrupted on save, silently and
+ * into well-formed XML (HTOO-469). A function's return value is not scanned.
+ */
+export function injectAfter(xml, re, text) {
+  return xml.replace(re, (match) => `${match}${text}`)
+}
+
+/**
  * Extracts the value of a `<!-- Comment: ... -->` annotation from raw XML.
  * Must be called before xml2js parsing since the parser strips comments.
  */
@@ -15,7 +26,7 @@ export function extractComment(xmlString) {
  */
 export function injectComment(xml, comment, rootTag) {
   if (!comment) return xml
-  return xml.replace(new RegExp(`(<${rootTag}[^>]*>)`), `$1\n  <!-- Comment: ${comment} -->`)
+  return injectAfter(xml, new RegExp(`<${rootTag}[^>]*>`), `\n  <!-- Comment: ${comment} -->`)
 }
 
 /**
@@ -54,7 +65,7 @@ export function injectNameAnnotations(xml, location, comment) {
   if (location) lines.push(`  <!-- Location: ${location} -->`)
   if (comment) lines.push(`  <!-- Comment: ${comment} -->`)
   if (!lines.length) return xml
-  return xml.replace(/(<Name>.*?<\/Name>)/, `$1\n${lines.join('\n')}`)
+  return injectAfter(xml, /<Name>.*?<\/Name>/, `\n${lines.join('\n')}`)
 }
 
 const CASTABLE_META_DEFAULTS = {
@@ -111,5 +122,5 @@ export function injectMeta(xml, meta, rootTag) {
   const payload = Object.fromEntries(Object.entries(meta || {}).filter(([, v]) => v))
   if (!Object.keys(payload).length) return xml
   const json = JSON.stringify(payload)
-  return xml.replace(new RegExp(`(<${rootTag}[^>]*>)`), `$1\n  <!-- creidhne:meta ${json} -->`)
+  return injectAfter(xml, new RegExp(`<${rootTag}[^>]*>`), `\n  <!-- creidhne:meta ${json} -->`)
 }
