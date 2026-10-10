@@ -243,7 +243,7 @@ e2e/           Playwright specs against the built app
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
   `src/main/__tests__/splashLayout.test.js`, `pickerStart.test.js` (every picker has a
-  `defaultPath`), and nine under
+  `defaultPath`), `replaceSites.test.js` (every `replace` takes a literal or a replacer function, because a replacement string expands `$&` from the value — HTOO-469), and nine under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
   `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`,
   `renameRepairSites.test.js`, `renameFileSites.test.js`, `macosSources.test.js` and

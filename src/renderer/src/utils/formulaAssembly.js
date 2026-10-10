@@ -76,9 +76,11 @@ export function assembleFormula(ncalcTemplate, paramValues, paramDefs) {
         replacement = value != null ? String(value) : '0'
     }
 
-    while (result.includes(placeholder)) {
-      result = result.replace(placeholder, replacement)
-    }
+    // A replacer function, not a string: `replace` expands $& and $$ in a
+    // replacement string, so a value holding one was corrupted (HTOO-469).
+    // replaceAll is one pass, where the old `while (includes)` loop never
+    // ended if a value held its own placeholder.
+    result = result.replaceAll(placeholder, () => replacement)
   }
 
   // ── Cleanup: normalize whitespace ─────────────────────────────────────────

@@ -1,5 +1,5 @@
 import xml2js from 'xml2js'
-import { extractComment, injectComment, extractMeta } from './xmlCommentUtils.js'
+import { extractComment, injectComment, extractMeta, injectAfter } from './xmlCommentUtils.js'
 import { buildLootList, mapLootInline, mapLootSets } from './lootTableXml.js'
 
 // Design note: the editor shows only the <Set> imports of a <Loot>, because
@@ -27,7 +27,11 @@ function injectCreatureMeta(xml, meta) {
   const payload = {}
   if (meta.family) payload.family = meta.family
   if (meta.weapon) payload.weapon = meta.weapon
-  return xml.replace(/(<Creature[^>]*>)/, `$1\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`)
+  return injectAfter(
+    xml,
+    /<Creature[^>]*>/,
+    `\n  <!-- creidhne:meta ${JSON.stringify(payload)} -->`
+  )
 }
 
 const SUBTYPE_META_DEFAULTS = { weapon: '' }
