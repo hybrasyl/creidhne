@@ -124,7 +124,18 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       page = <DashboardPage />
   }
 
-  return <Suspense fallback={pageFallback}>{page}</Suspense>
+  // The marker is INSIDE the Suspense, around the page, so it is in the document
+  // only once the lazy page has loaded and rendered: while the chunk loads, the
+  // Suspense shows its fallback instead. e2e/nav-pages.spec.js waits for it.
+  // `display: contents` keeps it out of the layout, so a page's height: 100%
+  // still measures against <main>.
+  return (
+    <Suspense fallback={pageFallback}>
+      <Box data-testid={`page-${currentPage}`} sx={{ display: 'contents' }}>
+        {page}
+      </Box>
+    </Suspense>
+  )
 }
 
 export default PageRenderer

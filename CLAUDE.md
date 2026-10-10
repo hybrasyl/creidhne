@@ -241,10 +241,13 @@ e2e/           Playwright specs against the built app
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
   `src/main/__tests__/splashLayout.test.js`, `pickerStart.test.js` (every picker has a
-  `defaultPath`), and eight under
+  `defaultPath`), and nine under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
   `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`,
-  `renameRepairSites.test.js`, `renameFileSites.test.js` and `macosSources.test.js`.
+  `renameRepairSites.test.js`, `renameFileSites.test.js`, `macosSources.test.js` and
+  `rendererNodeGlobals.test.js` (no Node global in the sandboxed renderer). Its e2e twin is
+  `e2e/nav-pages.spec.js`, which opens every page in the built app and fails on the error
+  boundary; its page list is derived from `GO_PAGES`, so a new page is covered unasked.
 
   **The recurring shape is worth naming: a pattern that reached most of its sites, not all.**
   Five separate cards were that — 13 of 14 pages had the first-save fix (HTOO-130), 12 of 14
