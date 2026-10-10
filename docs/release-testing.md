@@ -29,7 +29,7 @@ signing steps only run in CI.
       cursor and no image, then the Creidhne splash. Close Creidhne. No blank Setup
       window should appear afterwards. Repeat a few times; the old flash came on
       every close.
-- [ ] **The portable exe sweeps its leftover folders.** Launch the portable exe, then
+- [x] **The portable exe sweeps its leftover folders.** _Fintan, 2026-10-10, unsigned local portable build: an 805 MB leftover `ns*.tmp` folder was removed._ Launch the portable exe, then
       end its process in Task Manager while Creidhne is still open, so its
       `%TEMP%\ns*.tmp` folder is left behind. Note the folder's name. After 10 minutes,
       launch the portable exe again and wait 30 seconds. The old folder should be
@@ -37,7 +37,7 @@ signing steps only run in CI.
       `src/main/portableSweep.js` has the rules. A folder is removed only when it
       holds a copy of Creidhne, is more than ten minutes old, and no running copy is
       using it.
-- [ ] **Creidhne refuses a changed app archive (HTOO-381).** Install a build. Change one
+- [x] **Creidhne refuses a changed app archive (HTOO-381).** _Fintan, 2026-10-10, unsigned `--dir` package: one changed byte in the main bundle exits with code 1, no window, `ASAR Integrity Violation` on stderr; the unchanged build opens._ Install a build. Change one
       byte of `resources\app.asar` in the install folder, keeping a backup. Creidhne
       should not start. Put the original file back, and Creidhne should start again.
 - [ ] **The files are signed.** Open Properties → Digital Signatures on the
