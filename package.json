@@ -17,7 +17,7 @@
     "start": "electron-vite preview -- --trace-warnings",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "install-electron && electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:portable": "npm run build && electron-builder --win",
@@ -103,7 +103,7 @@
     "@testing-library/user-event": "^14.6.3",
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^4.1.9",
-    "electron": "^41.1.0",
+    "electron": "^44.7.0",
     "electron-builder": "^26.17.0",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.4",
@@ -122,8 +122,8 @@
     "xmllint-wasm": "^5.2.0",
     "zustand": "^5.0.14"
   },
+  "//allowScripts": "npm 12 skips every dependency install script that this block does not approve, with only a warning and exit 0. esbuild selects its platform binary. electron-winstaller only picks a 7-Zip build for Squirrel installers, which Creidhne does not ship. electron is not listed: since Electron 42 it has no install script. The project's OWN postinstall runs install-electron (a no-op when the binary is there), because electron-vite dev reads the binary path without require(), so a fresh clone could not run npm run dev. Approvals are by name, not version (HTOO-542, HTOO-553).",
   "allowScripts": {
-    "electron": true,
     "esbuild": true,
     "electron-winstaller": false
   }

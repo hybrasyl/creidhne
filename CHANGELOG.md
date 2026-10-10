@@ -37,7 +37,14 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Changed
+
+- **Creidhne runs on Electron 44.** Electron 41 gets no more security fixes.
+- **File and folder pickers open in the last folder you picked.** Electron 44 opens a picker in Downloads when the app gives it no folder. Each picker now opens in its own folder when it has one (for example, the world for Import Formula Library), then in the last folder you picked, then in the active world, then in Documents.
+
 ### Fixed
+
+- **Creidhne closes when it is not the active window.** A close from the taskbar while another window had focus did nothing, and a quit did not finish.
 
 - **The Linux icon matches the macOS icon.** The .deb and the AppImage installed the Windows
   star icon. They now install the navy-and-gold tile, as macOS does. On Linux, the window also
