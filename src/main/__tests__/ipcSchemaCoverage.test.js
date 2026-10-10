@@ -65,7 +65,7 @@ const EXEMPT = {
   'settings:load': { category: 'no-payload', reason: 'reads settings.json' },
   'get-user-data-path': { category: 'no-payload', reason: 'returns a constant' },
   'app:getVersion': { category: 'no-payload', reason: 'returns app.getVersion()' },
-  'app:checkForUpdates': { category: 'no-payload', reason: 'queries the release feed' },
+  'app:checkForUpdate': { category: 'no-payload', reason: 'reads the house version manifest' },
   'app:revealSettings': { category: 'no-payload', reason: 'shows settings.json in the OS shell' },
   'app:launchCompanion': {
     category: 'no-payload',

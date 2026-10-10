@@ -147,7 +147,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('dialogs:save', libraryPath, document, previousName),
   deleteDialog: (libraryPath, name) => ipcRenderer.invoke('dialogs:delete', libraryPath, name),
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
-  checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
+  // Update check (house module update-check v1): { ok, update } or { ok: false, reason }.
+  checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
   revealSettings: () => ipcRenderer.invoke('app:revealSettings'),
   // Report Issue / diagnostics
   reportRendererError: (payload) => ipcRenderer.invoke('diagnostics:reportRendererError', payload),

@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog, session, Menu } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, session, Menu, net } from 'electron'
 import { basename, dirname, join } from 'path'
 import { promises as fs, existsSync, mkdirSync, copyFileSync } from 'fs'
 import { parseItemXml, serializeItemXml } from './itemXml'
@@ -79,7 +79,7 @@ import {
   readClientFile,
   checkClientPath
 } from './fsHandlers'
-import { checkForUpdates } from './updateCheck.js'
+import { checkForUpdate } from './updateCheck.js'
 import { loadReference } from './referenceLoader.js'
 import {
   buildIndexInWorker,
@@ -528,7 +528,17 @@ app.whenReady().then(async () => {
     launchCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
   )
   ipc.handle('app:getVersion', () => app.getVersion())
-  ipc.handle('app:checkForUpdates', () => checkForUpdates(app.getVersion()))
+  // Update check (house module update-check v1). Never throws: "up to date" and
+  // "could not tell" come back as different values. `net.fetch` uses the system
+  // proxy and the OS certificate store.
+  ipc.handle('app:checkForUpdate', () =>
+    checkForUpdate({
+      currentVersion: app.getVersion(),
+      updateKey: appIdentity.updateKey,
+      releaseUrlPrefix: appIdentity.releaseUrlPrefix,
+      fetchImpl: (url, init) => net.fetch(url, init)
+    })
+  )
   // Open the local settings/cache dir (%LOCALAPPDATA%/Erisco/Creidhne) in the OS
   // file manager — surfaced from the Settings "About" card.
   ipc.handle('app:revealSettings', () => shell.openPath(settingsPath))

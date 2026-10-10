@@ -26,7 +26,8 @@
     "fetch-xsd": "node scripts/downloadXSD.js",
     "convert-xsd": "node scripts/convertXsdToJson.js",
     "e2e": "npm run build && playwright test",
-    "e2e:only": "playwright test"
+    "e2e:only": "playwright test",
+    "publish:version": "node scripts/publish-version.mjs"
   },
   "_overridesNote": [
     "brace-expansion carries TWO high-severity DoS advisories, and the second one inverted",

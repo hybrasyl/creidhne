@@ -473,3 +473,24 @@ jobs:
           curl -sf -H "Content-Type: application/json" \
             -d "{\"content\": \"**Creidhne $TAG** is now available!\n$RELEASE_URL\"}" \
             "${{ secrets.DISCORD_WEBHOOK_URL }}"
+
+      # The house version manifest (versions.json in hybrasyl/cernunnos, update-check
+      # module v1) is NOT written here. That write is a commit and push by the
+      # developer who releases, with their own git access: the workflow has no
+      # credential for cernunnos, by decision. Running apps learn of this release only
+      # after that step, so this step prints the command on the run page (a notice)
+      # and in the job summary.
+      - name: Remind to publish the version manifest
+        if: success()
+        run: |
+          CMD="npm run publish:version -- ${{ github.ref_name }}"
+          echo "::notice title=Publish the version manifest::Start the packaged app, then run: $CMD"
+          {
+            echo "### Next: publish the version manifest"
+            echo
+            echo "Start the packaged app from the release. Then run this in the app checkout:"
+            echo
+            echo "    $CMD"
+            echo
+            echo "Running copies of the app do not see this release until you do."
+          } >> "$GITHUB_STEP_SUMMARY"

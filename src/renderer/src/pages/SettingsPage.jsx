@@ -17,6 +17,7 @@ import BrigidAssetsPathSection from '../components/BrigidAssetsPathSection'
 import AboutDialog from '../components/AboutDialog'
 import WhatsNewDialog from '../components/WhatsNewDialog'
 import { useMenuRequest } from '../hooks/useMenuRequest'
+import UpdateCheckButton from '../components/UpdateCheckButton'
 import ThemePicker from '../components/ThemePicker'
 
 // Right-sized WebP, hashed into the bundle by Vite (shared with the toolbar).
@@ -129,6 +130,9 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
                 >
                   GitHub
                 </Link>
+              </Box>
+              <Box sx={{ mt: 1 }}>
+                <UpdateCheckButton currentVersion={version} />
               </Box>
             </Box>
           </Stack>
