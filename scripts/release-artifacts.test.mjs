@@ -41,6 +41,22 @@ const workflowRaw = readFileSync(join(REPO_ROOT, '.github/workflows/release.yml'
  */
 const workflow = workflowRaw.replace(/^\s*#.*$/gm, '')
 
+/** The body of one step, from its `- name:` to the next step, comments stripped. */
+function step(name) {
+  const start = workflow.indexOf(`- name: ${name}`)
+  expect(start, `release.yml has no step named "${name}"`).toBeGreaterThan(-1)
+  const next = workflow.indexOf('\n      - ', start + 1)
+  return workflow.slice(start, next === -1 ? undefined : next)
+}
+
+/** The build-windows job, from its key to the next job, comments stripped. */
+const windowsJob = (() => {
+  const start = workflow.indexOf('\n  build-windows:')
+  expect(start).toBeGreaterThan(-1)
+  const next = workflow.slice(start + 1).search(/\n {2}[\w-]+:/)
+  return next === -1 ? workflow.slice(start) : workflow.slice(start, start + 1 + next)
+})()
+
 /** The `files:` block of the Create GitHub Release step, comments stripped. */
 const releaseGlobs = (() => {
   const start = workflow.indexOf('          files: |')
@@ -102,10 +118,18 @@ describe('every configured target reaches the release (HTOO-373)', () => {
   it('signs every Windows artifact it publishes, or none of them', () => {
     // Signing one of the two would be worse than signing neither: a user handed
     // a signed installer beside an unsigned portable exe cannot read that as
-    // "credentials are configured for one artifact".
-    const signSteps = workflow.match(/uses: sslcom\/esigner-codesign@/g) ?? []
+    // "credentials are configured for one artifact". One step signs all of them
+    // (HTOO-517), so the step must name each Windows target's resolved path, and
+    // no other. The output name is the suffix without its dash and extension:
+    // the Resolve Windows artifacts step writes `setup` and `portable`.
+    const sign = step('Sign installer + portable exe')
+    const named = new Set([...sign.matchAll(/steps\.artifact\.outputs\.(\w+)/g)].map((m) => m[1]))
     const windowsArtifacts = EXPECTED.filter((e) => e.suffix.endsWith('.exe'))
-    expect(signSteps).toHaveLength(windowsArtifacts.length)
+    expect(windowsArtifacts.length).toBeGreaterThanOrEqual(2)
+    for (const { suffix } of windowsArtifacts) {
+      expect(named.has(suffix.slice(1, -'.exe'.length))).toBe(true)
+    }
+    expect(named.size).toBe(windowsArtifacts.length)
   })
 
   it('uploads every Windows artifact out of the build job', () => {
@@ -135,5 +159,71 @@ describe('every configured target reaches the release (HTOO-373)', () => {
     expect(builder).toMatch(/^ {2}oneClick: false$/m)
     expect(builder).toMatch(/^ {2}perMachine: false$/m)
     expect(builder).toMatch(/^ {2}allowToChangeInstallationDirectory: true$/m)
+  })
+})
+
+/**
+ * The Windows signing shape (HTOO-517). It fails only on a tag, which is the most
+ * expensive moment to find a fault, so the shape is pinned here.
+ *
+ * On 2026-09-30 SSL.com moved login.ssl.com to a chain that the JDK 11.0.2 in
+ * CodeSignTool cannot build. Every sign through sslcom/esigner-codesign (which
+ * runs that JDK) then failed with `PKIX path building failed`. The fix runs the
+ * CodeSignTool jar on Temurin 17 and reads each signature back, because
+ * CodeSignTool can fail and still exit 0. Ported from oghma's
+ * release-signing.test.mjs. Like oghma, Creidhne signs with no `if:` guard on the
+ * secrets, so a run without them fails and does not publish unsigned files.
+ *
+ * This checks the REQUEST, not the signed file. Only a tag run can sign.
+ */
+describe('Windows signing in release.yml (HTOO-517)', () => {
+  it('runs CodeSignTool on Temurin 17, never on its bundled JDK', () => {
+    expect(workflow).not.toMatch(/uses: sslcom\/esigner-codesign@/)
+    expect(workflow).not.toMatch(/CodeSignTool\.bat|jdk-11/)
+    expect(step('Set up Java 17 for CodeSignTool')).toMatch(
+      /uses: actions\/setup-java@v5\n\s+with:\n\s+distribution: temurin\n\s+java-version: '17'/
+    )
+    const sign = step('Sign installer + portable exe')
+    expect(sign).toContain("Join-Path $env:JAVA_HOME 'bin/java.exe'")
+    expect(sign).toMatch(/CODESIGNTOOL_VERSION: '1\.3\.2'/)
+  })
+
+  it('runs the jar in its own folder, with an output folder', () => {
+    // CodeSignTool reads conf/ from its working directory. With no
+    // -output_dir_path it asks whether to replace the input, and that prompt
+    // waits until the job times out.
+    const sign = step('Sign installer + portable exe')
+    expect(sign).toMatch(
+      /Push-Location \$toolDir[\s\S]*-jar \$jar\.FullName sign[\s\S]*Pop-Location/
+    )
+    expect(sign).toContain('"-output_dir_path=$out"')
+  })
+
+  it('reads each signature back before the upload', () => {
+    const sign = step('Sign installer + portable exe')
+    expect(sign).toMatch(/foreach \(\$file in \$files\)[\s\S]*Get-AuthenticodeSignature \$file/)
+    expect(sign).toContain("-ne 'Valid'")
+  })
+
+  it('signs unconditionally, so a run without the secrets fails', () => {
+    expect(step('Set up Java 17 for CodeSignTool')).not.toMatch(/^\s+if:/m)
+    expect(step('Sign installer + portable exe')).not.toMatch(/^\s+if:/m)
+  })
+
+  it('signs after the fuse check and before the upload, in build-windows', () => {
+    const order = [
+      '- name: Verify Electron fuses',
+      '- name: Resolve Windows artifacts',
+      '- name: Set up Java 17 for CodeSignTool',
+      '- name: Sign installer + portable exe',
+      '- name: Upload Windows artifacts'
+    ].map((name) => windowsJob.indexOf(name))
+    for (const at of order) expect(at).toBeGreaterThan(-1)
+    for (let i = 1; i < order.length; i++) expect(order[i - 1]).toBeLessThan(order[i])
+  })
+
+  it('needs no Node 20 holdout', () => {
+    // The env existed only for esigner-codesign (`using: node20`).
+    expect(workflow).not.toMatch(/^\s*FORCE_JAVASCRIPT_ACTIONS_TO_NODE24:/m)
   })
 })
