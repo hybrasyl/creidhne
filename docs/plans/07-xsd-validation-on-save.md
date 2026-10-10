@@ -53,9 +53,7 @@ decision with a maintenance cost, not a shortcut. `docs/xsd-validation.md` keeps
   two-line shape — `serialize…` then `writeFile(validatePath(filePath), xml)` (`xml:saveItem` `:302`
   … `xml:saveServerConfig` `:432`). Replace them with a `saveXml(channel, serializeFn)` factory that
   wraps serialize → validate → write. The 14 call sites collapse to 14 factory calls.
-- **`fs:writeFile` (`:291`) is a second, bypassing write path.** A raw passthrough that reaches disk
-  without serialization. Either route it through the same guard or document why it is exempt —
-  otherwise validation-on-save is trivially circumventable and will read as enforced when it is not.
+- **There is no second write path for world XML.** `fs:writeFile` was a raw passthrough that reached disk without serialization, and nothing called it; HTOO-128 removed it. A new channel that writes renderer-supplied content to the world would make validation-on-save trivially circumventable, so it must go through the same guard.
 - **Validation must be advisory before it is blocking.** Ship it warning-only first, with the failure
   surfaced in the editor, so a drift case nobody predicted does not make a type unsaveable in the
   field. Promote to blocking per type only once that type is clean.

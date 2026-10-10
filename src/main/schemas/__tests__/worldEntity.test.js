@@ -5,7 +5,6 @@ import {
   serverConfigEntitySchema
 } from '../worldEntity.js'
 import {
-  writeFileArgsSchema,
   saveDialogArgsSchema,
   addCategoryBulkArgsSchema,
   spellbookApplyArgsSchema
@@ -87,15 +86,11 @@ describe('argument payloads (HTOO-370)', () => {
     // `[object Object]` and the write reports success.
     for (const content of [{}, [], 42, null, undefined, true]) {
       expect(
-        writeFileArgsSchema.safeParse({ filePath: '/w/x.xml', content }).success,
-        JSON.stringify(content) ?? 'undefined'
-      ).toBe(false)
-      expect(
         saveDialogArgsSchema.safeParse({ defaultName: 'x.csv', content }).success,
         JSON.stringify(content) ?? 'undefined'
       ).toBe(false)
     }
-    expect(writeFileArgsSchema.safeParse({ filePath: '/w/x.xml', content: '' }).success).toBe(true)
+    expect(saveDialogArgsSchema.safeParse({ defaultName: 'x.csv', content: '' }).success).toBe(true)
   })
 
   it('rejects a bulk category payload the old guard let through', () => {

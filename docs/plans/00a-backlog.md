@@ -25,11 +25,6 @@ descendant, XSD validation on save, came out of `docs/xsd-validation.md` and is 
 
 ## Parked — behind a named trigger
 
-- **`fs:writeFile` is a second write path that bypasses serialization** (`src/main/index.js:291`).
-  Harmless today; it becomes a correctness hole the moment WP7 makes validation-on-save look
-  enforced, because a raw write skips the guard entirely. _Trigger:_ WP7 reaching blocking mode.
-  Recorded there too, so it cannot be missed from either end.
-
 - **Unskip the Tier-2 serializer round-trip suite** (`src/main/__tests__/xsdValidation.test.js:115`,
   `describe.skip`). `docs/xsd-validation-tier2-report.md` found the real regression count is 1, not
   14, and that one is already fixed — so this may be closer than the skip implies. _Trigger:_ the

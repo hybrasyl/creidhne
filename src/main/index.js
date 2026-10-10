@@ -48,7 +48,6 @@ import {
   namedEntitySchema,
   localizationEntitySchema,
   serverConfigEntitySchema,
-  writeFileArgsSchema,
   saveDialogArgsSchema,
   addCategoryBulkArgsSchema,
   spellbookApplyArgsSchema,
@@ -578,12 +577,6 @@ app.whenReady().then(async () => {
     }
   })
   ipc.handle('fs:readFile', (_, filePath) => readFile(validatePath(filePath)))
-  // `content` is validated because `fs.writeFile` COERCES it: an object reaches
-  // disk as `[object Object]`, over a real file, and the write reports success.
-  ipc.handle('fs:writeFile', (_, filePath, content) => {
-    parseOrLog(schemaCtx, 'fs:writeFile', writeFileArgsSchema, { filePath, content })
-    return writeFile(validatePath(filePath), content)
-  })
   // `rel` needs its own traversal check, for the same reason `fs:listSection`'s
   // `type` does: resolveClientPath joins it onto the client root internally, so
   // validating clientPath alone would still let a renderer-supplied `../..`

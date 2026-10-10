@@ -9,7 +9,6 @@ export {
   serverConfigEntitySchema
 } from './worldEntity.js'
 export {
-  writeFileArgsSchema,
   saveDialogArgsSchema,
   addCategoryBulkArgsSchema,
   spellbookApplyArgsSchema

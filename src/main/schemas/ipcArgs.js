@@ -10,8 +10,8 @@ import { z } from 'zod'
  * - **`fs.writeFile` coerces its data argument.** An object reaches disk as the
  *   nine characters `[object Object]`, over a real file the renderer named, and
  *   the write reports success. Nothing throws, then or later. This is the
- *   sharpest case in the app and it covers both `fs:writeFile` and
- *   `dialog:saveFile`.
+ *   sharpest case in the app. It covers `dialog:saveFile`, and it covered
+ *   `fs:writeFile` until HTOO-128 removed that channel.
  * - **`castable:addCategoryBulk` writes a category name into many castable
  *   files at once.** It checked `!categoryName` and `Array.isArray(names)`, which
  *   passes a number, an object, or an array holding objects. The category is
@@ -26,11 +26,6 @@ import { z } from 'zod'
 
 /** Text destined for `fs.writeFile`. A string, because everything else coerces. */
 const fileContent = z.string()
-
-export const writeFileArgsSchema = z.object({
-  filePath: z.string().min(1),
-  content: fileContent
-})
 
 export const saveDialogArgsSchema = z.object({
   defaultName: z.string().min(1),
