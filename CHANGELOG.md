@@ -41,20 +41,23 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-10-10
+
 ### Added
 
 - **Settings has a Check for updates button.** It is on the About card, next to the version. It tells you that Creidhne is up to date, that a newer version is available (with a link to the release), or why it could not check. On macOS, Creidhne → Check for Updates… goes to it.
-
 - **Creidhne has macOS window controls and a macOS menu.** On macOS the title bar shows the native close, minimize and zoom buttons at the left, and no logo or name. The menu bar has Creidhne's own commands: Settings (⌘,), Save (⌘S), Launch Taliesin, the reference panel, and every page in a Go menu (⌘1 to ⌘9 for the first nine). Electron's default menu, which had a Reload item that discarded unsaved edits, is gone. Windows and Linux do not change.
 
 ### Changed
 
 - **Creidhne reads its version list from the house version manifest.** The update notice read GitHub's releases API before. Now Creidhne reads one public file that lists the latest version of every house app. The notice still appears once, 10 seconds after start, and closing it still hides that version until a newer one is released.
-
 - **Creidhne runs on Electron 44.** Electron 41 gets no more security fixes.
 - **File and folder pickers open in the last folder you picked.** Electron 44 opens a picker in Downloads when the app gives it no folder. Each picker now opens in its own folder when it has one (for example, the world for Import Formula Library), then in the last folder you picked, then in the active world, then in Documents.
-- **The app no longer has a channel that writes any text to any world file.** Nothing in Creidhne used it. Every world file is now written by the save for its type, which serializes the data first.
-- **The formula budget modifier no longer offers Stepped Tiers.** The mode had no settings and no effect: a formula set to it used its coefficients unchanged, as with None, and nothing said so. It returns when it is built. A saved Stepped Tiers setting opens as None, which is how it computed.
+
+### Removed
+
+- **The channel that wrote any text to any world file is gone.** Nothing in Creidhne used it. Every world file is now written by the save for its type, which serializes the data first.
+- **The formula budget modifier does not offer Stepped Tiers.** The mode had no settings and no effect: a formula set to it used its coefficients unchanged, as with None, and nothing said so. It returns when it is built. A saved Stepped Tiers setting opens as None, which is how it computed.
 
 ### Fixed
 
