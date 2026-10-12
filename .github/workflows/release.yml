@@ -28,6 +28,13 @@ name: Release
 #
 # Fire it by hand when a change is platform-shaped:
 #   gh workflow run release.yml --ref <branch>
+
+# TAG DIRECTLY (Sabrael, 2026-10-12). Do not rehearse a release with
+# workflow_dispatch before you push the tag. The `release` job runs only after
+# every build job passes, so a tag run that fails publishes nothing, and the
+# fix is a re-tag. A rehearsal builds every platform twice to save that. Remote
+# e2e and testing are fine (ci.yml, where the repo has one); building the
+# release twice is not.
 on:
   push:
     tags:
