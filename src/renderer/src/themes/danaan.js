@@ -172,15 +172,6 @@ const danaanTheme = responsiveFontSizes(
             fontSize: '0.65rem',
             letterSpacing: '0.1em',
             border: '1px solid rgba(122,94,24,0.50)',
-            // The tint is for a plain chip only. On `root` it beat MUI's own fill
-            // for every colour, so a warning or a selected chip looked plain
-            // (HTOO-572).
-            '&.MuiChip-colorDefault': {
-              backgroundColor: 'rgba(118,93,27,0.22)',
-              // 4.64:1 on the tint over paperDark, the darkest surface; #7a5e18 was
-              // 4.02:1 on the page.
-              color: '#634c14'
-            },
             // A selected chip (color="primary", filled) takes the accent and its
             // label, as MUI's own fill does, and keeps the accent on hover.
             '&.MuiChip-filled.MuiChip-colorPrimary': {
@@ -190,7 +181,32 @@ const danaanTheme = responsiveFontSizes(
               '&.MuiChip-clickable:hover': { backgroundColor: '#765d1b' }
             }
           }
-        }
+        },
+        // The tint is for a plain chip only, as a variant on its colour. On `root`
+        // it beat MUI's own fill for every colour, so a warning or a selected chip
+        // looked plain. Under `&.MuiChip-colorDefault` (two classes) it beat a
+        // chip's own `sx` colour (one class), so a chip coloured in its sx looked
+        // plain (oghma, the website). A variant has one class and comes before the
+        // sx, so the sx wins (HTOO-572).
+        variants: [
+          {
+            props: { color: 'default' },
+            style: {
+              backgroundColor: 'rgba(118,93,27,0.22)',
+              // 4.64:1 on the tint over paperDark, the darkest surface; #7a5e18 was
+              // 4.02:1 on the page.
+              color: '#634c14'
+            }
+          },
+          {
+            // MUI hovers a clickable chip to a grey wash, and the label can fall
+            // below 4.5:1 on it. The tint stays, and the border takes the accent.
+            props: { color: 'default', clickable: true },
+            style: {
+              '&:hover': { backgroundColor: 'rgba(118,93,27,0.22)', borderColor: '#765d1b' }
+            }
+          }
+        ]
       },
       MuiPaginationItem: {
         styleOverrides: {
@@ -207,10 +223,13 @@ const danaanTheme = responsiveFontSizes(
             color: '#1a1008',
             border: '1px solid #765d1b',
             '&:hover': { backgroundColor: '#e8c060', borderColor: '#f0d070' },
+            // The selected page keeps its fill under the pointer: MUI hovers it to
+            // a grey wash (three classes), under a label picked for this fill.
             '&.Mui-selected': {
               backgroundColor: '#765d1b',
               borderColor: '#e8c060',
-              color: '#f5e8c0'
+              color: '#f5e8c0',
+              '&:hover': { backgroundColor: '#765d1b' }
             },
             '&.Mui-disabled': {
               backgroundColor: 'rgba(200,160,48,0.3)',

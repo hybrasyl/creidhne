@@ -35,13 +35,5 @@ export default [
         { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }
       ]
     }
-  },
-  {
-    // The house title bar is copied verbatim from the template's JS edition
-    // (HTOO-572), and the template's TypeScript keeps `import React`. The JSX uses
-    // it, so it is not dead here: this marks it as used in that file only, and the
-    // copy stays byte-identical to the template.
-    files: ['src/renderer/src/components/TitleBar.jsx'],
-    rules: { 'react/jsx-uses-react': 'error' }
   }
 ]

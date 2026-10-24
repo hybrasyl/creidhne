@@ -34,15 +34,17 @@ import {
   reportIssueOpenState
 } from '../store/appStore'
 import { useCompanionStatus } from '../hooks/useCompanionStatus'
-import { BUTTON, chromeKind } from './titleChrome'
+import { chromeKind, navButtonSx } from './titleChrome'
 
 // The nav bar: the second bar, under the title bar (AppTitleBar). It paints
 // secondary.main, as the title bar does, so its icons take the bar's text colour,
 // secondary.contrastText (HTOO-572). They drew text.button, which is a page
 // colour: on the Danaan and Mundanes bars it was below 2:1.
 //
-// The hover is the title bar's, from the house module (titleChrome.js), so both
-// bars hover alike. chromeContrast.test.jsx renders this bar in each theme.
+// Each button takes the house nav-bar style, `navButtonSx` from titleChrome.js:
+// the title bar's colours and hover, and the one house current-page mark (a
+// light wash and a ring in the bar's text colour). chromeContrast.test.jsx
+// renders this bar in each theme and measures its icons.
 //
 // The bar is opaque. It had `opacity: 0.9`, which mixed the AppBar's colour
 // (light in Danaan and Mundanes) into the bar and its icons.
@@ -68,26 +70,13 @@ const MainToolbar = ({ navigate }) => {
   const currentPage = useStoreValue(currentPageState)
   const themeName = useStoreValue(themeState)
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
-  const chrome = BUTTON[chromeKind(themeName)]
+  const kind = chromeKind(themeName)
 
-  const btnSx = {
-    WebkitAppRegion: 'no-drag',
-    mx: -0.5,
-    color: chrome.color,
-    ...navIconSx,
-    '&:hover': { backgroundColor: chrome.hoverBackground, color: chrome.hoverColor }
-  }
-
-  // The current page's button. It keeps the bar's text colour and adds a light
-  // wash and an underline in that colour. It drew secondary.dark, which is a dark
-  // shade in most themes now (1.2:1 to 1.5:1 on the bar).
-  const activeBtnSx = {
-    ...btnSx,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    boxShadow: 'inset 0 -2px 0 currentColor'
-  }
-
-  const pageSx = (page) => (currentPage === page ? activeBtnSx : btnSx)
+  // `mx` and the glyph stroke are Creidhne's layout, not colour. The current
+  // page drew secondary.dark, a dark shade on the bar in most themes (1.2:1 to
+  // 1.5:1); the house mark replaces it.
+  const btnSx = { ...navButtonSx(kind), mx: -0.5, ...navIconSx }
+  const pageSx = (page) => ({ ...navButtonSx(kind, currentPage === page), mx: -0.5, ...navIconSx })
 
   const handleLaunchTaliesin = async () => {
     await window.electronAPI.launchCompanion()

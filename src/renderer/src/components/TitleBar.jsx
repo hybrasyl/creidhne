@@ -18,9 +18,14 @@
 // - `children`: the app's own controls (page navigation, a status indicator),
 //   between the wordmark and the window buttons. Make an icon control a
 //   `ChromeButton`, so that it takes the bar's glyphs, colours and hover.
-import React, { createContext, useContext } from 'react'
+// - `wordmarkSize`: optional, the wordmark's font size (default `1.5rem`). A
+//   small fixed window (epona's 480 px) sets a smaller one here.
+import { createContext, useContext } from 'react'
 import { Toolbar, IconButton, Tooltip, Box, Typography } from '@mui/material'
 import { GLYPHS, LOGO_FILTER, TITLE_SHADOW, chromeKind, windowButtonSx } from './titleChrome'
+
+/** The wordmark's font size when the app sets none. */
+export const WORDMARK_SIZE = '1.5rem'
 
 const ChromeKindContext = createContext('keyline')
 
@@ -36,7 +41,15 @@ export function ChromeButton({ label, onClick, children }) {
   )
 }
 
-function TitleBar({ name, icon, theme, platform, controls, children }) {
+function TitleBar({
+  name,
+  icon,
+  theme,
+  platform,
+  controls,
+  children,
+  wordmarkSize = WORDMARK_SIZE
+}) {
   // The corporate themes take plain MUI window icons and a flat bar. The four
   // decorated themes take the game glyphs and the keyline.
   const kind = chromeKind(theme)
@@ -98,7 +111,7 @@ function TitleBar({ name, icon, theme, platform, controls, children }) {
                 // breakpoint on resize. The doubled-class `&&` outranks those media
                 // queries to pin the size at every width. (variant="h6" keeps its
                 // Cinzel font.)
-                '&&': { fontSize: '1.5rem' },
+                '&&': { fontSize: wordmarkSize },
                 color: 'secondary.contrastText',
                 textShadow: TITLE_SHADOW[kind]
               }}

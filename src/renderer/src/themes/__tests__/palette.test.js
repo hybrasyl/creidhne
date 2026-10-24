@@ -41,6 +41,21 @@ function accentFills(node, main, path = []) {
 }
 
 /**
+ * The style of the theme's plain-chip variant: `{ color: 'default' }`, or with
+ * `clickable` the hover variant. The tint is a variant, not a root rule, so a
+ * chip's own sx colour beats it (HTOO-572).
+ */
+function plainChip(theme, clickable) {
+  const variants = theme.components?.MuiChip?.variants ?? []
+  return variants.find(
+    (v) =>
+      v.props.color === 'default' &&
+      Boolean(v.props.clickable) === clickable &&
+      Object.keys(v.props).length === (clickable ? 2 : 1)
+  )?.style
+}
+
+/**
  * The surfaces that apps draw text on, each opaque: the page, paper over the
  * page, and paperDark over the page. paperDark is the panel and tooltip
  * surface (dagda's sidebar, midir's tooltips and log panel). danaan's text on
@@ -177,16 +192,65 @@ describe('theme palettes', () => {
       expect(contrast(button.label, button.hover)).toBeGreaterThanOrEqual(4.5)
     })
 
-    it.each(['button', 'headline', 'link'])('text.%s reads on every surface', (key) => {
-      // text.button: headings on the page and on cards. A palette without it
-      // makes every `color: 'text.button'` an invalid colour, which the browser
-      // drops (see themes/augmentation.ts). The bars use secondary.contrastText.
-      // text.headline: the website's commonest token (73 uses), midir's tooltip
-      // names. text.link: links in every app. Neither had a check before.
-      const c = p.text[key]
-      expect(c, `text.${key} is set`).toMatch(/^#[0-9a-f]{6}$/i)
-      for (const [name, surface] of surfaces(p))
-        expect(contrast(c, surface), name).toBeGreaterThanOrEqual(4.5)
+    it.each(['button', 'headline', 'link', 'linkHover', 'visited'])(
+      'text.%s reads on every surface',
+      (key) => {
+        // text.button: headings on the page and on cards. A palette without it
+        // makes every `color: 'text.button'` an invalid colour, which the browser
+        // drops (see themes/augmentation.ts). The bars use secondary.contrastText.
+        // text.headline: the website's commonest token (73 uses), midir's tooltip
+        // names. text.link: links in every app. Neither had a check before.
+        // text.linkHover and text.visited are the same links, hovered and
+        // visited: mundanes' visited link was 3.92:1 (the website, HTOO-572).
+        const c = p.text[key]
+        expect(c, `text.${key} is set`).toMatch(/^#[0-9a-f]{6}$/i)
+        for (const [name, surface] of surfaces(p))
+          expect(contrast(c, surface), name).toBeGreaterThanOrEqual(4.5)
+      }
+    )
+
+    it('a plain <a> link reads at rest, hovered and visited, on every surface', () => {
+      // Markdown and rendered HTML draw plain `<a>` links, which MUI's Link
+      // override does not reach. hybrasyl's visited `a` was 2.35:1 and chadul's
+      // 3.62:1; mundanes and dubhaimid had no rule, so links were browser blue
+      // (1.8:1 on dubhaimid). A browser does not report :visited colours to
+      // script, so the gallery cannot measure them; this reads the rule.
+      const baseline = theme.components?.MuiCssBaseline?.styleOverrides
+      const a = baseline?.a
+      expect(a, 'the plain link rule').toBeDefined()
+      const states = {
+        rest: a.color,
+        hover: a['&:hover']?.color,
+        visited: a['&:visited']?.color
+      }
+      for (const [state, c] of Object.entries(states)) {
+        expect(c, `${state} is set`).toMatch(/^#[0-9a-f]{6}$/i)
+        for (const [name, surface] of surfaces(p))
+          expect(contrast(c, surface), `${state} on ${name}`).toBeGreaterThanOrEqual(4.5)
+      }
+    })
+
+    it('a page button reads at rest, hovered and selected', () => {
+      // The pagination fills are opaque, and the label is normal-sized text.
+      // hybrasyl's selected page was 2.61:1 and grinneal's plain page 2.45:1,
+      // each with a #000 keyline that the house does not count (the website,
+      // HTOO-572). mundanes and dubhaimid draw MUI's own pagination.
+      const root = theme.components?.MuiPaginationItem?.styleOverrides?.root
+      if (!root) return
+      const hover = root['&:hover']
+      const selected = root['&.Mui-selected']
+      const label = root.color
+      const fills = [
+        ['rest', label, root.backgroundColor],
+        ['hovered', hover.color ?? label, hover.backgroundColor],
+        ['selected', selected.color, selected.backgroundColor],
+        // MUI hovers a selected page to a grey wash, so the theme keeps the fill.
+        ['selected, hovered', selected.color, selected['&:hover']?.backgroundColor]
+      ]
+      for (const [state, c, fill] of fills) {
+        expect(fill, `${state} fill is set`).toMatch(/^#[0-9a-f]{6}$/i)
+        expect(contrast(c, fill), `${state}: ${c} on ${fill}`).toBeGreaterThanOrEqual(4.5)
+      }
     })
 
     it('secondary.contrastText reads on secondary.main, the bars', () => {
@@ -206,12 +270,16 @@ describe('theme palettes', () => {
       // The plain chip is the commonest chip, and its tint is translucent, so
       // the label is measured on the tint over the page and over paper. danaan's
       // `#7a5e18` was 4.02:1 on the page (corvath, HTOO-572).
-      const root = theme.components?.MuiChip?.styleOverrides?.root ?? {}
-      const plain = root['&.MuiChip-colorDefault']
-      expect(plain, 'the plain chip rule').toBeDefined()
+      const plain = plainChip(theme, false)
+      expect(plain, 'the plain chip variant').toBeDefined()
       const { backgroundColor: tint, color: label } = plain
       for (const [name, surface] of surfaces(p))
         expect(contrast(label, blend(tint, surface)), name).toBeGreaterThanOrEqual(4.5)
+      // A clickable plain chip keeps its tint on hover, so the label still reads.
+      // MUI's own hover is a grey wash, and the label is not held to it.
+      const hover = plainChip(theme, true)?.['&:hover'] ?? {}
+      expect(hover.backgroundColor, 'the hover keeps the tint').toBe(tint)
+      expect(hover.borderColor, 'the hover shows in the border').toBeDefined()
     })
 
     it('a selected list item reads on its tint, on every surface', () => {

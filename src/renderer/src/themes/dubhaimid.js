@@ -139,13 +139,6 @@ const dubhaimidTheme = responsiveFontSizes(
         styleOverrides: {
           root: {
             border: '1px solid rgba(255,255,255,0.12)',
-            // The tint is for a plain chip only. On `root` it beat MUI's own fill
-            // for every colour, so a warning or a selected chip looked plain
-            // (HTOO-572).
-            '&.MuiChip-colorDefault': {
-              backgroundColor: '#3e3e42',
-              color: '#c4c8cc'
-            },
             // A selected chip (color="primary", filled) takes the accent and its
             // label, as MUI's own fill does, and keeps the accent on hover.
             '&.MuiChip-filled.MuiChip-colorPrimary': {
@@ -155,7 +148,28 @@ const dubhaimidTheme = responsiveFontSizes(
               '&.MuiChip-clickable:hover': { backgroundColor: '#628ec3' }
             }
           }
-        }
+        },
+        // The tint is for a plain chip only, as a variant on its colour. On `root`
+        // it beat MUI's own fill for every colour, so a warning or a selected chip
+        // looked plain. Under `&.MuiChip-colorDefault` (two classes) it beat a
+        // chip's own `sx` colour (one class), so a chip coloured in its sx looked
+        // plain (oghma, the website). A variant has one class and comes before the
+        // sx, so the sx wins (HTOO-572).
+        variants: [
+          {
+            props: { color: 'default' },
+            style: {
+              backgroundColor: '#3e3e42',
+              color: '#c4c8cc'
+            }
+          },
+          {
+            // MUI hovers a clickable chip to a grey wash, and the label can fall
+            // below 4.5:1 on it. The tint stays, and the border takes the accent.
+            props: { color: 'default', clickable: true },
+            style: { '&:hover': { backgroundColor: '#3e3e42', borderColor: '#628ec3' } }
+          }
+        ]
       },
       MuiTabs: { styleOverrides: { indicator: { backgroundColor: '#628ec3' } } },
       MuiTab: {
@@ -183,6 +197,19 @@ const dubhaimidTheme = responsiveFontSizes(
             '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.23)' },
             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.5)' },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#628ec3' }
+          }
+        }
+      },
+      // Plain `<a>` links (Markdown, rendered HTML) take the link colours too.
+      // With no rule they were browser blue: 1.8:1 on dubhaimid (the website,
+      // HTOO-572).
+      MuiCssBaseline: {
+        styleOverrides: {
+          a: {
+            color: '#628ec3',
+            textDecoration: 'none',
+            '&:hover': { color: '#82a9d6' },
+            '&:visited': { color: '#9a8bc4' }
           }
         }
       },

@@ -87,6 +87,38 @@ export function windowButtonSx(kind, close = false, hovered = false) {
   }
 }
 
+/**
+ * The current page on a nav bar: a row of icon buttons on `secondary.main`,
+ * under the title bar (creidhne, epona, balor, taliesin). Each app drew its own
+ * mark, and each failed on a dark bar: `secondary.dark` or `warning.main` on
+ * the bar was 1.1:1 to 1.5:1 (HTOO-572). The current button keeps the bar's
+ * text colour, on a light wash, with a ring inside its edge in that colour. A
+ * ring fits a round button and a square one.
+ */
+export const CURRENT = {
+  background: 'rgba(255,255,255,0.12)',
+  ring: 'inset 0 0 0 1.5px currentColor'
+}
+
+/**
+ * The `sx` of a nav-bar button, with an app's own icon (an MUI icon, not a
+ * window glyph). `current` marks the page that shows. `hovered` draws the hover
+ * at rest, for the gallery.
+ */
+export function navButtonSx(kind, current = false, hovered = false) {
+  const c = BUTTON[kind]
+  const hover = { backgroundColor: c.hoverBackground, color: c.hoverColor }
+  return {
+    WebkitAppRegion: 'no-drag',
+    // The DA themes colour every MUI icon (`MuiSvgIcon`: secondary.dark in
+    // hybrasyl, primary.main in danaan), and on the bar that was 1.0:1 to 4:1.
+    // The icon takes the button's colour.
+    '& .MuiSvgIcon-root': { color: 'inherit' },
+    ...(current ? { backgroundColor: CURRENT.background, boxShadow: CURRENT.ring } : {}),
+    ...(hovered ? hover : { color: c.color, '&:hover': hover })
+  }
+}
+
 /** The window glyphs: MUI icons on the plain bar, game glyphs on the others. */
 export const GLYPHS = {
   minimize: { plain: RemoveIcon, decorated: GiContract },

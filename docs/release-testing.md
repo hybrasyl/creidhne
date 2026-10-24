@@ -26,7 +26,7 @@ Use a dev build or a packaged build. Do each check in each of the six themes. Se
 
 - [ ] **The title bar.** Danaan has a bronze bar and Grinneal a brown bar. On both, the name, the logo and the window buttons are light, with a black outline. Hybrasyl and Chadul also have light text with a black outline. Mundanes and Dubhaimid have flat bars with no outline. Nothing on any bar is engraved. The name and the three window buttons are easy to read.
 - [ ] **The close button.** Under the pointer, the close button turns red in every theme.
-- [ ] **The nav bar.** The icons are easy to read on the bar. The current page has a light background and a line below its icon. Under the pointer, an icon has the same highlight as the window buttons.
+- [ ] **The nav bar.** The icons are easy to read on the bar. The current page has a light background and a ring around its button. Under the pointer, an icon has the same highlight as the window buttons.
 - [ ] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, **Clear** on a Settings path card and **Delete** in the delete confirmation of a file list show the error colour.
 - [ ] **A coloured chip.** The **Active** chip on a library and the formula category chips show their colour.
 - [ ] **A filled button and a hover.** A contained button changes under the pointer.

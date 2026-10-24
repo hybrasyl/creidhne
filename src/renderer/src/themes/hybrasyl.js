@@ -163,14 +163,6 @@ const hybrasylTheme = responsiveFontSizes(
             fontSize: '0.65rem',
             letterSpacing: '0.1em',
             border: '1px solid rgba(58,158,144,0.3)',
-            // The tint is for a plain chip only. On `root` it beat MUI's own fill
-            // for every colour, so a warning or a selected chip looked plain
-            // (HTOO-572).
-            '&.MuiChip-colorDefault': {
-              backgroundColor: 'rgba(58,158,144,0.14)',
-              // 4.65:1 on the tint over the page; #3a9e90 was 4.49:1.
-              color: '#3ba193'
-            },
             // A selected chip (color="primary", filled) takes the accent and its
             // label, as MUI's own fill does, and keeps the accent on hover.
             '&.MuiChip-filled.MuiChip-colorPrimary': {
@@ -180,7 +172,31 @@ const hybrasylTheme = responsiveFontSizes(
               '&.MuiChip-clickable:hover': { backgroundColor: '#4d84d1' }
             }
           }
-        }
+        },
+        // The tint is for a plain chip only, as a variant on its colour. On `root`
+        // it beat MUI's own fill for every colour, so a warning or a selected chip
+        // looked plain. Under `&.MuiChip-colorDefault` (two classes) it beat a
+        // chip's own `sx` colour (one class), so a chip coloured in its sx looked
+        // plain (oghma, the website). A variant has one class and comes before the
+        // sx, so the sx wins (HTOO-572).
+        variants: [
+          {
+            props: { color: 'default' },
+            style: {
+              backgroundColor: 'rgba(58,158,144,0.14)',
+              // 4.65:1 on the tint over the page; #3a9e90 was 4.49:1.
+              color: '#3ba193'
+            }
+          },
+          {
+            // MUI hovers a clickable chip to a grey wash, and the label can fall
+            // below 4.5:1 on it. The tint stays, and the border takes the accent.
+            props: { color: 'default', clickable: true },
+            style: {
+              '&:hover': { backgroundColor: 'rgba(58,158,144,0.14)', borderColor: '#3a9e90' }
+            }
+          }
+        ]
       },
       MuiPaginationItem: {
         styleOverrides: {
@@ -196,11 +212,18 @@ const hybrasylTheme = responsiveFontSizes(
             backgroundColor: '#1e5e56',
             color: '#f0e6cc',
             border: '1px solid #3a9e90',
-            '&:hover': { backgroundColor: '#3a9e90', borderColor: '#5ecfbe' },
+            // A light label hovers darker (9.25:1). #3a9e90 was 2.61:1 under it.
+            '&:hover': { backgroundColor: '#14403b', borderColor: '#5ecfbe' },
+            // The selected page is the accent with its label, as a selected chip
+            // is (4.66:1). The keyline is for light text, so it goes.
+            // The selected page keeps its fill under the pointer: MUI hovers it to
+            // a grey wash (three classes), under a label picked for this fill.
             '&.Mui-selected': {
-              backgroundColor: '#3a9e90',
-              borderColor: '#5ecfbe',
-              color: '#f0e6cc'
+              backgroundColor: '#4d84d1',
+              borderColor: '#7fa9e0',
+              color: '#0d182f',
+              textShadow: 'none',
+              '&:hover': { backgroundColor: '#4d84d1' }
             },
             '&.Mui-disabled': {
               backgroundColor: 'rgba(30,94,86,0.3)',
@@ -257,7 +280,8 @@ const hybrasylTheme = responsiveFontSizes(
             color: '#3a9e90',
             textDecoration: 'none',
             '&:hover': { color: '#5ecfbe' },
-            '&:visited': { color: '#1e5e56' }
+            // text.visited: 4.63:1 on the page. #1e5e56 was 2.35:1.
+            '&:visited': { color: '#399086' }
           }
         }
       },

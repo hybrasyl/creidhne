@@ -171,13 +171,6 @@ const chadulTheme = responsiveFontSizes(
             fontSize: '0.65rem',
             letterSpacing: '0.1em',
             border: '1px solid rgba(154,122,208,0.4)',
-            // The tint is for a plain chip only. On `root` it beat MUI's own fill
-            // for every colour, so a warning or a selected chip looked plain
-            // (HTOO-572).
-            '&.MuiChip-colorDefault': {
-              backgroundColor: 'rgba(74,40,112,0.22)',
-              color: '#c0a0e8'
-            },
             // A selected chip (color="primary", filled) takes the accent and its
             // label, as MUI's own fill does, and keeps the accent on hover.
             '&.MuiChip-filled.MuiChip-colorPrimary': {
@@ -187,7 +180,30 @@ const chadulTheme = responsiveFontSizes(
               '&.MuiChip-clickable:hover': { backgroundColor: '#42874d' }
             }
           }
-        }
+        },
+        // The tint is for a plain chip only, as a variant on its colour. On `root`
+        // it beat MUI's own fill for every colour, so a warning or a selected chip
+        // looked plain. Under `&.MuiChip-colorDefault` (two classes) it beat a
+        // chip's own `sx` colour (one class), so a chip coloured in its sx looked
+        // plain (oghma, the website). A variant has one class and comes before the
+        // sx, so the sx wins (HTOO-572).
+        variants: [
+          {
+            props: { color: 'default' },
+            style: {
+              backgroundColor: 'rgba(74,40,112,0.22)',
+              color: '#c0a0e8'
+            }
+          },
+          {
+            // MUI hovers a clickable chip to a grey wash, and the label can fall
+            // below 4.5:1 on it. The tint stays, and the border takes the accent.
+            props: { color: 'default', clickable: true },
+            style: {
+              '&:hover': { backgroundColor: 'rgba(74,40,112,0.22)', borderColor: '#9a7ad0' }
+            }
+          }
+        ]
       },
       MuiPaginationItem: {
         styleOverrides: {
@@ -204,10 +220,15 @@ const chadulTheme = responsiveFontSizes(
             color: '#a8d8a0',
             border: '1px solid #42874d',
             '&:hover': { backgroundColor: '#4a2870', borderColor: '#4ab858' },
+            // The keyline is for light text; the selected label is dark.
+            // The selected page keeps its fill under the pointer: MUI hovers it to
+            // a grey wash (three classes), under a label picked for this fill.
             '&.Mui-selected': {
               backgroundColor: '#42874d',
               borderColor: '#4ab858',
-              color: '#020804'
+              color: '#020804',
+              textShadow: 'none',
+              '&:hover': { backgroundColor: '#42874d' }
             },
             '&.Mui-disabled': {
               backgroundColor: 'rgba(46,26,74,0.3)',
@@ -264,7 +285,8 @@ const chadulTheme = responsiveFontSizes(
             color: '#c0a0e8',
             textDecoration: 'none',
             '&:hover': { color: '#d4b8f0' },
-            '&:visited': { color: '#7a5a9a' }
+            // text.visited: 5.84:1 on the page. #7a5a9a was 3.62:1.
+            '&:visited': { color: '#9a7ad0' }
           }
         }
       },

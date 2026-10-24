@@ -50,7 +50,7 @@ first section written to the rules above.
 - **The Danaan and Grinneal title bars are dark.** The Danaan bars are bronze and the Grinneal bars are brown. The bar text and the icons are light, with a black outline, as on Hybrasyl and Chadul.
 - **The accent colour and the status colours are easy to read as text.** In every theme, the accent colour and the error, warning, info and success colours now have a contrast of 4.5:1 or more against the page, against cards and against dark panels. Chadul, Danaan, Mundanes and Dubhaimid have new accent colours. Danaan and Mundanes have darker status colours, so that they show clearly on the light page. In Chadul and Dubhaimid, filled buttons and selected chips now have dark labels.
 - **The title bar is the house title bar.** It is the same in each house app. The logo is smaller, and the window buttons have the same highlight in each theme.
-- **The nav bar marks the current page with a line.** The icon of the current page has the colour of the other icons, on a light background, with a line below it. Under the pointer, a nav icon has the same highlight as the window buttons.
+- **The nav bar marks the current page with the house mark.** The icon of the current page has the colour of the other icons, on a light background, with a ring around the button. The other house apps that have a nav bar use the same mark. Under the pointer, a nav icon has the same highlight as the window buttons.
 - **On the Formulas page, the statuses that use a formula are filled chips.** They are in the colour of the bars, and the castables stay outlined.
 
 ### Fixed
@@ -60,6 +60,7 @@ first section written to the rules above.
 - **Destructive buttons show their colour.** In Hybrasyl, Chadul, Danaan and Grinneal, every button had the theme's button colour, so **Clear**, **Delete** and **Discard** looked like any other button. They now show the error colour.
 - **The close button on the title bar turns red under the pointer.** In Hybrasyl, Chadul, Danaan and Grinneal, it showed a yellow skull on cyan, which was almost not visible.
 - **The update notice shows its link, its close button and its icon in the colour of its text.** Before, the **View release** link and the close button used the accent colour on the accent fill. Labels on filled chips and filled alerts now have enough contrast against their fill.
+- **Mundanes: a link is easy to read after you open it.** A visited link had too little contrast against the page. In every theme, a link now has a contrast of 4.5:1 or more at rest, under the pointer and after you open it.
 - **On the Dashboard, the counts that open a page are easy to read.** They used a light shade of the accent colour, which had too little contrast on the light pages of Danaan and Mundanes. They now use the accent colour.
 - **The selected theme in Settings has a clear mark in every theme.** The border and the check mark used a light shade of the accent colour, which was near the page colour in Danaan.
 

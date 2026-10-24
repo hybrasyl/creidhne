@@ -56,7 +56,8 @@ const mundanesTheme = responsiveFontSizes(
         headline: '#1a1a1a',
         link: '#13589d',
         linkHover: '#0f477f',
-        visited: '#6a4fb0',
+        // 4.99:1 on the page. #6a4fb0 was 3.92:1.
+        visited: '#5a3f9e',
         // Headings on the page and on cards. White was 1.6:1 on the grey page and
         // 1:1 on the white cards (HTOO-355). The navy bars use secondary.contrastText.
         button: '#1a1a1a',
@@ -135,13 +136,6 @@ const mundanesTheme = responsiveFontSizes(
         styleOverrides: {
           root: {
             border: '1px solid rgba(0,0,0,0.12)',
-            // The tint is for a plain chip only. On `root` it beat MUI's own fill
-            // for every colour, so a warning or a selected chip looked plain
-            // (HTOO-572).
-            '&.MuiChip-colorDefault': {
-              backgroundColor: '#eceff1',
-              color: '#455a64'
-            },
             // A selected chip (color="primary", filled) takes the accent and its
             // label, as MUI's own fill does, and keeps the accent on hover.
             '&.MuiChip-filled.MuiChip-colorPrimary': {
@@ -151,7 +145,28 @@ const mundanesTheme = responsiveFontSizes(
               '&.MuiChip-clickable:hover': { backgroundColor: '#13589d' }
             }
           }
-        }
+        },
+        // The tint is for a plain chip only, as a variant on its colour. On `root`
+        // it beat MUI's own fill for every colour, so a warning or a selected chip
+        // looked plain. Under `&.MuiChip-colorDefault` (two classes) it beat a
+        // chip's own `sx` colour (one class), so a chip coloured in its sx looked
+        // plain (oghma, the website). A variant has one class and comes before the
+        // sx, so the sx wins (HTOO-572).
+        variants: [
+          {
+            props: { color: 'default' },
+            style: {
+              backgroundColor: '#eceff1',
+              color: '#455a64'
+            }
+          },
+          {
+            // MUI hovers a clickable chip to a grey wash, and the label can fall
+            // below 4.5:1 on it. The tint stays, and the border takes the accent.
+            props: { color: 'default', clickable: true },
+            style: { '&:hover': { backgroundColor: '#eceff1', borderColor: '#13589d' } }
+          }
+        ]
       },
       MuiTabs: { styleOverrides: { indicator: { backgroundColor: '#13589d' } } },
       MuiTab: {
@@ -180,6 +195,19 @@ const mundanesTheme = responsiveFontSizes(
             '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.23)' },
             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(0,0,0,0.5)' },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#13589d' }
+          }
+        }
+      },
+      // Plain `<a>` links (Markdown, rendered HTML) take the link colours too.
+      // With no rule they were browser blue: 1.8:1 on dubhaimid (the website,
+      // HTOO-572).
+      MuiCssBaseline: {
+        styleOverrides: {
+          a: {
+            color: '#13589d',
+            textDecoration: 'none',
+            '&:hover': { color: '#0f477f' },
+            '&:visited': { color: '#5a3f9e' }
           }
         }
       },
