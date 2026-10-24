@@ -4,6 +4,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined'
 import NewReleasesOutlinedIcon from '@mui/icons-material/NewReleasesOutlined'
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
 import {
   useStoreState,
   useSetStoreValue,
@@ -19,6 +20,7 @@ import WhatsNewDialog from '../components/WhatsNewDialog'
 import { useMenuRequest } from '../hooks/useMenuRequest'
 import UpdateCheckButton from '../components/UpdateCheckButton'
 import ThemePicker from '../components/ThemePicker'
+import ThemeGallery from './ThemeGallery'
 
 // Right-sized WebP, hashed into the bundle by Vite (shared with the toolbar).
 import creidhneLogo from '@renderer/assets/creidhne.webp'
@@ -35,6 +37,10 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [whatsNewOpen, setWhatsNewOpen] = useState(false)
+  // The theme gallery (HTOO-572) shows in place of the Settings cards, and its
+  // Back button returns here. It is not a page of its own: it has no nav button
+  // and no Go-menu entry, because it is for a review of the themes by eye.
+  const [galleryOpen, setGalleryOpen] = useState(false)
   // The macOS menu's About and What's New go to this page and leave a request.
   useMenuRequest('about', () => setAboutOpen(true))
   useMenuRequest('whatsNew', () => setWhatsNewOpen(true))
@@ -43,6 +49,23 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
   useEffect(() => {
     window.electronAPI.getAppVersion().then(setVersion)
   }, [])
+
+  // The macOS menu can ask for About or What's New while the gallery shows, so
+  // the dialogs stay mounted in both views.
+  const dialogs = (
+    <>
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <WhatsNewDialog open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
+    </>
+  )
+
+  if (galleryOpen)
+    return (
+      <>
+        <ThemeGallery onBack={() => setGalleryOpen(false)} />
+        {dialogs}
+      </>
+    )
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
@@ -64,9 +87,18 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           </Typography>
           <Typography variant="body2" sx={cardDescSx}>
             Pick a theme. The four stylized themes get gamified window chrome; Mundanes and
-            Dubhaimid are flat/corporate.
+            Dubhaimid are flat/corporate. The theme gallery shows each type of control in the theme
+            that you use.
           </Typography>
           <ThemePicker value={theme} onChange={setTheme} />
+          <Button
+            variant="outlined"
+            startIcon={<PaletteOutlinedIcon />}
+            onClick={() => setGalleryOpen(true)}
+            sx={{ mt: 2, alignSelf: 'flex-start' }}
+          >
+            Theme gallery
+          </Button>
         </Paper>
 
         {/* Content Libraries — component provides its own heading + help tooltip */}
@@ -172,8 +204,7 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
           </Box>
         </Paper>
       </Box>
-      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
-      <WhatsNewDialog open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
+      {dialogs}
     </Box>
   )
 }

@@ -29,6 +29,11 @@ import { GO_PAGES } from '../src/shared/appMenu.js'
 
 const PAGES = [...GO_PAGES.filter(Boolean), { page: 'settings', label: 'Settings' }]
 
+// The views that are not nav pages: each has no nav button, so it is opened from
+// the page that holds its button. Settings → Appearance opens the theme gallery
+// (HTOO-572). Add a view here when it is not in GO_PAGES.
+const SUBPAGES = [{ from: 'Settings', button: 'Theme gallery', testId: 'theme-gallery-page' }]
+
 test.describe('every nav page opens', () => {
   let electronApp
 
@@ -60,6 +65,13 @@ test.describe('every nav page opens', () => {
 
       // And it rendered without throwing. Named per page so a failure says which.
       await expect(boundary, `${label} went to the error boundary`).toHaveCount(0)
+    }
+
+    for (const { from, button, testId } of SUBPAGES) {
+      await page.getByRole('button', { name: from, exact: true }).first().click()
+      await page.getByRole('button', { name: button, exact: true }).click()
+      await expect(page.getByTestId(testId), `${testId} did not render`).toBeVisible()
+      await expect(boundary, `${testId} went to the error boundary`).toHaveCount(0)
     }
   })
 })
