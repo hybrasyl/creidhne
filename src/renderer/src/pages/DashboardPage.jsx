@@ -62,7 +62,8 @@ function StatCard({ label, count, page, tooltip, onNavigate, onLaunch }) {
     <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
       <Typography
         variant="h5"
-        color={interactive ? 'primary.light' : 'text.primary'}
+        // primary.main, not .light: .light cannot be text on a light page (HTOO-572).
+        color={interactive ? 'primary.main' : 'text.primary'}
         sx={{ fontWeight: 'bold' }}
       >
         {count.toLocaleString()}
