@@ -30,6 +30,7 @@ a real desktop session, so no virtual display (xvfb) is needed.
 - **`settings-persistence.spec.js`** — change theme via the IPC bridge → wait for the write to
   hit disk → relaunch same userData → assert it hydrated. The full renderer → IPC → disk →
   reload loop.
+- **`theme-gallery.spec.js`** — opens Settings → Appearance → Theme gallery, selects each of the six themes, and reads every measured contrast. It fails on a sample it cannot measure, and writes each low ratio to `theme-gallery.json` in its `test-results/` folder (HTOO-572).
 
 ## Adapting / extending
 
