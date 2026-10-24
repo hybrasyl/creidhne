@@ -294,7 +294,7 @@ function createWindow() {
     show: false,
     autoHideMenuBar: true,
     // macOS keeps the native stoplights, inset into Creidhne's own title bar, which
-    // MainToolbar leaves empty there. `y: 10` centres them in its 36 px bar.
+    // AppTitleBar leaves empty there. `y: 10` centres them in its 36 px bar.
     // Windows and Linux stay frameless with the renderer's buttons.
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 12, y: 10 } }
