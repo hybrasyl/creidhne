@@ -1,7 +1,9 @@
 ---@meta
 ---@diagnostic disable
--- Hybrasyl magic globals — available in all script contexts.
+-- Hybrasyl magic globals. Each entry says which scripts the server sets it in.
 -- Types these so sumneko can provide IntelliSense on source.XXX, world.XXX, etc.
+-- Hand-written: the generator does not produce this file. Checked against
+-- ScriptEnvironment.Create and env.Add in the server (HTOO-576).
 
 ---The current player interacting with the NPC/item/castable.
 ---In dialog callbacks, this is the player who triggered the dialog.
@@ -9,11 +11,14 @@
 ---@type HybrasylUser
 source = {}
 
----The entity that cast the spell/skill. Available in castable scripts.
----@type HybrasylUser
+---Only in reactor scripts: a snapshot of the creature that placed the reactor.
+---Castable scripts do not get it; there the caster is `source`.
+---@type CreatureSnapshot
 caster = {}
 
----The entity that invoked/used the item or reactor. Available in item/reactor scripts.
+---The server does not set this. In a reactor script, the creature that
+---triggered the reactor is `target`; in an NPC or item script, the player is `source`.
+---@deprecated
 ---@type HybrasylUser
 invoker = {}
 
@@ -49,7 +54,8 @@ castable = {}
 ---@type ScriptLogger
 logger = {}
 
----The map the script is executing on. Available in map/reactor scripts.
+---The server does not set this. Use the `Map` of `origin` or `source`.
+---@deprecated
 ---@type HybrasylMap
 map = {}
 
@@ -62,13 +68,26 @@ Element = {}
 ---@type string
 player_response = ""
 
+---In an options dialog callback: the number of the option the player chose,
+---as a string. `player_response` holds the option's text.
+---@type string
+player_selection = ""
+
 ---The name of the currently executing script file (without path or extension).
 ---@type string
 this_script = ""
 
----The text from a player's /say command, available in NPC OnSay handlers.
+---In OnHear handlers: the text that the speaker said or shouted.
 ---@type string
 text = ""
+
+---In OnHear handlers: true when the speaker shouted.
+---@type boolean
+shout = false
+
+---In OnHear handlers: the whole spoken event.
+---@type SpokenEvent
+event = {}
 
 ---The damage event object, injected into OnDamage() creature script handlers.
 ---Contains Amount, Element, and combat log details.
