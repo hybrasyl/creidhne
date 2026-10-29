@@ -1,44 +1,71 @@
 import { describe, it, expect } from 'vitest'
 import { parseElementTableXml, serializeElementTableXml } from '../elementTableXml.js'
+import { setPair } from '../../shared/elementTable.js'
 import xml2js from 'xml2js'
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
+// The element table parser and serializer (HTOO-581). A save writes back every
+// attribute and pair that the file declared, and no pair that it left out.
+// Multipliers stay the file's text: a percentage model saved 1.075 as 1.07.
 
-// XML always uses floats (1.0, 0.8, 1.5). The editor represents these as
-// integers for simplicity: 100 = 1.0, 80 = 0.8, 150 = 1.5, etc.
-// The parser converts floats → integers; the serializer converts back.
-// The XML default for a missing target is 1 (float), which the parser
-// represents as 100 (integer).
+const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
-const FULL_XML = `<?xml version="1.0"?>
-<!-- Comment: Test element table -->
-<ElementTable xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="TestTable">
+// The old format, as world and ceridwen hold it: no <Elements>, every pair.
+const LEGACY_XML = `<?xml version="1.0"?>
+<ElementTable xmlns="${XMLNS}" Name="TestTable">
+  <!-- Comment: Test element table -->
   <Source Element="Fire">
-    <Target Element="Fire" Multiplier="1" />
-    <Target Element="Wind" Multiplier="0.8" />
-    <Target Element="Earth" Multiplier="1.5" />
+    <Target Element="Fire" Multiplier="1"/>
+    <Target Element="Wind" Multiplier="0.8"/>
+    <Target Element="Earth" Multiplier="1.075"/>
   </Source>
   <Source Element="Wind">
-    <Target Element="Fire" Multiplier="1.2" />
-    <Target Element="Wind" Multiplier="1" />
-    <Target Element="Earth" Multiplier="0.9" />
+    <Target Element="Fire" Multiplier="1.2"/>
+    <Target Element="Wind" Multiplier="1"/>
+    <Target Element="Earth" Multiplier="0.9"/>
   </Source>
   <Source Element="Earth">
-    <Target Element="Fire" Multiplier="0.8" />
-    <Target Element="Wind" Multiplier="1" />
-    <Target Element="Earth" Multiplier="1" />
+    <Target Element="Fire" Multiplier="0.8"/>
+    <Target Element="Wind" Multiplier="1"/>
+    <Target Element="Earth" Multiplier="1"/>
   </Source>
+</ElementTable>`
+
+// A sparse table: a table default, and pairs left out.
+const SPARSE_XML = `<?xml version="1.0"?>
+<ElementTable xmlns="${XMLNS}" Name="Sparse" DefaultMultiplier="0.9">
+  <Source Element="Fire">
+    <Target Element="Wind" Multiplier="1.2"/>
+  </Source>
+  <Source Element="Wind">
+    <Target Element="Earth" Multiplier="1.1"/>
+  </Source>
+</ElementTable>`
+
+// The registry format, from the HXML-24 design's example.
+const REGISTRY_XML = `<?xml version="1.0"?>
+<ElementTable xmlns="${XMLNS}" Name="HybElements2" DefaultMultiplier="1.0">
+  <Elements>
+    <Element Key="Force" Id="0" RetailId="0" Default="true" Ivernic="treas"/>
+    <Element Key="Fire" Id="1" RetailId="1" Ivernic="srad"/>
+    <Element Key="Nature" Id="17" RetailId="7" Name="Nature" Ivernic="dúl"/>
+    <Element Key="Undead" Id="9" RetailId="9"/>
+  </Elements>
+  <Groups>
+    <Group Key="Classic" Members="Fire Nature"/>
+    <Group Key="Weighted" Members="Fire Fire Nature"/>
+  </Groups>
+  <Source Element="Fire">
+    <Target Element="Nature" Multiplier="1.2"/>
+  </Source>
+  <Source Element="Undead" DefaultMultiplier="1.2">
+    <Target Element="Undead" Multiplier="0.5"/>
+  </Source>
+  <Source Element="Nature" DefaultMultiplier="0.75"/>
 </ElementTable>`
 
 const MINIMAL_XML = `<?xml version="1.0"?>
-<ElementTable xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="EmptyTable">
+<ElementTable xmlns="${XMLNS}" Name="EmptyTable">
 </ElementTable>`
-
-// ---------------------------------------------------------------------------
-// Helper
-// ---------------------------------------------------------------------------
 
 function parseRaw(xmlString) {
   return new Promise((resolve, reject) => {
@@ -49,174 +76,136 @@ function parseRaw(xmlString) {
   })
 }
 
-// ---------------------------------------------------------------------------
-// Test 1: Parse round-trip
-// ---------------------------------------------------------------------------
+/** The XML with self-closing spacing and line endings made the same. */
+const norm = (s) =>
+  s
+    .replace(/\r\n/g, '\n')
+    .replace(/\s+\/>/g, '/>')
+    .trim()
 
-describe('Parse round-trip', () => {
-  it('serializing a parsed element table and re-parsing yields the same object', async () => {
-    const first = await parseElementTableXml(FULL_XML)
-    const xml = serializeElementTableXml(first)
-    const second = await parseElementTableXml(xml)
-    expect(second).toEqual(first)
+describe('round trip', () => {
+  it.each([
+    ['the old format', LEGACY_XML],
+    ['a sparse table', SPARSE_XML],
+    ['the registry format', REGISTRY_XML]
+  ])('%s saves to the same XML with no edit', async (_, xml) => {
+    const out = serializeElementTableXml(await parseElementTableXml(xml))
+    expect(norm(out)).toBe(norm(xml))
+  })
+
+  it('keeps the multiplier text, so 1.075 does not become 1.07', async () => {
+    const out = serializeElementTableXml(await parseElementTableXml(LEGACY_XML))
+    expect(out).toContain('Multiplier="1.075"')
   })
 })
 
-// ---------------------------------------------------------------------------
-// Test 2: Field coverage — all fields
-// ---------------------------------------------------------------------------
+describe('the old format', () => {
+  it('takes the elements from the Source rows', async () => {
+    const t = await parseElementTableXml(LEGACY_XML)
+    expect(t.registry).toBe(false)
+    expect(t.elements.map((e) => e.key)).toEqual(['Fire', 'Wind', 'Earth'])
+    expect(t.elements[0]).toEqual({
+      key: 'Fire',
+      id: '',
+      retailId: '',
+      name: '',
+      isDefault: false,
+      ivernic: ''
+    })
+  })
 
-describe('Field coverage — all fields', () => {
-  it('parses name attribute', async () => {
-    const t = await parseElementTableXml(FULL_XML)
+  it('writes no <Elements> block', async () => {
+    const raw = await parseRaw(serializeElementTableXml(await parseElementTableXml(LEGACY_XML)))
+    expect(raw.ElementTable.Elements).toBeUndefined()
+  })
+
+  it('reads the comment and the name', async () => {
+    const t = await parseElementTableXml(LEGACY_XML)
+    expect(t.comment).toBe('Test element table')
     expect(t.name).toBe('TestTable')
   })
+})
 
-  it('parses comment', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.comment).toBe('Test element table')
+describe('a sparse table', () => {
+  it('reads the table default and only the declared pairs', async () => {
+    const t = await parseElementTableXml(SPARSE_XML)
+    expect(t.defaultMultiplier).toBe('0.9')
+    expect(t.sources[0].targets).toEqual([{ element: 'Wind', multiplier: '1.2' }])
   })
 
-  it('parses elements in source order', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.elements).toEqual(['Fire', 'Wind', 'Earth'])
+  it('writes an edited pair and still leaves out the pairs the file left out', async () => {
+    const t = setPair(await parseElementTableXml(SPARSE_XML), 'Fire', 'Earth', '1.5')
+    const raw = await parseRaw(serializeElementTableXml(t))
+    const fire = raw.ElementTable.Source[0].Target.map((x) => x.$)
+    expect(fire).toEqual([
+      { Element: 'Wind', Multiplier: '1.2' },
+      { Element: 'Earth', Multiplier: '1.5' }
+    ])
+    expect(raw.ElementTable.Source[1].Target).toHaveLength(1)
   })
 
-  it('matrix is NxN matching element count', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix).toHaveLength(3)
-    expect(t.matrix[0]).toHaveLength(3)
-  })
-
-  it('neutral multiplier (1.0) becomes 100 in the matrix', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[0][0]).toBe(100) // Fire → Fire
-  })
-
-  it('reduced multiplier (0.8) becomes 80 in the matrix', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[0][1]).toBe(80) // Fire → Wind
-  })
-
-  it('boosted multiplier (1.5) becomes 150 in the matrix', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[0][2]).toBe(150) // Fire → Earth
-  })
-
-  it('fractional multiplier (1.2) becomes 120 in the matrix', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[1][0]).toBe(120) // Wind → Fire
-  })
-
-  it('fractional multiplier (0.9) becomes 90 in the matrix', async () => {
-    const t = await parseElementTableXml(FULL_XML)
-    expect(t.matrix[1][2]).toBe(90) // Wind → Earth
-  })
-
-  it('missing Target entry is treated as XML default 1.0, stored as integer 100', async () => {
-    // Real XML files should always list all targets explicitly — the serializer
-    // always does so. This tests the parser's defensive fallback for malformed
-    // or hand-authored files where a Target entry is absent.
-    const sparseXml = `<?xml version="1.0"?>
-<ElementTable xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Sparse">
-  <Source Element="Fire">
-    <Target Element="Wind" Multiplier="0.5" />
-  </Source>
-  <Source Element="Wind">
-  </Source>
-</ElementTable>`
-    const t = await parseElementTableXml(sparseXml)
-    expect(t.matrix[0][0]).toBe(100) // Fire → Fire: absent → defaults to 1.0 → 100
-    expect(t.matrix[0][1]).toBe(50) // Fire → Wind: explicit 0.5 → 50
-    expect(t.matrix[1][0]).toBe(100) // Wind → Fire: absent → defaults to 1.0 → 100
+  it('does not write a pair that the editor cleared', async () => {
+    const t = setPair(await parseElementTableXml(SPARSE_XML), 'Fire', 'Wind', '')
+    const raw = await parseRaw(serializeElementTableXml(t))
+    expect(raw.ElementTable.Source[0].Target).toBeUndefined()
+    expect(raw.ElementTable.Source[0].$).toEqual({ Element: 'Fire' })
   })
 })
 
-// ---------------------------------------------------------------------------
-// Test 3: Field coverage — minimal
-// ---------------------------------------------------------------------------
-
-describe('Field coverage — minimal', () => {
-  it('parses name', async () => {
-    const t = await parseElementTableXml(MINIMAL_XML)
-    expect(t.name).toBe('EmptyTable')
+describe('the registry format', () => {
+  it('reads each element attribute', async () => {
+    const t = await parseElementTableXml(REGISTRY_XML)
+    expect(t.registry).toBe(true)
+    expect(t.elements[0]).toEqual({
+      key: 'Force',
+      id: '0',
+      retailId: '0',
+      name: '',
+      isDefault: true,
+      ivernic: 'treas'
+    })
+    expect(t.elements[2]).toMatchObject({ key: 'Nature', id: '17', retailId: '7', name: 'Nature' })
   })
 
-  it('defaults comment to empty string', async () => {
-    const t = await parseElementTableXml(MINIMAL_XML)
-    expect(t.comment).toBe('')
+  it('reads the groups, keeping a member listed twice', async () => {
+    const t = await parseElementTableXml(REGISTRY_XML)
+    expect(t.groups).toEqual([
+      { key: 'Classic', members: ['Fire', 'Nature'] },
+      { key: 'Weighted', members: ['Fire', 'Fire', 'Nature'] }
+    ])
   })
 
-  it('defaults elements to empty array', async () => {
-    const t = await parseElementTableXml(MINIMAL_XML)
-    expect(t.elements).toEqual([])
+  it('reads a row default, and keeps a row with no Target entries', async () => {
+    const t = await parseElementTableXml(REGISTRY_XML)
+    expect(t.sources[1]).toEqual({
+      element: 'Undead',
+      defaultMultiplier: '1.2',
+      targets: [{ element: 'Undead', multiplier: '0.5' }]
+    })
+    expect(t.sources[2]).toEqual({ element: 'Nature', defaultMultiplier: '0.75', targets: [] })
+    const raw = await parseRaw(serializeElementTableXml(t))
+    expect(raw.ElementTable.Source[2].$).toEqual({ Element: 'Nature', DefaultMultiplier: '0.75' })
   })
 
-  it('defaults matrix to empty array', async () => {
-    const t = await parseElementTableXml(MINIMAL_XML)
-    expect(t.matrix).toEqual([])
+  it('writes Elements, then Groups, then the Source rows, as the schema orders them', async () => {
+    const out = serializeElementTableXml(await parseElementTableXml(REGISTRY_XML))
+    const at = (tag) => out.indexOf(`<${tag}`)
+    expect(at('Elements')).toBeLessThan(at('Groups'))
+    expect(at('Groups')).toBeLessThan(at('Source'))
   })
 })
 
-// ---------------------------------------------------------------------------
-// Test 4: Output structure
-// Serialize an element table and re-parse it with xml2js to assert the output
-// XML has the expected elements, attributes, and nesting. These are structural
-// assertions written by hand from the code — they do NOT perform real XSD
-// validation and will not catch divergences between creidhne and the XSD.
-// ---------------------------------------------------------------------------
-
-describe('Output structure', () => {
-  const table = {
-    name: 'SchemaTable',
-    comment: '',
-    elements: ['Fire', 'Wind'],
-    matrix: [
-      [100, 80],
-      [120, 100]
-    ]
-  }
-
-  it('root element is ElementTable', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    expect(parsed).toHaveProperty('ElementTable')
-  })
-
-  it('Name attribute is present', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    expect(parsed.ElementTable.$?.Name).toBe('SchemaTable')
-  })
-
-  it('produces one Source element per element in the list', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    expect(parsed.ElementTable.Source).toHaveLength(2)
-  })
-
-  it('each Source has an Element attribute', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    const sources = parsed.ElementTable.Source
-    expect(sources[0].$?.Element).toBe('Fire')
-    expect(sources[1].$?.Element).toBe('Wind')
-  })
-
-  it('each Source has one Target per element', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    for (const source of parsed.ElementTable.Source) {
-      expect(source.Target).toHaveLength(2)
-    }
-  })
-
-  it('Target Multiplier is serialized as a float string', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    const fireTargets = parsed.ElementTable.Source[0].Target
-    const windTarget = fireTargets.find((t) => t.$?.Element === 'Wind')
-    expect(windTarget.$?.Multiplier).toBe('0.8') // 80 / 100
-  })
-
-  it('neutral matrix value (100) serializes as Multiplier "1"', async () => {
-    const parsed = await parseRaw(serializeElementTableXml(table))
-    const fireTargets = parsed.ElementTable.Source[0].Target
-    const fireTarget = fireTargets.find((t) => t.$?.Element === 'Fire')
-    expect(fireTarget.$?.Multiplier).toBe('1') // 100 / 100
+describe('a minimal table', () => {
+  it('reads empty lists', async () => {
+    const t = await parseElementTableXml(MINIMAL_XML)
+    expect(t).toMatchObject({
+      name: 'EmptyTable',
+      comment: '',
+      defaultMultiplier: '',
+      registry: false,
+      elements: [],
+      groups: [],
+      sources: []
+    })
   })
 })
