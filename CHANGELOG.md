@@ -64,6 +64,10 @@ first section written to the rules above.
 - **On the Dashboard, the counts that open a page are easy to read.** They used a light shade of the accent colour, which had too little contrast on the light pages of Danaan and Mundanes. They now use the accent colour.
 - **The selected theme in Settings has a clear mark in every theme.** The border and the check mark used a light shade of the accent colour, which was near the page colour in Danaan.
 
+### Security
+
+- **Creidhne runs on Electron 44.10.0.** This release bundles Node 24.22.1 and Chromium 152.0.7977.169, with their security fixes. It also stops trust in the compromised eMudhra intermediate certificates. Creidhne connects to the network only through Chromium, so the Brotli fault in Node (CVE-2026-111497) did not apply to it.
+
 ## [1.14.0] - 2026-10-10
 
 ### Added
