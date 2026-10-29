@@ -1,5 +1,20 @@
 <?xml version="1.0"?>
-<ElementTable xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="HybElements">
+<ElementTable xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="HybElements" DefaultMultiplier="1">
+  <Elements>
+    <Element Key="None" Id="23" RetailId="0" Default="true"/>
+    <Element Key="Fire" Id="1" RetailId="1"/>
+    <Element Key="Wind" Id="3" RetailId="3"/>
+    <Element Key="Earth" Id="4" RetailId="4"/>
+    <Element Key="Water" Id="2" RetailId="2"/>
+    <Element Key="Dark" Id="6" RetailId="6"/>
+    <Element Key="Light" Id="5" RetailId="5"/>
+    <Element Key="Metal" Id="8" RetailId="8"/>
+    <Element Key="Wood" Id="24" RetailId="0"/>
+    <Element Key="Undead" Id="9" RetailId="9"/>
+  </Elements>
+  <Groups>
+    <Group Key="Cardinal" Members="Fire Water Wind Earth"/>
+  </Groups>
   <Source Element="None">
     <Target Element="None" Multiplier="1"/>
     <Target Element="Fire" Multiplier="0.8"/>
@@ -108,7 +123,7 @@
     <Target Element="Wood" Multiplier="0.5"/>
     <Target Element="Undead" Multiplier="0.85"/>
   </Source>
-  <Source Element="Undead">
+  <Source Element="Undead" DefaultMultiplier="1.1">
     <Target Element="None" Multiplier="1"/>
     <Target Element="Fire" Multiplier="1"/>
     <Target Element="Wind" Multiplier="1"/>
