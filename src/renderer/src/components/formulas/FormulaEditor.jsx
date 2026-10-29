@@ -106,7 +106,9 @@ function UsedByPanel({ formulaName, libraryIndex }) {
             <Chip key={`c-${n}`} size="small" label={n} variant="outlined" />
           ))}
           {statuses.map((n) => (
-            <Chip key={`s-${n}`} size="small" label={n} variant="outlined" color="secondary" />
+            // Filled, not outlined: secondary is a fill only (the bar colour). As an
+            // outline and text on the page it cannot read in every theme (HTOO-572).
+            <Chip key={`s-${n}`} size="small" label={n} color="secondary" />
           ))}
         </Box>
       )}

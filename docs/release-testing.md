@@ -18,6 +18,18 @@ The specs below run these on every `npm run e2e`, so they need no manual pass:
 - The title bar on each platform (`title-bar.spec.js`)
 - A loot set with many tables (`loot-tables.spec.js`)
 - Every page opens without hitting the error boundary (`nav-pages.spec.js`)
+- The theme gallery measures every sample in the six themes (`theme-gallery.spec.js`). It writes each low ratio to `theme-gallery.json` in its `test-results/` folder. The by-eye check below still applies.
+
+## Pending: any platform, the house palette (HTOO-572)
+
+Use a dev build or a packaged build. Do each check in each of the six themes. Settings → Appearance → Theme gallery shows most of the controls on one page.
+
+- [ ] **The title bar.** Danaan has a bronze bar and Grinneal a brown bar. On both, the name, the logo and the window buttons are light, with a black outline. Hybrasyl and Chadul also have light text with a black outline. Mundanes and Dubhaimid have flat bars with no outline. Nothing on any bar is engraved. The name and the three window buttons are easy to read.
+- [ ] **The close button.** Under the pointer, the close button turns red in every theme.
+- [ ] **The nav bar.** The icons are easy to read on the bar. The current page has a light background and a ring around its button. Under the pointer, an icon has the same highlight as the window buttons.
+- [ ] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, **Clear** on a Settings path card and **Delete** in the delete confirmation of a file list show the error colour.
+- [ ] **A coloured chip.** The **Active** chip on a library and the formula category chips show their colour.
+- [ ] **A filled button and a hover.** A contained button changes under the pointer.
 
 ## Pending: Windows
 

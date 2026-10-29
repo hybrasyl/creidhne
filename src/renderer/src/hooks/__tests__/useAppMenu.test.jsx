@@ -2,17 +2,14 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, renderHook, act, cleanup, screen } from '@testing-library/react'
-import { ThemeProvider } from '@mui/material'
+import { renderHook, act, cleanup } from '@testing-library/react'
 import { useAppStore } from '../../store/appStore'
 import { useMenuStore } from '../../store/menuStore'
 import { runMenuCommand, isModalOpen, currentMenuState, useAppMenu } from '../useAppMenu'
 import { useMenuRequest } from '../useMenuRequest'
-import MainToolbar from '../../components/MainToolbar'
-import { hybrasylTheme } from '../../themes'
 
-// The renderer half of the macOS menu. jsdom does not apply media queries, so the
-// title bar's padding is asserted in e2e (title-bar.spec.js), not here.
+// The renderer half of the macOS menu. The title bar on macOS (an empty drag
+// region) is tested in components/__tests__/AppTitleBar.test.jsx.
 
 const initialApp = useAppStore.getState()
 
@@ -205,36 +202,5 @@ describe('useAppMenu', () => {
     expect(window.electronAPI.menu.setState).not.toHaveBeenCalled()
     expect(window.electronAPI.menu.onCommand).not.toHaveBeenCalled()
     expect(window.electronAPI.companionStatus).not.toHaveBeenCalled()
-  })
-})
-
-describe('MainToolbar title bar', () => {
-  const renderToolbar = () =>
-    render(
-      <ThemeProvider theme={hybrasylTheme}>
-        <MainToolbar navigate={vi.fn()} />
-      </ThemeProvider>
-    )
-
-  it('on macOS: an empty bar for the stoplights, with no logo, name or window buttons', async () => {
-    bridge('darwin')
-    renderToolbar()
-    await act(async () => {})
-    const bar = screen.getByTestId('title-bar')
-    expect(bar.children.length).toBe(0)
-    expect(screen.queryByAltText('Creidhne')).toBeNull()
-    expect(screen.queryByText('Creidhne')).toBeNull()
-    expect(screen.queryByLabelText('Close')).toBeNull()
-  })
-
-  it('elsewhere: the logo, the name and the three window buttons', async () => {
-    bridge('win32')
-    renderToolbar()
-    await act(async () => {})
-    expect(screen.getByAltText('Creidhne')).toBeTruthy()
-    expect(screen.getByText('Creidhne')).toBeTruthy()
-    for (const name of ['Minimize', 'Maximize', 'Close']) {
-      expect(screen.getByLabelText(name)).toBeTruthy()
-    }
   })
 })

@@ -1,14 +1,4 @@
-import { Toolbar, IconButton, Tooltip, Divider, Box, Typography } from '@mui/material'
-
-// Right-sized WebP imported so Vite hashes it into the renderer bundle. The
-// splash screen uses its own resources/creidhne-splash.webp; the 1024px master
-// lives in build/ (regen only, never packaged).
-import creidhneLogo from '@renderer/assets/creidhne.webp'
-// Flat window-control glyphs for the "corporate" (plain-chrome) themes, swapped
-// in for the stylized Gi skull/contract/expand on Mundanes & Dubhaimid.
-import RemoveIcon from '@mui/icons-material/Remove'
-import CropSquareIcon from '@mui/icons-material/CropSquare'
-import CloseIcon from '@mui/icons-material/Close'
+import { Toolbar, IconButton, Tooltip, Divider, Box } from '@mui/material'
 import {
   GiRadialBalance,
   GiMagicSwirl,
@@ -34,10 +24,7 @@ import {
   GiDoubleDiaphragm,
   GiSettingsKnobs,
   GiAnvil,
-  GiBugNet,
-  GiContract,
-  GiExpand,
-  GiDeathSkull
+  GiBugNet
 } from 'react-icons/gi'
 import {
   useStoreValue,
@@ -47,33 +34,33 @@ import {
   reportIssueOpenState
 } from '../store/appStore'
 import { useCompanionStatus } from '../hooks/useCompanionStatus'
+import { chromeKind, navButtonSx } from './titleChrome'
 
-// The "corporate" themes paint the same navy chrome but want plain, flat window
-// controls: white glyphs with no dark keyline stroke, translucent-white hover,
-// and a red close hover — rather than the stylized skull + cream-on-navy look.
-const PLAIN_CHROME_THEMES = ['mundanes', 'dubhaimid']
-
-// Shared shadow vocabulary for the gamified chrome (ported from oghma's TitleBar).
-// KEYLINE is the crisp four-way #000 outline; DEPTH is the soft layer that lifts
-// the glyph/wordmark off the navy bar. The plain/corporate themes drop both.
-const KEYLINE = ['1px 1px 0 #000', '-1px -1px 0 #000', '1px -1px 0 #000', '-1px 1px 0 #000']
-const DEPTH = '0 2px 3px rgba(0,0,0,0.55)'
-// The wordmark is real text: text-shadow paints each layer independently, so the
-// keyline + depth both read at full strength.
-const TITLE_TEXT_SHADOW = [...KEYLINE, DEPTH].join(', ')
+// The nav bar: the second bar, under the title bar (AppTitleBar). It paints
+// secondary.main, as the title bar does, so its icons take the bar's text colour,
+// secondary.contrastText (HTOO-572). They drew text.button, which is a page
+// colour: on the Danaan and Mundanes bars it was below 2:1.
+//
+// Each button takes the house nav-bar style, `navButtonSx` from titleChrome.js:
+// the title bar's colours and hover, and the one house current-page mark (a
+// light wash and a ring in the bar's text colour). chromeContrast.test.jsx
+// renders this bar in each theme and measures its icons.
+//
+// The bar is opaque. It had `opacity: 0.9`, which mixed the AppBar's colour
+// (light in Danaan and Mundanes) into the bar and its icons.
 
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
-// On macOS the title bar is an empty drag region that holds the native stoplights
-// (main sets `titleBarStyle: 'hiddenInset'`): no logo, no name, no window buttons.
-// The left padding clears the lights, which end near x = 66 (three 14 px lights,
-// 6 px apart, from x = 12), so anything added to the bar later sits beside them.
-//
-// `disableGutters`, and both paddings in sx. The Toolbar's gutters are a media
-// query (24px from `sm` up), and an sx padding with no breakpoint does not beat
-// it: the `px: 1.5` this bar had always rendered as 24px (measured in e2e). So
-// Windows and Linux keep the 24px they actually had.
-const MAC_LIGHTS_CLEARANCE = '78px'
+// Nav-bar glyphs: a soft translucent stroke and no drop-shadow, on every theme.
+// Copied from taliesin's NavToolbar so the two apps' page icons look the same
+// side by side (the Settings knobs are the shared reference glyph).
+const navIconSx = {
+  '& svg': {
+    fontSize: '1.4em',
+    stroke: 'rgba(0,0,0,0.25)',
+    strokeWidth: 44
+  }
+}
 
 const MainToolbar = ({ navigate }) => {
   // Resolved by main, not read from settings: the button must work before anyone
@@ -83,74 +70,13 @@ const MainToolbar = ({ navigate }) => {
   const currentPage = useStoreValue(currentPageState)
   const themeName = useStoreValue(themeState)
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
-  const isPlain = PLAIN_CHROME_THEMES.includes(themeName)
-  const isMac = window.electronAPI?.platform === 'darwin'
+  const kind = chromeKind(themeName)
 
-  // Title-bar glyphs (window controls) on the gamified chrome: a crisp
-  // solid-black keyline stroke plus a SINGLE depth drop-shadow to match the
-  // wordmark's lift. SVG glyphs can't take text-shadow, so the outline comes
-  // from the stroke; chaining the four keyline offsets as drop-shadows too
-  // would compound and wash out the depth (oghma's lesson). On the plain navy
-  // chrome the stroke just greys the glyphs, so drop both. strokeWidth is in
-  // the icon's own ~512 viewbox units (react-icons/gi). Mirrors taliesin's
-  // TitleBar.
-  const titleIconSx = {
-    '& svg': {
-      fontSize: '1.4em',
-      stroke: isPlain ? 'transparent' : '#000',
-      strokeWidth: isPlain ? 0 : 11,
-      filter: isPlain ? 'none' : `drop-shadow(${DEPTH})`
-    }
-  }
-  // Nav-bar glyphs: a soft translucent stroke and no drop-shadow, on every
-  // theme. Copied verbatim from taliesin's NavToolbar so the two apps' page
-  // icons look identical side by side (the Settings knobs are the shared
-  // reference glyph).
-  const navIconSx = {
-    '& svg': {
-      fontSize: '1.4em',
-      stroke: 'rgba(0,0,0,0.25)',
-      strokeWidth: 44
-    }
-  }
-  const hoverSx = isPlain
-    ? { backgroundColor: 'rgba(255,255,255,0.16)' }
-    : { backgroundColor: 'info.main', color: 'text.dark' }
-  // Chrome foreground: white on the navy corporate bar (text.button is dark/body
-  // there), the theme's cream text.button on the stylized themes.
-  const chromeColor = isPlain ? '#ffffff' : 'text.button'
-
-  const btnSx = {
-    WebkitAppRegion: 'no-drag',
-    mx: -0.5,
-    color: chromeColor,
-    ...navIconSx,
-    '&:hover': hoverSx
-  }
-
-  // Highlight the IconButton for whichever page the user is currently viewing.
-  // Mirrors taliesin's NavToolbar pattern. secondary.dark is bright on every
-  // theme (the corporate palettes set it bright specifically for this).
-  const activeBtnSx = {
-    ...btnSx,
-    color: 'secondary.dark',
-    backgroundColor: 'rgba(255,255,255,0.08)'
-  }
-
-  const winBtnSx = {
-    WebkitAppRegion: 'no-drag',
-    color: chromeColor,
-    ...titleIconSx,
-    '&:hover': hoverSx
-  }
-  const closeBtnSx = {
-    ...winBtnSx,
-    '&:hover': isPlain
-      ? { backgroundColor: 'error.main', color: '#ffffff' }
-      : { backgroundColor: 'info.main', color: 'warning.main' }
-  }
-
-  const pageSx = (page) => (currentPage === page ? activeBtnSx : btnSx)
+  // `mx` and the glyph stroke are Creidhne's layout, not colour. The current
+  // page drew secondary.dark, a dark shade on the bar in most themes (1.2:1 to
+  // 1.5:1); the house mark replaces it.
+  const btnSx = { ...navButtonSx(kind), mx: -0.5, ...navIconSx }
+  const pageSx = (page) => ({ ...navButtonSx(kind, currentPage === page), mx: -0.5, ...navIconSx })
 
   const handleLaunchTaliesin = async () => {
     await window.electronAPI.launchCompanion()
@@ -159,217 +85,155 @@ const MainToolbar = ({ navigate }) => {
     refreshCompanion()
   }
 
-  const handleMinimize = () => {
-    window.electronAPI.minimizeWindow()
-  }
-
-  const handleMaximize = () => {
-    window.electronAPI.maximizeWindow()
-  }
-
-  const handleClose = () => {
-    window.electronAPI.closeWindow()
-  }
-
   return (
-    <>
-      {/* Title Bar */}
-      <Toolbar
-        variant="dense"
-        disableGutters
-        data-testid="title-bar"
-        sx={{
-          bgcolor: 'secondary.main',
-          minHeight: 36,
-          pl: isMac ? MAC_LIGHTS_CLEARANCE : 3,
-          pr: 3
-        }}
-      >
-        {!isMac && (
-          <>
-            <img src={creidhneLogo} alt="Creidhne" style={{ height: 36, marginRight: 8 }} />
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 'bold',
-                flexGrow: 0,
-                textShadow: isPlain ? 'none' : TITLE_TEXT_SHADOW
-              }}
-              style={{ fontSize: '1.5rem' }}
-            >
-              Creidhne
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            <Tooltip title="Minimize">
-              <IconButton size="small" sx={winBtnSx} onClick={handleMinimize}>
-                {isPlain ? <RemoveIcon /> : <GiContract />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Maximize">
-              <IconButton size="small" sx={winBtnSx} onClick={handleMaximize}>
-                {isPlain ? <CropSquareIcon /> : <GiExpand />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Close">
-              <IconButton size="small" sx={closeBtnSx} onClick={handleClose}>
-                {isPlain ? <CloseIcon /> : <GiDeathSkull />}
-              </IconButton>
-            </Tooltip>
-          </>
-        )}
-      </Toolbar>
+    <Toolbar
+      data-testid="nav-bar"
+      variant="dense"
+      sx={{ bgcolor: 'secondary.main', minHeight: 40 }}
+    >
+      {/* Left spacer — centers the editor + tools group */}
+      <Box sx={{ flexGrow: 1 }} />
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
+      {/* Editor buttons */}
+      <Tooltip title="Dashboard">
+        <IconButton onClick={() => navigate('dashboard')} sx={pageSx('dashboard')}>
+          <GiRadialBalance />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Castables">
+        <IconButton onClick={() => navigate('castables')} sx={pageSx('castables')}>
+          <GiMagicSwirl />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Items">
+        <IconButton onClick={() => navigate('items')} sx={pageSx('items')}>
+          <GiDervishSwords />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Statuses">
+        <IconButton onClick={() => navigate('statuses')} sx={pageSx('statuses')}>
+          <GiPoisonBottle />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="NPCs">
+        <IconButton onClick={() => navigate('npcs')} sx={pageSx('npcs')}>
+          <GiFaceToFace />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Creatures">
+        <IconButton onClick={() => navigate('creatures')} sx={pageSx('creatures')}>
+          <GiSpiderFace />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Behavior Sets">
+        <IconButton onClick={() => navigate('behaviors')} sx={pageSx('behaviors')}>
+          <GiBrainTentacle />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Spellbooks">
+        <IconButton onClick={() => navigate('spellbooks')} sx={pageSx('spellbooks')}>
+          <GiSpellBook />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Nations">
+        <IconButton onClick={() => navigate('nations')} sx={pageSx('nations')}>
+          <GiCastle />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Spawngroups">
+        <IconButton onClick={() => navigate('spawngroups')} sx={pageSx('spawngroups')}>
+          <GiHiveMind />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Loot Sets">
+        <IconButton onClick={() => navigate('loot')} sx={pageSx('loot')}>
+          <GiGoldStack />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Variants">
+        <IconButton onClick={() => navigate('variants')} sx={pageSx('variants')}>
+          <GiMirrorMirror />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Elements">
+        <IconButton onClick={() => navigate('elements')} sx={pageSx('elements')}>
+          <GiWindHole />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Recipes">
+        <IconButton onClick={() => navigate('recipes')} sx={pageSx('recipes')}>
+          <GiWok />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Strings">
+        <IconButton onClick={() => navigate('strings')} sx={pageSx('strings')}>
+          <GiTalk />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Server Config">
+        <IconButton onClick={() => navigate('serverconfig')} sx={pageSx('serverconfig')}>
+          <GiMagickTrick />
+        </IconButton>
+      </Tooltip>
 
-      {/* Nav Toolbar */}
-      <Toolbar variant="dense" sx={{ bgcolor: 'secondary.main', minHeight: 40, opacity: 0.9 }}>
-        {/* Left spacer — centers the editor + tools group */}
-        <Box sx={{ flexGrow: 1 }} />
+      <Divider orientation="vertical" flexItem sx={dividerSx} />
 
-        {/* Editor buttons */}
-        <Tooltip title="Dashboard">
-          <IconButton onClick={() => navigate('dashboard')} sx={pageSx('dashboard')}>
-            <GiRadialBalance />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Castables">
-          <IconButton onClick={() => navigate('castables')} sx={pageSx('castables')}>
-            <GiMagicSwirl />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Items">
-          <IconButton onClick={() => navigate('items')} sx={pageSx('items')}>
-            <GiDervishSwords />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Statuses">
-          <IconButton onClick={() => navigate('statuses')} sx={pageSx('statuses')}>
-            <GiPoisonBottle />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="NPCs">
-          <IconButton onClick={() => navigate('npcs')} sx={pageSx('npcs')}>
-            <GiFaceToFace />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Creatures">
-          <IconButton onClick={() => navigate('creatures')} sx={pageSx('creatures')}>
-            <GiSpiderFace />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Behavior Sets">
-          <IconButton onClick={() => navigate('behaviors')} sx={pageSx('behaviors')}>
-            <GiBrainTentacle />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Spellbooks">
-          <IconButton onClick={() => navigate('spellbooks')} sx={pageSx('spellbooks')}>
-            <GiSpellBook />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Nations">
-          <IconButton onClick={() => navigate('nations')} sx={pageSx('nations')}>
-            <GiCastle />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Spawngroups">
-          <IconButton onClick={() => navigate('spawngroups')} sx={pageSx('spawngroups')}>
-            <GiHiveMind />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Loot Sets">
-          <IconButton onClick={() => navigate('loot')} sx={pageSx('loot')}>
-            <GiGoldStack />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Variants">
-          <IconButton onClick={() => navigate('variants')} sx={pageSx('variants')}>
-            <GiMirrorMirror />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Elements">
-          <IconButton onClick={() => navigate('elements')} sx={pageSx('elements')}>
-            <GiWindHole />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Recipes">
-          <IconButton onClick={() => navigate('recipes')} sx={pageSx('recipes')}>
-            <GiWok />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Strings">
-          <IconButton onClick={() => navigate('strings')} sx={pageSx('strings')}>
-            <GiTalk />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Server Config">
-          <IconButton onClick={() => navigate('serverconfig')} sx={pageSx('serverconfig')}>
-            <GiMagickTrick />
-          </IconButton>
-        </Tooltip>
+      {/* Tools group — centered alongside the editors */}
+      <Tooltip title="Formulas">
+        <IconButton onClick={() => navigate('formulas')} sx={pageSx('formulas')}>
+          <GiPotionBall />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Damage Calculator">
+        <IconButton onClick={() => navigate('damage-calculator')} sx={pageSx('damage-calculator')}>
+          <GiCalculator />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Lua Helpers">
+        <IconButton onClick={() => navigate('helpers')} sx={pageSx('helpers')}>
+          <GiPull />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Dialog Builder">
+        <IconButton onClick={() => navigate('dialogs')} sx={pageSx('dialogs')}>
+          <GiConversation />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Reports">
+        <IconButton onClick={() => navigate('exports')} sx={pageSx('exports')}>
+          <GiBootKick />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Constants">
+        <IconButton onClick={() => navigate('constants')} sx={pageSx('constants')}>
+          <GiDoubleDiaphragm />
+        </IconButton>
+      </Tooltip>
 
-        <Divider orientation="vertical" flexItem sx={dividerSx} />
+      {/* Right spacer — mirrors left spacer to keep editor+tools group centered */}
+      <Box sx={{ flexGrow: 1 }} />
 
-        {/* Tools group — centered alongside the editors */}
-        <Tooltip title="Formulas">
-          <IconButton onClick={() => navigate('formulas')} sx={pageSx('formulas')}>
-            <GiPotionBall />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Damage Calculator">
-          <IconButton
-            onClick={() => navigate('damage-calculator')}
-            sx={pageSx('damage-calculator')}
-          >
-            <GiCalculator />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Lua Helpers">
-          <IconButton onClick={() => navigate('helpers')} sx={pageSx('helpers')}>
-            <GiPull />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Dialog Builder">
-          <IconButton onClick={() => navigate('dialogs')} sx={pageSx('dialogs')}>
-            <GiConversation />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Reports">
-          <IconButton onClick={() => navigate('exports')} sx={pageSx('exports')}>
-            <GiBootKick />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Constants">
-          <IconButton onClick={() => navigate('constants')} sx={pageSx('constants')}>
-            <GiDoubleDiaphragm />
-          </IconButton>
-        </Tooltip>
+      <Divider orientation="vertical" flexItem sx={dividerSx} />
 
-        {/* Right spacer — mirrors left spacer to keep editor+tools group centered */}
-        <Box sx={{ flexGrow: 1 }} />
-
-        <Divider orientation="vertical" flexItem sx={dividerSx} />
-
-        {/* Right-aligned: settings, launch taliesin, about */}
-        <Tooltip title="Settings">
-          <IconButton onClick={() => navigate('settings')} sx={pageSx('settings')}>
-            <GiSettingsKnobs />
+      {/* Right-aligned: settings, launch taliesin, about */}
+      <Tooltip title="Settings">
+        <IconButton onClick={() => navigate('settings')} sx={pageSx('settings')}>
+          <GiSettingsKnobs />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={taliesinFound ? 'Launch Taliesin' : 'Taliesin not found — see Settings'}>
+        <span>
+          <IconButton onClick={handleLaunchTaliesin} disabled={!taliesinFound} sx={btnSx}>
+            <GiAnvil />
           </IconButton>
-        </Tooltip>
-        <Tooltip title={taliesinFound ? 'Launch Taliesin' : 'Taliesin not found — see Settings'}>
-          <span>
-            <IconButton onClick={handleLaunchTaliesin} disabled={!taliesinFound} sx={btnSx}>
-              <GiAnvil />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Report an issue">
-          <IconButton onClick={() => setReportIssueOpen(true)} sx={btnSx}>
-            <GiBugNet />
-          </IconButton>
-        </Tooltip>
-      </Toolbar>
-    </>
+        </span>
+      </Tooltip>
+      <Tooltip title="Report an issue">
+        <IconButton onClick={() => setReportIssueOpen(true)} sx={btnSx}>
+          <GiBugNet />
+        </IconButton>
+      </Tooltip>
+    </Toolbar>
   )
 }
 

@@ -82,9 +82,12 @@ const ThemePicker = ({ value, onChange }) => {
               overflow: 'hidden',
               position: 'relative',
               border: '2px solid',
-              borderColor: selected ? 'primary.light' : 'divider',
+              // primary.main, not .light: the palette test holds main at 4.5:1 on
+              // the page and on paper, which a selection mark needs. On a light
+              // theme (danaan) .light is near the page colour (HTOO-572).
+              borderColor: selected ? 'primary.main' : 'divider',
               transition: 'border-color 0.15s',
-              '&:hover': { borderColor: selected ? 'primary.light' : 'text.secondary' }
+              '&:hover': { borderColor: selected ? 'primary.main' : 'text.secondary' }
             }}
           >
             <ThemeSwatch name={name} label={label} />
@@ -95,7 +98,7 @@ const ThemePicker = ({ value, onChange }) => {
                   top: 5,
                   right: 5,
                   fontSize: 20,
-                  color: 'primary.light',
+                  color: 'primary.main',
                   filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.6))'
                 }}
               />
