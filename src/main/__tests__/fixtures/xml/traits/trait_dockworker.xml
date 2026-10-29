@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Trait xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Name="Dockworker" Icon="112" IconSet="Skill" Category="Background">
+  <!-- Comment: From the HTOO-617 card's example -->
+  <Description>Years on the docks have made you unusually strong.</Description>
+  <ExclusiveGroup Policy="Replace">Background</ExclusiveGroup>
+  <ConflictsWith>
+    <Trait>Scribe</Trait>
+    <Trait>Courtier</Trait>
+  </ConflictsWith>
+  <StatModifiers BonusStr="3" BonusCon="1">
+    <ElementalModifiers>
+      <ElementalModifier Type="Resistance" Element="Earth" Modifier="0.9"/>
+    </ElementalModifiers>
+  </StatModifiers>
+</Trait>

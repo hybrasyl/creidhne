@@ -9,6 +9,7 @@ import {
   GiBrainTentacle,
   GiSpellBook,
   GiCastle,
+  GiFingerPrint,
   GiHiveMind,
   GiGoldStack,
   GiMirrorMirror,
@@ -138,6 +139,11 @@ const MainToolbar = ({ navigate }) => {
       <Tooltip title="Nations">
         <IconButton onClick={() => navigate('nations')} sx={pageSx('nations')}>
           <GiCastle />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Traits">
+        <IconButton onClick={() => navigate('traits')} sx={pageSx('traits')}>
+          <GiFingerPrint />
         </IconButton>
       </Tooltip>
       <Tooltip title="Spawngroups">

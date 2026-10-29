@@ -58,6 +58,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveNpc: (filePath, npcData) => ipcRenderer.invoke('xml:saveNpc', filePath, npcData),
   loadNation: (filePath) => ipcRenderer.invoke('xml:loadNation', filePath),
   saveNation: (filePath, nationData) => ipcRenderer.invoke('xml:saveNation', filePath, nationData),
+  loadTrait: (filePath) => ipcRenderer.invoke('xml:loadTrait', filePath),
+  saveTrait: (filePath, traitData) => ipcRenderer.invoke('xml:saveTrait', filePath, traitData),
   loadLoot: (filePath) => ipcRenderer.invoke('xml:loadLoot', filePath),
   saveLoot: (filePath, lootData) => ipcRenderer.invoke('xml:saveLoot', filePath, lootData),
   loadVariantGroup: (filePath) => ipcRenderer.invoke('xml:loadVariantGroup', filePath),

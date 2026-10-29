@@ -204,4 +204,26 @@ describe('rewriteReferences (HTOO-378)', () => {
     expect(count).toBe(1)
     expect(out).toBe(`<BehaviorSet Name="Child" Import="Ancestor"><X/></BehaviorSet>`)
   })
+
+  it('repoints ConflictsWith in a trait, and not the root that carries its name (HTOO-617)', () => {
+    // A trait names other traits in <ConflictsWith><Trait>…</Trait>, and its own
+    // root is the same tag. The row is read from the table, not restated.
+    const [row] = REFERENCE_SITES.traits
+    const xml = [
+      '<Trait Name="Dockworker" Icon="1" IconSet="Skill">',
+      '  <ConflictsWith>',
+      '    <Trait>Scribe</Trait>',
+      '    <Trait>Courtier</Trait>',
+      '  </ConflictsWith>',
+      '</Trait>'
+    ].join('\n')
+    const { xml: out, count } = rewriteReferences(xml, [row], 'Scribe', 'Archivist')
+    expect(count).toBe(1)
+    expect(out).toContain('<Trait>Archivist</Trait>')
+    expect(out).toContain('<Trait>Courtier</Trait>')
+    expect(out).toContain('<Trait Name="Dockworker"')
+    // Renaming Dockworker itself finds nothing here: its name is the root's
+    // attribute, which a text row cannot match.
+    expect(rewriteReferences(xml, [row], 'Dockworker', 'Stevedore').count).toBe(0)
+  })
 })

@@ -32,6 +32,7 @@ const INDEX_TYPES = [
   { key: 'creatures', label: 'Creatures', page: 'creatures' },
   { key: 'npcs', label: 'NPCs', page: 'npcs' },
   { key: 'nations', label: 'Nations', page: 'nations' },
+  { key: 'traits', label: 'Traits', page: 'traits' },
   { key: 'spawngroups', label: 'Spawn Groups', page: 'spawngroups' },
   { key: 'lootsets', label: 'Loot Sets', page: 'loot' },
   { key: 'recipes', label: 'Recipes', page: 'recipes' },

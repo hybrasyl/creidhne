@@ -5,6 +5,7 @@ import { parseItemXml, serializeItemXml } from './itemXml'
 import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
 import { parseNpcXml, serializeNpcXml } from './npcXml'
 import { parseNationXml, serializeNationXml } from './nationXml'
+import { parseTraitXml, serializeTraitXml } from './traitXml'
 import { parseLootXml, serializeLootXml } from './lootXml'
 import { parseVariantXml, serializeVariantXml } from './variantXml'
 import { parseLocalizationXml, serializeLocalizationXml } from './localizationXml'
@@ -629,6 +630,17 @@ app.whenReady().then(async () => {
   ipc.handle('xml:saveNation', async (_, filePath, nationData) => {
     parseOrLog(schemaCtx, 'xml:saveNation', namedEntitySchema, nationData)
     const xml = serializeNationXml(nationData)
+    await writeFile(validatePath(filePath), xml)
+  })
+
+  ipc.handle('xml:loadTrait', async (_, filePath) => {
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
+    return parseTraitXml(xml)
+  })
+
+  ipc.handle('xml:saveTrait', async (_, filePath, traitData) => {
+    parseOrLog(schemaCtx, 'xml:saveTrait', namedEntitySchema, traitData)
+    const xml = serializeTraitXml(traitData)
     await writeFile(validatePath(filePath), xml)
   })
 

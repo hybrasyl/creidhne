@@ -34,6 +34,7 @@ import { parseCastableXml, serializeCastableXml } from '../castableXml'
 import { parseBehaviorSetXml, serializeBehaviorSetXml } from '../behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from '../spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from '../serverConfigXml'
+import { parseTraitXml, serializeTraitXml } from '../traitXml'
 
 const FIXTURES_DIR = join(process.cwd(), 'src', 'main', '__tests__', 'fixtures', 'xml')
 
@@ -95,7 +96,8 @@ describe('XSD validation: real-world fixtures are schema-valid', () => {
     'castables',
     'creaturebehaviorsets',
     'spawngroups',
-    'serverconfigs'
+    'serverconfigs',
+    'traits'
   ]
   for (const type of types) {
     const drift = KNOWN_DRIFT[type]
@@ -112,6 +114,16 @@ describe('XSD validation: real-world fixtures are schema-valid', () => {
       expect(result.valid).toBe(true)
     })
   }
+})
+
+// ── Serializer round-trip, for the types written after the schema ───────────
+// A type that Creidhne gained after its XSD existed starts with a serializer
+// that the schema accepts, so its round trip runs now rather than joining the
+// deferred tier below.
+describe('XSD validation: serializer output is schema-valid (new types)', () => {
+  it('traits', async () => {
+    await roundtripValid(parseTraitXml, serializeTraitXml, await loadFixture('traits'))
+  })
 })
 
 // ── Tier 2: serializer round-trip (deferred) ────────────────────────────────
