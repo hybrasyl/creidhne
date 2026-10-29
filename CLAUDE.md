@@ -71,7 +71,7 @@ src/
                %TEMP% unpack folders a killed portable launch leaves),
                entityRefScan.js + entityRefRepair.js (rename repair —
                find/rewrite, then the disk walk), schemas/ (Zod — incl. worldEntity.js for the
-               15 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
+               16 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
                for the two bulk-rewrite channels), and per-domain XML
                (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
                lootTableXml.js maps <Table> and <Loot> for the three parsers that hold loot
@@ -80,7 +80,7 @@ src/
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
                exportSerializers.js, elementTable.js (the element table model: lookup order,
-               validation, the old-format conversion), traitValidate.js (the server's trait checks), elementOptions.js (the element choices
+               validation, the old-format conversion), traitValidate.js and speciesValidate.js (the server's trait and species checks), elementOptions.js (the element choices
                from the active table, and the copy of hybindex's resolveElementTable), nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
@@ -124,7 +124,7 @@ e2e/           Playwright specs against the built app
   `ipc.handle` must either `parseOrLog` its payload or be listed in `EXEMPT` in
   `src/main/__tests__/ipcSchemaCoverage.test.js` with a category and a reason — the suite
   reads `index.js` and fails naming any channel you did not classify. **Pass the channel
-  as a string literal**, or the check cannot see it; that is why the fifteen `xml:save*`
+  as a string literal**, or the check cannot see it; that is why the sixteen `xml:save*`
   handlers spell theirs out instead of being registered from a table. Failures log a
   breadcrumb next to settings (`schemaLog.js`).
 
@@ -209,7 +209,7 @@ e2e/           Playwright specs against the built app
   and the count is current) and repoints **after** it (so a failed save cannot leave the world
   pointing at a name never written); `renameRepairSites.test.js` pins that order.
 
-  Most of the fifteen file-backed pages need it, and the set is derived from the table, not counted.
+  Most of the sixteen file-backed pages need it, and the set is derived from the table, not counted.
   Comparison is on the DECODED value, `.ignore/` is never scanned, and a repair refreshes the
   index sections it wrote — it edits OTHER types, which carry the cross-references.
 

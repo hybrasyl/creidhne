@@ -13,7 +13,7 @@ import { elementWarning, selectorWarnings, splitSelectors } from '@shared/elemen
  * immunity. Empty means "not set", and the server then uses the default
  * element.
  */
-export function ElementField({ value, onChange, label = 'Element', sx }) {
+export function ElementField({ value, onChange, label = 'Element', sx, placeholder, helperText }) {
   const options = useElementOptions()
   const warning = elementWarning(value, options)
   return (
@@ -31,10 +31,11 @@ export function ElementField({ value, onChange, label = 'Element', sx }) {
         <TextField
           {...params}
           label={label}
-          helperText={warning ?? undefined}
+          placeholder={placeholder}
+          helperText={warning ?? helperText}
           slotProps={{
             ...params.slotProps,
-            formHelperText: { sx: { color: 'warning.main' } }
+            formHelperText: { sx: { color: warning ? 'warning.main' : undefined } }
           }}
         />
       )}
