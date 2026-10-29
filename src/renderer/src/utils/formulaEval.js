@@ -7,15 +7,38 @@
  * and will throw a clear error so the UI can tell the user "can't preview
  * this formula locally".
  *
+ * Where it does accept a formula, it follows the server: NCalcSync 6.3.1 with
+ * `OverflowProtection | RoundAwayFromZero` (HTOO-578). Each rule below was
+ * measured against that package, not read from its docs. The preview used to
+ * be looser than the server, and in exactly the direction that hides a fault:
+ * it read `^` as a power and accepted `round(x)`, which the server evaluates
+ * as XOR and as an error.
+ *
  * Supported:
  *   numbers: 1, 2.5, .5, 1e3
  *   variables: SOURCESTR, RAND_100, ANY_IDENT (uppercase + digits + _)
- *   binary:   + - * / % ^    (with standard precedence, ^ is right-assoc)
+ *   binary:   + - * / %       (standard precedence)
+ *   power:    **              (right-assoc, tighter than unary minus:
+ *                              -2 ** 2 is -4, 2 ** -1 is 0.5)
  *   relational: < > <= >= == !=   (lower precedence, yields 1 or 0)
  *   unary:    -x
  *   parens:   (...)
- *   functions: min(a,b,...), max(a,b,...), floor(x), ceil(x), round(x),
- *              abs(x), sqrt(x), if(cond, a, b)
+ *   functions, each with NCalc's exact argument count:
+ *              Abs(x), Ceiling(x), Floor(x), Sign(x), Sqrt(x), Truncate(x),
+ *              Max(a, b), Min(a, b), Pow(x, y), Round(x, digits),
+ *              if(cond, a, b)
+ *
+ * Rejected, because the server would not compute what the author means:
+ *   `^`  is bitwise XOR in NCalc (5 ^ 2 is 7). Use `**` for a power.
+ *   Round(x) needs its digits: NCalc throws on one argument.
+ *   Ceil, variadic Max/Min: not NCalc. The server throws.
+ *   A division by zero, or a result that is not a finite number: the server
+ *   catches it and the formula evaluates to 0.
+ *
+ * Function names match in any case, as on a server with
+ * `IgnoreCaseAtBuiltInFunctions` (eriscorp/hybrasyl-server a0387f57). A
+ * server without that flag dispatches math functions in PascalCase and `if`
+ * in lowercase only, so Creidhne's own templates write `Max(`.
  *
  * Evaluation tolerates missing variables: they throw a named error so the
  * caller can surface "variable X unset in this context" to the user.
@@ -24,7 +47,7 @@
 // ── Tokenizer ────────────────────────────────────────────────────────────────
 
 const TOKEN_RE =
-  /\s*(?:(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(<=|>=|==|!=|[()+\-*/%^<>,]))/y
+  /\s*(?:(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(\*\*|<=|>=|==|!=|[()+\-*/%^<>,]))/y
 
 export function tokenize(input) {
   const tokens = []
@@ -41,7 +64,9 @@ export function tokenize(input) {
     }
     if (m[1] !== undefined) tokens.push({ type: 'num', value: Number(m[1]) })
     else if (m[2] !== undefined) tokens.push({ type: 'ident', value: m[2] })
-    else tokens.push({ type: 'op', value: m[3] })
+    else if (m[3] === '^') {
+      throw new Error('"^" is bitwise XOR on the server (5 ^ 2 is 7). Use "**" for a power.')
+    } else tokens.push({ type: 'op', value: m[3] })
     lastIndex = TOKEN_RE.lastIndex
   }
   return tokens
@@ -84,31 +109,33 @@ function parse(tokens) {
   }
 
   function parseMul() {
-    let left = parsePow()
+    let left = parseUnary()
     while (peek() && peek().type === 'op' && ['*', '/', '%'].includes(peek().value)) {
       const op = eat().value
-      const right = parsePow()
+      const right = parseUnary()
       left = { type: 'binop', op, left, right }
     }
     return left
   }
 
-  function parsePow() {
-    const left = parseUnary()
-    if (peek() && peek().type === 'op' && peek().value === '^') {
-      eat()
-      const right = parsePow() // right-assoc
-      return { type: 'binop', op: '^', left, right }
-    }
-    return left
-  }
-
+  // Unary minus binds looser than `**`, as in NCalc: -2 ** 2 is -(2 ** 2).
   function parseUnary() {
     if (peek() && peek().type === 'op' && peek().value === '-') {
       eat()
       return { type: 'unary', op: '-', arg: parseUnary() }
     }
-    return parsePrimary()
+    return parsePow()
+  }
+
+  // The exponent is a unary, so 2 ** -1 parses and 2 ** 3 ** 2 is 2 ** 9.
+  function parsePow() {
+    const left = parsePrimary()
+    if (peek() && peek().type === 'op' && peek().value === '**') {
+      eat()
+      const right = parseUnary()
+      return { type: 'binop', op: '**', left, right }
+    }
+    return left
   }
 
   function parsePrimary() {
@@ -153,15 +180,35 @@ function parse(tokens) {
 
 // ── Evaluator ────────────────────────────────────────────────────────────────
 
+/** .NET's Math.Round(x, digits, MidpointRounding.AwayFromZero), step for step. */
+export function roundAwayFromZero(x, digits) {
+  const p = 10 ** digits
+  const scaled = x * p
+  const whole = Math.trunc(scaled)
+  const fraction = scaled - whole
+  return (Math.abs(fraction) >= 0.5 ? whole + Math.sign(fraction) : whole) / p
+}
+
+// Keyed by the lower-cased name; `name` is NCalc's spelling, for messages.
 const FUNCTIONS = {
-  min: (...a) => Math.min(...a),
-  max: (...a) => Math.max(...a),
-  floor: (x) => Math.floor(x),
-  ceil: (x) => Math.ceil(x),
-  round: (x) => Math.round(x),
-  abs: (x) => Math.abs(x),
-  sqrt: (x) => Math.sqrt(x)
+  abs: { name: 'Abs', arity: 1, fn: Math.abs },
+  ceiling: { name: 'Ceiling', arity: 1, fn: Math.ceil },
+  floor: { name: 'Floor', arity: 1, fn: Math.floor },
+  max: { name: 'Max', arity: 2, fn: Math.max },
+  min: { name: 'Min', arity: 2, fn: Math.min },
+  pow: { name: 'Pow', arity: 2, fn: Math.pow },
+  round: { name: 'Round', arity: 2, fn: roundAwayFromZero },
+  sign: { name: 'Sign', arity: 1, fn: Math.sign },
+  sqrt: { name: 'Sqrt', arity: 1, fn: Math.sqrt },
+  truncate: { name: 'Truncate', arity: 1, fn: Math.trunc }
   // `if` is special-cased in the evaluator so condition short-circuits
+}
+
+function arityError(name, arity) {
+  const hint = name === 'Round' ? ' Give the digits too: Round(x, 0) rounds to a whole number.' : ''
+  return new Error(
+    `${name}() takes exactly ${arity} argument${arity === 1 ? '' : 's'} on the server.${hint}`
+  )
 }
 
 export class UnknownVariableError extends Error {
@@ -177,6 +224,14 @@ export class UnknownFunctionError extends Error {
     super(`Unknown function: ${name}`)
     this.name = 'UnknownFunctionError'
     this.function = name
+  }
+}
+
+/** The formula evaluates to 0 on the server, because NCalc or Hybrasyl rejects the result. */
+export class ServerZeroError extends Error {
+  constructor(reason) {
+    super(`${reason}: the server evaluates this formula to 0`)
+    this.name = 'ServerZeroError'
   }
 }
 
@@ -203,10 +258,12 @@ function evalNode(node, vars) {
         case '*':
           return l * r
         case '/':
+          if (r === 0) throw new ServerZeroError('Division by zero')
           return l / r
         case '%':
+          if (r === 0) throw new ServerZeroError('Division by zero')
           return l % r
-        case '^':
+        case '**':
           return Math.pow(l, r)
         case '<':
           return l < r ? 1 : 0
@@ -231,13 +288,44 @@ function evalNode(node, vars) {
         const cond = evalNode(node.args[0], vars)
         return evalNode(cond !== 0 ? node.args[1] : node.args[2], vars)
       }
-      const fn = FUNCTIONS[name]
-      if (!fn) throw new UnknownFunctionError(node.name)
+      const def = FUNCTIONS[name]
+      if (!def) throw new UnknownFunctionError(node.name)
+      if (node.args.length !== def.arity) throw arityError(def.name, def.arity)
       const args = node.args.map((a) => evalNode(a, vars))
-      return fn(...args)
+      return def.fn(...args)
     }
     default:
       throw new Error(`Unknown node type: ${node.type}`)
+  }
+}
+
+/**
+ * Check every call's name and argument count, so a formula the server cannot
+ * evaluate fails at compile time with one message, not once per preview cell.
+ */
+function checkCalls(node) {
+  if (!node) return
+  switch (node.type) {
+    case 'unary':
+      checkCalls(node.arg)
+      break
+    case 'binop':
+      checkCalls(node.left)
+      checkCalls(node.right)
+      break
+    case 'call': {
+      const name = node.name.toLowerCase()
+      if (name === 'if') {
+        if (node.args.length !== 3) throw new Error('if() requires exactly 3 arguments')
+      } else {
+        const def = FUNCTIONS[name]
+        if (!def) throw new UnknownFunctionError(node.name)
+        if (node.args.length !== def.arity) throw arityError(def.name, def.arity)
+      }
+      for (const a of node.args) checkCalls(a)
+      break
+    }
+    default: /* num, var */
   }
 }
 
@@ -271,7 +359,13 @@ function collectVariables(node, out = new Set()) {
 export function compile(expression) {
   const tokens = tokenize(expression)
   const ast = parse(tokens)
-  const fn = (vars) => evalNode(ast, vars)
+  checkCalls(ast)
+  const fn = (vars) => {
+    const result = evalNode(ast, vars)
+    // Hybrasyl's FormulaParser.Eval returns 0 for NaN and the infinities.
+    if (!Number.isFinite(result)) throw new ServerZeroError('Not a finite number')
+    return result
+  }
   fn.variables = collectVariables(ast)
   return fn
 }
