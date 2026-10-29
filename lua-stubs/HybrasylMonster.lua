@@ -6,12 +6,12 @@
 ---@class HybrasylMonster : HybrasylWorldObject
 ---@field Direction Direction
 ---@field ThreatInfo ThreatInfo
----@field Target WorldObject
+---@field Target WorldObject?
 ---@field AbsoluteImmortal boolean
 ---@field PhysicalImmortal boolean
 ---@field MagicalImmortal boolean
----@field FirstHitter WorldObject
----@field LastHitter WorldObject
+---@field FirstHitter WorldObject?
+---@field LastHitter WorldObject?
 ---@field LastHitTime string
 ---Access the StatInfo of the specified user directly (all stats).
 ---@field Stats StatInfo

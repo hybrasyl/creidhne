@@ -110,7 +110,8 @@ scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml
                portable-config.test.mjs (no portable splashImage, and unpackDirName: true),
                electron-cache.test.mjs (each job that runs `npm ci` caches the Electron
                binary under `runner.temp` and retries the install, HTOO-388), xsdRef.test.mjs
-               (xsd/ holds the pinned xml ref; the XSD tests fail naming fetch-xsd when not).
+               (xsd/ holds the pinned xml ref; the XSD tests fail naming fetch-xsd when not),
+               luaStubs.test.mjs (lua-stubs/ defines each type that a script global names, HTOO-577).
 e2e/           Playwright specs against the built app
 ```
 

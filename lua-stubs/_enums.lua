@@ -86,40 +86,6 @@ ItemDropType = {}
 ---@type ItemObjectType
 ItemObjectType = {}
 
----@class ItemSlots
----@field None ItemSlots
----@field Weapon ItemSlots
----@field Armor ItemSlots
----@field Shield ItemSlots
----@field Helmet ItemSlots
----@field Earring ItemSlots
----@field Necklace ItemSlots
----@field LHand ItemSlots
----@field RHand ItemSlots
----@field LArm ItemSlots
----@field RArm ItemSlots
----@field Waist ItemSlots
----@field Leg ItemSlots
----@field Foot ItemSlots
----@field FirstAcc ItemSlots
----@field Trousers ItemSlots
----@field Coat ItemSlots
----@field SecondAcc ItemSlots
----@field ThirdAcc ItemSlots
----@field Gauntlet ItemSlots
----@field Ring ItemSlots
-
----@type ItemSlots
-ItemSlots = {}
-
----@class LanternSize
----@field None LanternSize
----@field Small LanternSize
----@field Large LanternSize
-
----@type LanternSize
-LanternSize = {}
-
 ---@class LegendColor
 ---@field Aqua LegendColor
 ---@field White LegendColor
@@ -188,23 +154,6 @@ MessageType = {}
 ---@type MonsterType
 MonsterType = {}
 
----@class NameDisplayStyle
----@field GreyHover NameDisplayStyle
----@field RedAlwaysOn NameDisplayStyle
----@field GreenHover NameDisplayStyle
----@field GreyAlwaysOn NameDisplayStyle
-
----@type NameDisplayStyle
-NameDisplayStyle = {}
-
----@class PaperType
----@field Brown PaperType
----@field Gold PaperType
----@field Silver PaperType
-
----@type PaperType
-PaperType = {}
-
 ---@class PlayerFlags
 ---@field Alive PlayerFlags
 ---@field InExchange PlayerFlags
@@ -237,15 +186,6 @@ PrivateMessageType = {}
 
 ---@type PublicMessageType
 PublicMessageType = {}
-
----@class RestPosition
----@field Standing RestPosition
----@field RestPosition1 RestPosition
----@field RestPosition2 RestPosition
----@field MaximumChill RestPosition
-
----@type RestPosition
-RestPosition = {}
 
 ---@class SkinColor
 ---@field Basic SkinColor
@@ -287,17 +227,6 @@ SpawnCastType = {}
 ---@type StatUpdateFlags
 StatUpdateFlags = {}
 
----@class StatusBarColor
----@field Off StatusBarColor
----@field Blue StatusBarColor
----@field Green StatusBarColor
----@field Orange StatusBarColor
----@field Red StatusBarColor
----@field White StatusBarColor
-
----@type StatusBarColor
-StatusBarColor = {}
-
 ---@class TextColor
 ---@field Red TextColor
 ---@field Yellow TextColor
@@ -330,19 +259,6 @@ TextColor = {}
 ---@type ThrottleResult
 ThrottleResult = {}
 
----@class UserStatus
----@field Awake UserStatus
----@field DoNotDisturb UserStatus
----@field DayDreaming UserStatus
----@field NeedGroup UserStatus
----@field Grouped UserStatus
----@field LoneHunter UserStatus
----@field GroupHunter UserStatus
----@field NeedHelp UserStatus
-
----@type UserStatus
-UserStatus = {}
-
 ---@class WarpType
 ---@field Map WarpType
 ---@field WorldMap WarpType
@@ -350,35 +266,13 @@ UserStatus = {}
 ---@type WarpType
 WarpType = {}
 
----@class BoardType
----@field Messageboard BoardType
----@field Sign BoardType
+---@class CastableFilter
+---@field SkillsOnly CastableFilter
+---@field SpellsOnly CastableFilter
+---@field SkillsAndSpells CastableFilter
 
----@type BoardType
-BoardType = {}
-
----@class Book
----@field PrimarySkill Book
----@field SecondarySkill Book
----@field UtilitySkill Book
----@field PrimarySpell Book
----@field SecondarySpell Book
----@field UtilitySpell Book
-
----@type Book
-Book = {}
-
----@class Class
----@field Peasant Class
----@field Warrior Class
----@field Rogue Class
----@field Wizard Class
----@field Priest Class
----@field Monk Class
----@field None Class
-
----@type Class
-Class = {}
+---@type CastableFilter
+CastableFilter = {}
 
 ---@class CreatureCondition
 ---@field Stun CreatureCondition
@@ -409,6 +303,96 @@ Class = {}
 
 ---@type CreatureCondition
 CreatureCondition = {}
+
+---@class DamageFlags
+---@field None DamageFlags
+---@field NoResistance DamageFlags
+---@field NoThreat DamageFlags
+---@field Nonlethal DamageFlags
+---@field NoDodge DamageFlags
+---@field NoCrit DamageFlags
+---@field NoElement DamageFlags
+
+---@type DamageFlags
+DamageFlags = {}
+
+---@class ItemFlags
+---@field Bound ItemFlags
+---@field Depositable ItemFlags
+---@field Enchantable ItemFlags
+---@field Consecratable ItemFlags
+---@field Tailorable ItemFlags
+---@field Smithable ItemFlags
+---@field Exchangeable ItemFlags
+---@field Vendorable ItemFlags
+---@field Perishable ItemFlags
+---@field UniqueInventory ItemFlags
+---@field MasterOnly ItemFlags
+---@field UniqueEquipped ItemFlags
+---@field Identifiable ItemFlags
+---@field Undamageable ItemFlags
+---@field Consumable ItemFlags
+
+---@type ItemFlags
+ItemFlags = {}
+
+---@class MapFlags
+---@field Snow MapFlags
+---@field Rain MapFlags
+---@field Dark MapFlags
+---@field NoMap MapFlags
+---@field Winter MapFlags
+
+---@type MapFlags
+MapFlags = {}
+
+---@class SpawnFlags
+---@field Active SpawnFlags
+---@field MovementDisabled SpawnFlags
+---@field AiDisabled SpawnFlags
+---@field DeathDisabled SpawnFlags
+
+---@type SpawnFlags
+SpawnFlags = {}
+
+---@class XmlError
+---@field None XmlError
+---@field SyntaxError XmlError
+---@field ProcessingError XmlError
+---@field AdditionalValidationError XmlError
+
+---@type XmlError
+XmlError = {}
+
+---@class BoardType
+---@field Messageboard BoardType
+---@field Sign BoardType
+
+---@type BoardType
+BoardType = {}
+
+---@class Book
+---@field PrimarySkill Book
+---@field SecondarySkill Book
+---@field UtilitySkill Book
+---@field PrimarySpell Book
+---@field SecondarySpell Book
+---@field UtilitySpell Book
+
+---@type Book
+Book = {}
+
+---@class Class
+---@field Peasant Class
+---@field Warrior Class
+---@field Rogue Class
+---@field Wizard Class
+---@field Priest Class
+---@field Monk Class
+---@field None Class
+
+---@type Class
+Class = {}
 
 ---@class CreatureImmunityType
 ---@field Element CreatureImmunityType
@@ -444,18 +428,6 @@ CreatureImmunityType = {}
 ---@type CreatureTargetPriority
 CreatureTargetPriority = {}
 
----@class DamageFlags
----@field None DamageFlags
----@field NoResistance DamageFlags
----@field NoThreat DamageFlags
----@field Nonlethal DamageFlags
----@field NoDodge DamageFlags
----@field NoCrit DamageFlags
----@field NoElement DamageFlags
-
----@type DamageFlags
-DamageFlags = {}
-
 ---@class DamageType
 ---@field Direct DamageType
 ---@field Physical DamageType
@@ -473,13 +445,6 @@ DamageType = {}
 
 ---@type Direction
 Direction = {}
-
----@class ElementalModifierType
----@field Augment ElementalModifierType
----@field Resistance ElementalModifierType
-
----@type ElementalModifierType
-ElementalModifierType = {}
 
 ---@class ElementType
 ---@field None ElementType
@@ -500,6 +465,13 @@ ElementalModifierType = {}
 
 ---@type ElementType
 ElementType = {}
+
+---@class ElementalModifierType
+---@field Augment ElementalModifierType
+---@field Resistance ElementalModifierType
+
+---@type ElementalModifierType
+ElementalModifierType = {}
 
 ---@class EquipmentSlot
 ---@field None EquipmentSlot
@@ -554,6 +526,14 @@ IntentDirection = {}
 
 ---@type IntentFlags
 IntentFlags = {}
+
+---@class IntentType
+---@field Hostile IntentType
+---@field Passive IntentType
+---@field Neutral IntentType
+
+---@type IntentType
+IntentType = {}
 
 ---@class ItemBodyStyle
 ---@field Transparent ItemBodyStyle
@@ -642,26 +622,6 @@ ItemBodyStyle = {}
 ---@type ItemColor
 ItemColor = {}
 
----@class ItemFlags
----@field Bound ItemFlags
----@field Depositable ItemFlags
----@field Enchantable ItemFlags
----@field Consecratable ItemFlags
----@field Tailorable ItemFlags
----@field Smithable ItemFlags
----@field Exchangeable ItemFlags
----@field Vendorable ItemFlags
----@field Perishable ItemFlags
----@field UniqueInventory ItemFlags
----@field MasterOnly ItemFlags
----@field UniqueEquipped ItemFlags
----@field Identifiable ItemFlags
----@field Undamageable ItemFlags
----@field Consumable ItemFlags
-
----@type ItemFlags
-ItemFlags = {}
-
 ---@class ItemTag
 ---@field Junk ItemTag
 ---@field Common ItemTag
@@ -712,16 +672,6 @@ LogLevel = {}
 ---@type LogType
 LogType = {}
 
----@class MapFlags
----@field Snow MapFlags
----@field Rain MapFlags
----@field Dark MapFlags
----@field NoMap MapFlags
----@field Winter MapFlags
-
----@type MapFlags
-MapFlags = {}
-
 ---@class MasteryModifier
 ---@field Damage MasteryModifier
 ---@field Heal MasteryModifier
@@ -731,19 +681,15 @@ MapFlags = {}
 ---@type MasteryModifier
 MasteryModifier = {}
 
----@class MessageType
----@field Mail MessageType
----@field BoardMessage MessageType
----@field Say MessageType
----@field Shout MessageType
----@field Whisper MessageType
----@field GuildChat MessageType
----@field GroupChat MessageType
----@field RegionalChat MessageType
----@field GMChat MessageType
+---@class NpcJobListList
+---@field Vend NpcJobListList
+---@field Bank NpcJobListList
+---@field Train NpcJobListList
+---@field Repair NpcJobListList
+---@field Post NpcJobListList
 
----@type MessageType
-MessageType = {}
+---@type NpcJobListList
+NpcJobListList = {}
 
 ---@class NpcRepairType
 ---@field Armor NpcRepairType
@@ -796,15 +742,6 @@ ScriptSource = {}
 ---@type SlotRestrictionType
 SlotRestrictionType = {}
 
----@class SpawnFlags
----@field Active SpawnFlags
----@field MovementDisabled SpawnFlags
----@field AiDisabled SpawnFlags
----@field DeathDisabled SpawnFlags
-
----@type SpawnFlags
-SpawnFlags = {}
-
 ---@class SpellUseType
 ---@field Unusable SpellUseType
 ---@field Prompt SpellUseType
@@ -817,6 +754,16 @@ SpawnFlags = {}
 
 ---@type SpellUseType
 SpellUseType = {}
+
+---@class StatType
+---@field Str StatType
+---@field Int StatType
+---@field Con StatType
+---@field Wis StatType
+---@field Dex StatType
+
+---@type StatType
+StatType = {}
 
 ---@class VisualEffectType
 ---@field Targets VisualEffectType
@@ -836,3 +783,64 @@ VisualEffectType = {}
 
 ---@type WeaponType
 WeaponType = {}
+
+---@class BodySprite
+---@field None BodySprite
+---@field Male BodySprite
+---@field Female BodySprite
+---@field MaleGhost BodySprite
+---@field FemaleGhost BodySprite
+---@field MaleInvis BodySprite
+---@field FemaleInvis BodySprite
+---@field MaleJester BodySprite
+---@field MaleHead BodySprite
+---@field FemaleHead BodySprite
+---@field BlankMale BodySprite
+---@field BlankFemale BodySprite
+
+---@type BodySprite
+BodySprite = {}
+
+---@class EntityType
+---@field Creature EntityType
+---@field Item EntityType
+---@field Aisling EntityType
+
+---@type EntityType
+EntityType = {}
+
+---@class LanternSize
+---@field None LanternSize
+---@field Small LanternSize
+---@field Large LanternSize
+
+---@type LanternSize
+LanternSize = {}
+
+---@class NameTagStyle
+---@field NeutralHover NameTagStyle
+---@field Hostile NameTagStyle
+---@field FriendlyHover NameTagStyle
+---@field Neutral NameTagStyle
+
+---@type NameTagStyle
+NameTagStyle = {}
+
+---@class RestPosition
+---@field None RestPosition
+---@field Kneel RestPosition
+---@field Lay RestPosition
+---@field Sprawl RestPosition
+
+---@type RestPosition
+RestPosition = {}
+
+---@class Stat
+---@field STR Stat
+---@field DEX Stat
+---@field INT Stat
+---@field WIS Stat
+---@field CON Stat
+
+---@type Stat
+Stat = {}

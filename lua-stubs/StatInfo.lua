@@ -132,12 +132,12 @@ local StatInfo = {}
 function StatInfo.ToString() end
 
 ---Apply the changes of a passed StatInfo. The attributes within are applied to this StatInfo object.
----@param si1 StatInfo The StatInfo object to apply to this one
+---@param si1 StatInfo? The StatInfo object to apply to this one
 ---@param experience? boolean Boolean indicating whether or not to handle experience (Level/Exp/Ab/AbExp)
 function StatInfo.Apply(si1, experience) end
 
 ---Remove the changes of a passed StatInfo. The attributes within are applied to this StatInfo object.
----@param si1 StatInfo The StatInfo object to apply to this one
+---@param si1 StatInfo? The StatInfo object to apply to this one
 ---@param experience? boolean Boolean indicating whether or not to handle experience (Level/Exp/Ab/AbExp)
 function StatInfo.Remove(si1, experience) end
 

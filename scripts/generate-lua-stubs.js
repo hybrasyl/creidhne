@@ -1,9 +1,20 @@
 const fs = require('fs')
 const path = require('path')
+const { execFileSync } = require('child_process')
 
 // --- Configuration ---
-const serverRoot = process.argv[2] || path.join(__dirname, '..', '..', 'server', 'hybrasyl')
-const outputDir = process.argv[3] || path.join(__dirname, '..', 'lua-stubs')
+// Usage: node generate-lua-stubs.js [server-hybrasyl] [output-dir] [xml] [dalib] [--allow-drop=A,B]
+const positional = process.argv.slice(2).filter((a) => !a.startsWith('--'))
+const allowDrop = new Set(
+  (process.argv.find((a) => a.startsWith('--allow-drop=')) ?? '')
+    .replace('--allow-drop=', '')
+    .split(',')
+    .filter(Boolean)
+)
+const serverRoot = positional[0] || path.join(__dirname, '..', '..', 'server', 'hybrasyl')
+const outputDir = positional[1] || path.join(__dirname, '..', 'lua-stubs')
+const xmlRoot = positional[2] || path.join(serverRoot, '..', '..', 'xml')
+const dalibRoot = positional[3] || path.join(serverRoot, '..', '..', 'dalib')
 
 console.log(`Scanning: ${serverRoot}`)
 console.log(`Output:   ${outputDir}`)
@@ -437,6 +448,49 @@ function generateTodo(allClasses) {
   return lines.join('\n')
 }
 
+// --- Enum sources ---
+/** The .cs files directly in `dir` on disk. */
+function workingTreeFiles(dir) {
+  if (!fs.existsSync(dir)) return []
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.cs'))
+    .map((file) => ({ file, content: fs.readFileSync(path.join(dir, file), 'utf-8') }))
+}
+
+/**
+ * The .cs files directly in each of `dirs` of the package `name`, read from
+ * the checkout at `repo` at the tag `v<version>`, where the version is the
+ * one Hybrasyl.csproj references. Exits when the reference or the tag is missing.
+ */
+function pinnedSource(name, csproj, repo, dirs) {
+  const ref = new RegExp(`<PackageReference Include="${name}" Version="([^"]+)"`).exec(csproj)
+  if (!ref) {
+    console.error(`Hybrasyl.csproj has no PackageReference for ${name}.`)
+    process.exit(1)
+  }
+  const tag = `v${ref[1]}`
+  const git = (...args) =>
+    execFileSync('git', ['-C', repo, ...args], { encoding: 'utf-8', maxBuffer: 64 << 20 })
+  try {
+    git('rev-parse', '--verify', '--quiet', `refs/tags/${tag}`)
+  } catch {
+    console.error(
+      `${repo} has no tag ${tag}, which ${name} ${ref[1]} needs. Run: git -C "${repo}" fetch --tags`
+    )
+    process.exit(1)
+  }
+  const files = []
+  for (const dir of dirs) {
+    for (const p of git('ls-tree', '--name-only', tag, `${dir}/`).split('\n').filter(Boolean)) {
+      if (p.endsWith('.cs'))
+        files.push({ file: path.basename(p), content: git('show', `${tag}:${p}`) })
+    }
+  }
+  console.log(`Enums from ${name} ${tag}: ${files.length} files`)
+  return { label: `${name} ${tag}`, files }
+}
+
 // --- Main ---
 function main() {
   if (!fs.existsSync(serverRoot)) {
@@ -469,38 +523,27 @@ function main() {
   // add its class name here and maintain the .lua file by hand.
   const MANUALLY_MAINTAINED = new Set([])
 
-  // Write stubs
-  for (const cls of allClasses) {
-    if (MANUALLY_MAINTAINED.has(cls.name)) {
-      console.log(`  ** ${cls.name}.lua — SKIPPED (manually maintained)`)
-      continue
-    }
-    const stub = generateStub(cls)
-    const outPath = path.join(outputDir, `${cls.name}.lua`)
-    fs.writeFileSync(outPath, stub)
-    console.log(`  -> ${outPath}`)
-  }
-
   // ── Enum scanning ────────────────────────────────────────────────────────
-  // Scan Internals/Enums/ + XML enum types for C# enums exposed to Lua via
-  // MoonSharp. Generates one _enums.lua file with all of them. Also scans
-  // any other directories that contain enums used as property types in the
-  // generated stubs (e.g. ElementType from the XML namespace).
-  // Scan multiple directories for enum definitions. The xml repo is a sibling
-  // to the server repo and contains enums like ElementType, Gender, Direction.
-  const xmlRoot = process.argv[4] || path.join(serverRoot, '..', '..', 'xml')
-  const enumDirs = [
-    path.join(serverRoot, 'Internals', 'Enums'),
-    path.join(xmlRoot, 'src', 'Objects') // ElementType, Gender, Direction, Class
+  // The enums come from what the server compiles against (HTOO-577): its own
+  // Internals/Enums, and the Hybrasyl.Xml and DALib packages at the versions
+  // Hybrasyl.csproj references. Each package is read from its sibling
+  // checkout at the tag for that version, never from the working tree, which
+  // can be ahead of the server. That is how ElementType stays in the stubs
+  // after xml main removed it: the server still uses the xml release that has it.
+  const csproj = fs.readFileSync(path.join(serverRoot, 'Hybrasyl.csproj'), 'utf-8')
+  const enumSources = [
+    { label: 'server', files: workingTreeFiles(path.join(serverRoot, 'Internals', 'Enums')) },
+    pinnedSource('Hybrasyl.Xml', csproj, xmlRoot, ['src/Enums', 'src/Objects']),
+    pinnedSource('DALib', csproj, dalibRoot, ['DALib/Enums'])
   ]
   const enumPattern = /public\s+enum\s+(\w+)\s*(?::\s*\w+\s*)?\{([^}]+)\}/gs
   const enumValuePattern = /^\s*(\w+)\s*(?:=\s*[^,\n]+)?/gm
   const allEnums = []
 
-  for (const dir of enumDirs) {
-    if (!fs.existsSync(dir)) continue
-    for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.cs'))) {
-      const content = fs.readFileSync(path.join(dir, file), 'utf-8')
+  // The first source that defines a name wins: the server's unqualified
+  // Direction and Gender are xml's, and it spells out DALib.Enums.Direction.
+  for (const source of enumSources) {
+    for (const { file, content } of source.files) {
       enumPattern.lastIndex = 0
       let m
       while ((m = enumPattern.exec(content)) !== null) {
@@ -512,9 +555,47 @@ function main() {
         while ((vm = enumValuePattern.exec(body)) !== null) {
           if (vm[1] && !vm[1].startsWith('//')) values.push(vm[1])
         }
-        if (values.length) allEnums.push({ name: enumName, values, file })
+        if (!values.length) continue
+        const first = allEnums.find((e) => e.name === enumName)
+        if (first) {
+          console.log(`  (${source.label} ${enumName} skipped: ${first.source} defines it)`)
+          continue
+        }
+        allEnums.push({ name: enumName, values, file, source: source.label })
       }
     }
+  }
+
+  // A regeneration must not lose a type silently. An enum that the previous
+  // _enums.lua held and this run did not find stops the run, unless
+  // --allow-drop names it.
+  const enumPath = path.join(outputDir, '_enums.lua')
+  const previous = fs.existsSync(enumPath)
+    ? [...fs.readFileSync(enumPath, 'utf-8').matchAll(/^---@class (\w+)$/gm)].map((m) => m[1])
+    : []
+  const dropped = [...new Set(previous)].filter(
+    (n) => !allEnums.some((e) => e.name === n) && !allowDrop.has(n)
+  )
+  if (dropped.length) {
+    console.error(
+      `\nThese enums were in _enums.lua and are not in the sources: ${dropped.join(', ')}`
+    )
+    console.error(
+      'Find where each one moved, or pass --allow-drop=<names> if it is gone on purpose.'
+    )
+    process.exit(1)
+  }
+
+  // Write stubs, only once the enum check has passed, so a refused run writes nothing.
+  for (const cls of allClasses) {
+    if (MANUALLY_MAINTAINED.has(cls.name)) {
+      console.log(`  ** ${cls.name}.lua — SKIPPED (manually maintained)`)
+      continue
+    }
+    const stub = generateStub(cls)
+    const outPath = path.join(outputDir, `${cls.name}.lua`)
+    fs.writeFileSync(outPath, stub)
+    console.log(`  -> ${outPath}`)
   }
 
   if (allEnums.length) {
@@ -535,7 +616,6 @@ function main() {
       lines.push(`${e.name} = {}`)
       lines.push('')
     }
-    const enumPath = path.join(outputDir, '_enums.lua')
     fs.writeFileSync(enumPath, lines.join('\n'))
     console.log(`\n  -> ${enumPath} (${allEnums.length} enums)`)
   }

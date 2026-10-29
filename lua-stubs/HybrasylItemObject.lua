@@ -8,7 +8,7 @@
 ---@field MaximumDurability number
 ---@field Weight number
 ---@field Value number
----@field Stats StatInfo
+---@field Stats StatInfo?
 ---@field Categories string[]
 ---@field MinLevel number
 ---@field MaxLevel number
@@ -33,7 +33,7 @@
 ---@field Stackable boolean
 ---@field StackableMax number
 ---@field Sprite number
----@field Script Script
+---@field Script Script?
 ---@field DialogSequences DialogSequence[]
 ---@field AllowDead boolean
 ---@field Id number

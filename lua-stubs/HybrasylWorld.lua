@@ -24,7 +24,7 @@ function HybrasylWorld.CurrentTime() end
 
 ---Get a user object for the specified user (player) name.
 ---@param username string The user to be returned
----@return HybrasylUser HybrasylUser object for the given user, or nil, if the player is not logged in.
+---@return HybrasylUser? HybrasylUser object for the given user, or nil, if the player is not logged in.
 function HybrasylWorld.GetUser(username) end
 
 ---Create a new dialog options container.
@@ -39,7 +39,7 @@ function HybrasylWorld.NewDialogSequence(sequenceName, ...) end
 
 ---Create a new "simple" (text-only) dialog.
 ---@param displayText string The text that the dialog will display to the player.
----@param callback? string A lua callback that can be associated with the dialog, and will be fired when the dialog is shown to a player.
+---@param callback? string? A lua callback that can be associated with the dialog, and will be fired when the dialog is shown to a player.
 ---@return HybrasylDialog The constructed dialog
 function HybrasylWorld.NewDialog(displayText, callback) end
 
@@ -53,14 +53,14 @@ function HybrasylWorld.NewSimpleDialogSequence(sequenceName, ...) end
 ---@param simpleDialog string Text for the simple dialog.
 ---@param jumpTarget string The new sequence to start after the user hits next on the simple dialog.
 ---@param callback? string An optional Lua callback expression that will be attached to the simple dialog.
----@param name? string An optional name to give the dialog sequence.
+---@param name? string? An optional name to give the dialog sequence.
 ---@return HybrasylDialogSequence The constructed dialog sequence
 function HybrasylWorld.NewTextAndJumpDialog(simpleDialog, jumpTarget, callback, name) end
 
 ---Another convenience function to generate an "end" sequence where the user must hit close (e.g. a dialog end). This is useful to make a jumpable end to a previous dialog option.
 ---@param simpleDialog string The text of the simple dialog.
 ---@param callback? string An optional Lua callback expression that will be attached to the simple dialog.
----@param name? string An optional name to give the dialog sequence.
+---@param name? string? An optional name to give the dialog sequence.
 ---@return HybrasylDialogSequence The constructed dialog sequence
 function HybrasylWorld.NewEndSequence(simpleDialog, callback, name) end
 
@@ -71,7 +71,7 @@ function HybrasylWorld.NewEndSequence(simpleDialog, callback, name) end
 ---@param inputLength? number The maximum length (up to 254 characters) of the text that can be typed into the dialog by the player
 ---@param callback? string The callback function or lua expression that will fire when this dialog is shown to a player.
 ---@param handler? string The function or lua expression that will handle the response once the player hits enter / hits next.
----@return HybrasylDialog The constructed dialog
+---@return HybrasylDialog? The constructed dialog
 function HybrasylWorld.NewTextDialog(displayText, topCaption, bottomCaption, inputLength, callback, handler) end
 
 ---Create a new options dialog (a dialog that displays clickable options to the player).
@@ -89,7 +89,7 @@ function HybrasylWorld.NewFunctionDialog(luaExpr) end
 
 ---Create a jump dialog, which is an "invisible" dialog that is used to start a new sequence from a subdialog. Can be used to jump between different NPC dialogue branches.
 ---@param targetSequence string The name of the sequence that will start when this JumpDialog is "shown" to the player.
----@param callbackExpression? string A lua expression that will run when this dialog is shown to the player.
+---@param callbackExpression? string? A lua expression that will run when this dialog is shown to the player.
 ---@return HybrasylDialog The constructed dialog
 function HybrasylWorld.NewJumpDialog(targetSequence, callbackExpression) end
 
@@ -103,7 +103,7 @@ function HybrasylWorld.RegisterGlobalSequence(globalSequence) end
 ---@param name string
 ---@param behaviorSet string
 ---@param level number
----@param displayName? string
+---@param displayName? string?
 function HybrasylWorld.SpawnMonster(mapId, x, y, name, behaviorSet, level, displayName) end
 
 return HybrasylWorld
