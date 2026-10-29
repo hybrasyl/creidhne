@@ -39,7 +39,8 @@ function mapXmlToRecipe(result, comment) {
     duration: a(first(root.Duration), 'Length', ''),
     ingredients: (ingredientsNode.Ingredient || []).map((ing) => ({
       name: a(ing, 'Name', ''),
-      quantity: a(ing, 'Quantity', '1')
+      // As the file has it. A missing Quantity stays missing on save (HTOO-138).
+      quantity: a(ing, 'Quantity', '')
     }))
   }
 }
@@ -61,7 +62,7 @@ function buildXmlObject(recipe) {
   const root = {
     $: { xmlns: XMLNS },
     Name: [recipe.name],
-    Item: [{ $: { Name: recipe.produces } }],
+    Item: [{ $: omitEmpty({ Name: recipe.produces }) }],
     Duration: [
       { $: omitEmpty({ Length: recipe.duration !== '' ? String(recipe.duration) : undefined }) }
     ]
@@ -73,7 +74,8 @@ function buildXmlObject(recipe) {
     root.Ingredients = [
       {
         Ingredient: recipe.ingredients.map((ing) => ({
-          $: { Name: ing.name, Quantity: String(ing.quantity) }
+          // An empty Quantity is omitted: Quantity="" is not an unsignedShort.
+          $: omitEmpty({ Name: ing.name, Quantity: String(ing.quantity ?? '') })
         }))
       }
     ]

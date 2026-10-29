@@ -40,9 +40,15 @@ function mapImmunities(immsArr) {
   }))
 }
 
+// `present` records that the spawn has a <Hostility> element, even an empty
+// one. The server copies a spawn's Hostility over the creature's when the
+// element is there, and an empty one has no Players, so the monster is
+// neutral. Without the element, the creature's own hostility applies. xml2js
+// reads an empty element as a string, so presence is "not undefined".
 function mapHostility(hosNode) {
-  if (!hosNode) {
+  if (hosNode === undefined) {
     return {
+      present: false,
       players: false,
       playerExceptCookie: '',
       playerOnlyCookie: '',
@@ -51,11 +57,12 @@ function mapHostility(hosNode) {
       monsterOnlyCookie: ''
     }
   }
-  const hasPlayers = Array.isArray(hosNode.Players) && hosNode.Players.length > 0
-  const hasMonsters = Array.isArray(hosNode.Monsters) && hosNode.Monsters.length > 0
+  const hasPlayers = Array.isArray(hosNode?.Players) && hosNode.Players.length > 0
+  const hasMonsters = Array.isArray(hosNode?.Monsters) && hosNode.Monsters.length > 0
   const players = hasPlayers ? hosNode.Players[0] : null
   const monsters = hasMonsters ? hosNode.Monsters[0] : null
   return {
+    present: true,
     players: hasPlayers,
     playerExceptCookie: players ? a(players, 'ExceptCookie', '') : '',
     playerOnlyCookie: players ? a(players, 'OnlyCookie', '') : '',
@@ -167,10 +174,14 @@ function buildImmunities(immunities) {
   ]
 }
 
+// An empty <Hostility/> is written when `present` is set with neither side,
+// because the server reads it as neutral. A model without `present` (one
+// made before it existed) has the element exactly when a side is set.
 function buildHostility(hos) {
   const hasMonsters = hos?.monsters
   const hasPlayers = hos?.players
-  if (!hasMonsters && !hasPlayers) return undefined
+  const present = hos?.present ?? (hasMonsters || hasPlayers)
+  if (!present) return undefined
   const node = {}
   if (hasMonsters) {
     node.Monsters = [

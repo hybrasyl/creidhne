@@ -84,6 +84,7 @@ const makeDefaultSpawn = () => ({
     when: ''
   },
   hostility: {
+    present: false,
     players: false,
     playerExceptCookie: '',
     playerOnlyCookie: '',
@@ -283,59 +284,82 @@ function LootContent({ loot, inline, lootsetOptions, onChange }) {
   )
 }
 
+// A spawn's Hostility replaces the creature's when it is set. Set with
+// neither side, it makes the monster neutral, which is not the same as
+// leaving it unset (HTOO-136).
 function HostilityContent({ hostility, onChange }) {
   const set = (field, val) => onChange({ ...hostility, [field]: val })
+  const present = hostility.present ?? (hostility.players || hostility.monsters)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      {[
-        {
-          key: 'players',
-          label: 'Players',
-          exceptKey: 'playerExceptCookie',
-          onlyKey: 'playerOnlyCookie'
-        },
-        {
-          key: 'monsters',
-          label: 'Monsters',
-          exceptKey: 'monsterExceptCookie',
-          onlyKey: 'monsterOnlyCookie'
-        }
-      ].map(({ key, label, exceptKey, onlyKey }) => (
-        <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={hostility[key]}
-                onChange={(e) => set(key, e.target.checked)}
-              />
-            }
-            label={<Typography variant="body2">{label}</Typography>}
-            sx={{ minWidth: 100, m: 0 }}
+      <FormControlLabel
+        control={
+          <Checkbox
+            size="small"
+            checked={!!present}
+            onChange={(e) => set('present', e.target.checked)}
           />
-          {hostility[key] && (
-            <>
-              <ConstantAutocomplete
-                indexKey="cookieNames"
-                label="Except Cookie"
-                sx={{ flex: 1, minWidth: 140 }}
-                value={hostility[exceptKey]}
-                onChange={(val) => set(exceptKey, val)}
-                inputProps={{ maxLength: 128 }}
-              />
-              <ConstantAutocomplete
-                indexKey="cookieNames"
-                label="Only Cookie"
-                sx={{ flex: 1, minWidth: 140 }}
-                value={hostility[onlyKey]}
-                onChange={(val) => set(onlyKey, val)}
-                inputProps={{ maxLength: 128 }}
-              />
-            </>
-          )}
-        </Box>
-      ))}
+        }
+        label={<Typography variant="body2">Set hostility for this spawn</Typography>}
+        sx={{ m: 0 }}
+      />
+      <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
+        {!present
+          ? "The monster uses its creature's hostility."
+          : hostility.players || hostility.monsters
+            ? "This replaces the creature's hostility."
+            : 'Neither is set, so the monster is neutral: it attacks nothing.'}
+      </Typography>
+      {present &&
+        [
+          {
+            key: 'players',
+            label: 'Players',
+            exceptKey: 'playerExceptCookie',
+            onlyKey: 'playerOnlyCookie'
+          },
+          {
+            key: 'monsters',
+            label: 'Monsters',
+            exceptKey: 'monsterExceptCookie',
+            onlyKey: 'monsterOnlyCookie'
+          }
+        ].map(({ key, label, exceptKey, onlyKey }) => (
+          <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={hostility[key]}
+                  onChange={(e) => set(key, e.target.checked)}
+                />
+              }
+              label={<Typography variant="body2">{label}</Typography>}
+              sx={{ minWidth: 100, m: 0 }}
+            />
+            {hostility[key] && (
+              <>
+                <ConstantAutocomplete
+                  indexKey="cookieNames"
+                  label="Except Cookie"
+                  sx={{ flex: 1, minWidth: 140 }}
+                  value={hostility[exceptKey]}
+                  onChange={(val) => set(exceptKey, val)}
+                  inputProps={{ maxLength: 128 }}
+                />
+                <ConstantAutocomplete
+                  indexKey="cookieNames"
+                  label="Only Cookie"
+                  sx={{ flex: 1, minWidth: 140 }}
+                  value={hostility[onlyKey]}
+                  onChange={(val) => set(onlyKey, val)}
+                  inputProps={{ maxLength: 128 }}
+                />
+              </>
+            )}
+          </Box>
+        ))}
     </Box>
   )
 }
