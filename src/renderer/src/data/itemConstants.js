@@ -110,23 +110,9 @@ export const CLASS_TYPES = ['All', 'Peasant', 'Warrior', 'Rogue', 'Wizard', 'Pri
 
 export const GENDERS = ['Neutral', 'Male', 'Female']
 
-export const ELEMENT_TYPES = [
-  'None',
-  'Fire',
-  'Water',
-  'Wind',
-  'Earth',
-  'Light',
-  'Dark',
-  'Wood',
-  'Metal',
-  'Undead',
-  'RandomTemuair',
-  'RandomExpanded',
-  'Necklace',
-  'Belt',
-  'Current'
-]
+// No element list here: the world data defines the elements (HXML-24), and
+// every element field takes its options from the active element table
+// through useElementOptions (HTOO-581).
 
 export const ITEM_TAGS = [
   'Junk',

@@ -733,7 +733,6 @@ function ItemEditor({
               <StatsTab
                 data={p.statModifiers}
                 onChange={(updated) => updateProperties({ statModifiers: updated })}
-                elementOptions={libraryIndex.elementnames || []}
               />
             )}
 

@@ -31,7 +31,7 @@ import EditorHeader from '../shared/EditorHeader'
 import { normalizeFolder } from '../../utils/fileTree'
 import InlineLootNotice from '../shared/InlineLootNotice'
 import { IMMUNITY_TYPES, MESSAGE_TYPES } from '../../data/behaviorSetConstants'
-import { ELEMENT_TYPES } from '../../data/itemConstants'
+import { ElementField, ElementSelectorField } from '../shared/ElementFields'
 
 const SPAWN_FLAGS = ['Active', 'MovementDisabled', 'AiDisabled', 'DeathDisabled']
 
@@ -143,8 +143,6 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
 
   const valueOptions = (() => {
     switch (type) {
-      case 'Element':
-        return libraryIndex.elementnames || []
       case 'Castable':
         return libraryIndex.castables || []
       case 'Status':
@@ -168,7 +166,13 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           ))}
         </Select>
       </FormControl>
-      {isCategory ? (
+      {type === 'Element' ? (
+        <ElementField
+          value={value}
+          onChange={(val) => onChangeField(index, 'value', val)}
+          sx={{ flex: 1, minWidth: 160 }}
+        />
+      ) : isCategory ? (
         <TextField
           label="Category"
           size="small"
@@ -656,14 +660,11 @@ const SpawnAccordion = memo(function SpawnAccordion({
                     htmlInput: { inputMode: 'numeric' }
                   }}
                 />
-                <Autocomplete
-                  options={ELEMENT_TYPES}
-                  value={spawn.combat.offensiveElement || 'None'}
-                  onChange={(_, val) => setNested('combat', 'offensiveElement', val || 'None')}
-                  disableClearable
-                  size="small"
-                  sx={{ width: 180 }}
-                  renderInput={(params) => <TextField {...params} label="Offensive Element" />}
+                <ElementSelectorField
+                  label="Offensive Elements"
+                  value={spawn.combat.offensiveElement || ''}
+                  onChange={(val) => setNested('combat', 'offensiveElement', val)}
+                  sx={{ minWidth: 220, maxWidth: 420 }}
                 />
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -687,14 +688,11 @@ const SpawnAccordion = memo(function SpawnAccordion({
                     htmlInput: { inputMode: 'numeric' }
                   }}
                 />
-                <Autocomplete
-                  options={ELEMENT_TYPES}
-                  value={spawn.combat.defensiveElement || 'None'}
-                  onChange={(_, val) => setNested('combat', 'defensiveElement', val || 'None')}
-                  disableClearable
-                  size="small"
-                  sx={{ width: 180 }}
-                  renderInput={(params) => <TextField {...params} label="Defensive Element" />}
+                <ElementSelectorField
+                  label="Defensive Elements"
+                  value={spawn.combat.defensiveElement || ''}
+                  onChange={(val) => setNested('combat', 'defensiveElement', val)}
+                  sx={{ minWidth: 220, maxWidth: 420 }}
                 />
               </Box>
             </Box>

@@ -8,55 +8,16 @@ import {
   IconButton,
   Button,
   Typography,
-  Paper,
-  Autocomplete
+  Paper
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
-import { STAT_MODIFIERS, ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES } from '../../data/itemConstants'
+import { STAT_MODIFIERS, ELEMENTAL_MODIFIER_TYPES } from '../../data/itemConstants'
+import { ElementField } from './ElementFields'
 
 const DEFAULT_ELEMENTAL = { type: 'Augment', element: '', modifier: '1' }
 
-function ElementSelect({ value, onChange, elementOptions, sx }) {
-  if (elementOptions) {
-    return (
-      <Autocomplete
-        freeSolo
-        options={elementOptions}
-        value={value}
-        onInputChange={(_, val, reason) => {
-          if (reason === 'input') onChange(val)
-        }}
-        onChange={(_, val) => onChange(val ?? '')}
-        size="small"
-        sx={sx}
-        renderInput={(params) => <TextField {...params} label="Element" />}
-      />
-    )
-  }
-  return (
-    <FormControl size="small" sx={sx}>
-      <InputLabel>Element</InputLabel>
-      <Select value={value} label="Element" onChange={(e) => onChange(e.target.value)}>
-        {ELEMENT_TYPES.map((el) => (
-          <MenuItem key={el} value={el}>
-            {el}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  )
-}
-
-function StatModifierRow({
-  row,
-  index,
-  usedKeys,
-  elementOptions,
-  onChangeKey,
-  onChangeValue,
-  onRemove
-}) {
+function StatModifierRow({ row, index, usedKeys, onChangeKey, onChangeValue, onRemove }) {
   const availableStats = STAT_MODIFIERS.filter(
     (s) => s.key === row.key || !usedKeys.includes(s.key)
   )
@@ -76,11 +37,10 @@ function StatModifierRow({
       </FormControl>
 
       {statDef?.type === 'element' ? (
-        <ElementSelect
+        <ElementField
           value={row.value}
           onChange={(val) => onChangeValue(index, val)}
-          elementOptions={elementOptions}
-          sx={{ minWidth: 180, flex: elementOptions ? 1 : undefined }}
+          sx={{ minWidth: 180, flex: 1 }}
         />
       ) : (
         <TextField
@@ -100,7 +60,7 @@ function StatModifierRow({
   )
 }
 
-function StatsTab({ data, onChange, elementOptions }) {
+function StatsTab({ data, onChange }) {
   const { rows, elementalModifiers } = data
   const usedKeys = rows.map((r) => r.key)
 
@@ -119,8 +79,7 @@ function StatsTab({ data, onChange, elementOptions }) {
   const addRow = () => {
     const next = STAT_MODIFIERS.find((s) => !usedKeys.includes(s.key))
     if (!next) return
-    const defaultValue = next.type === 'element' ? (elementOptions ? '' : 'None') : ''
-    onChange({ ...data, rows: [...rows, { key: next.key, value: defaultValue }] })
+    onChange({ ...data, rows: [...rows, { key: next.key, value: '' }] })
   }
 
   const removeRow = (index) => {
@@ -128,9 +87,7 @@ function StatsTab({ data, onChange, elementOptions }) {
   }
 
   const changeKey = (index, newKey) => {
-    const statDef = STAT_MODIFIERS.find((s) => s.key === newKey)
-    const defaultValue = statDef?.type === 'element' ? (elementOptions ? '' : 'None') : ''
-    const updated = rows.map((r, i) => (i === index ? { key: newKey, value: defaultValue } : r))
+    const updated = rows.map((r, i) => (i === index ? { key: newKey, value: '' } : r))
     onChange({ ...data, rows: updated })
   }
 
@@ -166,7 +123,6 @@ function StatsTab({ data, onChange, elementOptions }) {
             row={row}
             index={index}
             usedKeys={usedKeys}
-            elementOptions={elementOptions}
             onChangeKey={changeKey}
             onChangeValue={changeValue}
             onRemove={removeRow}
@@ -206,11 +162,10 @@ function StatsTab({ data, onChange, elementOptions }) {
                 ))}
               </Select>
             </FormControl>
-            <ElementSelect
+            <ElementField
               value={em.element}
               onChange={(val) => setElemental(index, 'element', val)}
-              elementOptions={elementOptions}
-              sx={{ minWidth: 160, flex: elementOptions ? 1 : undefined }}
+              sx={{ minWidth: 160, flex: 1 }}
             />
             <TextField
               label="Modifier"

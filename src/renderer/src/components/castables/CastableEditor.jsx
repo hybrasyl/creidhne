@@ -47,7 +47,7 @@ import StatusesSection from './StatusesSection'
 import FormulasSection from './FormulasSection'
 import AnimationsSection from './AnimationsSection'
 import RequirementsSection from './RequirementsSection'
-import { ELEMENT_TYPES } from '../../data/itemConstants'
+import { ElementSelectorField } from '../shared/ElementFields'
 import CommentField from '../shared/CommentField'
 import { normalizeFolder } from '../../utils/fileTree'
 
@@ -428,14 +428,10 @@ function CastableEditor({
                   ))}
                 </Select>
               </FormControl>
-              <Autocomplete
-                options={ELEMENT_TYPES}
-                value={data.elements || 'None'}
-                onChange={(_, val) => updateData((d) => ({ ...d, elements: val || 'None' }))}
-                disableClearable
-                size="small"
-                sx={{ width: 180 }}
-                renderInput={(params) => <TextField {...params} label="Elements" />}
+              <ElementSelectorField
+                value={data.elements || ''}
+                onChange={(elements) => updateData((d) => ({ ...d, elements }))}
+                sx={{ minWidth: 180, maxWidth: 360 }}
               />
             </Box>
 

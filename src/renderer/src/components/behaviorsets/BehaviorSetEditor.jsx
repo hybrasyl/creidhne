@@ -42,6 +42,7 @@ import {
 import CommentField from '../shared/CommentField'
 import StatsTab from '../shared/StatsTab'
 import { normalizeFolder } from '../../utils/fileTree'
+import { ElementField } from '../shared/ElementFields'
 
 const DEFAULT_PREFIX = 'bvs'
 
@@ -92,8 +93,6 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
 
   const valueOptions = (() => {
     switch (type) {
-      case 'Element':
-        return libraryIndex.elementnames || []
       case 'Castable':
         return libraryIndex.castables || []
       case 'Status':
@@ -117,7 +116,13 @@ function ImmunityRow({ row, index, libraryIndex, onChangeField, onChangeType, on
           ))}
         </Select>
       </FormControl>
-      {isCategory ? (
+      {type === 'Element' ? (
+        <ElementField
+          value={value}
+          onChange={(val) => onChangeField(index, 'value', val)}
+          sx={{ flex: 1, minWidth: 160 }}
+        />
+      ) : isCategory ? (
         <TextField
           label="Category"
           size="small"
@@ -806,7 +811,6 @@ function BehaviorSetEditor({
           <StatsTab
             data={data.statModifiers}
             onChange={(val) => updateData((d) => ({ ...d, statModifiers: val }))}
-            elementOptions={libraryIndex.elementnames || []}
           />
         </Section>
 

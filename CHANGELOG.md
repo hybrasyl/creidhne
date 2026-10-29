@@ -43,6 +43,8 @@ first section written to the rules above.
 
 ### Added
 
+- **Element fields offer the elements of the active element table.** The active table is the one that `serverconfigs/config.xml` selects, or the only table in the world. Stat modifiers, elemental modifiers, damage elements and immunities offer its element keys. Castable Elements and spawn Offensive and Defensive Elements also offer each group as `Random:<Group>`, and `Current`, `Belt` and `Necklace`.
+- **An element field shows a warning for a value to change.** It names an element that the active table does not define, and the old names `None`, `Wood`, `RandomTemuair` and `RandomExpanded`. A file that has such a value still opens and saves unchanged.
 - **The element table editor reads and writes the element registry format.** A table in this format defines its elements in an Elements block. Each element has a key, an Id, a retail Id, a display name, an Ivernic name, and one element is the default. The editor also edits the Groups block, the default multiplier of the table, and the default multiplier of each row. An empty cell uses the row default, then the table default, and shows that value in grey.
 - **Convert changes an old-format element table to the registry format.** It adds an Elements block, and it gives each element the Id that the element registry design gives it. It changes no multiplier.
 - **The element table editor lists each problem that makes the server refuse the table.** For example, two elements with the same key or Id, no default element, a retail Id above 9, or a key such as `Current` that is reserved for a selector. A save still writes the file.
@@ -50,6 +52,8 @@ first section written to the rules above.
 
 ### Changed
 
+- **Castable Elements and spawn Offensive and Defensive Elements take a list.** Each selector is one chip, so a spawn with `Earth Wind Fire Water` shows four chips.
+- **An empty element field means "not set".** Creidhne no longer writes `Elements="None"` into a castable that had no Elements attribute. The server then uses the default element. In the castable balancing export, such a castable shows an empty Elements cell, not `None`.
 - **You enter element multipliers as multipliers, not as percentages.** Enter 0.8, not 80.
 - **A new element table is in the registry format,** with Force as its default element.
 - **The Danaan and Grinneal title bars are dark.** The Danaan bars are bronze and the Grinneal bars are brown. The bar text and the icons are light, with a black outline, as on Hybrasyl and Chadul.

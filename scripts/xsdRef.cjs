@@ -7,7 +7,8 @@
 // move under the pin.
 //
 // When you move the pin, run `npm run fetch-xsd`, then
-// `node scripts/extractSimpleTypes.js`, and commit the new
+// `node scripts/extractSimpleTypes.js`, then `npm run format` (the script
+// writes JSON that Prettier reformats), and commit the new
 // src/renderer/src/assets/json/simpleTypes.json in the same commit.
 //
 // xsd/ is gitignored, so two checkouts can hold different schemas and nothing
