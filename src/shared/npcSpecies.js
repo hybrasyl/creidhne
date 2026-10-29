@@ -3,9 +3,10 @@
  *
  * The seed for the `npcSpecies` constants key. Drawn from the species notes in
  * loures (`hamweb/Internal Notes/2 - Species/Notes - Species - *.md`, one file
- * per species that has notes rather than an idea page), spelled the way each
- * file's heading spells the singular — "Human", "Dwarf", "Mukul" — because a
- * species field on one NPC names one of them.
+ * per species that has notes rather than an idea page), in the singular —
+ * "Human", "Dwarf", "Mukul" — because a species field on one NPC names one of
+ * them. Some file names use the plural: "Aliarim", "Nitharim" and "Sylsharim"
+ * name the peoples, and one of them is an Aliari, a Nithari or a Sylshari.
  *
  * This is a SEED, not a vocabulary. `constantsJson.js` supplies it only when a
  * world's `constants.json` has no `npcSpecies` key at all, and the field's
@@ -15,7 +16,7 @@
  * order: the world data is the record, and this list only starts it.
  */
 export const DEFAULT_NPC_SPECIES = Object.freeze([
-  'Aliarim',
+  'Aliari',
   'Bjorin',
   'Carran',
   'Daurekh',
@@ -30,13 +31,13 @@ export const DEFAULT_NPC_SPECIES = Object.freeze([
   'Molgrun',
   'Mukul',
   'Murkrenn',
-  'Nitharim',
+  'Nithari',
   'Orc',
   'Orlen',
   'Piffin',
   'Salaman',
   'Shavren',
-  'Sylarim',
+  'Sylshari',
   'Syrrin',
   'Triton',
   'Tzurak',

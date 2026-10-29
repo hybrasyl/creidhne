@@ -67,6 +67,7 @@ first section written to the rules above.
 - **Mundanes: a link is easy to read after you open it.** A visited link had too little contrast against the page. In every theme, a link now has a contrast of 4.5:1 or more at rest, under the pointer and after you open it.
 - **On the Dashboard, the counts that open a page are easy to read.** They used a light shade of the accent colour, which had too little contrast on the light pages of Danaan and Mundanes. They now use the accent colour.
 - **The selected theme in Settings has a clear mark in every theme.** The border and the check mark used a light shade of the accent colour, which was near the page colour in Danaan.
+- **The default NPC species list names one member of each species.** It had three plural names: Aliarim, Nitharim and Sylarim. They are now Aliari, Nithari and Sylshari. Sylarim is now Sylsharim in the lore. This list fills a world's NPC species only when its `constants.json` has none, so a world list that you already have does not change.
 
 ### Security
 
