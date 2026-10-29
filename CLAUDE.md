@@ -317,7 +317,11 @@ broken environment rather than a set variable.
 **`unset ELECTRON_RUN_AS_NODE` first**, in the same shell call, and `npm run dev`,
 `npm run e2e:only` and a throwaway main script with `show: false` all work. The third is how the
 splash oval was measured: load the document, then read `getBoundingClientRect` back through
-`executeJavaScript`. Prefer an `e2e/` spec over an owed manual check whenever the assertion is
+`executeJavaScript`. A throwaway script can also go through `node scripts/run-electron.mjs <script>`,
+which removes the variable itself (HTOO-612). An npm script that runs a script under Electron
+calls that helper, never a bare `electron <script>`, because npm runs scripts through cmd.exe on
+Windows and cmd.exe has no `unset`. `e2e/helpers.js` does the same strip for Playwright's launch.
+Prefer an `e2e/` spec over an owed manual check whenever the assertion is
 mechanical. Still hand over what needs a human eye — whether a layout _looks_ right, an installer
 click-through, a real remote-desktop session.
 
