@@ -83,7 +83,7 @@ describe('name collision key agrees with hybindex-ts (HTOO-375)', () => {
 
 describe('duplicate-checked types are real indexed types (HTOO-375)', () => {
   it('finds the types it is meant to be checking', () => {
-    expect(DUPLICATE_CHECKED_TYPES.length).toBe(13)
+    expect(DUPLICATE_CHECKED_TYPES.length).toBe(14)
   })
 
   it('names only types the package indexes', () => {
@@ -108,6 +108,7 @@ describe('duplicate-checked types are real indexed types (HTOO-375)', () => {
       npcs: 'archivedNpcs',
       recipes: 'archivedRecipes',
       spawngroups: 'archivedSpawngroups',
+      species: 'archivedSpecies',
       statuses: 'archivedStatuses',
       traits: 'archivedTraits',
       variantgroups: 'archivedVariantgroups'
