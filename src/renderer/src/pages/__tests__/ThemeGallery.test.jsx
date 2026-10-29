@@ -27,6 +27,11 @@ describe('ThemeGallery', () => {
   // more than 200 samples and a theme provider per title bar: one theme takes
   // about 5 s alone, more under the full suite. Chromium draws it in about 1 s
   // (e2e/theme-gallery.spec.js). The suite keeps its 5 s default (HTOO-573).
+  //
+  // Each theme gets 60 s. Under `npm run test:coverage` in the full suite, on
+  // an 8-core Linux box, danaan took 34.7 s and grinneal 36.5 s (balor,
+  // 2026-10-29). A release workflow runs that command before it builds, and a
+  // CI runner can be slower than that box.
   it.each(THEME_NAMES)(
     '%s: renders and measures each sample',
     (name) => {
@@ -45,6 +50,6 @@ describe('ThemeGallery', () => {
       for (const r of unmeasured)
         expect(r.parentElement?.querySelector('.MuiButton-root')).not.toBeNull()
     },
-    30_000
+    60_000
   )
 })
