@@ -421,3 +421,44 @@ describe('Output structure', () => {
     expect(parsed.SpawnGroup.Spawns?.[0]?.Spawn?.[0]?.Loot).toBeUndefined()
   })
 })
+
+// HTOO-136: an empty <Hostility> on a spawn is not the same as none. The
+// server copies a spawn's Hostility over the creature's when the element is
+// there, and an empty one has no Players, so the monster is neutral. A save
+// dropped it, so 10 world spawns (crypt_undercroft*) would take their
+// creature's hostility instead.
+describe('Hostility presence (HTOO-136)', () => {
+  const withHostility = (inner) => `<?xml version="1.0"?>
+<SpawnGroup xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
+  <Spawns>
+    <Spawn Name="Cellar Spider">
+      ${inner}
+    </Spawn>
+  </Spawns>
+</SpawnGroup>`
+
+  it.each([
+    ['a self-closing element', '<Hostility/>'],
+    ['an element with only whitespace', '<Hostility>\n      </Hostility>']
+  ])('keeps %s as an empty <Hostility/>', async (_, inner) => {
+    const sg = await parseSpawngroupXml(withHostility(inner))
+    expect(sg.spawns[0].hostility).toMatchObject({ present: true, players: false, monsters: false })
+    expect(serializeSpawngroupXml(sg)).toMatch(/<Hostility\/>/)
+  })
+
+  it('writes no <Hostility> when the spawn has none', async () => {
+    const sg = await parseSpawngroupXml(withHostility(''))
+    expect(sg.spawns[0].hostility.present).toBe(false)
+    expect(serializeSpawngroupXml(sg)).not.toContain('Hostility')
+  })
+
+  it('reads a model without present by its sides', async () => {
+    const sg = await parseSpawngroupXml(withHostility(''))
+    const xml = (hostility) =>
+      serializeSpawngroupXml({ ...sg, spawns: [{ ...sg.spawns[0], hostility }] })
+    expect(xml({ players: true, monsters: false })).toContain('<Players/>')
+    expect(xml({ players: false, monsters: false })).not.toContain('Hostility')
+    // Unset in the editor hides the sides, so the element goes.
+    expect(xml({ present: false, players: true })).not.toContain('Hostility')
+  })
+})

@@ -72,6 +72,8 @@ first section written to the rules above.
 
 ### Fixed
 
+- **A spawn group save keeps an empty Hostility.** On a spawn, an empty Hostility makes the monster neutral, and without one the monster uses its creature's hostility. A save removed the empty element, so ten world spawns would change from neutral to their creature's hostility. The Hostility section now has **Set hostility for this spawn**, and it says which of the two the spawn does.
+- **A recipe save writes no empty attribute and adds no Quantity.** An ingredient with no Quantity got `Quantity="1"` on a save. A cleared Quantity wrote `Quantity=""`, which the schema does not allow, and an empty item wrote `Name=""`.
 - **An element table save keeps each multiplier as the file has it.** The editor stored whole-number percentages, so a save changed 1.075 to 1.07, with no edit. A save also wrote every pair. It now writes only the pairs that the file had and the pairs that you set.
 - **The damage calculator computes a formula as the server does.** Before, it accepted some formulas that the server evaluates differently or to 0:
   - `^` is bitwise XOR on the server, and `**` is the power. The calculator now shows an error for `^`, and it computes `**`.

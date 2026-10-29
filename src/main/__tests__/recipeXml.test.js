@@ -180,3 +180,35 @@ describe('Output structure', () => {
     expect(parsed.Recipe.Description).toBeUndefined()
   })
 })
+
+// HTOO-138: a save writes no attribute that the file did not have, and no
+// empty attribute. Quantity="" is not an xs:unsignedShort.
+describe('Empty and missing attributes (HTOO-138)', () => {
+  const RECIPE = `<?xml version="1.0"?>
+<Recipe xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02">
+  <Name>Gem</Name>
+  <Item Name="Finished Amethyst"/>
+  <Duration Length="5"/>
+  <Description>Cut a gem.</Description>
+  <Ingredients>
+    <Ingredient Name="Uncut Amethyst"/>
+  </Ingredients>
+</Recipe>`
+
+  it('keeps a missing Quantity missing', async () => {
+    const r = await parseRecipeXml(RECIPE)
+    expect(r.ingredients[0].quantity).toBe('')
+    expect(serializeRecipeXml(r)).toContain('<Ingredient Name="Uncut Amethyst"/>')
+  })
+
+  it('writes no empty Quantity or Name', async () => {
+    const r = await parseRecipeXml(RECIPE)
+    const out = serializeRecipeXml({
+      ...r,
+      produces: '',
+      ingredients: [{ name: 'Uncut Amethyst', quantity: '' }]
+    })
+    expect(out).not.toMatch(/=""/)
+    expect(out).toContain('<Item/>')
+  })
+})
