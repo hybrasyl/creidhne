@@ -82,6 +82,12 @@ const requiredName = z.string().trim().min(1, 'name is required')
 export const namedEntitySchema = entityObject.extend({ name: requiredName })
 
 /**
+ * Species (HTOO-618). Keyed by `key`, the Key attribute, not by a name: the
+ * same rule as a name, under the field the species model uses.
+ */
+export const speciesEntitySchema = entityObject.extend({ key: requiredName })
+
+/**
  * Localizations. No name — see the header. Still worth a schema, because
  * `serializeLocalizationXml` is one of the six that writes a file for a string,
  * a number or an array.

@@ -29,6 +29,7 @@ const XSD_FILES = [
   'Localization.xsd',
   'Recipe.xsd',
   'Spawns.xsd',
+  'Species.xsd',
   'Trait.xsd'
 ]
 

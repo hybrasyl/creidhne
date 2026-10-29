@@ -145,6 +145,7 @@ const EXEMPT = {
   'xml:loadNpc': { category: 'path-only', reason: 'validatePath' },
   'xml:loadNation': { category: 'path-only', reason: 'validatePath' },
   'xml:loadTrait': { category: 'path-only', reason: 'validatePath' },
+  'xml:loadSpecies': { category: 'path-only', reason: 'validatePath' },
   'xml:loadLoot': { category: 'path-only', reason: 'validatePath' },
   'xml:loadVariantGroup': { category: 'path-only', reason: 'validatePath' },
   'xml:loadLocalization': { category: 'path-only', reason: 'validatePath' },
@@ -274,11 +275,11 @@ describe('IPC schema coverage (HTOO-370)', () => {
     }
   })
 
-  it('validates all fifteen world-writing save channels', () => {
-    // Derived rather than restated, so a sixteenth entity type is covered the day
+  it('validates all sixteen world-writing save channels', () => {
+    // Derived rather than restated, so a seventeenth entity type is covered the day
     // its handler is added and cannot be forgotten here.
     const saveChannels = registeredChannels.filter((c) => c.startsWith('xml:save'))
-    expect(saveChannels.length, 'the xml:save* detector found nothing').toBe(15)
+    expect(saveChannels.length, 'the xml:save* detector found nothing').toBe(16)
     const unvalidated = saveChannels.filter((c) => !validatedChannels.has(c))
     expect(unvalidated, 'these world-writing channels validate nothing').toEqual([])
   })

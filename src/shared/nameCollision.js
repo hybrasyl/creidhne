@@ -37,6 +37,7 @@ export const DUPLICATE_CHECKED_TYPES = Object.freeze([
   'npcs',
   'recipes',
   'spawngroups',
+  'species',
   'statuses',
   'traits',
   'variantgroups'

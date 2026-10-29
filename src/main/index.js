@@ -6,6 +6,7 @@ import { parseRecipeXml, serializeRecipeXml } from './recipeXml'
 import { parseNpcXml, serializeNpcXml } from './npcXml'
 import { parseNationXml, serializeNationXml } from './nationXml'
 import { parseTraitXml, serializeTraitXml } from './traitXml'
+import { parseSpeciesXml, serializeSpeciesXml } from './speciesXml'
 import { parseLootXml, serializeLootXml } from './lootXml'
 import { parseVariantXml, serializeVariantXml } from './variantXml'
 import { parseLocalizationXml, serializeLocalizationXml } from './localizationXml'
@@ -49,6 +50,7 @@ import {
   namedEntitySchema,
   localizationEntitySchema,
   serverConfigEntitySchema,
+  speciesEntitySchema,
   saveDialogArgsSchema,
   addCategoryBulkArgsSchema,
   spellbookApplyArgsSchema,
@@ -641,6 +643,17 @@ app.whenReady().then(async () => {
   ipc.handle('xml:saveTrait', async (_, filePath, traitData) => {
     parseOrLog(schemaCtx, 'xml:saveTrait', namedEntitySchema, traitData)
     const xml = serializeTraitXml(traitData)
+    await writeFile(validatePath(filePath), xml)
+  })
+
+  ipc.handle('xml:loadSpecies', async (_, filePath) => {
+    const xml = await fs.readFile(validatePath(filePath), 'utf-8')
+    return parseSpeciesXml(xml)
+  })
+
+  ipc.handle('xml:saveSpecies', async (_, filePath, speciesData) => {
+    parseOrLog(schemaCtx, 'xml:saveSpecies', speciesEntitySchema, speciesData)
+    const xml = serializeSpeciesXml(speciesData)
     await writeFile(validatePath(filePath), xml)
   })
 

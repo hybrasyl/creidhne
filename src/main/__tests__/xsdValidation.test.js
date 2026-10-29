@@ -35,6 +35,7 @@ import { parseBehaviorSetXml, serializeBehaviorSetXml } from '../behaviorSetXml'
 import { parseSpawngroupXml, serializeSpawngroupXml } from '../spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from '../serverConfigXml'
 import { parseTraitXml, serializeTraitXml } from '../traitXml'
+import { parseSpeciesXml, serializeSpeciesXml } from '../speciesXml'
 
 const FIXTURES_DIR = join(process.cwd(), 'src', 'main', '__tests__', 'fixtures', 'xml')
 
@@ -97,7 +98,8 @@ describe('XSD validation: real-world fixtures are schema-valid', () => {
     'creaturebehaviorsets',
     'spawngroups',
     'serverconfigs',
-    'traits'
+    'traits',
+    'species'
   ]
   for (const type of types) {
     const drift = KNOWN_DRIFT[type]
@@ -123,6 +125,9 @@ describe('XSD validation: real-world fixtures are schema-valid', () => {
 describe('XSD validation: serializer output is schema-valid (new types)', () => {
   it('traits', async () => {
     await roundtripValid(parseTraitXml, serializeTraitXml, await loadFixture('traits'))
+  })
+  it('species', async () => {
+    await roundtripValid(parseSpeciesXml, serializeSpeciesXml, await loadFixture('species'))
   })
 })
 

@@ -18,6 +18,7 @@ const RecipesPage = lazy(() => import('../pages/RecipesPage'))
 const NPCsPage = lazy(() => import('../pages/NPCsPage'))
 const NationsPage = lazy(() => import('../pages/NationsPage'))
 const TraitsPage = lazy(() => import('../pages/TraitsPage'))
+const SpeciesPage = lazy(() => import('../pages/SpeciesPage'))
 const LootPage = lazy(() => import('../pages/LootPage'))
 const ItemsPage = lazy(() => import('../pages/ItemsPage'))
 const HelpersPage = lazy(() => import('../pages/HelpersPage'))
@@ -81,6 +82,9 @@ const PageRenderer = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
       break
     case 'traits':
       page = <TraitsPage />
+      break
+    case 'species':
+      page = <SpeciesPage />
       break
     case 'loot':
       page = <LootPage />

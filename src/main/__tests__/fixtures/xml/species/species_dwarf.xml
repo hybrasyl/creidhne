@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<Species xmlns="http://www.hybrasyl.com/XML/Hybrasyl/2020-02" Key="Dwarf" Id="4" Origin="Aosda" PlayerOption="Starter" Affinity="Wind" Resistance="Wind">
+  <!-- Comment: From the HTOO-618 card example -->
+  <Names Singular="Dwarf" Plural="Dwarves" Adjective="Dwarven"/>
+  <Description>Storm-and-stone people descended from the Gleodhar.</Description>
+  <Bodies>
+    <Body Key="Ruddy" Id="40" Name="Ruddy" Default="true"/>
+    <Body Key="Ashen" Id="41" Name="Ashen" RetailSkinColor="3"/>
+  </Bodies>
+</Species>

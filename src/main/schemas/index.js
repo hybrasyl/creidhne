@@ -6,7 +6,8 @@ export { reportsFileSchema, reportDefinitionSchema } from './reports.js'
 export {
   namedEntitySchema,
   localizationEntitySchema,
-  serverConfigEntitySchema
+  serverConfigEntitySchema,
+  speciesEntitySchema
 } from './worldEntity.js'
 export {
   saveDialogArgsSchema,

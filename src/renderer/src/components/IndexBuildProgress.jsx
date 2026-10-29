@@ -17,6 +17,7 @@ const TYPE_LABELS = {
   recipes: 'recipes',
   serverconfigs: 'server configs',
   spawngroups: 'spawn groups',
+  species: 'species',
   statuses: 'statuses',
   traits: 'traits',
   variantgroups: 'variant groups',
