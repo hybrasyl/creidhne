@@ -43,10 +43,15 @@ first section written to the rules above.
 
 ### Added
 
+- **The element table editor reads and writes the element registry format.** A table in this format defines its elements in an Elements block. Each element has a key, an Id, a retail Id, a display name, an Ivernic name, and one element is the default. The editor also edits the Groups block, the default multiplier of the table, and the default multiplier of each row. An empty cell uses the row default, then the table default, and shows that value in grey.
+- **Convert changes an old-format element table to the registry format.** It adds an Elements block, and it gives each element the Id that the element registry design gives it. It changes no multiplier.
+- **The element table editor lists each problem that makes the server refuse the table.** For example, two elements with the same key or Id, no default element, a retail Id above 9, or a key such as `Current` that is reserved for a selector. A save still writes the file.
 - **Settings → Appearance → Theme gallery** shows each type of control in the theme that you use, on the page, on a card and on a dark panel. Under each control, the gallery shows its measured contrast. Use it to examine a theme. **Back** returns to Settings.
 
 ### Changed
 
+- **You enter element multipliers as multipliers, not as percentages.** Enter 0.8, not 80.
+- **A new element table is in the registry format,** with Force as its default element.
 - **The Danaan and Grinneal title bars are dark.** The Danaan bars are bronze and the Grinneal bars are brown. The bar text and the icons are light, with a black outline, as on Hybrasyl and Chadul.
 - **The accent colour and the status colours are easy to read as text.** In every theme, the accent colour and the error, warning, info and success colours now have a contrast of 4.5:1 or more against the page, against cards and against dark panels. Chadul, Danaan, Mundanes and Dubhaimid have new accent colours. Danaan and Mundanes have darker status colours, so that they show clearly on the light page. In Chadul and Dubhaimid, filled buttons and selected chips now have dark labels.
 - **The title bar is the house title bar.** It is the same in each house app. The logo is smaller, and the window buttons have the same highlight in each theme.
@@ -59,6 +64,7 @@ first section written to the rules above.
 
 ### Fixed
 
+- **An element table save keeps each multiplier as the file has it.** The editor stored whole-number percentages, so a save changed 1.075 to 1.07, with no edit. A save also wrote every pair. It now writes only the pairs that the file had and the pairs that you set.
 - **The damage calculator computes a formula as the server does.** Before, it accepted some formulas that the server evaluates differently or to 0:
   - `^` is bitwise XOR on the server, and `**` is the power. The calculator now shows an error for `^`, and it computes `**`.
   - `Round` needs its digits, as in `Round(x, 0)`, and it rounds half away from zero.

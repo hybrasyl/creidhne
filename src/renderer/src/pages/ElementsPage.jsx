@@ -18,11 +18,17 @@ import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/
 const SUBDIR = 'elementtables'
 const IGNORE_SUBDIR = 'elementtables/.ignore'
 
+// A new table is in the registry format (HXML-24): it defines its elements,
+// and declares only the pairs that it needs. The model is in
+// src/shared/elementTable.js.
 const DEFAULT_TABLE = {
   name: '',
   comment: '',
-  elements: ['NewElement(1)'],
-  matrix: [[100]]
+  defaultMultiplier: '',
+  registry: true,
+  elements: [{ key: 'Force', id: '0', retailId: '0', name: '', isDefault: true, ivernic: '' }],
+  groups: [],
+  sources: []
 }
 
 function ElementsPage() {

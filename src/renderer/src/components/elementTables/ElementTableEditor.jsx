@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Box,
   Button,
@@ -8,7 +8,9 @@ import {
   IconButton,
   Snackbar,
   Alert,
-  Paper
+  Paper,
+  Radio,
+  Tooltip
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
@@ -20,6 +22,19 @@ import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { useDuplicateName } from '../../hooks/useDuplicateName'
 import { normalizeFolder } from '../../utils/fileTree'
+import {
+  addElement,
+  convertToRegistry,
+  declaredMultiplier,
+  effectiveMultiplier,
+  elementKeys,
+  removeElement,
+  renameElement,
+  setPair,
+  setRowDefault,
+  sourceRow,
+  validateElementTable
+} from '@shared/elementTable'
 
 function deriveElementPrefix(fileName, name) {
   if (!fileName) return 'element'
@@ -43,6 +58,77 @@ function computeFileName(prefix, name) {
   return safe ? `${prefix || 'element'}_${safe}.xml` : ''
 }
 
+/** The table without name and comment, which the editor keeps on their own. */
+function modelOf(table) {
+  return {
+    defaultMultiplier: table.defaultMultiplier ?? '',
+    registry: !!table.registry,
+    elements: table.elements ?? [],
+    groups: table.groups ?? [],
+    sources: table.sources ?? []
+  }
+}
+
+/** A multiplier for a placeholder: at most four decimals, as the file would hold it. */
+const shown = (n) => String(parseFloat(n.toFixed(4)))
+
+/**
+ * An element key. The rename applies on blur or Enter, never per keystroke:
+ * part way through typing, the text can equal another element's key, and a
+ * rename then would join the two rows. An empty or taken key goes back to the
+ * old one.
+ */
+function KeyInput({ value, taken, onCommit, style, label }) {
+  const [text, setText] = useState(value)
+  useEffect(() => setText(value), [value])
+  const clash = text !== value && (text.trim() === '' || taken.includes(text.trim()))
+  const commit = () => {
+    const next = text.trim()
+    if (next === value) return
+    if (clash) setText(value)
+    else onCommit(next)
+  }
+  return (
+    <input
+      type="text"
+      aria-label={label}
+      value={text}
+      title={clash ? 'Another element has this key, or the key is empty' : undefined}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+        if (e.key === 'Escape') setText(value)
+      }}
+      style={{ ...style, ...(clash && { borderColor: '#f44336' }) }}
+      spellCheck={false}
+    />
+  )
+}
+
+/**
+ * One group's members as the text the user types: keys separated by spaces.
+ * The text is kept here, so a space typed at the end is not lost when the
+ * parent splits it into keys.
+ */
+function GroupMembersField({ members, onChange }) {
+  const [text, setText] = useState(members.join(' '))
+  return (
+    <TextField
+      label="Members"
+      size="small"
+      value={text}
+      sx={{ flex: 1 }}
+      helperText="Element keys, separated by spaces. A key listed twice is picked twice as often."
+      onChange={(e) => {
+        setText(e.target.value)
+        onChange(e.target.value.split(/\s+/).filter(Boolean))
+      }}
+      slotProps={{ htmlInput: { spellCheck: false } }}
+    />
+  )
+}
+
 function ElementTableEditor({
   table,
   initialFileName,
@@ -62,8 +148,7 @@ function ElementTableEditor({
 
   const [name, setName] = useState(table.name)
   const [comment, setComment] = useState(table.comment)
-  const [elements, setElements] = useState(table.elements)
-  const [matrix, setMatrix] = useState(table.matrix)
+  const [model, setModel] = useState(() => modelOf(table))
   const [prefix, setPrefix] = useState(deriveElementPrefix(initialFileName, table.name))
   const [fileName, setFileName] = useState(
     initialFileName || computeFileName(deriveElementPrefix(initialFileName, table.name), table.name)
@@ -73,6 +158,10 @@ function ElementTableEditor({
   const [focusedCell, setFocusedCell] = useState(null) // { row, col }
   const [dupSnack, setDupSnack] = useState(null)
   const [elementsOpen, setElementsOpen] = useState(true)
+  const [groupsOpen, setGroupsOpen] = useState(true)
+  const [matrixOpen, setMatrixOpen] = useState(true)
+  // Bumped on each reset, so the group fields remount with the new text.
+  const [resetCount, setResetCount] = useState(0)
 
   const isDirtyRef = useRef(false)
 
@@ -80,14 +169,14 @@ function ElementTableEditor({
     const derivedPrefix = deriveElementPrefix(initialFileName, table.name)
     setName(table.name)
     setComment(table.comment)
-    setElements(table.elements)
-    setMatrix(table.matrix)
+    setModel(modelOf(table))
     setPrefix(derivedPrefix)
     setFileName(initialFileName || computeFileName(derivedPrefix, table.name))
     setFileNameEdited(!!initialFileName)
     setFolder(initialFolder)
     setFocusedCell(null)
     setDupSnack(null)
+    setResetCount((n) => n + 1)
     isDirtyRef.current = false
     onDirtyChange?.(false)
   }, [table, initialFileName, initialFolder]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -98,6 +187,12 @@ function ElementTableEditor({
       onDirtyChange?.(true)
     }
   }, [onDirtyChange])
+
+  /** Apply one change to the model and mark the editor dirty. */
+  const edit = (fn) => {
+    setModel((prev) => fn(prev))
+    markDirty()
+  }
 
   const handleNameChange = (val) => {
     setName(val)
@@ -136,69 +231,61 @@ function ElementTableEditor({
     if (dupStatus) setDupSnack(dupStatus)
   }
 
-  // ── Grid mutations ──────────────────────────────────────────────────────────
+  // ── Elements ────────────────────────────────────────────────────────────────
 
-  const handleCellChange = (row, col, raw) => {
-    const parsed = parseInt(raw, 10)
-    const val = isNaN(parsed) ? '' : Math.max(0, Math.min(9999, parsed))
-    setMatrix((prev) => {
-      const next = prev.map((r) => [...r])
-      next[row][col] = val
-      return next
-    })
-    markDirty()
-  }
-
-  const handleRenameElement = (index, val) => {
-    setElements((prev) => {
-      const next = [...prev]
-      next[index] = val
-      return next
-    })
-    markDirty()
-  }
+  const keys = elementKeys(model)
+  const problems = useMemo(() => validateElementTable(model), [model])
 
   const handleAddElement = () => {
-    const existing = elements
-    let counter = existing.length + 1
-    let newName = `NewElement(${counter})`
-    while (existing.includes(newName)) {
-      counter++
-      newName = `NewElement(${counter})`
-    }
-
-    setElements((prev) => [...prev, newName])
-    setMatrix((prev) => {
-      const next = prev.map((r) => [...r, 100])
-      next.push(new Array(existing.length + 1).fill(100))
-      return next
-    })
-    markDirty()
+    let counter = keys.length + 1
+    let newKey = `NewElement${counter}`
+    while (keys.includes(newKey)) newKey = `NewElement${++counter}`
+    edit((m) => addElement(m, newKey))
   }
 
-  const handleDeleteElement = (index) => {
-    setElements((prev) => prev.filter((_, i) => i !== index))
-    setMatrix((prev) =>
-      prev.filter((_, i) => i !== index).map((r) => r.filter((_, j) => j !== index))
-    )
-    if (focusedCell && (focusedCell.row === index || focusedCell.col === index)) {
-      setFocusedCell(null)
-    }
-    markDirty()
+  const setElementField = (index, field, value) =>
+    edit((m) => ({
+      ...m,
+      elements: m.elements.map((e, i) => (i === index ? { ...e, [field]: value } : e))
+    }))
+
+  const setDefaultElement = (index) =>
+    edit((m) => ({
+      ...m,
+      elements: m.elements.map((e, i) => ({ ...e, isDefault: i === index }))
+    }))
+
+  const handleDeleteElement = (key) => {
+    edit((m) => removeElement(m, key))
+    setFocusedCell(null)
+  }
+
+  // ── Groups ──────────────────────────────────────────────────────────────────
+
+  const setGroups = (fn) => edit((m) => ({ ...m, groups: fn(m.groups) }))
+
+  const handleAddGroup = () => {
+    let counter = model.groups.length + 1
+    const used = model.groups.map((g) => g.key)
+    let key = `Group${counter}`
+    while (used.includes(key)) key = `Group${++counter}`
+    setGroups((gs) => [...gs, { key, members: [] }])
   }
 
   // ── Save ────────────────────────────────────────────────────────────────────
 
   const getFileName = () => fileName || computeFileName(prefix, name) || 'element-table.xml'
 
+  // A table with problems still saves: the file is the author's work, and
+  // the list above the grid says what the server will refuse.
   const handleSave = useCallback(
     (mode) => {
-      onSave({ name, comment, elements, matrix }, getFileName(), normalizeFolder(folder), mode)
+      onSave({ name, comment, ...model }, getFileName(), normalizeFolder(folder), mode)
       isDirtyRef.current = false
       onDirtyChange?.(false)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [name, comment, elements, matrix, isExisting, initialFileName, fileName, folder]
+    [name, comment, model, isExisting, initialFileName, fileName, folder]
   )
 
   if (saveRef) saveRef.current = handleSave
@@ -225,8 +312,8 @@ function ElementTableEditor({
     background: headerBg,
     borderBottom: thickBorder,
     borderRight: thickBorder,
-    minWidth: 160,
-    width: 160
+    minWidth: model.registry ? 220 : 160,
+    width: model.registry ? 220 : 160
   }
 
   const stickyColHeader = () => ({
@@ -258,6 +345,36 @@ function ElementTableEditor({
     padding: '2px 4px'
   }
 
+  const smallInput = (width) => ({
+    width,
+    fontSize: 12,
+    border: `1px solid ${borderColor}`,
+    borderRadius: 3,
+    padding: '2px 4px',
+    background: 'transparent',
+    color: 'inherit'
+  })
+
+  const sectionHeader = (label, open, setOpen) => (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        px: 2,
+        py: 1,
+        cursor: 'pointer',
+        userSelect: 'none',
+        flexShrink: 0
+      }}
+      onClick={() => setOpen((v) => !v)}
+    >
+      <Typography variant="subtitle2" sx={{ flex: 1 }}>
+        {label}
+      </Typography>
+      {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+    </Box>
+  )
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* ── Header ── */}
@@ -285,198 +402,415 @@ function ElementTableEditor({
         onUnarchive={onUnarchive}
       />
       <Divider sx={{ mb: 1.5, flexShrink: 0 }} />
-      {/* ── Metadata on Paper ── */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 1.5, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <TextField
-            label="Prefix"
-            size="small"
-            value={prefix}
-            sx={{ width: 140 }}
-            onChange={handlePrefixChange}
-            slotProps={{
-              htmlInput: { maxLength: 64, spellCheck: false }
-            }}
-          />
-          <TextField
-            label="Name"
-            size="small"
-            value={name}
-            sx={{
-              width: 200,
-              ...(dupStatus === 'archived' && {
-                '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
-                '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
-                '& .MuiFormHelperText-root': { color: 'warning.main' }
-              })
-            }}
-            error={dupStatus === 'active'}
-            helperText={
-              dupStatus === 'active'
-                ? `"${name}" already exists`
-                : dupStatus === 'archived'
-                  ? `"${name}" exists in archive`
-                  : undefined
-            }
-            onChange={(e) => handleNameChange(e.target.value)}
-            onBlur={handleNameBlur}
-            slotProps={{
-              htmlInput: { maxLength: 128 }
-            }}
-          />
-          <CommentField
-            value={comment}
-            onChange={(e) => {
-              setComment(e.target.value)
-              markDirty()
-            }}
-            sx={{ flex: 1 }}
-          />
-        </Box>
-      </Paper>
-      {/* ── Elements accordion ── */}
-      <Paper
-        variant="outlined"
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            px: 2,
-            py: 1,
-            cursor: 'pointer',
-            userSelect: 'none',
-            flexShrink: 0
-          }}
-          onClick={() => setElementsOpen((v) => !v)}
-        >
-          <Typography variant="subtitle2" sx={{ flex: 1 }}>
-            Elements
-          </Typography>
-          {elementsOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-        </Box>
-        {elementsOpen && (
-          <>
-            <Divider sx={{ flexShrink: 0 }} />
-            <Box sx={{ p: 2, flexShrink: 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-                <InfoOutlinedIcon fontSize="small" color="action" />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary'
-                  }}
-                >
-                  Enter values as whole-number percentages — 80 = 80% (×0.8), 100 = no change
-                  (×1.0), 150 = 150% (×1.5). Row = source element (attacker); column = target
-                  element (defender). The highlighted cell shows the reverse interaction.
-                </Typography>
-              </Box>
-              <Button
+      <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        {/* ── Metadata on Paper ── */}
+        <Paper variant="outlined" sx={{ p: 2, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <TextField
+              label="Prefix"
+              size="small"
+              value={prefix}
+              sx={{ width: 140 }}
+              onChange={handlePrefixChange}
+              slotProps={{
+                htmlInput: { maxLength: 64, spellCheck: false }
+              }}
+            />
+            <TextField
+              label="Name"
+              size="small"
+              value={name}
+              sx={{
+                width: 200,
+                ...(dupStatus === 'archived' && {
+                  '& .MuiOutlinedInput-root fieldset': { borderColor: 'warning.main' },
+                  '& .MuiInputLabel-root:not(.Mui-focused)': { color: 'warning.main' },
+                  '& .MuiFormHelperText-root': { color: 'warning.main' }
+                })
+              }}
+              error={dupStatus === 'active'}
+              helperText={
+                dupStatus === 'active'
+                  ? `"${name}" already exists`
+                  : dupStatus === 'archived'
+                    ? `"${name}" exists in archive`
+                    : undefined
+              }
+              onChange={(e) => handleNameChange(e.target.value)}
+              onBlur={handleNameBlur}
+              slotProps={{
+                htmlInput: { maxLength: 128 }
+              }}
+            />
+            {model.registry && (
+              <TextField
+                label="Default multiplier"
                 size="small"
-                startIcon={<AddIcon />}
-                onClick={handleAddElement}
-                variant="outlined"
-              >
-                Add Element
+                value={model.defaultMultiplier}
+                placeholder="1"
+                sx={{ width: 160 }}
+                helperText="For each pair that sets no multiplier"
+                onChange={(e) => edit((m) => ({ ...m, defaultMultiplier: e.target.value }))}
+                slotProps={{ htmlInput: { inputMode: 'decimal', spellCheck: false } }}
+              />
+            )}
+            <CommentField
+              value={comment}
+              onChange={(e) => {
+                setComment(e.target.value)
+                markDirty()
+              }}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        </Paper>
+
+        {/* ── Format and problems ── */}
+        {!model.registry && (
+          <Alert
+            severity="info"
+            sx={{ flexShrink: 0 }}
+            action={
+              <Button color="inherit" size="small" onClick={() => edit(convertToRegistry)}>
+                Convert
               </Button>
+            }
+          >
+            This table is in the old format. Its elements are its rows, and it sets every pair. A
+            save keeps this format. Convert adds an Elements block, with an Id for each element, so
+            that the table can use groups and default multipliers. Convert changes no multiplier.
+          </Alert>
+        )}
+        {problems.length > 0 && (
+          <Alert severity="warning" sx={{ flexShrink: 0 }}>
+            The server refuses this table until you correct these problems. A save still writes the
+            file.
+            <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+              {problems.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
             </Box>
-            <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2 }}>
-              <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                <thead>
-                  <tr>
-                    <th style={stickyCorner} />
-                    {elements.map((el, ci) => (
-                      <th key={ci} style={stickyColHeader(ci)}>
-                        {el || `(${ci + 1})`}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {elements.map((el, ri) => (
-                    <tr key={ri}>
-                      {/* Row name + delete */}
-                      <td style={stickyRowHeader}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <input
-                            type="text"
-                            value={el}
-                            onChange={(e) => handleRenameElement(ri, e.target.value)}
-                            style={{
-                              width: 110,
-                              fontSize: 12,
-                              border: `1px solid ${borderColor}`,
-                              borderRadius: 3,
-                              padding: '2px 5px',
-                              background: 'transparent',
-                              color: 'inherit'
-                            }}
-                          />
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteElement(ri)}
-                          >
-                            <DeleteIcon style={{ fontSize: 14 }} />
-                          </IconButton>
-                        </Box>
-                      </td>
-                      {/* Value cells */}
-                      {elements.map((_, ci) => {
-                        const mirror = isMirrorCell(ri, ci)
-                        const isSelf = ri === ci
-                        return (
-                          <td
-                            key={ci}
-                            style={{
-                              borderBottom: cellBorder,
-                              borderRight: cellBorder,
-                              padding: 2,
-                              background: mirror
-                                ? theme.palette.mode === 'dark'
-                                  ? '#3d1a1a'
-                                  : '#fff5f5'
-                                : isSelf
-                                  ? theme.palette.mode === 'dark'
-                                    ? '#1a2a1a'
-                                    : '#f5fff5'
-                                  : undefined,
-                              outline: mirror ? '2px solid #f44336' : undefined,
-                              outlineOffset: -2
-                            }}
-                          >
-                            <input
-                              type="number"
-                              min={0}
-                              max={9999}
-                              value={matrix[ri]?.[ci] ?? ''}
-                              onChange={(e) => handleCellChange(ri, ci, e.target.value)}
-                              onFocus={() => setFocusedCell({ row: ri, col: ci })}
-                              onBlur={() => setFocusedCell(null)}
-                              style={{
-                                width: 64,
-                                fontSize: 12,
-                                border: `1px solid ${borderColor}`,
-                                borderRadius: 3,
-                                padding: '2px 4px',
-                                textAlign: 'right',
-                                background: 'transparent',
-                                color: 'inherit'
-                              }}
+          </Alert>
+        )}
+
+        {/* ── Elements (registry format) ── */}
+        {model.registry && (
+          <Paper variant="outlined" sx={{ flexShrink: 0 }}>
+            {sectionHeader('Elements', elementsOpen, setElementsOpen)}
+            {elementsOpen && (
+              <>
+                <Divider />
+                <Box sx={{ p: 2, overflowX: 'auto' }}>
+                  <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        {['Key', 'Id', 'Retail Id', 'Name', 'Default', 'Ivernic', ''].map((h) => (
+                          <th key={h} style={{ textAlign: 'left', padding: '2px 6px' }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {model.elements.map((e, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: 2 }}>
+                            <KeyInput
+                              label={`Key of element ${i + 1}`}
+                              value={e.key}
+                              taken={keys.filter((k) => k !== e.key)}
+                              onCommit={(next) => edit((m) => renameElement(m, e.key, next))}
+                              style={smallInput(120)}
                             />
                           </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Box>
-          </>
+                          <td style={{ padding: 2 }}>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              aria-label={`Id of ${e.key}`}
+                              value={e.id}
+                              onChange={(ev) => setElementField(i, 'id', ev.target.value.trim())}
+                              style={smallInput(50)}
+                            />
+                          </td>
+                          <td style={{ padding: 2 }}>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              aria-label={`Retail Id of ${e.key}`}
+                              value={e.retailId}
+                              placeholder="0"
+                              onChange={(ev) =>
+                                setElementField(i, 'retailId', ev.target.value.trim())
+                              }
+                              style={smallInput(50)}
+                            />
+                          </td>
+                          <td style={{ padding: 2 }}>
+                            <input
+                              type="text"
+                              aria-label={`Name of ${e.key}`}
+                              value={e.name}
+                              placeholder={e.key}
+                              onChange={(ev) => setElementField(i, 'name', ev.target.value)}
+                              style={smallInput(120)}
+                            />
+                          </td>
+                          <td style={{ padding: 0, textAlign: 'center' }}>
+                            <Radio
+                              size="small"
+                              checked={e.isDefault}
+                              onChange={() => setDefaultElement(i)}
+                              slotProps={{ input: { 'aria-label': `${e.key} is the default` } }}
+                            />
+                          </td>
+                          <td style={{ padding: 2 }}>
+                            <input
+                              type="text"
+                              aria-label={`Ivernic name of ${e.key}`}
+                              value={e.ivernic}
+                              onChange={(ev) => setElementField(i, 'ivernic', ev.target.value)}
+                              style={smallInput(100)}
+                            />
+                          </td>
+                          <td style={{ padding: 0 }}>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              aria-label={`Delete ${e.key}`}
+                              onClick={() => handleDeleteElement(e.key)}
+                            >
+                              <DeleteIcon style={{ fontSize: 14 }} />
+                            </IconButton>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddElement}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                  >
+                    Add Element
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Paper>
         )}
-      </Paper>
+
+        {/* ── Groups (registry format) ── */}
+        {model.registry && (
+          <Paper variant="outlined" sx={{ flexShrink: 0 }}>
+            {sectionHeader('Groups', groupsOpen, setGroupsOpen)}
+            {groupsOpen && (
+              <>
+                <Divider />
+                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Content picks a random member of a group with Random:&lt;Key&gt;, for example
+                    Random:{model.groups[0]?.key || 'Cardinal'}.
+                  </Typography>
+                  {model.groups.map((g, i) => (
+                    <Box
+                      key={`${resetCount}-${i}`}
+                      sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
+                    >
+                      <TextField
+                        label="Key"
+                        size="small"
+                        value={g.key}
+                        sx={{ width: 160 }}
+                        onChange={(ev) =>
+                          setGroups((gs) =>
+                            gs.map((x, j) => (j === i ? { ...x, key: ev.target.value } : x))
+                          )
+                        }
+                        slotProps={{ htmlInput: { spellCheck: false } }}
+                      />
+                      <GroupMembersField
+                        members={g.members}
+                        onChange={(members) =>
+                          setGroups((gs) => gs.map((x, j) => (j === i ? { ...x, members } : x)))
+                        }
+                      />
+                      <IconButton
+                        size="small"
+                        color="error"
+                        aria-label={`Delete group ${g.key}`}
+                        onClick={() => setGroups((gs) => gs.filter((_, j) => j !== i))}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  <Box>
+                    <Button
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddGroup}
+                      variant="outlined"
+                    >
+                      Add Group
+                    </Button>
+                  </Box>
+                </Box>
+              </>
+            )}
+          </Paper>
+        )}
+
+        {/* ── Multipliers ── */}
+        <Paper
+          variant="outlined"
+          sx={{ display: 'flex', flexDirection: 'column', minHeight: 240, flexShrink: 0 }}
+        >
+          {sectionHeader('Multipliers', matrixOpen, setMatrixOpen)}
+          {matrixOpen && (
+            <>
+              <Divider sx={{ flexShrink: 0 }} />
+              <Box sx={{ p: 2, flexShrink: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+                  <InfoOutlinedIcon fontSize="small" color="action" />
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Enter multipliers: 0.8 reduces the damage by 20%, 1 makes no change, 1.5 adds
+                    50%. Row = source element (attacker); column = target element (defender). The
+                    highlighted cell shows the reverse interaction.
+                    {model.registry &&
+                      ' An empty cell uses the row default, then the table default, and shows that value in grey.'}
+                  </Typography>
+                </Box>
+                {!model.registry && (
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddElement}
+                    variant="outlined"
+                  >
+                    Add Element
+                  </Button>
+                )}
+              </Box>
+              <Box sx={{ overflow: 'auto', px: 2, pb: 2, maxHeight: '70vh' }}>
+                <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th style={stickyCorner}>
+                        {model.registry && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            Row default
+                          </Typography>
+                        )}
+                      </th>
+                      {keys.map((k, ci) => (
+                        <th key={ci} style={stickyColHeader(ci)}>
+                          {k || `(${ci + 1})`}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {keys.map((rowKey, ri) => (
+                      <tr key={ri}>
+                        <td style={stickyRowHeader}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {model.registry ? (
+                              <>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ width: 110, fontWeight: 600, overflow: 'hidden' }}
+                                  noWrap
+                                >
+                                  {rowKey}
+                                </Typography>
+                                <Tooltip title="Row default: for each pair in this row that sets no multiplier">
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    aria-label={`Row default of ${rowKey}`}
+                                    value={sourceRow(model, rowKey)?.defaultMultiplier ?? ''}
+                                    placeholder={shown(
+                                      effectiveMultiplier({ ...model, sources: [] }, rowKey, rowKey)
+                                    )}
+                                    onChange={(ev) =>
+                                      edit((m) => setRowDefault(m, rowKey, ev.target.value))
+                                    }
+                                    style={smallInput(64)}
+                                  />
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <>
+                                <KeyInput
+                                  label={`Key of element ${ri + 1}`}
+                                  value={rowKey}
+                                  taken={keys.filter((k) => k !== rowKey)}
+                                  onCommit={(next) => edit((m) => renameElement(m, rowKey, next))}
+                                  style={smallInput(110)}
+                                />
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  aria-label={`Delete ${rowKey}`}
+                                  onClick={() => handleDeleteElement(rowKey)}
+                                >
+                                  <DeleteIcon style={{ fontSize: 14 }} />
+                                </IconButton>
+                              </>
+                            )}
+                          </Box>
+                        </td>
+                        {keys.map((colKey, ci) => {
+                          const mirror = isMirrorCell(ri, ci)
+                          const isSelf = ri === ci
+                          return (
+                            <td
+                              key={ci}
+                              style={{
+                                borderBottom: cellBorder,
+                                borderRight: cellBorder,
+                                padding: 2,
+                                background: mirror
+                                  ? theme.palette.mode === 'dark'
+                                    ? '#3d1a1a'
+                                    : '#fff5f5'
+                                  : isSelf
+                                    ? theme.palette.mode === 'dark'
+                                      ? '#1a2a1a'
+                                      : '#f5fff5'
+                                    : undefined,
+                                outline: mirror ? '2px solid #f44336' : undefined,
+                                outlineOffset: -2
+                              }}
+                            >
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                aria-label={`${rowKey} against ${colKey}`}
+                                value={declaredMultiplier(model, rowKey, colKey)}
+                                placeholder={shown(effectiveMultiplier(model, rowKey, colKey))}
+                                onChange={(ev) =>
+                                  edit((m) => setPair(m, rowKey, colKey, ev.target.value))
+                                }
+                                onFocus={() => setFocusedCell({ row: ri, col: ci })}
+                                onBlur={() => setFocusedCell(null)}
+                                style={{ ...smallInput(64), textAlign: 'right' }}
+                              />
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Box>
+            </>
+          )}
+        </Paper>
+      </Box>
       <Snackbar
         open={!!dupSnack}
         autoHideDuration={5000}
