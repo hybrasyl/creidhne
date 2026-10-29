@@ -12,6 +12,8 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
+import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
+import SharedKeyNotice from '../components/shared/SharedKeyNotice'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
@@ -97,6 +99,8 @@ function TraitsPage() {
     }
   }
   const handleSelect = (file) => guard(() => doSelect(file))
+  // A report can ask this page to open a file (HTOO-625).
+  useOpenFileRequest(TRAITS_SUBDIR, files, loading, handleSelect)
 
   // HTOO-378: a name is a key, so a changed name orphans every file that
   // names this entity: another trait's ConflictsWith. Offered before the
@@ -230,6 +234,7 @@ function TraitsPage() {
           position: 'relative'
         }}
       >
+        <SharedKeyNotice type={TRAITS_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load trait:</strong> {loadError}

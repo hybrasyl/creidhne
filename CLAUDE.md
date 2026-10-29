@@ -80,7 +80,7 @@ src/
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
                exportSerializers.js, elementTable.js (the element table model: lookup order,
-               validation, the old-format conversion), traitValidate.js and speciesValidate.js (the server's trait and species checks), elementOptions.js (the element choices
+               validation, the old-format conversion), traitValidate.js and speciesValidate.js (the server's trait and species checks), duplicateKeys.js (the keys that more than one active file holds, from the index), elementOptions.js (the element choices
                from the active table, and the copy of hybindex's resolveElementTable), nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
@@ -249,10 +249,10 @@ e2e/           Playwright specs against the built app
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
   `src/main/__tests__/splashLayout.test.js`, `pickerStart.test.js` (every picker has a
-  `defaultPath`), `replaceSites.test.js` (every `replace` takes a literal or a replacer function, because a replacement string expands `$&` from the value — HTOO-469), and nine under
+  `defaultPath`), `replaceSites.test.js` (every `replace` takes a literal or a replacer function, because a replacement string expands `$&` from the value — HTOO-469), and ten under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
   `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`,
-  `renameRepairSites.test.js`, `renameFileSites.test.js`, `macosSources.test.js` and
+  `renameRepairSites.test.js`, `renameFileSites.test.js`, `openFileSites.test.js` (each page takes a report's open request and shows the shared-key notice, HTOO-625), `macosSources.test.js` and
   `rendererNodeGlobals.test.js` (no Node global in the sandboxed renderer). Its e2e twin is
   `e2e/nav-pages.spec.js`, which opens every page in the built app and fails on the error
   boundary; its page list is derived from `GO_PAGES`, so a new page is covered unasked.

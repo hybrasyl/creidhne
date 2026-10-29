@@ -31,8 +31,10 @@ import {
   findEntity,
   presetsFor
 } from '@shared/reportEntities.js'
-import { useStoreValue, activeLibraryState } from '../store/appStore'
+import { useStoreValue, activeLibraryState, libraryIndexState } from '../store/appStore'
+import { duplicateKeyGroups } from '@shared/duplicateKeys.js'
 import ColumnPicker from '../components/reports/ColumnPicker'
+import DuplicateKeysReport from '../components/reports/DuplicateKeysReport'
 import RuleList from '../components/reports/RuleList'
 
 // The Reports surface (WP2), entity-aware since WP3.
@@ -54,6 +56,12 @@ import RuleList from '../components/reports/RuleList'
 
 const PREVIEW_DEBOUNCE_MS = 400
 
+/**
+ * The selection id of the duplicate-key check (HTOO-625). It is not a report
+ * definition: it reads the index, has no columns and exports nothing.
+ */
+const DUPLICATE_KEYS_ID = 'world:duplicate-keys'
+
 /** A stored report's columns are bare keys; a built-in's are `{ key, header }`. */
 const columnKeys = (columns) => (columns ?? []).map((c) => (typeof c === 'string' ? c : c.key))
 
@@ -73,6 +81,8 @@ function toDefinition(report) {
 
 function ReportsPage() {
   const activeLibrary = useStoreValue(activeLibraryState)
+  const libraryIndex = useStoreValue(libraryIndexState)
+  const duplicateKeyCount = useMemo(() => duplicateKeyGroups(libraryIndex).length, [libraryIndex])
   const [reports, setReports] = useState([])
   const [loadProblems, setLoadProblems] = useState([])
   const [entity, setEntity] = useState(REPORT_ENTITIES[0].entity)
@@ -314,132 +324,160 @@ function ReportsPage() {
             ))}
           </List>
         )}
+        <Divider sx={{ my: 1 }} />
+        <Typography variant="subtitle2" sx={{ px: 1 }}>
+          World checks
+        </Typography>
+        <List dense disablePadding>
+          <ListItemButton
+            selected={selectedId === DUPLICATE_KEYS_ID}
+            onClick={() => setSelectedId(DUPLICATE_KEYS_ID)}
+          >
+            <ListItemText
+              primary="Duplicate keys"
+              secondary={activeLibrary ? `${duplicateKeyCount} keys` : undefined}
+              slotProps={{ primary: { variant: 'body2' }, secondary: { variant: 'caption' } }}
+            />
+          </ListItemButton>
+        </List>
       </Paper>
 
       <Box sx={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Typography variant="h5" sx={{ flex: 1 }}>
-            {entityLabel} reports
-          </Typography>
-          {preview && (
-            <Chip
-              size="small"
-              label={`${preview.matched} of ${preview.total} ${entityLabel.toLowerCase()}`}
-              variant="outlined"
-            />
-          )}
-          {isBuiltIn && (
-            <Tooltip title="Clone this report to edit it">
-              <Button size="small" startIcon={<ContentCopyIcon />} onClick={handleClone}>
-                Clone
-              </Button>
-            </Tooltip>
-          )}
-          {!isBuiltIn && selected && (
-            <>
-              <Button
-                size="small"
-                startIcon={<SaveIcon />}
-                disabled={!dirty || !canRun || busy !== null}
-                onClick={handleSave}
-              >
-                Save
-              </Button>
-              <Tooltip title="Delete this report">
-                <IconButton size="small" color="error" onClick={handleDelete}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={
-              busy === 'run' ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />
-            }
-            disabled={!selected || !canRun || busy !== null}
-            onClick={handleRun}
-          >
-            Run
-          </Button>
-        </Box>
-        <Divider sx={{ mb: 2 }} />
-
-        {loadProblems.length > 0 && (
-          <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setLoadProblems([])}>
-            <strong>Some saved reports could not be read.</strong> The rest loaded normally.
-            <Box component="ul" sx={{ m: 0, pl: 3 }}>
-              {loadProblems.map((problem) => (
-                <li key={problem}>{problem}</li>
-              ))}
-            </Box>
-          </Alert>
-        )}
-
-        {!selected ? (
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Choose a report.
-          </Typography>
+        {selectedId === DUPLICATE_KEYS_ID ? (
+          <DuplicateKeysReport />
         ) : (
           <>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-              <TextField
-                size="small"
-                label="Report name"
-                sx={{ flex: 1, minWidth: 220 }}
-                value={selected.label}
-                disabled={isBuiltIn}
-                onChange={(e) => edit({ label: e.target.value })}
-                slotProps={{ htmlInput: { spellCheck: false } }}
-              />
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>Format</InputLabel>
-                <Select
-                  label="Format"
-                  value={selected.format}
-                  disabled={isBuiltIn}
-                  onChange={(e) => edit({ format: e.target.value })}
-                >
-                  <MenuItem value="csv">CSV</MenuItem>
-                  <MenuItem value="json">JSON</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            {isBuiltIn && (
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                {selected.description}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Typography variant="h5" sx={{ flex: 1 }}>
+                {entityLabel} reports
               </Typography>
+              {preview && (
+                <Chip
+                  size="small"
+                  label={`${preview.matched} of ${preview.total} ${entityLabel.toLowerCase()}`}
+                  variant="outlined"
+                />
+              )}
+              {isBuiltIn && (
+                <Tooltip title="Clone this report to edit it">
+                  <Button size="small" startIcon={<ContentCopyIcon />} onClick={handleClone}>
+                    Clone
+                  </Button>
+                </Tooltip>
+              )}
+              {!isBuiltIn && selected && (
+                <>
+                  <Button
+                    size="small"
+                    startIcon={<SaveIcon />}
+                    disabled={!dirty || !canRun || busy !== null}
+                    onClick={handleSave}
+                  >
+                    Save
+                  </Button>
+                  <Tooltip title="Delete this report">
+                    <IconButton size="small" color="error" onClick={handleDelete}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={
+                  busy === 'run' ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <FileDownloadIcon />
+                  )
+                }
+                disabled={!selected || !canRun || busy !== null}
+                onClick={handleRun}
+              >
+                Run
+              </Button>
+            </Box>
+            <Divider sx={{ mb: 2 }} />
+
+            {loadProblems.length > 0 && (
+              <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setLoadProblems([])}>
+                <strong>Some saved reports could not be read.</strong> The rest loaded normally.
+                <Box component="ul" sx={{ m: 0, pl: 3 }}>
+                  {loadProblems.map((problem) => (
+                    <li key={problem}>{problem}</li>
+                  ))}
+                </Box>
+              </Alert>
             )}
 
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Columns
-            </Typography>
-            <ColumnPicker
-              catalogue={findEntity(entity)?.columns ?? []}
-              value={columns}
-              disabled={isBuiltIn}
-              onChange={(next) => edit({ columns: next })}
-            />
+            {!selected ? (
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Choose a report.
+              </Typography>
+            ) : (
+              <>
+                <Box
+                  sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}
+                >
+                  <TextField
+                    size="small"
+                    label="Report name"
+                    sx={{ flex: 1, minWidth: 220 }}
+                    value={selected.label}
+                    disabled={isBuiltIn}
+                    onChange={(e) => edit({ label: e.target.value })}
+                    slotProps={{ htmlInput: { spellCheck: false } }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>Format</InputLabel>
+                    <Select
+                      label="Format"
+                      value={selected.format}
+                      disabled={isBuiltIn}
+                      onChange={(e) => edit({ format: e.target.value })}
+                    >
+                      <MenuItem value="csv">CSV</MenuItem>
+                      <MenuItem value="json">JSON</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
 
-            <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-              Filter
-            </Typography>
-            <RuleList
-              fields={filterFieldsFor(entity)}
-              match={selected.match}
-              rules={selected.rules}
-              disabled={isBuiltIn}
-              onChange={(next) => edit(next)}
-            />
+                {isBuiltIn && (
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                    {selected.description}
+                  </Typography>
+                )}
+
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Columns
+                </Typography>
+                <ColumnPicker
+                  catalogue={findEntity(entity)?.columns ?? []}
+                  value={columns}
+                  disabled={isBuiltIn}
+                  onChange={(next) => edit({ columns: next })}
+                />
+
+                <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                  Filter
+                </Typography>
+                <RuleList
+                  fields={filterFieldsFor(entity)}
+                  match={selected.match}
+                  rules={selected.rules}
+                  disabled={isBuiltIn}
+                  onChange={(next) => edit(next)}
+                />
+              </>
+            )}
+
+            {status && (
+              <Alert severity={status.type} sx={{ mt: 2 }} onClose={() => setStatus(null)}>
+                {status.message}
+              </Alert>
+            )}
           </>
-        )}
-
-        {status && (
-          <Alert severity={status.type} sx={{ mt: 2 }} onClose={() => setStatus(null)}>
-            {status.message}
-          </Alert>
         )}
       </Box>
     </Box>
