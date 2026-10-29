@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { writeFileSync } from 'node:fs'
-import { launchApp, getMainWindow } from './helpers.js'
+import { launchApp, getMainWindow, openPage } from './helpers.js'
 
 // The theme gallery's audit, in the real renderer (HTOO-572).
 //
@@ -32,7 +32,7 @@ test('the theme gallery measures every sample in every theme', async () => {
   const { electronApp } = await launchApp()
   try {
     const page = await getMainWindow(electronApp)
-    await page.getByRole('button', { name: 'Settings', exact: true }).first().click()
+    await openPage(page, 'Settings')
     await page.getByRole('button', { name: 'Theme gallery', exact: true }).click()
     await expect(page.getByTestId('theme-gallery-page')).toBeVisible()
 
