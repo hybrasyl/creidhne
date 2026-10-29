@@ -6,7 +6,7 @@ is done, and record the build and the tester next to it.
 
 As of `e292882`, the automated gate is green on macOS: `lint:check`, `npm test`
 (2007 passed), `build`, and `e2e:only` (18 of 18). Before `npm test` on a fresh
-clone, run `npm run fetch-xsd`. The XSDs are not in the repo, and 7 XSD tests fail
+clone, and after the pin in `scripts/xsdRef.cjs` moves, run `npm run fetch-xsd`. The XSDs are not in the repo, and 7 XSD tests fail
 without them.
 
 ## Already covered by E2E

@@ -54,6 +54,7 @@ first section written to the rules above.
 - **On the Formulas page, the statuses that use a formula are filled chips.** They are in the colour of the bars, and the castables stay outlined.
 - **Creidhne builds the world index again one time after this update.** The index format changed, and the old index is not used.
 - **macOS: the world index is in `~/Library/Application Support/Erisco/hybindex`.** It was in `~/.config/Erisco/hybindex`. Creidhne moves the old folder the first time that it saves the index. Taliesin uses the same folder.
+- **Creidhne uses the current Hybrasyl schemas.** It used the schemas of the last xml release, v0.9.7, which have no traits, no species and the old element table. The schemas now come from one xml commit that the repo names. The Constants page shows the new types. It does not show `ElementType` and `ElementList`, because the element table now defines the elements.
 - **The server config in `serverconfigs/config.xml` shows the name `default`.** That is the name that the server gives it. Before, the index named it after the first `<Age>` element in the file.
 
 ### Fixed

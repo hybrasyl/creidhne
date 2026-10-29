@@ -4,10 +4,14 @@
 // declared as a top-level element in the upstream schema).
 
 import { promises as fs } from 'fs'
+import { createRequire } from 'module'
 import { join } from 'path'
 import { validateXML } from 'xmllint-wasm'
 
-const XSD_DIR = join(process.cwd(), 'xsd', 'src', 'XSD')
+const { xsdRefProblem } = createRequire(import.meta.url)('../../../scripts/xsdRef.cjs')
+
+const XSD_ROOT = join(process.cwd(), 'xsd')
+const XSD_DIR = join(XSD_ROOT, 'src', 'XSD')
 
 // Real XSDs present in the repo. Hybrasyl.xsd is excluded because it includes
 // Formulas.xsd, which isn't shipped with the XML repo package.
@@ -58,13 +62,12 @@ let cachedPreload = null
 
 async function loadPreload() {
   if (cachedPreload) return cachedPreload
-  // xsd/ is gitignored and fetched, so a fresh clone has none. Say what to run,
-  // or seven tests fail on a bare ENOENT that names a path and not the cause.
-  try {
-    await fs.access(XSD_DIR)
-  } catch {
-    throw new Error(`No XSDs at ${XSD_DIR}. Run \`npm run fetch-xsd\` once after cloning.`)
-  }
+  // xsd/ is gitignored and fetched, so a fresh clone has none, and an old
+  // clone can hold another xml commit's schemas. Say what to run, or the tests
+  // fail on a bare ENOENT, or pass against schemas that are not the pin
+  // (HTOO-615).
+  const problem = xsdRefProblem(XSD_ROOT)
+  if (problem) throw new Error(problem)
   const preload = []
   for (const name of XSD_FILES) {
     const raw = await fs.readFile(join(XSD_DIR, name), 'utf-8')

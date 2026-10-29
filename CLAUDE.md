@@ -24,7 +24,7 @@ document repo's `docs/` (WIRE-FORMATS, OPCODE-MAP, dat-files, per-opcode files).
 
 ```bash
 npm run dev          # electron-vite dev — launches the app; needs a GUI (see Verifying)
-npm run fetch-xsd    # once per clone: xsd/ is gitignored, and 7 XSD tests fail without it
+npm run fetch-xsd    # once per clone and after each pin move (scripts/xsdRef.cjs): 7 XSD tests fail without it
 npm test             # vitest run (~1870 tests incl. scripts/; node env by default)
 npm run test:coverage  # config-driven — do NOT re-add --coverage.include, a CLI flag overrides it
 npm run lint:check   # eslint, no writes
@@ -96,9 +96,9 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs, run-electron.mjs).
-               Eight of its tests run
-               in the ordinary suite: icons.test.mjs (committed icon artifacts),
+               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs, run-electron.mjs,
+               xsdRef.cjs — the one pin of the hybrasyl/xml commit that fetch-xsd gets).
+               Its tests run in the ordinary suite, among them: icons.test.mjs (committed icon artifacts),
                buildPaths.test.mjs (every path electron-builder.yml names is tracked by git),
                testCollection.test.mjs (no test file sits where the runner won't find it),
                changelog-extract.test.mjs, verify-fuses.test.mjs (the electronFuses block, the
@@ -106,7 +106,8 @@ scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml
                release-artifacts.test.mjs (every declared target has a release glob, and back),
                portable-config.test.mjs (no portable splashImage, and unpackDirName: true),
                electron-cache.test.mjs (each job that runs `npm ci` caches the Electron
-               binary under `runner.temp` and retries the install, HTOO-388).
+               binary under `runner.temp` and retries the install, HTOO-388), xsdRef.test.mjs
+               (xsd/ holds the pinned xml ref; the XSD tests fail naming fetch-xsd when not).
 e2e/           Playwright specs against the built app
 ```
 

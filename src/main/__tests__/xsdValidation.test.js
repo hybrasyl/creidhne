@@ -62,13 +62,15 @@ async function roundtripValid(parseFn, serializeFn, xml) {
 // Known upstream XSD↔reality drift — the bundled schema file is stricter or
 // differently-shaped than what live XML files use. Fix is in the hybrasyl/xml
 // repo, not creidhne. Skipped with a one-line explanation; unskip once upstream
-// catches up. Any time `scripts/downloadXSD.js` pulls a new schema release,
-// clear this list and re-run; anything that still fails is new drift.
+// catches up. Any time the pin in `scripts/xsdRef.cjs` moves, clear this list
+// and re-run; anything that still fails is new drift. Last checked at xml
+// 77432ae (HTOO-615): all seven still fail.
 const KNOWN_DRIFT = {
   items: 'schema requires <Description> inside <Vendor>; real files omit it',
   npcs: 'schema marks X/Y required on <Npc>; real files omit them',
   localizations: 'schema orders NpcSpeak before MonsterSpeak; real files use different ordering',
-  elementtables: 'schema expects exactly 9 Target elements per Source; real structure differs',
+  // Not upstream drift: the fixture is in the old format. HTOO-581 moves it.
+  elementtables: 'schema expects the new <Elements> block first; the fixture is the old format',
   castables: 'schema omits <Descriptions> from expected Castable children',
   spawngroups: 'schema SpawnFlags maxLength=3; real files have 4+ flags',
   serverconfigs: 'child element ordering mismatch (details in test output when unskipped)'

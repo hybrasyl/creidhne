@@ -126,7 +126,7 @@ jobs:
           done
           exit 1
 
-      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
+      # xsd/ is gitignored and fetched from the hybrasyl/xml commit that scripts/xsdRef.cjs pins;
       # the XSD-validation tests read it.
       - name: Fetch XSD schemas
         run: npm run fetch-xsd
@@ -178,7 +178,7 @@ jobs:
           done
           exit 1
 
-      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
+      # xsd/ is gitignored and fetched from the hybrasyl/xml commit that scripts/xsdRef.cjs pins;
       # the built app reads it at runtime.
       - name: Fetch XSD schemas
         run: npm run fetch-xsd
@@ -236,7 +236,7 @@ jobs:
           done
           exit 1
 
-      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # xsd/ is gitignored and fetched from the hybrasyl/xml commit that scripts/xsdRef.cjs pins.
       # electron-builder unpacks xsd/** and the app reads it at runtime, so the
       # packaged build needs it present.
       - name: Fetch XSD schemas
@@ -424,7 +424,7 @@ jobs:
           done
           exit 1
 
-      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # xsd/ is gitignored and fetched from the hybrasyl/xml commit that scripts/xsdRef.cjs pins.
       # electron-builder unpacks xsd/** and the app reads it at runtime, so the
       # packaged build needs it present.
       - name: Fetch XSD schemas
@@ -492,7 +492,7 @@ jobs:
           done
           exit 1
 
-      # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
+      # xsd/ is gitignored and fetched from the hybrasyl/xml commit that scripts/xsdRef.cjs pins.
       # electron-builder unpacks xsd/** and the app reads it at runtime, so the
       # packaged build needs it present.
       - name: Fetch XSD schemas
