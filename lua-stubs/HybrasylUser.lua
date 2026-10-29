@@ -8,7 +8,7 @@
 ---@field Guid string
 ---@field Direction Direction
 ---The item in the first inventory slot of the player.
----@field FirstInventorySlot HybrasylItemObject
+---@field FirstInventorySlot HybrasylItemObject?
 ---@field Class Class
 ---@field MapName string
 ---The user's previous class, if a subpath.
@@ -68,7 +68,7 @@ function HybrasylUser.GetViewportPlayers() end
 function HybrasylUser.Resurrect() end
 
 ---Get the player, if any, that the current player is facing ("looking at").
----@return HybrasylUser object for the player facing this player, or nil, if the player isn't directly facing another player.
+---@return HybrasylUser? object for the player facing this player, or nil, if the player isn't directly facing another player.
 function HybrasylUser.GetFacingUser() end
 
 ---Get the objects a player is facing (for instance, items on the ground in front of the player)
@@ -77,7 +77,7 @@ function HybrasylUser.GetFacingUser() end
 function HybrasylUser.GetFacingObjects(distance) end
 
 ---Get the monster that the player is facing.
----@return HybrasylMonster A object.
+---@return HybrasylMonster? A object.
 function HybrasylUser.GetFacingMonster() end
 
 ---Get a list of monsters facing the user.
@@ -120,7 +120,7 @@ function HybrasylUser.SendHome() end
 
 ---Get a legend mark from the current player's legend (a list of player achievements and accomplishments which is visible by anyone in the world), given a legend prefix. All legend marks have invisible prefixes (keys) for editing / storage capabilities.
 ---@param prefix string The prefix we want to retrieve (legend key)
----@return any
+---@return any?
 function HybrasylUser.GetLegendMark(prefix) end
 
 ---Check to see if a player has a legend mark with the specified prefix in their legend.
@@ -170,7 +170,7 @@ function HybrasylUser.GetLegend() end
 ---@param icon LegendIcon A enum indicating the icon to be used for the mark (heart, sword, etc)
 ---@param color LegendColor A indicating the color the mark will be rendered in (blue, yellow, orange, etc)
 ---@param text string The actual text of the legend mark.
----@param prefix? string An invisible key (stored in the beginning of the mark) that can be used to refer to the mark later.
+---@param prefix? string? An invisible key (stored in the beginning of the mark) that can be used to refer to the mark later.
 ---@param isPublic? boolean Whether or not this legend mark can be seen by other players. By convention, private marks are prefixed with " - ".
 ---@param quantity? number Quantity of the legend mark. For instance "Mentored Dude (2)". Also by convention, quantity is expressed in parenthesis at the end of the mark.
 ---@param displaySeason? boolean Whether or not to display the season of a mark (e.g. Fall, Summer)
@@ -192,7 +192,7 @@ function HybrasylUser.AddLegendMark(icon, color, text, timestamp, prefix) end
 ---@param color LegendColor A indicating the color the mark will be rendered in (blue, yellow, orange, etc)
 ---@param text string The actual text of the legend mark.
 ---@param timestamp DateTime The Terran time the legend was awarded.
----@param prefix? string An invisible key (stored in the beginning of the mark) that can be used to refer to the mark later.
+---@param prefix? string? An invisible key (stored in the beginning of the mark) that can be used to refer to the mark later.
 ---@param isPublic? boolean Whether or not this legend mark can be seen by other players. By convention, private marks are prefixed with " - ".
 ---@param quantity? number Quantity of the legend mark. For instance "Mentored Dude (2)". Also by convention, quantity is expressed in parenthesis at the end of the mark.
 ---@param displaySeason? boolean Whether or not to display the season of a mark (e.g. Fall, Summer)
@@ -247,24 +247,24 @@ function HybrasylUser.SetCookie(ns, cookieName, value) end
 
 ---Get the value of a session cookie, if it exists.
 ---@param cookieName string The name of the cookie to fetch
----@return string string representation of the cookie value
+---@return string? string representation of the cookie value
 function HybrasylUser.GetSessionCookie(cookieName) end
 
 ---Get the value of a session cookie in a namespace, if it exists.
 ---@param ns string The namespace to consult
 ---@param cookieName string The name of the cookie to fetch
----@return string string representation of the cookie value
+---@return string? string representation of the cookie value
 function HybrasylUser.GetSessionCookie(ns, cookieName) end
 
 ---Get the value of a cookie, if it exists.
 ---@param cookieName string The name of the cookie to fetch
----@return string string representation of the cookie value
+---@return string? string representation of the cookie value
 function HybrasylUser.GetCookie(cookieName) end
 
 ---Get the value of a cookie, if it exists.
 ---@param ns string The namespace to consult
 ---@param cookieName string The name of the cookie to fetch
----@return string string representation of the cookie value
+---@return string? string representation of the cookie value
 function HybrasylUser.GetCookie(ns, cookieName) end
 
 ---Check to see if a player has a specified cookie or not.
@@ -342,7 +342,7 @@ function HybrasylUser.GiveItem(obj) end
 ---Check to see if a user has the specified cookie; if not, set it, give experience, and optionally, send them a system message.
 ---@param cookie string Name of the cookie to be set.
 ---@param xp? number Amount of XP to award.
----@param completionMessage? string A system message that will be sent to the user.
+---@param completionMessage? string? A system message that will be sent to the user.
 ---@return boolean Boolean indicating whether or not the user was awarded XP.
 function HybrasylUser.CompletionAward(cookie, xp, completionMessage) end
 
@@ -437,7 +437,7 @@ function HybrasylUser.EndDialog() end
 
 ---Start a dialog sequence for the current player. This will display the first dialog in the sequence to the player.
 ---@param sequenceName string The name of the sequence to start
----@param associateOverride? any An IInteractable to associate with the dialog as the origin.
+---@param associateOverride? any? An IInteractable to associate with the dialog as the origin.
 function HybrasylUser.StartSequence(sequenceName, associateOverride) end
 
 ---Set a user's hairstyle from a script

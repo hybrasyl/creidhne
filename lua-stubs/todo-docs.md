@@ -1,8 +1,8 @@
 # Documentation Gaps
 
-Generated: 2026-07-19T22:40 UTC
+Generated: 2026-10-29T22:30 UTC
 
-**567** documentation gaps across **30** Lua-exposed types.
+**561** documentation gaps across **30** Lua-exposed types.
 
 ## StatInfo (124 gaps)
 
@@ -522,23 +522,6 @@ Source: `Subsystems/Scripting/HybrasylMonster.cs`
 - [ ] `GetGMMonsterInfo(0 params)` — Missing method summary
 - [ ] `GetGMMonsterInfo → return` — Missing return description
 
-## QuestMetadata (12 gaps)
-
-Source: `Internals/Metafiles/QuestMetadata.cs`
-
-- [ ] `(class)` — Missing class summary
-- [ ] `QuestMetadata` — Missing property summary
-- [ ] `AllowedClasses` — Missing property summary
-- [ ] `Id` — Missing property summary
-- [ ] `Prerequisite` — Missing property summary
-- [ ] `Result` — Missing property summary
-- [ ] `Reward` — Missing property summary
-- [ ] `Summary` — Missing property summary
-- [ ] `Title` — Missing property summary
-- [ ] `Classes` — Missing property summary
-- [ ] `AddClass(1 params)` — Missing method summary
-- [ ] `AddClass → c` — Missing param description
-
 ## CastableObject (12 gaps)
 
 Source: `Subsystems/Casting/CastableObject.cs`
@@ -611,6 +594,17 @@ Source: `Objects/CombatEvents.cs`
 - [ ] `EventType` — Missing property summary
 - [ ] `ToString(0 params)` — Missing method summary
 - [ ] `ToString → return` — Missing return description
+
+## QuestMetadata (6 gaps)
+
+Source: `Internals/Metafiles/QuestMetadata.cs`
+
+- [ ] `(class)` — Missing class summary
+- [ ] `QuestMetadata` — Missing property summary
+- [ ] `AllowedClasses` — Missing property summary
+- [ ] `Classes` — Missing property summary
+- [ ] `AddClass(1 params)` — Missing method summary
+- [ ] `AddClass → c` — Missing param description
 
 ## CreatureSnapshot (6 gaps)
 

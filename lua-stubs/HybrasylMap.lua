@@ -30,13 +30,13 @@ function HybrasylMap.IsCreatureAt(x, y) end
 ---Get a player at the given coordinates. Returns null if no player exists.
 ---@param x number X coordinate on map
 ---@param y number Y coordinate on map
----@return HybrasylUser
+---@return HybrasylUser?
 function HybrasylMap.GetPlayerAt(x, y) end
 
 ---Get a monster at the given coordinates. Return null if no monster exists.
 ---@param x number X coordinate on map
 ---@param y number Y coordinate on map
----@return HybrasylMonster
+---@return HybrasylMonster?
 function HybrasylMap.GetMonsterAt(x, y) end
 
 return HybrasylMap

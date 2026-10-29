@@ -4,7 +4,7 @@
 -- Do not edit manually — regenerate with: node scripts/generate-lua-stubs.js
 
 ---@class HybrasylReactor : HybrasylWorldObject
----@field Origin HybrasylUser
+---@field Origin HybrasylUser?
 ---@field Blocking boolean
 ---@field Uses number
 ---@field Expired boolean

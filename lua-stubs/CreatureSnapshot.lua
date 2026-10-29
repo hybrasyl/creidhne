@@ -10,7 +10,7 @@
 local CreatureSnapshot = {}
 
 
----@return User
+---@return User?
 function CreatureSnapshot.GetUserObject() end
 
 return CreatureSnapshot

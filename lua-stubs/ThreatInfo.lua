@@ -5,11 +5,11 @@
 
 ---@class ThreatInfo
 ---@field Owner Guid
----@field OwnerObject Creature
----@field HighestThreat Creature
+---@field OwnerObject Creature?
+---@field HighestThreat Creature?
 ---@field HighestThreatEntry ThreatEntry
 ---@field Count number
----@field LastCaster Creature
+---@field LastCaster Creature?
 local ThreatInfo = {}
 
 
