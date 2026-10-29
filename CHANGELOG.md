@@ -50,6 +50,8 @@ first section written to the rules above.
 - **The element table editor reads and writes the element registry format.** A table in this format defines its elements in an Elements block. Each element has a key, an Id, a retail Id, a display name, an Ivernic name, and one element is the default. The editor also edits the Groups block, the default multiplier of the table, and the default multiplier of each row. An empty cell uses the row default, then the table default, and shows that value in grey.
 - **Convert changes an old-format element table to the registry format.** It adds an Elements block, and it gives each element the Id that the element registry design gives it. It changes no multiplier.
 - **The element table editor lists each problem that makes the server refuse the table.** For example, two elements with the same key or Id, no default element, a retail Id above 9, or a key such as `Current` that is reserved for a selector. A save still writes the file.
+- **Reports → Duplicate keys lists the files that have the same key.** When two active files have the same key, the server loads one of them and does not tell you. The list shows each key, its type and its files, and marks keys that differ only in capitals, which the server can treat as one key or as two. **Open** goes to the file in its editor.
+- **An editor names the other files that have the same key.** A notice above the editor lists them.
 - **Settings → Appearance → Theme gallery** shows each type of control in the theme that you use, on the page, on a card and on a dark panel. Under each control, the gallery shows its measured contrast. Use it to examine a theme. **Back** returns to Settings.
 
 ### Changed

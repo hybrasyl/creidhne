@@ -12,6 +12,8 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
+import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
+import SharedKeyNotice from '../components/shared/SharedKeyNotice'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
 
@@ -122,6 +124,8 @@ function ServerConfigPage() {
     }
   }
   const handleSelect = (file) => guard(() => doSelect(file))
+  // A report can ask this page to open a file (HTOO-625).
+  useOpenFileRequest(SUBDIR, files, loading, handleSelect)
 
   const handleSave = async (data, fileName, folder, mode = 'archive') => {
     try {
@@ -236,6 +240,7 @@ function ServerConfigPage() {
           position: 'relative'
         }}
       >
+        <SharedKeyNotice type={SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load server config:</strong> {loadError}

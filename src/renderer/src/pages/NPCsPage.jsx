@@ -12,6 +12,8 @@ import MultiSelectOverlay from '../components/shared/MultiSelectOverlay'
 import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
+import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
+import SharedKeyNotice from '../components/shared/SharedKeyNotice'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
@@ -115,6 +117,8 @@ function NPCsPage() {
     }
   }
   const handleSelect = (file) => guard(() => doSelect(file))
+  // A report can ask this page to open a file (HTOO-625).
+  useOpenFileRequest(NPCS_SUBDIR, files, loading, handleSelect)
 
   // HTOO-378: a <Name> is a key, so a changed name orphans every file that
   // names this entity. Maps place NPCs by name, so the referrers here are
@@ -246,6 +250,7 @@ function NPCsPage() {
           position: 'relative'
         }}
       >
+        <SharedKeyNotice type={NPCS_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load NPC:</strong> {loadError}
