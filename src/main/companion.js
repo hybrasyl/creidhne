@@ -146,12 +146,21 @@ function kindOf(target) {
  * `portable.nsi` sets it explicitly to `$EXEDIR`, which is the launcher's own
  * directory and not the `$TEMP` extraction directory. It also sets
  * `PORTABLE_EXECUTABLE_FILE` and `PORTABLE_EXECUTABLE_APP_FILENAME` beside it.
- * Creidhne ships portable-only on Windows, so this branch is the normal one here
- * rather than the exception.
+ * The NSIS install sets none of them, so it falls through to `execPath`.
+ *
+ * **An AppImage is the Linux twin of the same trap** (HTOO-584). The AppImage
+ * runtime mounts the image at `/tmp/.mount_XXXXXX` and runs the binary from
+ * there, so `execPath` is inside the mount and its directory holds the app's own
+ * files. The runtime exports `APPIMAGE` as the path of the `.AppImage` file
+ * itself: electron-builder's AppRun (`generateAppRunScript` in app-builder-lib)
+ * reads an empty `APPIMAGE` as "not running from within an AppImage". Its
+ * directory is the one the user put both apps in.
  */
 export function launcherDir(probe) {
   const portable = probe.env.PORTABLE_EXECUTABLE_DIR
   if (probe.platform === 'win32' && portable) return portable
+  const appImage = probe.env.APPIMAGE
+  if (probe.platform === 'linux' && appImage) return dirname(appImage)
   return dirname(probe.execPath)
 }
 
