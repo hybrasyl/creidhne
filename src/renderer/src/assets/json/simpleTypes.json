@@ -12,7 +12,11 @@
   },
   "VisualEffectType": {
     "Type": "comboBox",
-    "Options": ["Targets", "AllTiles", "Caster"]
+    "Options": [
+      "Targets",
+      "AllTiles",
+      "Caster"
+    ]
   },
   "WeaponTypeList": {
     "Type": "ltdMultiSelect",
@@ -21,11 +25,21 @@
   },
   "RestrictionType": {
     "Type": "comboBox",
-    "Options": ["Equipped", "NotEquipped", "InInventory", "NotInInventory"]
+    "Options": [
+      "Equipped",
+      "NotEquipped",
+      "InInventory",
+      "NotInInventory"
+    ]
   },
   "MasteryModifier": {
     "Type": "comboBox",
-    "Options": ["Damage", "Heal", "MissRate", "FailRate"]
+    "Options": [
+      "Damage",
+      "Heal",
+      "MissRate",
+      "FailRate"
+    ]
   },
   "MasteryModifierList": {
     "Type": "unrMultiSelect",
@@ -33,11 +47,22 @@
   },
   "ElementalModifierType": {
     "Type": "comboBox",
-    "Options": ["Augment", "Resistance"]
+    "Options": [
+      "Augment",
+      "Resistance"
+    ]
   },
   "DamageFlags": {
     "Type": "ltdMultiSelect",
-    "Options": ["None", "NoResistance", "NoThreat", "Nonlethal", "NoDodge", "NoCrit", "NoElement"]
+    "Options": [
+      "None",
+      "NoResistance",
+      "NoThreat",
+      "Nonlethal",
+      "NoDodge",
+      "NoCrit",
+      "NoElement"
+    ]
   },
   "SpellUseType": {
     "Type": "comboBox",
@@ -54,15 +79,33 @@
   },
   "IntentFlags": {
     "Type": "comboBox",
-    "Options": ["Hostile", "Friendly", "Pvp", "Group", "Self"]
+    "Options": [
+      "Hostile",
+      "Friendly",
+      "Pvp",
+      "Group",
+      "Self"
+    ]
   },
   "RotationType": {
     "Type": "comboBox",
-    "Options": ["Offense", "Defense", "OnDeath", "NearDeath", "Assail"]
+    "Options": [
+      "Offense",
+      "Defense",
+      "OnDeath",
+      "NearDeath",
+      "Assail"
+    ]
   },
   "IntentDirection": {
     "Type": "comboBox",
-    "Options": ["None", "Front", "Back", "Left", "Right"]
+    "Options": [
+      "None",
+      "Front",
+      "Back",
+      "Left",
+      "Right"
+    ]
   },
   "IntentFlagsList": {
     "Type": "ltdMultiSelect",
@@ -148,7 +191,13 @@
   },
   "ItemBodyStyle": {
     "Type": "comboBox",
-    "Options": ["Transparent", "Male", "MaleBlack", "MaleRed", "Female"]
+    "Options": [
+      "Transparent",
+      "Male",
+      "MaleBlack",
+      "MaleRed",
+      "Female"
+    ]
   },
   "ItemFlags": {
     "Type": "ltdMultiSelect",
@@ -203,7 +252,15 @@
   },
   "Class": {
     "Type": "comboBox",
-    "Options": ["Peasant", "Warrior", "Rogue", "Wizard", "Priest", "Monk", "None"]
+    "Options": [
+      "Peasant",
+      "Warrior",
+      "Rogue",
+      "Wizard",
+      "Priest",
+      "Monk",
+      "None"
+    ]
   },
   "ItemTag": {
     "Type": "comboBox",
@@ -240,43 +297,47 @@
   },
   "Gender": {
     "Type": "comboBox",
-    "Options": ["Neutral", "Male", "Female"]
-  },
-  "ElementType": {
-    "Type": "comboBox",
     "Options": [
-      "None",
-      "Fire",
-      "Water",
-      "Wind",
-      "Earth",
-      "Light",
-      "Dark",
-      "Wood",
-      "Metal",
-      "Undead",
-      "RandomTemuair",
-      "RandomExpanded",
-      "Necklace",
-      "Belt",
-      "Current"
+      "Neutral",
+      "Male",
+      "Female"
     ]
   },
-  "ElementList": {
+  "ElementKeyList": {
     "Type": "unrMultiSelect",
-    "Options": "ElementType"
+    "Options": "ElementKey"
+  },
+  "ElementSelectorList": {
+    "Type": "unrMultiSelect",
+    "Options": "ElementSelector"
   },
   "IntentType": {
     "Type": "comboBox",
-    "Options": ["Hostile", "Passive", "Neutral"]
+    "Options": [
+      "Hostile",
+      "Passive",
+      "Neutral"
+    ]
   },
   "WeaponType": {
     "Type": "comboBox",
-    "Options": ["OneHand", "TwoHand", "Dagger", "Staff", "Claw", "None"]
+    "Options": [
+      "OneHand",
+      "TwoHand",
+      "Dagger",
+      "Staff",
+      "Claw",
+      "None"
+    ]
   },
   "DamageType": {
     "Type": "comboBox",
-    "Options": ["Direct", "Physical", "Magical", "Elemental"]
+    "Options": [
+      "Direct",
+      "Physical",
+      "Magical",
+      "Elemental"
+    ]
   },
   "EquipmentSlot": {
     "Type": "comboBox",
@@ -306,25 +367,52 @@
   },
   "Direction": {
     "Type": "comboBox",
-    "Options": ["North", "East", "South", "West"]
+    "Options": [
+      "North",
+      "East",
+      "South",
+      "West"
+    ]
   },
   "MapFlags": {
     "Type": "ltdMultiSelect",
-    "Options": ["Snow", "Rain", "Dark", "NoMap", "Winter"],
+    "Options": [
+      "Snow",
+      "Rain",
+      "Dark",
+      "NoMap",
+      "Winter"
+    ],
     "maxItems": 5
   },
   "NpcJobList": {
     "Type": "ltdMultiSelect",
-    "Options": ["Vend", "Bank", "Train", "Repair", "Post"],
+    "Options": [
+      "Vend",
+      "Bank",
+      "Train",
+      "Repair",
+      "Post"
+    ],
     "maxItems": 5
   },
   "StatType": {
     "Type": "comboBox",
-    "Options": ["Str", "Int", "Con", "Wis", "Dex"]
+    "Options": [
+      "Str",
+      "Int",
+      "Con",
+      "Wis",
+      "Dex"
+    ]
   },
   "NpcRepairType": {
     "Type": "comboBox",
-    "Options": ["Armor", "Weapon", "All"]
+    "Options": [
+      "Armor",
+      "Weapon",
+      "All"
+    ]
   },
   "VariantProperty": {
     "Type": "textField",
@@ -336,11 +424,17 @@
   },
   "BoardType": {
     "Type": "comboBox",
-    "Options": ["Messageboard", "Sign"]
+    "Options": [
+      "Messageboard",
+      "Sign"
+    ]
   },
   "SlotRestrictionType": {
     "Type": "comboBox",
-    "Options": ["ItemRequired", "ItemProhibited"]
+    "Options": [
+      "ItemRequired",
+      "ItemProhibited"
+    ]
   },
   "CreatureTargetPriority": {
     "Type": "comboBox",
@@ -372,23 +466,77 @@
   },
   "CreatureImmunityType": {
     "Type": "comboBox",
-    "Options": ["Element", "Castable", "Status", "StatusCategory", "CastableCategory"]
+    "Options": [
+      "Element",
+      "Castable",
+      "Status",
+      "StatusCategory",
+      "CastableCategory"
+    ]
   },
   "ProcEventType": {
     "Type": "comboBox",
-    "Options": ["OnUse", "OnCast", "OnHit", "OnDeath", "OnSpawn"]
+    "Options": [
+      "OnUse",
+      "OnCast",
+      "OnHit",
+      "OnDeath",
+      "OnSpawn"
+    ]
   },
   "SpawnFlags": {
     "Type": "ltdMultiSelect",
-    "Options": ["Active", "MovementDisabled", "AiDisabled", "DeathDisabled"],
+    "Options": [
+      "Active",
+      "MovementDisabled",
+      "AiDisabled",
+      "DeathDisabled"
+    ],
     "maxItems": 3
+  },
+  "SpeciesOrigin": {
+    "Type": "comboBox",
+    "Options": [
+      "Aosda",
+      "Tuatha",
+      "Fanaidhe"
+    ]
+  },
+  "SpeciesPlayerOption": {
+    "Type": "comboBox",
+    "Options": [
+      "Locked",
+      "Starter",
+      "Unlockable",
+      "ByBranch"
+    ]
   },
   "ScriptSource": {
     "Type": "comboBox",
-    "Options": ["Target", "Caster"]
+    "Options": [
+      "Target",
+      "Caster"
+    ]
+  },
+  "IconSet": {
+    "Type": "comboBox",
+    "Options": [
+      "Skill",
+      "Spell"
+    ]
+  },
+  "ExclusivePolicy": {
+    "Type": "comboBox",
+    "Options": [
+      "Reject",
+      "Replace"
+    ]
   },
   "SkippedImport": {
-    "Types": []
+    "Types": [
+      "SpeciesKey",
+      "RetailSkinColor"
+    ]
   },
   "IgnoredImports": {
     "Types": [
