@@ -175,6 +175,15 @@ export const REFERENCE_SITES = Object.freeze({
     { type: 'npcs', element: 'CostAdjustment', attribute: 'Nation' },
     { type: 'npcs', element: 'Surcharge', attribute: 'Nation' }
   ],
+  traits: [
+    // A trait's `<ConflictsWith><Trait>…</Trait></ConflictsWith>`, which names
+    // other traits by their Name: the second self-referential edge, after
+    // behavior sets. The root `<Trait Name="…">` is the same tag, but it holds
+    // child elements, not text, so the text matcher cannot take it. Measured
+    // and empty in world and ceridwen (no traits folder yet, 2026-10-29); the
+    // shape is the schema's (HTOO-617).
+    { type: 'traits', element: 'Trait', attribute: null }
+  ],
   npcs: [
     // 318 active sites, 312 distinct names, every one resolving — the largest
     // fully-resolving edge in the graph, and the second sweep's headline find:

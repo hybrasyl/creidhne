@@ -75,7 +75,10 @@ const entityObject = z.object({}).loose()
 /** A name that is a key: present, a string, and not blank. */
 const requiredName = z.string().trim().min(1, 'name is required')
 
-/** Twelve of the fourteen: a plain object carrying a usable name. */
+/**
+ * Twelve of the first fourteen, and the trait channel (HTOO-617): a plain
+ * object carrying a usable name. The measurements above predate traits.
+ */
 export const namedEntitySchema = entityObject.extend({ name: requiredName })
 
 /**

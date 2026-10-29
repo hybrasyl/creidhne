@@ -28,7 +28,8 @@ const XSD_FILES = [
   'Status.xsd',
   'Localization.xsd',
   'Recipe.xsd',
-  'Spawns.xsd'
+  'Spawns.xsd',
+  'Trait.xsd'
 ]
 
 // Master schema — same namespace as the real XSDs. Pulls in every individual
