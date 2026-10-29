@@ -91,11 +91,11 @@ const BUILTIN_PATTERNS = [
       'and weapon damage, then multiplied by a stat ratio (stat block / divisor) and ' +
       'the coefficient. The divisor controls how much stats amplify the base damage.',
     structure:
-      '({Base} * MAX(SOURCELEVEL - ACQUIREDLEVEL, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff})\n' +
+      '({Base} * Max(SOURCELEVEL - ACQUIREDLEVEL, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff})\n' +
       '  * (1 + {StatBlock} / {Divisor})\n' +
       '  * {Coefficient}',
     ncalc:
-      '({Base} * MAX(SOURCELEVEL - ACQUIREDLEVEL, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff}) ' +
+      '({Base} * Max(SOURCELEVEL - ACQUIREDLEVEL, 1) + {Rand} + SOURCEWEAPONSMALLDAMAGE * {WeaponCoeff}) ' +
       '* (1 + {StatBlock} / {Divisor}) * {Coefficient}',
     parameters: [
       {

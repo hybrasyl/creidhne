@@ -494,6 +494,23 @@ export function parseCastableXml(xmlString) {
 // SERIALIZER
 // =============================================================================
 
+/**
+ * Replace ACQUIREDLEVEL with the level the castable is learned at (HTOO-578).
+ *
+ * ACQUIREDLEVEL is Creidhne's, not the server's: a library formula keeps it
+ * symbolic so that one formula fits every castable, and the server has no such
+ * parameter, so a formula saved with it evaluates to 0. The level is the first
+ * <Requirement>'s Level Min, the rule the index uses for castableRequiredLevels
+ * and so the number the formula editor previews. A castable without one is
+ * learned from level 1.
+ */
+export function resolveAcquiredLevel(formula, castable) {
+  if (!formula || !/\bACQUIREDLEVEL\b/.test(formula)) return formula
+  const min = String(castable.requirements?.[0]?.levelMin ?? '').trim()
+  const level = /^\d+$/.test(min) ? String(Number(min)) : '1'
+  return formula.replace(/\bACQUIREDLEVEL\b/g, () => level)
+}
+
 function buildXmlObject(castable) {
   const attrs = {
     xmlns: XMLNS,
@@ -719,7 +736,7 @@ function buildXmlObject(castable) {
       const { kind, value, min, max, formula } = castable.heal
       const healContent = {}
       if (kind === 'Formula') {
-        healContent.Formula = [formula || '']
+        healContent.Formula = [resolveAcquiredLevel(formula, castable) || '']
       } else if (kind === 'Variable') {
         healContent.Simple = [{ $: { Min: min || '0', Max: max || '0' }, _: '0' }]
       } else {
@@ -733,7 +750,7 @@ function buildXmlObject(castable) {
       const flagsStr = (flags || []).join(' ') || 'None'
       const damageContent = { $: { Type: type || 'Physical' }, Flags: [flagsStr] }
       if (kind === 'Formula') {
-        if (formula) damageContent.Formula = [formula]
+        if (formula) damageContent.Formula = [resolveAcquiredLevel(formula, castable)]
       } else if (kind === 'Variable') {
         damageContent.Simple = [{ $: { Min: min || '0', Max: max || '0' }, _: '0' }]
       } else {
