@@ -8,7 +8,7 @@ import {
   Autocomplete,
   Chip
 } from '@mui/material'
-import { ELEMENT_TYPES } from '../../data/itemConstants'
+import { ElementField } from './ElementFields'
 import FormulaRow from './FormulaRow'
 
 const FORMULA_KINDS = ['Static', 'Variable', 'Formula']
@@ -59,20 +59,11 @@ function DamageEditor({ value, onChange, showElement = false }) {
           </Select>
         </FormControl>
         {showElement && (
-          <FormControl size="small" sx={{ minWidth: 140, flexShrink: 0 }}>
-            <InputLabel>Element</InputLabel>
-            <Select
-              value={value.element ?? 'None'}
-              label="Element"
-              onChange={(e) => onChange({ ...value, element: e.target.value })}
-            >
-              {ELEMENT_TYPES.map((el) => (
-                <MenuItem key={el} value={el}>
-                  {el}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <ElementField
+            value={value.element ?? ''}
+            onChange={(element) => onChange({ ...value, element })}
+            sx={{ minWidth: 140, flexShrink: 0 }}
+          />
         )}
         {value.kind === 'Static' && (
           <TextField

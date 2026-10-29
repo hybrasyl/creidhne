@@ -38,7 +38,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import { useDuplicateName } from '../../hooks/useDuplicateName'
-import { ELEMENT_TYPES, ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants'
+import { ELEMENTAL_MODIFIER_TYPES, STAT_MODIFIERS } from '../../data/itemConstants'
+import { ElementField } from '../shared/ElementFields'
 import { CONDITIONS } from '../../data/statusConstants'
 import CommentField from '../shared/CommentField'
 import { normalizeFolder } from '../../utils/fileTree'
@@ -61,7 +62,7 @@ const MESSAGE_TYPES = [
 ]
 const DEFAULT_HEAL = { kind: 'Static', value: '', min: '', max: '', formula: '' }
 const DEFAULT_DAMAGE = {
-  element: 'None',
+  element: '',
   type: 'Direct',
   flags: [],
   kind: 'Static',
@@ -291,9 +292,8 @@ function StatModRow({ row, index, usedKeys, onChange, onRemove }) {
   const statDef = STAT_MODIFIERS.find((s) => s.key === row.key)
 
   const handleKeyChange = (newKey) => {
-    const def = STAT_MODIFIERS.find((s) => s.key === newKey)
     onChange(index, 'key', newKey)
-    onChange(index, 'value', def?.type === 'element' ? 'None' : '')
+    onChange(index, 'value', '')
   }
 
   return (
@@ -309,20 +309,11 @@ function StatModRow({ row, index, usedKeys, onChange, onRemove }) {
         </Select>
       </FormControl>
       {statDef?.type === 'element' ? (
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Element</InputLabel>
-          <Select
-            value={row.value}
-            label="Element"
-            onChange={(e) => onChange(index, 'value', e.target.value)}
-          >
-            {ELEMENT_TYPES.map((el) => (
-              <MenuItem key={el} value={el}>
-                {el}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <ElementField
+          value={row.value}
+          onChange={(val) => onChange(index, 'value', val)}
+          sx={{ minWidth: 180 }}
+        />
       ) : (
         <TextField
           label="Value"
@@ -341,9 +332,6 @@ function StatModRow({ row, index, usedKeys, onChange, onRemove }) {
 }
 
 function StatusStatModContent({ sm, onChange }) {
-  const libraryIndex = useStoreValue(libraryIndexState)
-  const elementNames = libraryIndex.elementnames || []
-
   const { rows, elementalModifiers } = sm
   const usedKeys = rows.map((r) => r.key)
   const allUsed = usedKeys.length >= STAT_MODIFIERS.length
@@ -353,7 +341,7 @@ function StatusStatModContent({ sm, onChange }) {
     if (!next) return
     onChange({
       ...sm,
-      rows: [...rows, { key: next.key, value: next.type === 'element' ? 'None' : '' }]
+      rows: [...rows, { key: next.key, value: '' }]
     })
   }
 
@@ -421,17 +409,10 @@ function StatusStatModContent({ sm, onChange }) {
                 ))}
               </Select>
             </FormControl>
-            <Autocomplete
-              freeSolo
-              options={elementNames}
+            <ElementField
               value={em.element}
-              onInputChange={(_, val, reason) => {
-                if (reason === 'input') setElem(i, 'element', val)
-              }}
-              onChange={(_, val) => setElem(i, 'element', val ?? '')}
-              size="small"
+              onChange={(val) => setElem(i, 'element', val)}
               sx={{ flex: 1, minWidth: 140 }}
-              renderInput={(params) => <TextField {...params} label="Element" />}
             />
             <TextField
               label="Modifier"

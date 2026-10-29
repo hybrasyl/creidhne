@@ -79,7 +79,8 @@ src/
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
                exportSerializers.js, elementTable.js (the element table model: lookup order,
-               validation, the old-format conversion), nameCollision.js (the server's name-key rule + the editors'
+               validation, the old-format conversion), elementOptions.js (the element choices
+               from the active table, and the copy of hybindex's resolveElementTable), nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
                appIdentity.js, appMenu.js (the macOS menu's channels and Go pages; it imports
