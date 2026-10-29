@@ -333,6 +333,14 @@ Prefer an `e2e/` spec over an owed manual check whenever the assertion is
 mechanical. Still hand over what needs a human eye — whether a layout _looks_ right, an installer
 click-through, a real remote-desktop session.
 
+**Which test tier takes a fault** (HTOO-144, decided 2026-10-29). There is no page tier in jsdom: a page test needs about 20 mocked `window.electronAPI` methods, the store and settings hydration, and a wrong mock passes where e2e runs the real handlers. jsdom also has no layout, and two faults here were computed layouts (the splash oval, the shared-key notice pushing an editor out of its pane).
+
+| A fault that…                                                                                   | Tier                                                  |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| must not happen at any of N sites (a missing line, a copy that drifted)                         | a source guard that counts its sites                  |
+| a component decides when it renders (props, what it renders, contrast)                          | jsdom, opted into per file                            |
+| depends on a page's behaviour: load, edit, save, files on disk, layout, focus, accessible names | an `e2e/` spec that builds a world folder in `tmpdir` |
+
 ## MUI v9 gotchas
 
 Prop APIs differ from v5–v7 and fail cryptically:
