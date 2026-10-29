@@ -49,11 +49,17 @@ permissions:
 # build-windows runs CodeSignTool itself. Every action left runs on node24.
 
 jobs:
+  # The Linux jobs name `ubuntu-24.04`, not `ubuntu-latest` (house-wide,
+  # 2026-10-29). GitHub moves `ubuntu-latest` to Ubuntu 26 from 2026-10-19, and
+  # a new image under a release build is a change nobody chose: xvfb and the
+  # packaging tools come from the image. Move to a newer image on purpose, in
+  # its own commit, after one `workflow_dispatch` run on it passes.
+  #
   # Fast validation gate — runs on every PR to main (and before any release
   # build). Keeps lint / tests green so they can't silently rot (these are not
   # otherwise enforced anywhere). No typecheck step: Creidhne is JavaScript.
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
@@ -278,7 +284,7 @@ jobs:
           retention-days: 1
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [validate, e2e]
     if: github.event_name != 'pull_request'
 
@@ -437,7 +443,7 @@ jobs:
           retention-days: 1
 
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build-windows, build-linux, build-mac]
     if: github.ref_type == 'tag'
 
