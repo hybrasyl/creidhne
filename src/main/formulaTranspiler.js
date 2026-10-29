@@ -129,30 +129,76 @@ for (const p of MAP_PROPS) MAP_LOOKUP.set(p.toUpperCase(), p)
 
 // --- Transpile a single NCalc expression string to Lua ---
 
+/** An NCalc expression that has no faithful Lua form. */
+export class TranspileError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'TranspileError'
+  }
+}
+
+// The server fixes each of these once per evaluation (FormulaParser.Parameterize),
+// so `RAND_10 - RAND_10` is always 0 there. Each becomes one local per call.
+const RANDOM_TOKEN_RE = /\b(RAND_\d+|RANDDOUBLE)\b/g
+
+/**
+ * The random tokens an NCalc expression uses, in first-use order, each with
+ * the Lua that draws it the way the server does (Random.Shared.Next(0, n + 1)
+ * is 0..n inclusive; NextDouble is [0, 1)).
+ */
+export function randomLocals(ncalc) {
+  const seen = new Map()
+  for (const [, token] of (ncalc || '').matchAll(RANDOM_TOKEN_RE)) {
+    if (seen.has(token)) continue
+    seen.set(
+      token,
+      token === 'RANDDOUBLE' ? 'math.random()' : `math.random(0, ${token.slice('RAND_'.length)})`
+    )
+  }
+  return [...seen].map(([name, draw]) => ({ name, draw }))
+}
+
+/**
+ * Transpile an NCalc expression to a Lua expression.
+ *
+ * Follows NCalcSync 6.3.1 as the server runs it (HTOO-578): `**` is the power
+ * (Lua `^`), and `^` is bitwise XOR, which has no Lua 5.2 operator, so it
+ * throws a TranspileError rather than turn into a power. `Round(x, digits)`
+ * rounds half away from zero through `ncalc_round`; `math.floor(0.5 + x)`
+ * dropped the digits and rounded -2.5 to -2. Random tokens stay as names: the
+ * function that holds the expression draws each once (see randomLocals).
+ */
 export function transpileFormula(ncalc) {
   if (!ncalc || !ncalc.trim()) return "''"
+  if (/\^/.test(ncalc)) {
+    throw new TranspileError('"^" is bitwise XOR in NCalc, and Lua has no such operator here')
+  }
   let lua = ncalc
 
-  // 1. Replace NCalc functions with Lua math equivalents
+  // 1. Operators: power, and NCalc's two spellings of "not equal"
+  lua = lua.replace(/\*\*/g, '^')
+  lua = lua.replace(/!=|<>/g, '~=')
+
+  // 2. Replace NCalc functions with Lua equivalents. `if` is a Lua keyword,
+  //    so it becomes a helper; the helpers are defined at the top of the file.
   lua = lua.replace(/\bMAX\s*\(/gi, 'math.max(')
   lua = lua.replace(/\bMIN\s*\(/gi, 'math.min(')
   lua = lua.replace(/\bABS\s*\(/gi, 'math.abs(')
   lua = lua.replace(/\bSQRT\s*\(/gi, 'math.sqrt(')
   lua = lua.replace(/\bFLOOR\s*\(/gi, 'math.floor(')
   lua = lua.replace(/\bCEILING\s*\(/gi, 'math.ceil(')
-  lua = lua.replace(/\bROUND\s*\(/gi, 'math.floor(0.5 + ')
+  lua = lua.replace(/\bROUND\s*\(/gi, 'ncalc_round(')
+  lua = lua.replace(/\bTRUNCATE\s*\(/gi, 'ncalc_truncate(')
+  lua = lua.replace(/\bSIGN\s*\(/gi, 'ncalc_sign(')
   lua = lua.replace(/\bPOW\s*\(/gi, 'math.pow(')
-
-  // 2. Replace static random tokens
-  lua = lua.replace(/\bRANDDOUBLE\b/g, 'math.random()')
-  lua = lua.replace(/\bRAND_(\d+)\b/g, (_, n) => `math.random(0, ${n})`)
+  lua = lua.replace(/\bIF\s*\(/gi, 'ncalc_if(')
 
   // 3. Replace DAMAGE token
   lua = lua.replace(/\bDAMAGE\b/g, 'damage')
 
   // 4. Replace prefixed tokens: SOURCE, TARGET, ORIGINALCASTER, MAP, CASTABLE, ITEM
   //    Must process longer prefixes first to avoid partial matches.
-  lua = replacePrefixedTokens(lua, 'ORIGINALCASTER', 'originalCaster')
+  lua = replaceOriginalCasterTokens(lua)
   lua = replacePrefixedTokens(lua, 'SOURCE', 'source')
   lua = replacePrefixedTokens(lua, 'TARGET', 'target')
   lua = replaceSimplePrefixedTokens(lua, 'MAP', 'map', MAP_LOOKUP)
@@ -163,7 +209,18 @@ export function transpileFormula(ncalc) {
 }
 
 /**
- * Replace tokens with SOURCE/TARGET/ORIGINALCASTER prefix.
+ * ORIGINALCASTER tokens. The server reads them off a StatInfo directly
+ * (FormulaEvaluation.OriginalCaster), not off a creature's `.Stats`, and only
+ * StatInfo properties are defined for it.
+ */
+function replaceOriginalCasterTokens(lua) {
+  return lua.replace(/\bORIGINALCASTER([A-Z][A-Z0-9_]*)\b/g, (_, propUpper) => {
+    return `originalCaster.${STAT_LOOKUP.get(propUpper) || titleCase(propUpper)}`
+  })
+}
+
+/**
+ * Replace tokens with SOURCE/TARGET prefix.
  * These can resolve to either Creature props (direct) or StatInfo props (.Stats.).
  */
 function replacePrefixedTokens(lua, prefix, luaVar) {
@@ -202,6 +259,41 @@ function titleCase(upper) {
 
 // --- Generate the complete formulas.lua file ---
 
+// NCalc functions with no Lua 5.2 equivalent (MoonSharp 2.0.0 is Lua 5.2).
+// ncalc_round is .NET's Math.Round(x, digits, MidpointRounding.AwayFromZero),
+// the server's RoundAwayFromZero. ncalc_if takes a number or a boolean, as
+// NCalc's if() does; unlike NCalc, it evaluates both branches.
+const NCALC_HELPERS = [
+  'local function ncalc_round(x, digits)',
+  '    local p = 10 ^ digits',
+  '    local scaled = x * p',
+  '    local whole = scaled >= 0 and math.floor(scaled) or math.ceil(scaled)',
+  '    local fraction = scaled - whole',
+  '    if fraction >= 0.5 then whole = whole + 1 elseif fraction <= -0.5 then whole = whole - 1 end',
+  '    return whole / p',
+  'end',
+  '',
+  'local function ncalc_truncate(x)',
+  '    if x >= 0 then return math.floor(x) end',
+  '    return math.ceil(x)',
+  'end',
+  '',
+  'local function ncalc_sign(x)',
+  '    if x > 0 then return 1 elseif x < 0 then return -1 end',
+  '    return 0',
+  'end',
+  '',
+  'local function ncalc_if(cond, a, b)',
+  '    if cond and cond ~= 0 then return a end',
+  '    return b',
+  'end'
+]
+
+/** A Lua double-quoted string literal. */
+function luaString(text) {
+  return `"${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`
+}
+
 /**
  * Sanitize a formula name into a valid Lua identifier.
  * Lowercases, replaces spaces/hyphens with underscores, strips non-alphanum.
@@ -238,6 +330,8 @@ export function generateFormulasLua(formulas) {
     '-- Auto-generated by Creidhne from world/.creidhne/formulas.json',
     '-- Do not edit manually — changes will be overwritten on next formula save.',
     '',
+    ...NCALC_HELPERS,
+    '',
     'local formulas = {}'
   ]
 
@@ -258,14 +352,25 @@ export function generateFormulasLua(formulas) {
       usedNames.set(luaName, 1)
     }
 
-    const luaExpr = transpileFormula(f.formula)
-
     lines.push('')
     lines.push(`---${f.name}${f.category ? ' (' + f.category + ')' : ''}`)
     if (f.description) lines.push(`---${f.description}`)
     lines.push(`---NCalc: ${f.formula}`)
-    lines.push(`function formulas.${luaName}(source, target, castable, map, item, damage)`)
-    lines.push(`    return ${luaExpr}`)
+    // originalCaster is last, so a caller that passes the first six is unchanged.
+    lines.push(
+      `function formulas.${luaName}(source, target, castable, map, item, damage, originalCaster)`
+    )
+    try {
+      const luaExpr = transpileFormula(f.formula)
+      for (const { name, draw } of randomLocals(f.formula)) {
+        lines.push(`    local ${name} = ${draw}`)
+      }
+      lines.push(`    return ${luaExpr}`)
+    } catch (err) {
+      if (!(err instanceof TranspileError)) throw err
+      // The file still loads, and a call names the formula and the reason.
+      lines.push(`    error(${luaString(`formulas.${luaName}: ${err.message}`)})`)
+    }
     lines.push('end')
   }
 
