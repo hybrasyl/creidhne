@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { validateSpecies } from '../speciesValidate.js'
+import { branchParents, isValidKey, validateSpecies } from '../speciesValidate.js'
 
 // The server's species checks (xml Species.Validate and ValidateAll).
 
@@ -144,5 +144,38 @@ describe('across species, from the index', () => {
   })
   it('a renamed species is still itself: its old index entry is not another species', () => {
     expect(problemsOf((s) => (s.key = 'Duergar'), WORLD)).toBe('')
+  })
+  it('a key that two files hold, as Duplicate makes, until the copy takes a new key', () => {
+    const world = {
+      ...WORLD,
+      duplicateNames: { dwarf: ['species_dwarf.xml', 'species_dwarf (copy).xml'] }
+    }
+    expect(problemsOf(() => {}, world)).toMatch(/2 files have the key Dwarf/)
+    expect(problemsOf((s) => (s.key = 'Duergar'), world)).toBe('')
+    // A new species with a taken key gets the ordinary message, once.
+    expect(problemsOf(() => {}, { ...world, originalKey: null })).toMatch(
+      /^The species key Dwarf is not unique/
+    )
+  })
+})
+
+describe('branchParents', () => {
+  it('offers each ByBranch species that is not a branch, but not the species itself', () => {
+    const details = {
+      ...WORLD.details,
+      Orc: { id: 8, branchOf: null, playerOption: 'ByBranch', bodies: [] }
+    }
+    expect(branchParents(details, 'Dwarf')).toEqual(['Elf', 'Orc'])
+    expect(branchParents(details, 'elf')).toEqual(['Orc'])
+    expect(branchParents(undefined, 'Dwarf')).toEqual([])
+  })
+})
+
+describe('isValidKey', () => {
+  it('accepts the schema key pattern only', () => {
+    expect(isValidKey('HillDwarf2')).toBe(true)
+    expect(isValidKey('Hill Dwarf')).toBe(false)
+    expect(isValidKey('2Dwarf')).toBe(false)
+    expect(isValidKey('')).toBe(false)
   })
 })

@@ -5,10 +5,10 @@ import {
   Divider,
   TextField,
   Paper,
-  Autocomplete,
   Snackbar,
   Alert,
   FormControl,
+  FormHelperText,
   InputLabel,
   Select,
   MenuItem,
@@ -26,11 +26,22 @@ import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
 import { ElementField } from '../shared/ElementFields'
 import { normalizeFolder } from '../../utils/fileTree'
-import { PLAYER_OPTIONS, SPECIES_ORIGINS, validateSpecies } from '@shared/speciesValidate'
+import { nameCollisionKey } from '@shared/nameCollision.js'
+import {
+  PLAYER_OPTIONS,
+  SPECIES_ORIGINS,
+  branchParents,
+  isValidKey,
+  validateSpecies
+} from '@shared/speciesValidate'
 
 // The Species editor (HXML-37, HTOO-618). A species is keyed by its Key
-// attribute, which plays the part of the name for the duplicate check and the
-// rename offer.
+// attribute, which plays the part of the name for the duplicate check.
+//
+// Player saves store the species key and the body keys, so a saved key never
+// changes (Species.xsd). The editor locks both after the first save. The one
+// exception is a key that two files hold, which is what Duplicate makes: the
+// copy must get a new key.
 
 function computeSpeciesFilename(prefix, key) {
   const safe = (key || '').toLowerCase().replace(/ /g, '-').replace(/'/g, '')
@@ -51,6 +62,15 @@ function deriveSpeciesPrefix(fileName, key) {
 }
 
 const BLANK_BODY = { key: '', id: '', name: '', isDefault: false, retailSkinColor: '' }
+
+/**
+ * The species with each body's key as it is on disk, or null for a body that
+ * is not saved. An edit keeps the field, so a row stays tied to its saved key.
+ */
+const markSaved = (species, isExisting) => ({
+  ...species,
+  bodies: species.bodies.map((b) => ({ ...b, savedKey: isExisting ? b.key : null }))
+})
 
 /** A labelled Select over fixed values. */
 function ChoiceField({ id, label, value, options, onChange, sx }) {
@@ -88,7 +108,7 @@ function SpeciesEditor({
   loadParent
 }) {
   const libraryIndex = useStoreValue(libraryIndexState)
-  const [data, setData] = useState(species)
+  const [data, setData] = useState(() => markSaved(species, isExisting))
   const [prefix, setPrefix] = useState(() => deriveSpeciesPrefix(initialFileName, species.key))
   const [fileName, setFileName] = useState(
     initialFileName || computeSpeciesFilename('species', species.key)
@@ -114,7 +134,7 @@ function SpeciesEditor({
 
   useEffect(() => {
     const p = deriveSpeciesPrefix(initialFileName, species.key)
-    setData(species)
+    setData(markSaved(species, isExisting))
     setPrefix(p)
     setFileName(initialFileName || computeSpeciesFilename(p, species.key))
     setFileNameEdited(!!initialFileName)
@@ -198,15 +218,28 @@ function SpeciesEditor({
   const addBody = () => setBodies((bs) => [...bs, { ...BLANK_BODY, isDefault: bs.length === 0 }])
 
   // ── Index-backed choices and checks ───────────────────────────────────────
-  const speciesKeys = Object.keys(libraryIndex.speciesDetails || {}).filter(
-    (k) => k.toLowerCase() !== String(species.key).toLowerCase()
-  )
+  const keyShared =
+    (libraryIndex.speciesDuplicateNames?.[nameCollisionKey(String(species.key ?? ''))]?.length ??
+      0) > 1
+  // A saved key that the server refuses was never loaded, so no save holds it.
+  const keyLocked = isExisting && !keyShared && isValidKey(species.key)
+  const bodyKeyLocked = (b) =>
+    b.savedKey != null &&
+    isValidKey(b.savedKey) &&
+    species.bodies.filter((o) => nameCollisionKey(o.key) === nameCollisionKey(b.savedKey))
+      .length === 1
+  // A value that is not a valid parent stays in the list, so the select shows
+  // it and the problem list says what is wrong with it.
+  const parents = branchParents(libraryIndex.speciesDetails, species.key)
+  const parentOptions =
+    data.branchOf && !parents.includes(data.branchOf) ? [data.branchOf, ...parents] : parents
   const problems = validateSpecies(
     data,
     libraryIndex.speciesDetails
       ? {
           details: libraryIndex.speciesDetails,
           bodyIds: libraryIndex.speciesBodyIds,
+          duplicateNames: libraryIndex.speciesDuplicateNames,
           originalKey: isExisting ? species.key : null
         }
       : undefined
@@ -280,6 +313,7 @@ function SpeciesEditor({
                 label="Key"
                 size="small"
                 required
+                disabled={keyLocked}
                 sx={{
                   flex: 1,
                   minWidth: 160,
@@ -295,7 +329,11 @@ function SpeciesEditor({
                     ? `"${data.key}" already exists`
                     : dupStatus === 'archived'
                       ? `"${data.key}" exists in archive`
-                      : 'Saves and content use the key, so it does not change.'
+                      : keyLocked
+                        ? 'Saves store the key, so it never changes.'
+                        : keyShared
+                          ? 'Another file has this key. Give this species a new key.'
+                          : 'Saves store the key. It cannot change after the first save.'
                 }
                 value={data.key}
                 onChange={(e) => setField('key')(e.target.value)}
@@ -355,24 +393,25 @@ function SpeciesEditor({
               />
             </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <Autocomplete
-                freeSolo
-                options={speciesKeys}
-                value={data.branchOf}
-                onInputChange={(_, val, reason) => {
-                  if (reason === 'input' || reason === 'clear') setField('branchOf')(val)
-                }}
-                onChange={(_, val) => setField('branchOf')(val ?? '')}
-                size="small"
-                sx={{ width: 200 }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Branch Of"
-                    helperText="The parent species, which is ByBranch"
-                  />
-                )}
-              />
+              <FormControl size="small" sx={{ width: 200 }}>
+                <InputLabel id="species-branch-of-label">Branch Of</InputLabel>
+                <Select
+                  labelId="species-branch-of-label"
+                  value={data.branchOf}
+                  label="Branch Of"
+                  onChange={(e) => setField('branchOf')(e.target.value)}
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {parentOptions.map((k) => (
+                    <MenuItem key={k} value={k}>
+                      {k}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>A ByBranch species that is not a branch</FormHelperText>
+              </FormControl>
               <ElementField
                 label="Affinity"
                 value={data.affinity}
@@ -408,8 +447,9 @@ function SpeciesEditor({
             Bodies
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-            Each body is one pre-coloured sprite set. A body Id is unique across all species. The
-            retail skin colour is what a retail client gets, from 0 to 9.
+            Each body is one pre-coloured sprite set. A body Id is unique across all species. Saves
+            store the body key, so it never changes after the first save. The retail skin colour is
+            only what a retail client sees, from 0 to 9, and many bodies can share one.
           </Typography>
           {data.bodies.length > 0 && (
             <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
@@ -429,6 +469,7 @@ function SpeciesEditor({
                       <TextField
                         size="small"
                         value={b.key}
+                        disabled={bodyKeyLocked(b)}
                         onChange={(e) => setBody(i, 'key', e.target.value)}
                         sx={{ width: 140 }}
                         slotProps={{

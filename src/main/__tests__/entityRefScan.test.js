@@ -226,14 +226,4 @@ describe('rewriteReferences (HTOO-378)', () => {
     // attribute, which a text row cannot match.
     expect(rewriteReferences(xml, [row], 'Dockworker', 'Stevedore').count).toBe(0)
   })
-
-  it('repoints BranchOf on a species root, and never its Key (HTOO-618)', () => {
-    const [row] = REFERENCE_SITES.species
-    const xml = '<Species Key="HillDwarf" Id="5" BranchOf="Dwarf"><Names/></Species>'
-    const { xml: out, count } = rewriteReferences(xml, [row], 'Dwarf', 'Duergar')
-    expect(count).toBe(1)
-    expect(out).toBe('<Species Key="HillDwarf" Id="5" BranchOf="Duergar"><Names/></Species>')
-    // Renaming the branch itself finds nothing: Key is identity, not a reference.
-    expect(rewriteReferences(xml, [row], 'HillDwarf', 'Highlander').count).toBe(0)
-  })
 })

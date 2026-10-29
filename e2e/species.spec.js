@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { launchApp, getMainWindow } from './helpers.js'
 
-// The Species page (HXML-37, HTOO-618). The parser, the checks and the rename
-// row are pinned by unit tests; this spec walks the page: a branch shows what
-// it takes from its parent, and renaming the parent repoints the branch.
+// The Species page (HXML-37, HTOO-618). The parser and the checks are pinned
+// by unit tests; this spec walks the page: a branch shows what it takes from
+// its parent, a saved key is locked, and Branch Of offers only valid parents.
 
 const XMLNS = 'http://www.hybrasyl.com/XML/Hybrasyl/2020-02'
 
@@ -32,14 +32,13 @@ test.describe('Species', () => {
     await electronApp?.close()
   })
 
-  test('a branch shows its inherited elements, and follows a parent rename', async () => {
+  test('a branch shows its inherited elements, and saved keys are locked', async () => {
     const world = mkdtempSync(join(tmpdir(), 'creidhne-e2e-world-'))
     const lib = join(world, 'xml')
     const dir = join(lib, 'species')
     mkdirSync(dir, { recursive: true })
     writeFileSync(join(dir, 'species_dwarf.xml'), DWARF)
-    const hill = join(dir, 'species_hilldwarf.xml')
-    writeFileSync(hill, HILL_DWARF)
+    writeFileSync(join(dir, 'species_hilldwarf.xml'), HILL_DWARF)
     ;({ electronApp } = await launchApp({
       seedSettings: { libraries: [lib], activeLibrary: lib, theme: 'hybrasyl' }
     }))
@@ -54,14 +53,16 @@ test.describe('Species', () => {
     await expect(page.getByText('Empty: takes Earth from Dwarf')).toBeVisible()
     await expect(page.getByText('The server refuses this species')).toHaveCount(0)
 
-    // Rename the parent and accept the repair.
-    await page.getByText('Dwarf', { exact: true }).first().click()
-    await page.getByRole('textbox', { name: 'Key', exact: true }).fill('Duergar')
-    await page.getByRole('button', { name: 'Save', exact: true }).click()
-    await expect(page.getByText('Other files use this name')).toBeVisible()
-    await page.getByRole('button', { name: /^Update 1 file/ }).click()
+    // Player saves store the keys, so a saved species key and body key are locked.
+    await expect(page.getByRole('textbox', { name: 'Key', exact: true })).toBeDisabled()
+    await expect(page.getByRole('textbox', { name: 'Key of body 1' })).toBeDisabled()
+    await expect(page.getByRole('combobox', { name: 'Branch Of' })).toHaveText('Dwarf')
 
-    await expect.poll(() => readFileSync(hill, 'utf-8')).toContain('BranchOf="Duergar"')
-    expect(readFileSync(hill, 'utf-8')).toContain('Key="HillDwarf"')
+    // A new species: the key is open, and Branch Of offers the one ByBranch
+    // species that is not a branch.
+    await page.getByRole('button', { name: 'New Species' }).click()
+    await expect(page.getByRole('textbox', { name: 'Key', exact: true })).toBeEnabled()
+    await page.getByRole('combobox', { name: 'Branch Of' }).click()
+    await expect(page.getByRole('option')).toHaveText(['None', 'Dwarf'])
   })
 })

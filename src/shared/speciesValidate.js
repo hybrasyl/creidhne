@@ -14,6 +14,9 @@ export const PLAYER_OPTIONS = ['Locked', 'Starter', 'Unlockable', 'ByBranch']
 /** SpeciesKey in Species.xsd: an ElementKey. */
 const KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/
 
+/** True when the server accepts `key` as a species or body key. */
+export const isValidKey = (key) => KEY_PATTERN.test(String(key ?? ''))
+
 const isBadValue = (v) => !String(v ?? '').trim() || String(v).trim() !== String(v)
 const isWholeIn = (v, lo, hi) => /^\d+$/.test(String(v ?? '')) && Number(v) >= lo && Number(v) <= hi
 const lower = (v) => String(v ?? '').toLowerCase()
@@ -40,6 +43,8 @@ function duplicates(list, keyOf) {
  *   hybindex `speciesBodyIds`, keyed by body Id
  * @param {string} [world.originalKey] - the key this species had when it was
  *   opened, so its own index entry is not read as another species
+ * @param {Record<string, string[]>} [world.duplicateNames] - hybindex
+ *   `speciesDuplicateNames`: each key that more than one active file holds
  * @returns {string[]}
  */
 export function validateSpecies(species, world) {
@@ -103,10 +108,16 @@ export function validateSpecies(species, world) {
   if (!world?.details) return problems
 
   // Across species: Species.ValidateAll, against the index.
-  const self = lower(world.originalKey ?? species.key)
+  // A new species has no entry of its own, so every entry is another species.
+  const self = world.originalKey != null ? lower(world.originalKey) : null
   const others = Object.entries(world.details).filter(([k]) => lower(k) !== self)
   const byKey = new Map(others.map(([k, d]) => [lower(k), { key: k, ...d }]))
 
+  // A duplicated file holds the key of its original. The index keeps one
+  // entry per key, so `details` cannot show it.
+  const holders = world.duplicateNames?.[self]?.length ?? 0
+  if (lower(species.key) === self && holders > 1)
+    problems.push(`${holders} files have the key ${species.key}. Give this species a new key.`)
   if (byKey.has(lower(species.key)))
     problems.push(`The species key ${species.key} is not unique. Keys compare without case.`)
   if (isWholeIn(species.id, 0, 255)) {
@@ -134,4 +145,20 @@ export function validateSpecies(species, world) {
     if (!hasBranch) problems.push('The species is ByBranch, but no species is a branch of it.')
   }
   return problems
+}
+
+/**
+ * The species that a branch can name in BranchOf: each one that is ByBranch
+ * and is not a branch itself, other than the species being edited.
+ *
+ * @param {Record<string, {branchOf: string|null, playerOption: string|null}>} [details]
+ *   hybindex `speciesDetails`
+ * @param {string} [selfKey]
+ * @returns {string[]} sorted keys
+ */
+export function branchParents(details, selfKey) {
+  return Object.entries(details ?? {})
+    .filter(([k, d]) => lower(k) !== lower(selfKey) && !d.branchOf && d.playerOption === 'ByBranch')
+    .map(([k]) => k)
+    .sort((a, b) => a.localeCompare(b))
 }

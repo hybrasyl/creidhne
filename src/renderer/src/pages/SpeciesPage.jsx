@@ -13,8 +13,6 @@ import { useUnsavedGuard } from '../hooks/useUnsavedGuard'
 import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
-import { useRenameReferences } from '../hooks/useRenameReferences'
 import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
 
 const SPECIES_SUBDIR = 'species'
@@ -101,25 +99,11 @@ function SpeciesPage() {
   }
   const handleSelect = (file) => guard(() => doSelect(file))
 
-  // HTOO-378: a name is a key, so a changed name orphans every file that
-  // names this entity: a branch's BranchOf. Offered before the
-  // save, so Cancel writes nothing.
-  const { confirmRename, renameDialogProps } = useRenameReferences({
-    activeLibrary,
-    type: 'species',
-    setSnackbar,
-    setLibraryIndex
-  })
-
   const handleSave = async (data, fileName, folder, mode = 'archive') => {
+    // No rename offer (HTOO-378): player saves store the key, so the editor
+    // locks it after the first save, and only a duplicated file's copy may
+    // take a new one. Its branches belong to the original.
     try {
-      // Before anything is written: the count the user is shown describes
-      // the files as they stand, and Cancel is therefore truthful.
-      // A species is keyed by its Key, which plays the part of the name here.
-      const rename = await confirmRename(editingSpecies?.key, data.key, {
-        isExisting: !!selectedFile
-      })
-      if (rename.cancelled) return
       const wasArchived = selectedFile?.archived === true
       const { newPath, newRel, isRename } = resolveSavePath(
         activeLibrary,
@@ -169,9 +153,6 @@ function SpeciesPage() {
         const section = await window.electronAPI.buildIndexSection(activeLibrary, SPECIES_SUBDIR)
         setLibraryIndex((prev) => ({ ...prev, ...section }))
       }
-      // Last, and only once the entity itself is on disk: a failed entity
-      // save must not leave the world repointed at a name never written.
-      await rename.apply()
     } catch (err) {
       console.error('Failed to save species:', err)
       setSnackbar({ message: 'Save failed.', severity: 'error' })
@@ -302,7 +283,6 @@ function SpeciesPage() {
           {snackbar?.message}
         </Alert>
       </Snackbar>
-      <RenameReferencesDialog {...renameDialogProps} />
       <UnsavedChangesDialog
         open={dialogOpen}
         label="Species"

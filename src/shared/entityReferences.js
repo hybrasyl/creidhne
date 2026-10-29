@@ -175,14 +175,11 @@ export const REFERENCE_SITES = Object.freeze({
     { type: 'npcs', element: 'CostAdjustment', attribute: 'Nation' },
     { type: 'npcs', element: 'Surcharge', attribute: 'Nation' }
   ],
-  species: [
-    // A branch names its parent on its own root: `<Species BranchOf="…">`.
-    // The third self-referential edge, and an attribute row on the identity
-    // element, like a behavior set's Import: only BranchOf may move, never
-    // the root's Key. Measured and empty in world and ceridwen (no species
-    // folder yet, 2026-10-29); the shape is the schema's (HTOO-618).
-    { type: 'species', element: 'Species', attribute: 'BranchOf' }
-  ],
+  // No species row, on purpose (HTOO-618). A branch names its parent in
+  // `<Species BranchOf="…">`, but player saves store a species key, so a
+  // saved key never changes and the editor locks it. A row would make the
+  // Species page offer a repair that only Duplicate's copy can trigger, and
+  // there it is wrong: the branches belong to the original, which keeps the key.
   traits: [
     // A trait's `<ConflictsWith><Trait>…</Trait></ConflictsWith>`, which names
     // other traits by their Name: the second self-referential edge, after
