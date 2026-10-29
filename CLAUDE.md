@@ -96,14 +96,17 @@ src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
     components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
-               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs). Seven of its tests run
+               generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs, run-electron.mjs).
+               Eight of its tests run
                in the ordinary suite: icons.test.mjs (committed icon artifacts),
                buildPaths.test.mjs (every path electron-builder.yml names is tracked by git),
                testCollection.test.mjs (no test file sits where the runner won't find it),
                changelog-extract.test.mjs, verify-fuses.test.mjs (the electronFuses block, the
                copied @electron/fuses constants, and the packed artifact when one exists),
                release-artifacts.test.mjs (every declared target has a release glob, and back),
-               portable-config.test.mjs (no portable splashImage, and unpackDirName: true).
+               portable-config.test.mjs (no portable splashImage, and unpackDirName: true),
+               electron-cache.test.mjs (each job that runs `npm ci` caches the Electron
+               binary under `runner.temp` and retries the install, HTOO-388).
 e2e/           Playwright specs against the built app
 ```
 
@@ -317,7 +320,11 @@ broken environment rather than a set variable.
 **`unset ELECTRON_RUN_AS_NODE` first**, in the same shell call, and `npm run dev`,
 `npm run e2e:only` and a throwaway main script with `show: false` all work. The third is how the
 splash oval was measured: load the document, then read `getBoundingClientRect` back through
-`executeJavaScript`. Prefer an `e2e/` spec over an owed manual check whenever the assertion is
+`executeJavaScript`. A throwaway script can also go through `node scripts/run-electron.mjs <script>`,
+which removes the variable itself (HTOO-612). An npm script that runs a script under Electron
+calls that helper, never a bare `electron <script>`, because npm runs scripts through cmd.exe on
+Windows and cmd.exe has no `unset`. `e2e/helpers.js` does the same strip for Playwright's launch.
+Prefer an `e2e/` spec over an owed manual check whenever the assertion is
 mechanical. Still hand over what needs a human eye — whether a layout _looks_ right, an installer
 click-through, a real remote-desktop session.
 

@@ -52,6 +52,9 @@ first section written to the rules above.
 - **The title bar is the house title bar.** It is the same in each house app. The logo is smaller, and the window buttons have the same highlight in each theme.
 - **The nav bar marks the current page with the house mark.** The icon of the current page has the colour of the other icons, on a light background, with a ring around the button. The other house apps that have a nav bar use the same mark. Under the pointer, a nav icon has the same highlight as the window buttons.
 - **On the Formulas page, the statuses that use a formula are filled chips.** They are in the colour of the bars, and the castables stay outlined.
+- **Creidhne builds the world index again one time after this update.** The index format changed, and the old index is not used.
+- **macOS: the world index is in `~/Library/Application Support/Erisco/hybindex`.** It was in `~/.config/Erisco/hybindex`. Creidhne moves the old folder the first time that it saves the index. Taliesin uses the same folder.
+- **The server config in `serverconfigs/config.xml` shows the name `default`.** That is the name that the server gives it. Before, the index named it after the first `<Age>` element in the file.
 
 ### Fixed
 
@@ -63,6 +66,10 @@ first section written to the rules above.
 - **Mundanes: a link is easy to read after you open it.** A visited link had too little contrast against the page. In every theme, a link now has a contrast of 4.5:1 or more at rest, under the pointer and after you open it.
 - **On the Dashboard, the counts that open a page are easy to read.** They used a light shade of the accent colour, which had too little contrast on the light pages of Danaan and Mundanes. They now use the accent colour.
 - **The selected theme in Settings has a clear mark in every theme.** The border and the check mark used a light shade of the accent colour, which was near the page colour in Danaan.
+
+### Security
+
+- **Creidhne runs on Electron 44.10.0.** This release bundles Node 24.22.1 and Chromium 152.0.7977.169, with their security fixes. It also stops trust in the compromised eMudhra intermediate certificates. Creidhne connects to the network only through Chromium, so the Brotli fault in Node (CVE-2026-111497) did not apply to it.
 
 ## [1.14.0] - 2026-10-10
 

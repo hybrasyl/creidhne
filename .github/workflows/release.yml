@@ -68,8 +68,63 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # THE ELECTRON BINARY: CACHE IT, AND RETRY THE INSTALL (HTOO-388).
+      #
+      # `npm ci` downloads the Electron binary (about 100 MB) from
+      # github.com/electron/electron/releases. That server sometimes returns a
+      # 503, and the job then fails on code that is correct. Dagda lost seven CI
+      # runs to it in one day. Here a 503 fails a TAGGED RELEASE build, and the
+      # only remedy is to start the release again by hand.
+      #
+      # Since Electron 42 the `electron` package has no install script. The
+      # project's own postinstall runs `install-electron` (HTOO-553), inside the
+      # `npm ci` step, so the env var goes on that step. `install-electron` gives
+      # `cacheRoot: process.env.electron_config_cache` to `@electron/get`, so the
+      # var moves the download cache to a path that `actions/cache` restores. If
+      # that postinstall goes, the download moves to the first
+      # `require('electron')`, in a later step without the var: the cache then
+      # misses on every run, with a green tick.
+      #
+      # The path is under `runner.temp`, NOT the workspace. A cache directory in
+      # the checkout is a directory that `eslint .` and each glob must ignore.
+      #
+      # The env var and the cache path are both STEP-level. The `runner` context
+      # does not exist at workflow or job level. An expression there expands to
+      # an empty string and does not fail, so the cache points at the root of
+      # the filesystem and restores nothing, on every run, with a green tick.
+      #
+      # The key is package-lock.json, because the lockfile pins the Electron
+      # version: a version bump misses by construction, and no other key can
+      # restore an old binary. The key includes `runner.os`, because each OS
+      # downloads a different zip.
+      #
+      # This workflow runs only on a tag or by hand, and GitHub removes a cache
+      # that nothing uses for seven days. So the cache is usually COLD here, and
+      # the retry is the part that pays. The cache stays because every house app
+      # has the same steps (hyb-electron-template has them too).
+      - name: Cache the Electron binary
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/electron-cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      # A cache miss gets the binary from the same server, so the install is
+      # retried. `shell: bash` on every runner, so the loop has one form: Git
+      # Bash is on windows-latest. Three attempts, with a longer wait after each
+      # failure. The step fails if the last attempt fails, so a real `npm ci`
+      # failure still fails the job.
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        env:
+          electron_config_cache: ${{ runner.temp }}/electron-cache
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "npm ci failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi
+          done
+          exit 1
 
       # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
       # the XSD-validation tests read it.
@@ -96,8 +151,32 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # The same cache and the same retried install as the `validate` job. Read
+      # the reasons there: `runner.temp` and the two step-level placements are
+      # necessary, not style.
+      - name: Cache the Electron binary
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/electron-cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      # A cache miss gets the binary from the same server, so the install is
+      # retried. `shell: bash` on every runner, so the loop has one form: Git
+      # Bash is on windows-latest. Three attempts, with a longer wait after each
+      # failure. The step fails if the last attempt fails, so a real `npm ci`
+      # failure still fails the job.
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        env:
+          electron_config_cache: ${{ runner.temp }}/electron-cache
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "npm ci failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi
+          done
+          exit 1
 
       # xsd/ is gitignored and fetched from the public hybrasyl/xml releases;
       # the built app reads it at runtime.
@@ -130,8 +209,32 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      # The same cache and the same retried install as the `validate` job. Read
+      # the reasons there: `runner.temp` and the two step-level placements are
+      # necessary, not style.
+      - name: Cache the Electron binary
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/electron-cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      # A cache miss gets the binary from the same server, so the install is
+      # retried. `shell: bash` on every runner, so the loop has one form: Git
+      # Bash is on windows-latest. Three attempts, with a longer wait after each
+      # failure. The step fails if the last attempt fails, so a real `npm ci`
+      # failure still fails the job.
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        env:
+          electron_config_cache: ${{ runner.temp }}/electron-cache
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "npm ci failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi
+          done
+          exit 1
 
       # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
       # electron-builder unpacks xsd/** and the app reads it at runtime, so the
@@ -294,8 +397,32 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      # The same cache and the same retried install as the `validate` job. Read
+      # the reasons there: `runner.temp` and the two step-level placements are
+      # necessary, not style.
+      - name: Cache the Electron binary
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/electron-cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      # A cache miss gets the binary from the same server, so the install is
+      # retried. `shell: bash` on every runner, so the loop has one form: Git
+      # Bash is on windows-latest. Three attempts, with a longer wait after each
+      # failure. The step fails if the last attempt fails, so a real `npm ci`
+      # failure still fails the job.
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        env:
+          electron_config_cache: ${{ runner.temp }}/electron-cache
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "npm ci failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi
+          done
+          exit 1
 
       # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
       # electron-builder unpacks xsd/** and the app reads it at runtime, so the
@@ -338,8 +465,32 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      # The same cache and the same retried install as the `validate` job. Read
+      # the reasons there: `runner.temp` and the two step-level placements are
+      # necessary, not style.
+      - name: Cache the Electron binary
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/electron-cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      # A cache miss gets the binary from the same server, so the install is
+      # retried. `shell: bash` on every runner, so the loop has one form: Git
+      # Bash is on windows-latest. Three attempts, with a longer wait after each
+      # failure. The step fails if the last attempt fails, so a real `npm ci`
+      # failure still fails the job.
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        env:
+          electron_config_cache: ${{ runner.temp }}/electron-cache
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "npm ci failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi
+          done
+          exit 1
 
       # xsd/ is gitignored and fetched from the public hybrasyl/xml releases.
       # electron-builder unpacks xsd/** and the app reads it at runtime, so the
