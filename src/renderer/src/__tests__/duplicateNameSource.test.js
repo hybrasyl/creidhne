@@ -36,14 +36,15 @@ const NOT_INDEX_BACKED = ['formulas/FormulaEditor.jsx']
 
 describe('duplicate-name detection has one source (HTOO-375)', () => {
   it('finds the editors it is meant to be checking', () => {
-    // Guards the guard, and pins the count. Thirteen editors carry this block; a
-    // fourteenth is fine but should arrive deliberately, because "no editor was
+    // Guards the guard, and pins the count. Fourteen editors carry this block
+    // (TraitEditor, HTOO-617, is the fourteenth); a fifteenth is fine but should
+    // arrive deliberately, because "no editor was
     // detected" and "every editor passed" look identical from the outside.
     const editors = editorsWithDuplicateDetection()
     expect(
       editors.length,
       'no duplicate-detection blocks found — the detector has stopped working'
-    ).toBe(13)
+    ).toBe(14)
     for (const rel of NOT_INDEX_BACKED) {
       expect(editors.map((e) => e.rel)).toContain(rel)
     }

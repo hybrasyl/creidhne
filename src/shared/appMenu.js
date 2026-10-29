@@ -32,6 +32,7 @@ export const GO_PAGES = [
   { page: 'behaviors', label: 'Behavior Sets' },
   { page: 'spellbooks', label: 'Spellbooks' },
   { page: 'nations', label: 'Nations' },
+  { page: 'traits', label: 'Traits' },
   { page: 'spawngroups', label: 'Spawngroups' },
   { page: 'loot', label: 'Loot Sets' },
   { page: 'variants', label: 'Variants' },

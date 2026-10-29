@@ -18,6 +18,7 @@ const TYPE_LABELS = {
   serverconfigs: 'server configs',
   spawngroups: 'spawn groups',
   statuses: 'statuses',
+  traits: 'traits',
   variantgroups: 'variant groups',
   worldmaps: 'world maps'
 }

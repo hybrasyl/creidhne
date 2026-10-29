@@ -71,15 +71,16 @@ src/
                %TEMP% unpack folders a killed portable launch leaves),
                entityRefScan.js + entityRefRepair.js (rename repair —
                find/rewrite, then the disk walk), schemas/ (Zod — incl. worldEntity.js for the
-               14 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
+               15 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
                for the two bulk-rewrite channels), and per-domain XML
                (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
                lootTableXml.js maps <Table> and <Loot> for the three parsers that hold loot
+               statModifiersXml.js is the shared <StatModifiers> parse/build (traitXml uses it)
   shared/      electron-free code BOTH processes import, via the `@shared` alias:
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
                exportSerializers.js, elementTable.js (the element table model: lookup order,
-               validation, the old-format conversion), elementOptions.js (the element choices
+               validation, the old-format conversion), traitValidate.js (the server's trait checks), elementOptions.js (the element choices
                from the active table, and the copy of hybindex's resolveElementTable), nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
@@ -96,7 +97,7 @@ src/
                must print `require("electron")` only.
   renderer/src/
     App.jsx          ThemeProvider + CssBaseline + settings-hydration gate
-    components/ pages/ (23) store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
+    components/ pages/ store/appStore.js (zustand) themes/ (6) hooks/ utils/ data/
 scripts/       release + XSD + icon tooling (changelog-extract.mjs, validate-xml.mjs,
                generate-lua-stubs.js, make-icons.mjs, verify-fuses.mjs, run-electron.mjs,
                xsdRef.cjs — the one pin of the hybrasyl/xml commit that fetch-xsd gets).
@@ -123,7 +124,7 @@ e2e/           Playwright specs against the built app
   `ipc.handle` must either `parseOrLog` its payload or be listed in `EXEMPT` in
   `src/main/__tests__/ipcSchemaCoverage.test.js` with a category and a reason — the suite
   reads `index.js` and fails naming any channel you did not classify. **Pass the channel
-  as a string literal**, or the check cannot see it; that is why the fourteen `xml:save*`
+  as a string literal**, or the check cannot see it; that is why the fifteen `xml:save*`
   handlers spell theirs out instead of being registered from a table. Failures log a
   breadcrumb next to settings (`schemaLog.js`).
 
@@ -208,7 +209,7 @@ e2e/           Playwright specs against the built app
   and the count is current) and repoints **after** it (so a failed save cannot leave the world
   pointing at a name never written); `renameRepairSites.test.js` pins that order.
 
-  Nine of the fourteen file-backed pages need it, and the set is derived from the table.
+  Most of the fifteen file-backed pages need it, and the set is derived from the table, not counted.
   Comparison is on the DECODED value, `.ignore/` is never scanned, and a repair refreshes the
   index sections it wrote — it edits OTHER types, which carry the cross-references.
 
@@ -264,7 +265,7 @@ e2e/           Playwright specs against the built app
 
   **HTOO-378 is the first one written with the guard rather than after it**, and it shows what
   that buys: the required set is READ from `src/shared/entityReferences.js` rather than listed,
-  so the nine wired pages are a consequence of the measured table and not a number anyone has to
+  so the wired pages are a consequence of the measured table and not a number anyone has to
   maintain. Give a type an inbound edge and its page fails until it is wired. The exclusions earn
   their place the same way — `npcs` names a great many things and nothing names it, so it is
   pinned as NOT needing the offer, because otherwise its absence reads as the sixth instance of
