@@ -206,7 +206,8 @@ function FormulaEditor({
 
   // ── ACQUIREDLEVEL preview resolution ──────────────────────────────────────
   // ACQUIREDLEVEL is an authoring-time variable: the server never sees it;
-  // at XML save time it gets replaced with the castable's required min level.
+  // at XML save time it gets replaced with the castable's required min level
+  // (resolveAcquiredLevel in src/main/castableXml.js).
   // In the editor we can preview the resolved value when either (a) a
   // castable is referenced (→ libraryIndex.castableRequiredLevels), or
   // (b) the user sets a manual preview override below.

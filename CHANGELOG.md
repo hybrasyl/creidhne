@@ -59,6 +59,14 @@ first section written to the rules above.
 
 ### Fixed
 
+- **The damage calculator computes a formula as the server does.** Before, it accepted some formulas that the server evaluates differently or to 0:
+  - `^` is bitwise XOR on the server, and `**` is the power. The calculator now shows an error for `^`, and it computes `**`.
+  - `Round` needs its digits, as in `Round(x, 0)`, and it rounds half away from zero.
+  - `Max` and `Min` take exactly two values. The function is `Ceiling`, not `ceil`.
+  - A division by zero, or a result that is not a number, shows "the server evaluates this formula to 0".
+- **The New Hybrasyl formula template writes `Max(`.** It wrote `MAX(`, which a server finds only when it matches function names in any case. Formulas that you already made from the template keep `MAX(`.
+- **A castable save replaces ACQUIREDLEVEL with the level that the castable is learned at.** The server has no ACQUIREDLEVEL, so a formula saved with it evaluated to 0. The level is the Min level of the first requirement, the same level that the formula editor shows. A castable without a level requirement uses 1.
+- **`scripts/formulas.lua` computes a formula as the server does.** `Round` keeps its digits, `**` is the power, `if` works, each random value is drawn one time for each call, and the original caster is a seventh parameter. A formula that uses `^` becomes a function that stops with an error that names the formula.
 - **The nav bar icons are easy to read in Danaan and Mundanes.** They used the colour of the page text, which had too little contrast against the bar. They now use the text colour of the bar in every theme.
 - **Coloured chips show their colour.** In every theme, a chip with a colour looked like a plain chip. For example, **Index not built**, the **Active** library and the formula category chips looked like plain chips. Each chip now shows its colour.
 - **Destructive buttons show their colour.** In Hybrasyl, Chadul, Danaan and Grinneal, every button had the theme's button colour, so **Clear**, **Delete** and **Discard** looked like any other button. They now show the error colour.

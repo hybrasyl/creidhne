@@ -692,6 +692,63 @@ describe('castableXml — Formula damage omits Simple', () => {
   })
 })
 
+// ACQUIREDLEVEL is a Creidhne-only variable. The server has no such parameter,
+// so a formula saved with it evaluates to 0 (HTOO-578).
+describe('castableXml — ACQUIREDLEVEL is resolved on save', () => {
+  const LIBRARY = 'Max(SOURCELEVEL - ACQUIREDLEVEL, 1) * 2 + ACQUIREDLEVEL'
+
+  const withFormulas = async (levelMin) => {
+    const castable = await parseCastableXml(MINIMAL_XML)
+    const requirement = {
+      class: 'Wizard',
+      forbidCookie: '',
+      requireCookie: '',
+      levelMin,
+      levelMax: '',
+      abMin: '',
+      abMax: '',
+      str: '',
+      int: '',
+      wis: '',
+      con: '',
+      dex: '',
+      gold: '',
+      items: [],
+      prerequisites: {
+        deprecated: false,
+        forbidCookie: '',
+        forbidMessage: '',
+        requireCookie: '',
+        requireMessage: '',
+        castables: []
+      }
+    }
+    castable.requirements = levelMin === undefined ? [] : [requirement]
+    castable.damage = { kind: 'Formula', type: 'Magical', flags: [], formula: LIBRARY }
+    castable.heal = { kind: 'Formula', formula: LIBRARY }
+    const effects = (await rawParse(serializeCastableXml(castable))).Castable.Effects[0]
+    return { damage: effects.Damage[0].Formula[0], heal: effects.Heal[0].Formula[0] }
+  }
+
+  it('writes the first requirement level in damage and heal', async () => {
+    const saved = await withFormulas('12')
+    expect(saved.damage).toBe('Max(SOURCELEVEL - 12, 1) * 2 + 12')
+    expect(saved.heal).toBe('Max(SOURCELEVEL - 12, 1) * 2 + 12')
+  })
+
+  it('writes 1 for a castable with no level requirement', async () => {
+    expect((await withFormulas(undefined)).damage).toBe('Max(SOURCELEVEL - 1, 1) * 2 + 1')
+    expect((await withFormulas('')).damage).toBe('Max(SOURCELEVEL - 1, 1) * 2 + 1')
+  })
+
+  it('leaves a formula without ACQUIREDLEVEL as it is', async () => {
+    const castable = await parseCastableXml(MINIMAL_XML)
+    castable.damage = { kind: 'Formula', type: 'Magical', flags: [], formula: 'SOURCEINT * 2' }
+    const raw = await rawParse(serializeCastableXml(castable))
+    expect(raw.Castable.Effects[0].Damage[0].Formula[0]).toBe('SOURCEINT * 2')
+  })
+})
+
 // ---------------------------------------------------------------------------
 // 6. formulaName meta round-trip
 // ---------------------------------------------------------------------------
