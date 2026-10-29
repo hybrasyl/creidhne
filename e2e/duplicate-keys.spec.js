@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { launchApp, getMainWindow } from './helpers.js'
+import { launchApp, getMainWindow, openPage } from './helpers.js'
 
 // The duplicate-key report (HTOO-625). Two items share a name, and two species
 // have keys that differ only in case. The report lists both, Open goes to the
@@ -49,7 +49,7 @@ test.describe('Duplicate keys', () => {
     const page = await getMainWindow(electronApp)
     await expect(page.getByText('Index complete')).toBeVisible({ timeout: 30000 })
 
-    await page.getByRole('button', { name: 'Reports', exact: true }).click()
+    await openPage(page, 'Reports')
     await page.getByRole('button', { name: /^Duplicate keys/ }).click()
     const groups = page.getByTestId('duplicate-key-group')
     await expect(groups).toHaveCount(2)

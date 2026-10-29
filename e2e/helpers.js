@@ -159,3 +159,16 @@ export async function readGeometry(electronApp, page, selector = '[data-testid="
 export function tempExists(p) {
   return existsSync(p)
 }
+
+/**
+ * Open a page by its nav label. The XML pages are buttons on the nav bar; the
+ * tools and Settings are items in its More menu (navPages.js). The bar is
+ * searched alone, so a page's own button with the same name is not taken.
+ */
+export async function openPage(page, label) {
+  const bar = page.getByTestId('nav-bar')
+  const button = bar.getByRole('button', { name: label, exact: true })
+  if (await button.count()) return button.click()
+  await bar.getByRole('button', { name: 'More pages', exact: true }).click()
+  await page.getByRole('menuitem', { name: label, exact: true }).click()
+}

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtempSync, mkdirSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { launchApp, getMainWindow } from './helpers.js'
+import { launchApp, getMainWindow, openPage } from './helpers.js'
 import { GO_PAGES } from '../src/shared/appMenu.js'
 
 // Open every page, in the real renderer, and check none of them crashed (HTOO-393).
@@ -56,7 +56,7 @@ test.describe('every nav page opens', () => {
     expect(PAGES.length).toBeGreaterThan(20)
 
     for (const { page: id, label } of PAGES) {
-      await page.getByRole('button', { name: label, exact: true }).first().click()
+      await openPage(page, label)
 
       // The page rendered. The marker is inside the Suspense, so it appears only
       // once the lazy page has loaded and rendered. Without this the loop would
@@ -68,7 +68,7 @@ test.describe('every nav page opens', () => {
     }
 
     for (const { from, button, testId } of SUBPAGES) {
-      await page.getByRole('button', { name: from, exact: true }).first().click()
+      await openPage(page, from)
       await page.getByRole('button', { name: button, exact: true }).click()
       await expect(page.getByTestId(testId), `${testId} did not render`).toBeVisible()
       await expect(boundary, `${testId} went to the error boundary`).toHaveCount(0)

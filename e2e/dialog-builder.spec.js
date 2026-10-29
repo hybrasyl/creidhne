@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtempSync, mkdirSync, existsSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { launchApp, getMainWindow } from './helpers.js'
+import { launchApp, getMainWindow, openPage } from './helpers.js'
 
 // The dialog builder end to end (HTOO-458): compose a one-sequence dialog
 // through the real form, save it, and export it. This spans the page → IPC
@@ -28,7 +28,7 @@ test.describe('Dialog builder', () => {
     }))
     const page = await getMainWindow(electronApp)
 
-    await page.getByRole('button', { name: 'Dialog Builder' }).click()
+    await openPage(page, 'Dialog Builder')
     await expect(page.getByRole('heading', { name: 'Dialog builder' })).toBeVisible()
 
     await page.getByRole('button', { name: 'New dialog' }).click()

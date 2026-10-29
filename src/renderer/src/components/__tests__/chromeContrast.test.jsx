@@ -218,7 +218,7 @@ describe('the nav bar', () => {
     // The icon, not the button: a theme can colour an icon that does not inherit.
     const icon = (label) =>
       getComputedStyle(screen.getByRole('button', { name: label }).querySelector('svg')).color
-    for (const label of ['Castables', 'Settings', 'Report an issue']) {
+    for (const label of ['Castables', 'More pages', 'Report an issue']) {
       expect(contrast(icon(label), bar), `${label}: ${icon(label)}`).toBeGreaterThanOrEqual(4.5)
     }
     // The current page (Items) takes the house mark: the bar's text colour on
@@ -236,5 +236,20 @@ describe('the nav bar', () => {
       .filter((el) => Number(getComputedStyle(el).opacity || '1') < 1)
       .map((el) => el.getAttribute('aria-label') ?? el.tagName)
     expect(faded).toEqual([])
+  })
+
+  it('marks the More button when the open page is in its menu', () => {
+    useAppStore.setState({ theme: 'hybrasyl', currentPage: 'formulas' })
+    render(
+      <ThemeProvider theme={themesByName.hybrasyl}>
+        <MainToolbar navigate={vi.fn()} />
+      </ThemeProvider>
+    )
+    expect(
+      getComputedStyle(screen.getByRole('button', { name: 'More pages' })).boxShadow
+    ).toContain('inset')
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Items' })).boxShadow).not.toContain(
+      'inset'
+    )
   })
 })

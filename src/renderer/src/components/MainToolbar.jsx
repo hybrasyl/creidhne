@@ -1,33 +1,17 @@
-import { Toolbar, IconButton, Tooltip, Divider, Box } from '@mui/material'
+import { Fragment, useState } from 'react'
 import {
-  GiRadialBalance,
-  GiMagicSwirl,
-  GiDervishSwords,
-  GiPoisonBottle,
-  GiFaceToFace,
-  GiSpiderFace,
-  GiBrainTentacle,
-  GiSpellBook,
-  GiCastle,
-  GiFingerPrint,
-  GiVitruvianMan,
-  GiHiveMind,
-  GiGoldStack,
-  GiMirrorMirror,
-  GiWindHole,
-  GiWok,
-  GiTalk,
-  GiMagickTrick,
-  GiPotionBall,
-  GiCalculator,
-  GiPull,
-  GiBootKick,
-  GiConversation,
-  GiDoubleDiaphragm,
-  GiSettingsKnobs,
-  GiAnvil,
-  GiBugNet
-} from 'react-icons/gi'
+  Toolbar,
+  IconButton,
+  Tooltip,
+  Divider,
+  Box,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText
+} from '@mui/material'
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
+import { GiAnvil, GiBugNet } from 'react-icons/gi'
 import {
   useStoreValue,
   useSetStoreValue,
@@ -37,6 +21,7 @@ import {
 } from '../store/appStore'
 import { useCompanionStatus } from '../hooks/useCompanionStatus'
 import { chromeKind, navButtonSx } from './titleChrome'
+import { BAR_PAGES, MENU_GROUPS, MENU_PAGES, NAV_ICONS } from './navPages'
 
 // The nav bar: the second bar, under the title bar (AppTitleBar). It paints
 // secondary.main, as the title bar does, so its icons take the bar's text colour,
@@ -50,6 +35,10 @@ import { chromeKind, navButtonSx } from './titleChrome'
 //
 // The bar is opaque. It had `opacity: 0.9`, which mixed the AppBar's colour
 // (light in Danaan and Mundanes) into the bar and its icons.
+//
+// The pages come from navPages.js: the XML pages are buttons, and the tools and
+// Settings are one More button with a menu, so the bar fits a 1024px window.
+// The More button takes the current-page mark when the open page is in its menu.
 
 const dividerSx = { mx: 1, borderColor: 'rgba(255,255,255,0.2)' }
 
@@ -73,12 +62,14 @@ const MainToolbar = ({ navigate }) => {
   const themeName = useStoreValue(themeState)
   const setReportIssueOpen = useSetStoreValue(reportIssueOpenState)
   const kind = chromeKind(themeName)
+  const [menuAnchor, setMenuAnchor] = useState(null)
 
   // `mx` and the glyph stroke are Creidhne's layout, not colour. The current
   // page drew secondary.dark, a dark shade on the bar in most themes (1.2:1 to
   // 1.5:1); the house mark replaces it.
   const btnSx = { ...navButtonSx(kind), mx: -0.5, ...navIconSx }
-  const pageSx = (page) => ({ ...navButtonSx(kind, currentPage === page), mx: -0.5, ...navIconSx })
+  const pageSx = (current) => ({ ...navButtonSx(kind, current), mx: -0.5, ...navIconSx })
+  const inMenu = MENU_PAGES.some((p) => p.page === currentPage)
 
   const handleLaunchTaliesin = async () => {
     await window.electronAPI.launchCompanion()
@@ -87,152 +78,72 @@ const MainToolbar = ({ navigate }) => {
     refreshCompanion()
   }
 
+  const openFromMenu = (page) => {
+    setMenuAnchor(null)
+    navigate(page)
+  }
+
   return (
     <Toolbar
       data-testid="nav-bar"
       variant="dense"
       sx={{ bgcolor: 'secondary.main', minHeight: 40 }}
     >
-      {/* Left spacer — centers the editor + tools group */}
+      {/* Left spacer — centers the editors and the More button */}
       <Box sx={{ flexGrow: 1 }} />
 
-      {/* Editor buttons */}
-      <Tooltip title="Dashboard">
-        <IconButton onClick={() => navigate('dashboard')} sx={pageSx('dashboard')}>
-          <GiRadialBalance />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Castables">
-        <IconButton onClick={() => navigate('castables')} sx={pageSx('castables')}>
-          <GiMagicSwirl />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Items">
-        <IconButton onClick={() => navigate('items')} sx={pageSx('items')}>
-          <GiDervishSwords />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Statuses">
-        <IconButton onClick={() => navigate('statuses')} sx={pageSx('statuses')}>
-          <GiPoisonBottle />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="NPCs">
-        <IconButton onClick={() => navigate('npcs')} sx={pageSx('npcs')}>
-          <GiFaceToFace />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Creatures">
-        <IconButton onClick={() => navigate('creatures')} sx={pageSx('creatures')}>
-          <GiSpiderFace />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Behavior Sets">
-        <IconButton onClick={() => navigate('behaviors')} sx={pageSx('behaviors')}>
-          <GiBrainTentacle />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Spellbooks">
-        <IconButton onClick={() => navigate('spellbooks')} sx={pageSx('spellbooks')}>
-          <GiSpellBook />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Nations">
-        <IconButton onClick={() => navigate('nations')} sx={pageSx('nations')}>
-          <GiCastle />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Traits">
-        <IconButton onClick={() => navigate('traits')} sx={pageSx('traits')}>
-          <GiFingerPrint />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Species">
-        <IconButton onClick={() => navigate('species')} sx={pageSx('species')}>
-          <GiVitruvianMan />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Spawngroups">
-        <IconButton onClick={() => navigate('spawngroups')} sx={pageSx('spawngroups')}>
-          <GiHiveMind />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Loot Sets">
-        <IconButton onClick={() => navigate('loot')} sx={pageSx('loot')}>
-          <GiGoldStack />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Variants">
-        <IconButton onClick={() => navigate('variants')} sx={pageSx('variants')}>
-          <GiMirrorMirror />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Elements">
-        <IconButton onClick={() => navigate('elements')} sx={pageSx('elements')}>
-          <GiWindHole />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Recipes">
-        <IconButton onClick={() => navigate('recipes')} sx={pageSx('recipes')}>
-          <GiWok />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Strings">
-        <IconButton onClick={() => navigate('strings')} sx={pageSx('strings')}>
-          <GiTalk />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Server Config">
-        <IconButton onClick={() => navigate('serverconfig')} sx={pageSx('serverconfig')}>
-          <GiMagickTrick />
-        </IconButton>
-      </Tooltip>
+      {BAR_PAGES.map(({ page, label }) => {
+        const Icon = NAV_ICONS[page]
+        return (
+          <Tooltip key={page} title={label}>
+            <IconButton onClick={() => navigate(page)} sx={pageSx(currentPage === page)}>
+              <Icon />
+            </IconButton>
+          </Tooltip>
+        )
+      })}
 
       <Divider orientation="vertical" flexItem sx={dividerSx} />
 
-      {/* Tools group — centered alongside the editors */}
-      <Tooltip title="Formulas">
-        <IconButton onClick={() => navigate('formulas')} sx={pageSx('formulas')}>
-          <GiPotionBall />
+      <Tooltip title="More pages">
+        <IconButton
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          sx={pageSx(inMenu)}
+          aria-haspopup="menu"
+          aria-expanded={menuAnchor ? 'true' : undefined}
+        >
+          <MoreHorizIcon />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Damage Calculator">
-        <IconButton onClick={() => navigate('damage-calculator')} sx={pageSx('damage-calculator')}>
-          <GiCalculator />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Lua Helpers">
-        <IconButton onClick={() => navigate('helpers')} sx={pageSx('helpers')}>
-          <GiPull />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Dialog Builder">
-        <IconButton onClick={() => navigate('dialogs')} sx={pageSx('dialogs')}>
-          <GiConversation />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Reports">
-        <IconButton onClick={() => navigate('exports')} sx={pageSx('exports')}>
-          <GiBootKick />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Constants">
-        <IconButton onClick={() => navigate('constants')} sx={pageSx('constants')}>
-          <GiDoubleDiaphragm />
-        </IconButton>
-      </Tooltip>
+      <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
+        {MENU_GROUPS.map((group, i) => (
+          <Fragment key={i}>
+            {i > 0 && <Divider />}
+            {group.map(({ page, label }) => {
+              const Icon = NAV_ICONS[page]
+              return (
+                <MenuItem
+                  key={page}
+                  selected={currentPage === page}
+                  onClick={() => openFromMenu(page)}
+                >
+                  <ListItemIcon>
+                    <Icon size="1.3em" />
+                  </ListItemIcon>
+                  <ListItemText>{label}</ListItemText>
+                </MenuItem>
+              )
+            })}
+          </Fragment>
+        ))}
+      </Menu>
 
-      {/* Right spacer — mirrors left spacer to keep editor+tools group centered */}
+      {/* Right spacer — mirrors left spacer to keep the group centered */}
       <Box sx={{ flexGrow: 1 }} />
 
       <Divider orientation="vertical" flexItem sx={dividerSx} />
 
-      {/* Right-aligned: settings, launch taliesin, about */}
-      <Tooltip title="Settings">
-        <IconButton onClick={() => navigate('settings')} sx={pageSx('settings')}>
-          <GiSettingsKnobs />
-        </IconButton>
-      </Tooltip>
+      {/* Right-aligned: launch taliesin, report an issue */}
       <Tooltip title={taliesinFound ? 'Launch Taliesin' : 'Taliesin not found — see Settings'}>
         <span>
           <IconButton onClick={handleLaunchTaliesin} disabled={!taliesinFound} sx={btnSx}>
