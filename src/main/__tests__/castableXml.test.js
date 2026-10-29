@@ -364,7 +364,7 @@ describe('castableXml — minimal', () => {
   it('cooldown defaults to empty string', () => expect(c.cooldown).toBe(''))
   it('icon defaults to empty string', () => expect(c.icon).toBe(''))
   it('book defaults to PrimarySkill', () => expect(c.book).toBe('PrimarySkill'))
-  it('elements defaults to None', () => expect(c.elements).toBe('None'))
+  it('elements defaults to empty, meaning not set', () => expect(c.elements).toBe(''))
   it('class defaults to empty string', () => expect(c.class).toBe(''))
   it('isAssail defaults to false', () => expect(c.isAssail).toBe(false))
   it('reflectable defaults to false', () => expect(c.reflectable).toBe(false))
@@ -689,6 +689,27 @@ describe('castableXml — Formula damage omits Simple', () => {
     }
     const raw = await rawParse(serializeCastableXml(castable))
     expect(raw.Castable.Effects[0].Damage[0].Formula[0]).toBe('Int * 2')
+  })
+})
+
+// Elements is a selector list, and absent means "not set" (HXML-24). The
+// serializer wrote Elements="None" into a castable that had no attribute.
+describe('castableXml — Elements is written only when set (HTOO-581)', () => {
+  it('a castable without Elements saves without it', async () => {
+    const raw = await rawParse(serializeCastableXml(await parseCastableXml(MINIMAL_XML)))
+    expect(raw.Castable.$.Elements).toBeUndefined()
+  })
+
+  it('a file that says Elements="None" keeps it, for the migration to change', async () => {
+    const xml = MINIMAL_XML.replace('<Castable ', '<Castable Elements="None" ')
+    const raw = await rawParse(serializeCastableXml(await parseCastableXml(xml)))
+    expect(raw.Castable.$.Elements).toBe('None')
+  })
+
+  it('a selector list is kept as written', async () => {
+    const xml = MINIMAL_XML.replace('<Castable ', '<Castable Elements="Current Random:Cardinal" ')
+    const raw = await rawParse(serializeCastableXml(await parseCastableXml(xml)))
+    expect(raw.Castable.$.Elements).toBe('Current Random:Cardinal')
   })
 })
 

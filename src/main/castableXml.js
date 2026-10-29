@@ -448,7 +448,8 @@ function mapXmlToCastable(result, xmlString) {
     cooldown: a(root, 'Cooldown', ''),
     icon: a(root, 'Icon', ''),
     book: a(root, 'Book', 'PrimarySkill'),
-    elements: a(root, 'Elements', 'None'),
+    // Absent means "not set"; the server then uses the default element (HXML-24).
+    elements: a(root, 'Elements', ''),
     class: a(root, 'Class', ''),
     isAssail: a(root, 'IsAssail', 'false') === 'true',
     reflectable: a(root, 'Reflectable', 'false') === 'true',
@@ -515,7 +516,8 @@ function buildXmlObject(castable) {
   const attrs = {
     xmlns: XMLNS,
     Book: castable.book || 'PrimarySkill',
-    Elements: castable.elements || 'None',
+    // Written only when set: None is not an element of the registry (HTOO-581).
+    ...(castable.elements ? { Elements: castable.elements } : {}),
     Class: castable.class || '',
     IsAssail: castable.isAssail ? 'true' : 'false',
     Reflectable: castable.reflectable ? 'true' : 'false',
