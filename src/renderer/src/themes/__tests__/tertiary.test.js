@@ -6,7 +6,8 @@ import { contrast } from '@renderer/lib/contrast'
 const THEME_NAMES = Object.keys(themesByName)
 
 /**
- * `tertiary` is the nav bar under the title bar. The two bars were one colour,
+ * `tertiary` is the nav bar under the title bar (HTOO-629): the template's
+ * tertiary.test.ts, in JS. The two bars were one colour,
  * `secondary.main`, and read as one band. Every theme picks its own value
  * against two rules, with no exemption list:
  *

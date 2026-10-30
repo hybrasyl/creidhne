@@ -33,8 +33,10 @@ const chadulTheme = responsiveFontSizes(
         dark: '#1e1030',
         contrastText: '#e0d8ea'
       },
-      // The nav bar under the title bar: the bar purple, 15% toward white: darker has no room. Its icons take the bar's
-      // text colour, so contrastText is secondary's.
+      // The nav bar under the title bar (tertiary.test.ts): secondary.main,
+      // 15% toward white, because a darker purple is too near the title bar.
+      // Its icons take the title bar's text colour, so contrastText is
+      // secondary.contrastText.
       tertiary: {
         main: '#4d3c65',
         light: '#716384',

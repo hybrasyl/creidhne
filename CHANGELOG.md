@@ -65,6 +65,7 @@ first section written to the rules above.
 - **A rename also updates the staged files that use the name.** The list of files to update shows them under **In staging**.
 - **Save in a staged file renames the file in place.** Staging has no archive, so Save does not keep the old file.
 - **Each tab in a file list shows its name above its count,** so three tabs fit the list.
+- **The nav bar has its own colour.** Before, it had the colour of the title bar, and the two bars looked like one bar. Its icons keep the colour of the title bar text.
 - **The nav bar has a More button for the tools and Settings.** Formulas, Damage Calculator, Lua Helpers, Dialog Builder, Reports, Constants and Settings are in its menu. The editors stay as buttons. Before, a window at its minimum width did not show the last buttons of the bar. When the open page is in the menu, the More button has the current-page mark.
 - **Castable Elements and spawn Offensive and Defensive Elements take a list.** Each selector is one chip, so a spawn with `Earth Wind Fire Water` shows four chips.
 - **An empty element field means "not set".** Creidhne no longer writes `Elements="None"` into a castable that had no Elements attribute. The server then uses the default element. In the castable balancing export, such a castable shows an empty Elements cell, not `None`.

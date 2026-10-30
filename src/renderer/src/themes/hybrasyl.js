@@ -31,8 +31,9 @@ const hybrasylTheme = responsiveFontSizes(
         dark: '#5ecfbe',
         contrastText: '#f0e6cc'
       },
-      // The nav bar under the title bar: the bar colour, 40% darker. Its icons take the bar's
-      // text colour, so contrastText is secondary's.
+      // The nav bar under the title bar (tertiary.test.ts): secondary.main,
+      // 40% darker. Its icons take the title bar's text colour, so
+      // contrastText is secondary.contrastText.
       tertiary: {
         main: '#123834',
         light: '#41605d',
