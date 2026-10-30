@@ -50,7 +50,7 @@ test.describe('Traits', () => {
 
     // The full trait shows its fields, and no problem.
     await page.getByText('Dockworker', { exact: true }).first().click()
-    await expect(page.getByRole('button', { name: 'Scribe' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Scribe', exact: true })).toBeVisible()
     await expect(page.getByRole('combobox', { name: 'When the group is taken' })).toHaveText(
       'Replace the trait it has'
     )
