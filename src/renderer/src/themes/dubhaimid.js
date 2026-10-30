@@ -33,6 +33,15 @@ const dubhaimidTheme = responsiveFontSizes(
         dark: '#061a4f',
         contrastText: '#ffffff'
       },
+      // The nav bar under the title bar (tertiary.test.ts): secondary.light,
+      // because a darker navy is too near the title bar. Its icons take the
+      // title bar's text colour, so contrastText is secondary.contrastText.
+      tertiary: {
+        main: '#2f4f8f',
+        light: '#5972a5',
+        dark: '#213764',
+        contrastText: '#ffffff'
+      },
       background: {
         default: '#1e1e1e',
         gray: '#1e1e1e',

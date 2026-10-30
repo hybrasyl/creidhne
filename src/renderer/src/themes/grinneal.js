@@ -30,6 +30,15 @@ const grinnealTheme = responsiveFontSizes(
         dark: '#3c3020',
         contrastText: '#e8dcc0'
       },
+      // The nav bar under the title bar (tertiary.test.ts): secondary.main,
+      // 40% darker. Its icons take the title bar's text colour, so
+      // contrastText is secondary.contrastText.
+      tertiary: {
+        main: '#3a2b1d',
+        light: '#61554a',
+        dark: '#291e14',
+        contrastText: '#e8dcc0'
+      },
       background: {
         default: '#27221c',
         gray: '#27221c',

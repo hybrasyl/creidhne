@@ -88,7 +88,7 @@ export function windowButtonSx(kind, close = false, hovered = false) {
 }
 
 /**
- * The current page on a nav bar: a row of icon buttons on `secondary.main`,
+ * The current page on a nav bar: a row of icon buttons on `tertiary.main`,
  * under the title bar (creidhne, epona, balor, taliesin). Each app drew its own
  * mark, and each failed on a dark bar: `secondary.dark` or `warning.main` on
  * the bar was 1.1:1 to 1.5:1 (HTOO-572). The current button keeps the bar's

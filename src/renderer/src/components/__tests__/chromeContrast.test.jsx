@@ -184,7 +184,9 @@ function rgb(hex) {
 
 /**
  * Creidhne's nav bar, under the title bar (MainToolbar.jsx). It paints
- * secondary.main too, so its icons take secondary.contrastText. They drew
+ * tertiary.main, so it reads as a second bar (themes/__tests__/tertiary.test.js),
+ * and its icons take the title bar's text colour, which tertiary.contrastText
+ * repeats. Before, it painted secondary.main too. They drew
  * text.button, a page colour, which was below 2:1 on the Danaan and Mundanes
  * bars, and the current page drew secondary.dark, a dark shade on a dark bar.
  * Each button takes the house `navButtonSx`, which the case above checks alone;
@@ -204,14 +206,14 @@ describe('the nav bar', () => {
     delete window.electronAPI
   })
 
-  it.each(THEME_NAMES)('%s: the bar is secondary.main, and its icons read on it', (name) => {
+  it.each(THEME_NAMES)('%s: the bar is tertiary.main, and its icons read on it', (name) => {
     useAppStore.setState({ theme: name, currentPage: 'items' })
     render(
       <ThemeProvider theme={themesByName[name]}>
         <MainToolbar navigate={vi.fn()} />
       </ThemeProvider>
     )
-    const bar = themesByName[name].palette.secondary.main
+    const bar = themesByName[name].palette.tertiary.main
     // Read, not assumed: a translucent bar (it had `opacity: 0.9`) or a theme
     // override would change what the icons are drawn on.
     expect(getComputedStyle(screen.getByTestId('nav-bar')).backgroundColor).toBe(rgb(bar))
@@ -230,6 +232,12 @@ describe('the nav bar', () => {
       `the current page ${icon('Items')}`
     ).toBeGreaterThanOrEqual(4.5)
     expect(getComputedStyle(items).boxShadow).toContain('inset')
+    // The house hover, on this bar's colour: navButtonSx tunes it against the
+    // title bar, so the second colour is measured here.
+    const kind = chromeKind(name)
+    const fill = blend(colourOf(name, BUTTON[kind].hoverBackground), bar)
+    const glyph = colourOf(name, BUTTON[kind].hoverColor)
+    expect(contrast(glyph, fill, fill), `hovered ${glyph} on ${fill}`).toBeGreaterThanOrEqual(4.5)
     // No part of the bar is faded: getComputedStyle does not fold opacity into `color`.
     const nav = screen.getByTestId('nav-bar')
     const faded = [nav, ...nav.querySelectorAll('*')]

@@ -24,9 +24,11 @@ import { chromeKind, navButtonSx } from './titleChrome'
 import { BAR_PAGES, MENU_GROUPS, MENU_PAGES, NAV_ICONS } from './navPages'
 
 // The nav bar: the second bar, under the title bar (AppTitleBar). It paints
-// secondary.main, as the title bar does, so its icons take the bar's text colour,
-// secondary.contrastText (HTOO-572). They drew text.button, which is a page
-// colour: on the Danaan and Mundanes bars it was below 2:1.
+// tertiary.main, so it reads as its own bar; with secondary.main, the title
+// bar's colour, the two read as one band. Its icons take the title bar's text
+// colour, secondary.contrastText, which tertiary.contrastText repeats (HTOO-629).
+// They drew text.button, which is a page colour: on the Danaan and Mundanes bars
+// it was below 2:1.
 //
 // Each button takes the house nav-bar style, `navButtonSx` from titleChrome.js:
 // the title bar's colours and hover, and the one house current-page mark (a
@@ -84,11 +86,7 @@ const MainToolbar = ({ navigate }) => {
   }
 
   return (
-    <Toolbar
-      data-testid="nav-bar"
-      variant="dense"
-      sx={{ bgcolor: 'secondary.main', minHeight: 40 }}
-    >
+    <Toolbar data-testid="nav-bar" variant="dense" sx={{ bgcolor: 'tertiary.main', minHeight: 40 }}>
       {/* Left spacer — centers the editors and the More button */}
       <Box sx={{ flexGrow: 1 }} />
 
