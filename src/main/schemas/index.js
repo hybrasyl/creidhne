@@ -15,3 +15,9 @@ export {
   spellbookApplyArgsSchema
 } from './ipcArgs.js'
 export { refsScanArgsSchema, refsApplyArgsSchema } from './entityRefs.js'
+export {
+  stagingListArgsSchema,
+  stagingIndexArgsSchema,
+  stagingMoveArgsSchema,
+  refsNamesInArgsSchema
+} from './staging.js'

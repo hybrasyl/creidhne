@@ -1,5 +1,10 @@
 import { xmlText } from '@eriscorp/hybindex-ts'
-import { REFERENCE_SITES, sitesIn, sourceTypesFor } from '../shared/entityReferences.js'
+import {
+  REFERENCE_SITES,
+  outboundSites,
+  sitesIn,
+  sourceTypesFor
+} from '../shared/entityReferences.js'
 
 /**
  * Find and rewrite the places that name an entity, when its `<Name>` changes.
@@ -86,6 +91,28 @@ export function findReferences(xml, sites, oldName) {
     }
   }
   return hits
+}
+
+/**
+ * Every name that one `sourceType` file refers to, by the type it names:
+ * `{ [targetType]: string[] }`, decoded, in file order, with repeats removed.
+ *
+ * The same sites, anchors and `unless` rule as the rename scan, so the two agree
+ * about what a reference is. Staging uses it (HTOO-453): a live file that names
+ * an entity that exists only in staging cannot be resolved by the server.
+ */
+export function referencedNames(xml, sourceType) {
+  const out = {}
+  for (const { targetType, site } of outboundSites(sourceType)) {
+    for (const m of xml.matchAll(siteRegex(site))) {
+      if (disqualified(site, m[1])) continue
+      const name = decode(m[2])
+      if (!name) continue
+      const list = (out[targetType] ??= [])
+      if (!list.includes(name)) list.push(name)
+    }
+  }
+  return out
 }
 
 /**

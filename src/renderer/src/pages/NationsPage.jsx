@@ -14,10 +14,12 @@ import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
 import SharedKeyNotice from '../components/shared/SharedKeyNotice'
+import StagedReferenceNotice from '../components/shared/StagedReferenceNotice'
+import StagingScope from '../components/shared/StagingScope'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
-import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir } from '../utils/fileTree'
 
 const NATIONS_SUBDIR = 'nations'
 const IGNORE_SUBDIR = 'nations/.ignore'
@@ -37,6 +39,8 @@ function NationsPage() {
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.nationsNamesByFilename
   const [selectedFile, setSelectedFile] = useState(null)
+  // A new entity started from the Staged tab saves into staging (HTOO-453).
+  const [newStaged, setNewStaged] = useState(false)
   const [editingNation, setEditingNation] = useState(null)
   const [loadingNation, setLoadingNation] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -53,7 +57,15 @@ function NationsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Nation')
 
-  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+  const {
+    files,
+    archivedFiles,
+    stagedFiles,
+    stagedDir,
+    stagedNamesByFilename,
+    loading,
+    loadFiles
+  } = useSectionFiles(
     activeLibrary,
     NATIONS_SUBDIR,
     useCallback(() => {
@@ -66,19 +78,21 @@ function NationsPage() {
   // archived ones included — a folder emptied by archiving everything in it is
   // still somewhere you might file a nation.
   const folderChoices = useMemo(
-    () => folderOptions([...files, ...archivedFiles]),
-    [files, archivedFiles]
+    () => folderOptions([...files, ...archivedFiles, ...stagedFiles]),
+    [files, archivedFiles, stagedFiles]
   )
   // treePath, not rel: an archived file's picker shows where it sits within the
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
   const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
 
-  const doNew = () => {
+  const doNew = (staged = false) => {
+    setNewStaged(staged)
     setSelectedFile(null)
     setLoadError(null)
     setEditingNation({ ...DEFAULT_NATION, spawnPoints: [] })
   }
-  const handleNew = () => guard(doNew)
+  const handleNew = () => guard(() => doNew(false))
+  const handleNewStaged = () => guard(() => doNew(true))
 
   const doSelect = async (file) => {
     setSelectedFile(file)
@@ -113,26 +127,33 @@ function NationsPage() {
       // Before anything is written: the count the user is shown describes
       // the files as they stand, and Cancel is therefore truthful.
       const rename = await confirmRename(editingNation?.name, data.name, {
-        isExisting: !!selectedFile
+        isExisting: !!selectedFile,
+        staged: selectedFile?.staged === true
       })
       if (rename.cancelled) return
-      const wasArchived = selectedFile?.archived === true
-      const { newPath, newRel, isRename } = resolveSavePath(
+      // Staging keeps no archive, so a staged Save renames in place (HTOO-453).
+      const wasStaged = selectedFile?.staged === true
+      const {
+        newPath,
+        newRel,
+        isRename,
+        file: savedFile
+      } = resolveSavePath(
         activeLibrary,
         NATIONS_SUBDIR,
         selectedFile,
         fileName,
-        folder
+        folder,
+        newStaged ? stagedDir : undefined
       )
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
-      const nextFile = () =>
-        toSectionFile(`${activeLibrary}/${NATIONS_SUBDIR}`, newRel, wasArchived)
+      const nextFile = () => savedFile
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -142,7 +163,7 @@ function NationsPage() {
       await window.electronAPI.saveNation(newPath, data)
       setEditingNation(data)
 
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         setSelectedFile(nextFile())
         setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
       } else if (isRename) {
@@ -182,7 +203,11 @@ function NationsPage() {
     handleBulkArchive,
     handleBulkUnarchive,
     handleBulkDelete,
-    handleDuplicate
+    handleDuplicate,
+    handleStage,
+    handleRelease,
+    handleBulkStage,
+    handleBulkRelease
   } = useBulkFileActions({
     activeLibrary,
     subdir: NATIONS_SUBDIR,
@@ -217,6 +242,11 @@ function NationsPage() {
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}
+        stagedFiles={stagedFiles}
+        stagedNamesByFilename={stagedNamesByFilename}
+        onStage={handleBulkStage}
+        onRelease={handleBulkRelease}
+        onNewStaged={handleNewStaged}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -232,6 +262,7 @@ function NationsPage() {
         }}
       >
         <SharedKeyNotice type={NATIONS_SUBDIR} file={selectedFile} />
+        <StagedReferenceNotice type={NATIONS_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load nation:</strong> {loadError}
@@ -243,19 +274,26 @@ function NationsPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingNation ? (
-          <NationEditor
-            nation={editingNation}
-            initialFileName={selectedFile?.name ?? null}
-            initialFolder={initialFolder}
-            folderOptions={folderChoices}
-            isArchived={selectedFile?.archived === true}
-            isExisting={!!selectedFile}
-            onSave={handleSave}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-          />
+          <StagingScope
+            file={selectedFile}
+            newStaged={newStaged}
+            onStage={handleStage}
+            onRelease={handleRelease}
+          >
+            <NationEditor
+              nation={editingNation}
+              initialFileName={selectedFile?.name ?? null}
+              initialFolder={initialFolder}
+              folderOptions={folderChoices}
+              isArchived={selectedFile?.archived === true}
+              isExisting={!!selectedFile}
+              onSave={handleSave}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+            />
+          </StagingScope>
         ) : (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}

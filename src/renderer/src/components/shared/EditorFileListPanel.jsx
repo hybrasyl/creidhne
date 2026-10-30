@@ -39,6 +39,8 @@ import ViewListIcon from '@mui/icons-material/ViewList'
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
 import ClearIcon from '@mui/icons-material/Clear'
+import PendingActionsIcon from '@mui/icons-material/PendingActions'
+import PublishIcon from '@mui/icons-material/Publish'
 import { useStoreState, fileListViewModeState } from '../../store/appStore'
 import { isModKey } from '../../utils/modKey'
 import {
@@ -158,6 +160,23 @@ const VirtualRow = memo(function VirtualRow({
   )
 })
 
+/** A tab's label, its name above its count, and its accessible name on one line. */
+function tabLabel(name, count) {
+  return {
+    'aria-label': `${name} (${count})`,
+    label: (
+      <Box component="span" sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Box component="span" sx={{ fontSize: '0.7rem', letterSpacing: '0.02em' }}>
+          {name}
+        </Box>
+        <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
+          {count}
+        </Box>
+      </Box>
+    )
+  }
+}
+
 /**
  * Shared file list panel for editor pages. Active and Archived are tabs over one
  * virtualized list; each can group by folder or show flat, driven by a persisted
@@ -194,6 +213,15 @@ export default function EditorFileListPanel({
   onDelete,
   // onDuplicate is single-only; receives the one selected file.
   onDuplicate,
+  // Staging (HTOO-453). The Staged tab shows whenever a page passes onRelease,
+  // empty or not: its + button (onNewStaged) is where a type's first staged
+  // file is made. stagedNamesByFilename is the staged index's, keyed by the
+  // staged `rel`.
+  stagedFiles,
+  stagedNamesByFilename,
+  onStage,
+  onRelease,
+  onNewStaged,
   // Fires whenever the multiselect set changes — pages render the editor-pane
   // dim/blur overlay based on this count.
   onSelectionChange,
@@ -227,18 +255,24 @@ export default function EditorFileListPanel({
   const [expanded, setExpanded] = useState(() => new Set())
 
   const archivedTab = tab === 'archived'
+  const stagedTab = tab === 'staged'
+  const stagedCount = (stagedFiles || []).length
+  const showStagedTab = !!onRelease
   // Memoized: a bare conditional would hand `filtered` a new array identity on
   // every render whenever archivedFiles is undefined, defeating its memo.
   const tabFiles = useMemo(
-    () => (archivedTab ? archivedFiles || [] : files),
-    [archivedTab, archivedFiles, files]
+    () => (stagedTab ? stagedFiles || [] : archivedTab ? archivedFiles || [] : files),
+    [stagedTab, stagedFiles, archivedTab, archivedFiles, files]
   )
+  // A staged rel can be the same string as a live one, so each tab looks its
+  // names up in its own index.
+  const tabNames = stagedTab ? stagedNamesByFilename : namesByFilename
 
   // Memoized so unrelated local-state changes (context menu, new-menu anchor,
   // pending delete, selection) don't re-walk all 2000+ items with a regex each.
   const filtered = useMemo(
-    () => filterFiles(tabFiles, search, namesByFilename),
-    [tabFiles, search, namesByFilename]
+    () => filterFiles(tabFiles, search, tabNames),
+    [tabFiles, search, tabNames]
   )
 
   // Filter first, then build: rebuilding from surviving leaves prunes empty
@@ -278,8 +312,9 @@ export default function EditorFileListPanel({
     const m = new Map()
     for (const f of files) m.set(f.path, f)
     for (const f of archivedFiles || []) m.set(f.path, f)
+    for (const f of stagedFiles || []) m.set(f.path, f)
     return m
-  }, [files, archivedFiles])
+  }, [files, archivedFiles, stagedFiles])
 
   const updateSelection = useCallback(
     (next) => {
@@ -390,6 +425,12 @@ export default function EditorFileListPanel({
       } else if (kind === 'unarchive' && onUnarchive) {
         await onUnarchive(selectedFiles)
         clearSelection()
+      } else if (kind === 'stage' && onStage) {
+        await onStage(selectedFiles)
+        clearSelection()
+      } else if (kind === 'release' && onRelease) {
+        await onRelease(selectedFiles)
+        clearSelection()
       } else if (kind === 'delete' && onDelete) {
         // Stage for confirmation — actual onDelete fires from the dialog.
         setPendingDelete(selectedFiles.slice())
@@ -398,7 +439,17 @@ export default function EditorFileListPanel({
         clearSelection()
       }
     },
-    [onArchive, onUnarchive, onDelete, onDuplicate, selectedFiles, clearSelection, closeContextMenu]
+    [
+      onArchive,
+      onUnarchive,
+      onStage,
+      onRelease,
+      onDelete,
+      onDuplicate,
+      selectedFiles,
+      clearSelection,
+      closeContextMenu
+    ]
   )
 
   const confirmDelete = useCallback(async () => {
@@ -424,7 +475,7 @@ export default function EditorFileListPanel({
       onRowClick: handleRowClick,
       onRowContextMenu: handleRowContextMenu,
       onToggleFolder: toggleFolder,
-      namesByFilename,
+      namesByFilename: tabNames,
       archived: archivedTab,
       renderSecondary
     }),
@@ -435,21 +486,32 @@ export default function EditorFileListPanel({
       handleRowClick,
       handleRowContextMenu,
       toggleFolder,
-      namesByFilename,
+      tabNames,
       archivedTab,
       renderSecondary
     ]
   )
 
   const noun = (title || '').toLowerCase()
-  const newTooltip = `New ${entityLabel || title || 'file'}`
+  // On the Staged tab, + starts a new entity that saves into staging.
+  const newStagedHere = stagedTab && !!onNewStaged
+  const newTooltip = `New ${newStagedHere ? 'staged ' : ''}${entityLabel || title || 'file'}`
   const selectionCount = selectedPaths.size
 
   // Action availability. With tabs, "where the selection lives" is just the
   // active tab — the old active/archived/mixed tri-state is gone.
   const canArchive = !!onArchive && !archivedTab && selectionCount >= 1
   const canUnarchive = !!onUnarchive && archivedTab && selectionCount >= 1
-  const canArchiveOrUnarchive = !!(archivedTab ? onUnarchive : onArchive)
+  // The Staged tab has no archive: Release is its way out.
+  const canArchiveOrUnarchive = !stagedTab && !!(archivedTab ? onUnarchive : onArchive)
+  const canStage = !!onStage && tab === 'active'
+  const canRelease = !!onRelease && stagedTab
+  const moveLabel = stagedTab ? 'Release' : 'Stage'
+  const moveIcon = stagedTab ? (
+    <PublishIcon fontSize="small" />
+  ) : (
+    <PendingActionsIcon fontSize="small" />
+  )
   const archiveBtnEnabled = canArchive || canUnarchive
   const archiveBtnLabel = archivedTab ? 'Unarchive' : 'Archive'
   const archiveBtnIcon = archivedTab ? (
@@ -586,6 +648,26 @@ export default function EditorFileListPanel({
               </span>
             </Tooltip>
           )}
+          {(canStage || canRelease) && (
+            <Tooltip
+              title={
+                selectionCount === 0
+                  ? `Select item(s) to ${moveLabel.toLowerCase()}`
+                  : `${moveLabel} ${selectionCount} item${selectionCount === 1 ? '' : 's'}`
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={selectionCount === 0}
+                  onClick={() => runAction(stagedTab ? 'release' : 'stage')}
+                  aria-label={moveLabel}
+                >
+                  {moveIcon}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
           {!!onDuplicate && (
             <Tooltip
               title={
@@ -620,12 +702,16 @@ export default function EditorFileListPanel({
               </span>
             </Tooltip>
           ))}
-          <Tooltip title={newMenuItems?.length ? 'Create…' : newTooltip}>
+          <Tooltip title={newMenuItems?.length && !newStagedHere ? 'Create…' : newTooltip}>
             <span>
               <IconButton
                 size="small"
                 onClick={(e) =>
-                  newMenuItems?.length ? setNewMenuAnchor(e.currentTarget) : onNew?.()
+                  newStagedHere
+                    ? onNewStaged()
+                    : newMenuItems?.length
+                      ? setNewMenuAnchor(e.currentTarget)
+                      : onNew?.()
                 }
                 aria-label={newTooltip}
               >
@@ -659,14 +745,23 @@ export default function EditorFileListPanel({
       </Menu>
 
       {/* Row 3 — Active / Archived tabs */}
+      {/* Each tab's name sits above its count. Three tabs share the panel's
+          240px when a type has staged files, and MUI's 90px minimum then puts
+          the last one past the edge; a count on the same line widens it again
+          (measured in e2e/staging.spec.js). The accessible name keeps the
+          one-line form. */}
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
         variant="fullWidth"
-        sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0 } }}
+        sx={{
+          minHeight: 44,
+          '& .MuiTab-root': { minHeight: 44, minWidth: 0, py: 0.5, px: 0.25, lineHeight: 1.2 }
+        }}
       >
-        <Tab value="active" label={`Active (${files.length})`} />
-        <Tab value="archived" label={`Archived (${(archivedFiles || []).length})`} />
+        <Tab value="active" {...tabLabel('Active', files.length)} />
+        <Tab value="archived" {...tabLabel('Archived', (archivedFiles || []).length)} />
+        {showStagedTab && <Tab value="staged" {...tabLabel('Staged', stagedCount)} />}
       </Tabs>
 
       {/* Row 4 — filter input */}
@@ -710,9 +805,11 @@ export default function EditorFileListPanel({
 
         {listState === 'empty' && (
           <Typography variant="body2" sx={{ color: 'text.secondary', p: 2 }}>
-            {archivedTab
-              ? `No archived ${noun}.`
-              : `No ${noun} found. Check that a library is set in Settings.`}
+            {stagedTab
+              ? `No staged ${noun}. Stage a file from Active, or use + to create one here.`
+              : archivedTab
+                ? `No archived ${noun}.`
+                : `No ${noun} found. Check that a library is set in Settings.`}
           </Typography>
         )}
 
@@ -751,6 +848,16 @@ export default function EditorFileListPanel({
           >
             <ListItemIcon>{archiveBtnIcon}</ListItemIcon>
             {archiveBtnLabel}
+            {selectionCount > 1 ? ` (${selectionCount})` : ''}
+          </MenuItem>
+        )}
+        {(canStage || canRelease) && (
+          <MenuItem
+            disabled={selectionCount === 0}
+            onClick={() => runAction(stagedTab ? 'release' : 'stage')}
+          >
+            <ListItemIcon>{moveIcon}</ListItemIcon>
+            {moveLabel}
             {selectionCount > 1 ? ` (${selectionCount})` : ''}
           </MenuItem>
         )}
@@ -800,7 +907,7 @@ export default function EditorFileListPanel({
             >
               {pendingDelete.slice(0, 20).map((f) => (
                 <Typography key={f.path} variant="body2" sx={{ fontFamily: 'monospace' }} noWrap>
-                  {displayNameFor(f, namesByFilename)}
+                  {displayNameFor(f, f.staged ? stagedNamesByFilename : namesByFilename)}
                 </Typography>
               ))}
               {pendingDelete.length > 20 && (

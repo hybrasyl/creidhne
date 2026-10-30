@@ -52,10 +52,19 @@ first section written to the rules above.
 - **The element table editor lists each problem that makes the server refuse the table.** For example, two elements with the same key or Id, no default element, a retail Id above 9, or a key such as `Current` that is reserved for a selector. A save still writes the file.
 - **Reports → Duplicate keys lists the files that have the same key.** When two active files have the same key, the server loads one of them and does not tell you. The list shows each key, its type and its files, and marks keys that differ only in capitals, which the server can treat as one key or as two. **Open** goes to the file in its editor.
 - **An editor names the other files that have the same key.** A notice above the editor lists them.
+- **Staging keeps world files that are not ready to release.** A staged file is in `.staging/<type>/`, next to `xml/`, in the world folder. The server does not load it, the world index does not include it, and the world repository ignores it. Each editor page shows the staged files in a **Staged** tab.
+- **New on the Staged tab starts an entity in staging.** Its first save writes it into `.staging/<type>/`, and its editor offers staged names from the start.
+- **Stage moves a live file into staging, and Release moves it back.** Both keep the folder that the file is in inside its type. Stage first names the live files that refer to the file, because the server cannot find a staged entity. Release refuses a file that has the name of a live file. When a released file names an entity that exists only in staging, Release offers to release that file too.
+- **An editor for a staged file offers staged names.** Its pickers offer the live names and the staged names, and mark each name that exists only in staging. Its name check compares with both. An editor for a live file offers live names only.
+- **A live file that names an entity that exists only in staging shows a warning.** For example, a released castable that applies a status that is still staged. The warning names each such entity.
+- **A staged file names the live file that has its key.** Release refuses the staged file until you rename it or archive the live file.
 - **Settings → Appearance → Theme gallery** shows each type of control in the theme that you use, on the page, on a card and on a dark panel. Under each control, the gallery shows its measured contrast. Use it to examine a theme. **Back** returns to Settings.
 
 ### Changed
 
+- **A rename also updates the staged files that use the name.** The list of files to update shows them under **In staging**.
+- **Save in a staged file renames the file in place.** Staging has no archive, so Save does not keep the old file.
+- **Each tab in a file list shows its name above its count,** so three tabs fit the list.
 - **The nav bar has a More button for the tools and Settings.** Formulas, Damage Calculator, Lua Helpers, Dialog Builder, Reports, Constants and Settings are in its menu. The editors stay as buttons. Before, a window at its minimum width did not show the last buttons of the bar. When the open page is in the menu, the More button has the current-page mark.
 - **Castable Elements and spawn Offensive and Defensive Elements take a list.** Each selector is one chip, so a spawn with `Earth Wind Fire Water` shows four chips.
 - **An empty element field means "not set".** Creidhne no longer writes `Elements="None"` into a castable that had no Elements attribute. The server then uses the default element. In the castable balancing export, such a castable shows an empty Elements cell, not `None`.

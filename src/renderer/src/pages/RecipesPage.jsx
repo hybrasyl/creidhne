@@ -14,8 +14,10 @@ import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
 import SharedKeyNotice from '../components/shared/SharedKeyNotice'
+import StagedReferenceNotice from '../components/shared/StagedReferenceNotice'
+import StagingScope from '../components/shared/StagingScope'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir } from '../utils/fileTree'
 
 const RECIPES_SUBDIR = 'recipes'
 const IGNORE_SUBDIR = 'recipes/.ignore'
@@ -34,6 +36,8 @@ function RecipesPage() {
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.recipesNamesByFilename
   const [selectedFile, setSelectedFile] = useState(null)
+  // A new entity started from the Staged tab saves into staging (HTOO-453).
+  const [newStaged, setNewStaged] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState(null)
   const [loadingRecipe, setLoadingRecipe] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -50,7 +54,15 @@ function RecipesPage() {
     handleDialogCancel
   } = useUnsavedGuard('Recipe')
 
-  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+  const {
+    files,
+    archivedFiles,
+    stagedFiles,
+    stagedDir,
+    stagedNamesByFilename,
+    loading,
+    loadFiles
+  } = useSectionFiles(
     activeLibrary,
     RECIPES_SUBDIR,
     useCallback(() => {
@@ -63,19 +75,21 @@ function RecipesPage() {
   // archived ones included — a folder emptied by archiving everything in it is
   // still somewhere you might file a recipe.
   const folderChoices = useMemo(
-    () => folderOptions([...files, ...archivedFiles]),
-    [files, archivedFiles]
+    () => folderOptions([...files, ...archivedFiles, ...stagedFiles]),
+    [files, archivedFiles, stagedFiles]
   )
   // treePath, not rel: an archived file's picker shows where it sits within the
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
   const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
 
-  const doNew = () => {
+  const doNew = (staged = false) => {
+    setNewStaged(staged)
     setSelectedFile(null)
     setLoadError(null)
     setEditingRecipe({ ...DEFAULT_RECIPE })
   }
-  const handleNew = () => guard(doNew)
+  const handleNew = () => guard(() => doNew(false))
+  const handleNewStaged = () => guard(() => doNew(true))
 
   const doSelect = async (file) => {
     setSelectedFile(file)
@@ -98,23 +112,29 @@ function RecipesPage() {
 
   const handleSave = async (data, fileName, folder, mode = 'archive') => {
     try {
-      const wasArchived = selectedFile?.archived === true
-      const { newPath, newRel, isRename } = resolveSavePath(
+      // Staging keeps no archive, so a staged Save renames in place (HTOO-453).
+      const wasStaged = selectedFile?.staged === true
+      const {
+        newPath,
+        newRel,
+        isRename,
+        file: savedFile
+      } = resolveSavePath(
         activeLibrary,
         RECIPES_SUBDIR,
         selectedFile,
         fileName,
-        folder
+        folder,
+        newStaged ? stagedDir : undefined
       )
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
-      const nextFile = () =>
-        toSectionFile(`${activeLibrary}/${RECIPES_SUBDIR}`, newRel, wasArchived)
+      const nextFile = () => savedFile
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -124,7 +144,7 @@ function RecipesPage() {
       await window.electronAPI.saveRecipe(newPath, data)
       setEditingRecipe(data) // #6: sync editor to saved data before any selectedFile change
 
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         setSelectedFile(nextFile())
         setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
       } else if (isRename) {
@@ -160,7 +180,11 @@ function RecipesPage() {
     handleBulkArchive,
     handleBulkUnarchive,
     handleBulkDelete,
-    handleDuplicate
+    handleDuplicate,
+    handleStage,
+    handleRelease,
+    handleBulkStage,
+    handleBulkRelease
   } = useBulkFileActions({
     activeLibrary,
     subdir: RECIPES_SUBDIR,
@@ -195,6 +219,11 @@ function RecipesPage() {
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}
+        stagedFiles={stagedFiles}
+        stagedNamesByFilename={stagedNamesByFilename}
+        onStage={handleBulkStage}
+        onRelease={handleBulkRelease}
+        onNewStaged={handleNewStaged}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -210,6 +239,7 @@ function RecipesPage() {
         }}
       >
         <SharedKeyNotice type={RECIPES_SUBDIR} file={selectedFile} />
+        <StagedReferenceNotice type={RECIPES_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load recipe:</strong> {loadError}
@@ -221,19 +251,26 @@ function RecipesPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingRecipe ? (
-          <RecipeEditor
-            recipe={editingRecipe}
-            initialFileName={selectedFile?.name ?? null}
-            initialFolder={initialFolder}
-            folderOptions={folderChoices}
-            isArchived={selectedFile?.archived === true}
-            isExisting={!!selectedFile}
-            onSave={handleSave}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-          />
+          <StagingScope
+            file={selectedFile}
+            newStaged={newStaged}
+            onStage={handleStage}
+            onRelease={handleRelease}
+          >
+            <RecipeEditor
+              recipe={editingRecipe}
+              initialFileName={selectedFile?.name ?? null}
+              initialFolder={initialFolder}
+              folderOptions={folderChoices}
+              isArchived={selectedFile?.archived === true}
+              isExisting={!!selectedFile}
+              onSave={handleSave}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+            />
+          </StagingScope>
         ) : (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}

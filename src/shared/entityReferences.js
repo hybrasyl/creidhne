@@ -228,3 +228,20 @@ export function sitesIn(type, sourceType) {
   if (!sites) throw new Error(`entityReferences: no reference table for type "${type}"`)
   return sites.filter((s) => s.type === sourceType)
 }
+
+/**
+ * The table read the other way: every site in a `sourceType` file, with the
+ * type each one names. A file of that type can name only these. Staging uses it
+ * to find the names a file refers to (HTOO-453).
+ *
+ * @returns {{ targetType: string, site: ReferenceSite }[]}
+ */
+export function outboundSites(sourceType) {
+  const out = []
+  for (const [targetType, sites] of Object.entries(REFERENCE_SITES)) {
+    for (const site of sites) {
+      if (site.type === sourceType) out.push({ targetType, site })
+    }
+  }
+  return out
+}

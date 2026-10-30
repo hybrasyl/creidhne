@@ -39,8 +39,23 @@ export function toSectionFile(dir, rel, archived = false) {
     treePath,
     name: segs[segs.length - 1],
     path: `${dir}/${rel}`,
-    archived
+    dir,
+    archived,
+    staged: false
   }
+}
+
+/**
+ * Shape one staged file (HTOO-453) for the panel. `dir` is
+ * `<world>/.staging/<type>`, from `staging:list`, and `rel` is the path inside
+ * it — the key of the staged index's `namesByFilename`, and the path the file
+ * takes in `xml/<type>/` when it is released.
+ *
+ * `rel` is never looked up in the live index. A staged rel and a live rel can be
+ * the same string, so every lookup goes through `staged` first.
+ */
+export function toStagedFile(dir, rel) {
+  return { ...toSectionFile(dir, rel, false), staged: true }
 }
 
 /**
@@ -144,18 +159,31 @@ export function normalizeFolder(input) {
  * source of the subfolder on any later rename — and `isRename`, true when the
  * save lands anywhere other than where the open file is, whether that's a new
  * name, a new folder, or both.
+ *
+ * Also returns `file`, the list entry for where the save lands, so a page
+ * selects the file it wrote. A staged file (HTOO-453) stays in staging: the
+ * path is built under its own `dir`, never under `<library>/<type>`, so a save
+ * cannot release it by accident.
+ *
+ * `newStagedDir` is the staging folder of the type, for a NEW file that the
+ * user started from the Staged tab. It is ignored when a file is open: an open
+ * file stays where it is.
  */
-export function resolveSavePath(library, subdir, selectedFile, fileName, folder) {
+export function resolveSavePath(library, subdir, selectedFile, fileName, folder, newStagedDir) {
+  const staged = selectedFile ? selectedFile.staged === true : !!newStagedDir
+  const archived = selectedFile?.archived === true
   const subDir =
     folder === undefined
       ? relDir(selectedFile?.rel ?? '')
-      : joinRel(selectedFile?.archived ? '.ignore' : '', normalizeFolder(folder))
+      : joinRel(archived ? '.ignore' : '', normalizeFolder(folder))
   const newRel = joinRel(subDir, fileName)
   const isRename = !!selectedFile && newRel !== selectedFile.rel
+  const dir = staged ? (selectedFile?.dir ?? newStagedDir) : `${library}/${subdir}`
   // Saving to the same place writes back to the exact path we were handed,
   // rather than a rebuilt one that is equivalent but not string-identical.
-  const newPath = selectedFile && !isRename ? selectedFile.path : `${library}/${subdir}/${newRel}`
-  return { newPath, newRel, isRename }
+  const newPath = selectedFile && !isRename ? selectedFile.path : `${dir}/${newRel}`
+  const file = staged ? toStagedFile(dir, newRel) : toSectionFile(dir, newRel, archived)
+  return { newPath, newRel, isRename, file }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { useCallback } from 'react'
+import { createContext, useCallback, useContext } from 'react'
 
 // App-wide state store (replaces the former Recoil atom layer). Each former atom
 // is a field here. Consumers use the useStoreValue / useStoreState /
@@ -20,6 +20,13 @@ export const useAppStore = create((set) => ({
   creaturePickerMode: 'vanilla',
   libraries: [],
   libraryIndex: {},
+  // The staged index (HTOO-453): `{ [type]: { names, namesByFilename,
+  // duplicateNames } }` for the files in <world>/.staging. Creidhne's alone —
+  // built in the worker, never saved. See src/shared/staging.js.
+  stagedIndex: {},
+  // The one confirm dialog, mounted in App: { title, message, items, choices,
+  // resolve } or null. See hooks/useConfirm.js.
+  confirmDialog: null,
   dirtyEditor: null,
   referencePanelOpen: false,
   referenceSelection: null,
@@ -51,6 +58,8 @@ export const soundPickerModeState = { key: 'soundPickerMode' }
 export const creaturePickerModeState = { key: 'creaturePickerMode' }
 export const librariesState = { key: 'libraries' }
 export const libraryIndexState = { key: 'libraryIndex' }
+export const stagedIndexState = { key: 'stagedIndex' }
+export const confirmDialogState = { key: 'confirmDialog' }
 export const dirtyEditorState = { key: 'dirtyEditor' }
 export const referencePanelOpenState = { key: 'referencePanelOpen' }
 export const referenceSelectionState = { key: 'referenceSelection' }
@@ -69,9 +78,20 @@ export const reportIssueOpenState = { key: 'reportIssueOpen' }
 
 // ── Hooks mirroring the three Recoil shapes ───────────────────────────────────
 
+/**
+ * The index a subtree sees in place of the live one, or null for the live one.
+ * A staged editor sees the live names plus the staged names (HTOO-453), and
+ * `components/shared/StagingScope.jsx` is the only provider. It is read here,
+ * in the one accessor, so the fifty-odd components that read the index from
+ * the store each get the right one without a change.
+ */
+export const IndexViewContext = createContext(null)
+
 /** Read a field (subscribes to just that field). Replaces useRecoilValue. */
 export function useStoreValue(atom) {
-  return useAppStore((s) => s[atom.key])
+  const value = useAppStore((s) => s[atom.key])
+  const view = useContext(IndexViewContext)
+  return atom === libraryIndexState && view ? view : value
 }
 
 /** Stable setter for a field (accepts a value or updater fn). Replaces useSetRecoilState. */

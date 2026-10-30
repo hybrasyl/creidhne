@@ -113,6 +113,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('refs:scan', libraryPath, type, oldName),
   applyEntityRename: (libraryPath, type, oldName, newName) =>
     ipcRenderer.invoke('refs:apply', libraryPath, type, oldName, newName),
+  // Staging (HTOO-453): `<world>/.staging/<type>/`, which the server never loads.
+  listStaged: (libraryPath, type) => ipcRenderer.invoke('staging:list', libraryPath, type),
+  buildStagedIndex: (libraryPath, types) => ipcRenderer.invoke('staging:index', libraryPath, types),
+  stageFiles: (libraryPath, type, srcs) =>
+    ipcRenderer.invoke('staging:stage', libraryPath, type, srcs),
+  releaseFiles: (libraryPath, type, srcs) =>
+    ipcRenderer.invoke('staging:release', libraryPath, type, srcs),
+  namesInFiles: (paths, type) => ipcRenderer.invoke('refs:namesIn', paths, type),
   addConstantValue: (libraryPath, type, value) =>
     ipcRenderer.invoke('constants:addValue', libraryPath, type, value),
   loadXsdTypes: () => ipcRenderer.invoke('constants:loadXsdTypes'),

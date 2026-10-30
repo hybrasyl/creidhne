@@ -14,10 +14,12 @@ import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
 import SharedKeyNotice from '../components/shared/SharedKeyNotice'
+import StagedReferenceNotice from '../components/shared/StagedReferenceNotice'
+import StagingScope from '../components/shared/StagingScope'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
-import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir } from '../utils/fileTree'
 
 const SUBDIR = 'statuses'
 const IGNORE_SUBDIR = 'statuses/.ignore'
@@ -57,6 +59,8 @@ function StatusesPage() {
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.statusesNamesByFilename
   const [selectedFile, setSelectedFile] = useState(null)
+  // A new entity started from the Staged tab saves into staging (HTOO-453).
+  const [newStaged, setNewStaged] = useState(false)
   const [editingStatus, setEditingStatus] = useState(null)
   const [loadingStatus, setLoadingStatus] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -73,7 +77,15 @@ function StatusesPage() {
     handleDialogCancel
   } = useUnsavedGuard('Status')
 
-  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
+  const {
+    files,
+    archivedFiles,
+    stagedFiles,
+    stagedDir,
+    stagedNamesByFilename,
+    loading,
+    loadFiles
+  } = useSectionFiles(
     activeLibrary,
     SUBDIR,
     useCallback(() => {
@@ -86,14 +98,15 @@ function StatusesPage() {
   // archived ones included — a folder emptied by archiving everything in it is
   // still somewhere you might file a status.
   const folderChoices = useMemo(
-    () => folderOptions([...files, ...archivedFiles]),
-    [files, archivedFiles]
+    () => folderOptions([...files, ...archivedFiles, ...stagedFiles]),
+    [files, archivedFiles, stagedFiles]
   )
   // treePath, not rel: an archived file's picker shows where it sits within the
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
   const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
 
-  const doNew = () => {
+  const doNew = (staged = false) => {
+    setNewStaged(staged)
     setSelectedFile(null)
     setLoadError(null)
     setEditingStatus({
@@ -104,7 +117,8 @@ function StatusesPage() {
       onExpire: makeDefaultEffectBlock()
     })
   }
-  const handleNew = () => guard(doNew)
+  const handleNew = () => guard(() => doNew(false))
+  const handleNewStaged = () => guard(() => doNew(true))
 
   const doSelect = async (file) => {
     setSelectedFile(file)
@@ -139,25 +153,33 @@ function StatusesPage() {
       // Before anything is written: the count the user is shown describes
       // the files as they stand, and Cancel is therefore truthful.
       const rename = await confirmRename(editingStatus?.name, data.name, {
-        isExisting: !!selectedFile
+        isExisting: !!selectedFile,
+        staged: selectedFile?.staged === true
       })
       if (rename.cancelled) return
-      const wasArchived = selectedFile?.archived === true
-      const { newPath, newRel, isRename } = resolveSavePath(
+      // Staging keeps no archive, so a staged Save renames in place (HTOO-453).
+      const wasStaged = selectedFile?.staged === true
+      const {
+        newPath,
+        newRel,
+        isRename,
+        file: savedFile
+      } = resolveSavePath(
         activeLibrary,
         SUBDIR,
         selectedFile,
         fileName,
-        folder
+        folder,
+        newStaged ? stagedDir : undefined
       )
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
-      const nextFile = () => toSectionFile(`${activeLibrary}/${SUBDIR}`, newRel, wasArchived)
+      const nextFile = () => savedFile
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -168,7 +190,7 @@ function StatusesPage() {
       setEditingStatus(data)
       markClean()
 
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         setSelectedFile(nextFile())
         setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
       } else if (isRename) {
@@ -206,7 +228,11 @@ function StatusesPage() {
     handleBulkArchive,
     handleBulkUnarchive,
     handleBulkDelete,
-    handleDuplicate
+    handleDuplicate,
+    handleStage,
+    handleRelease,
+    handleBulkStage,
+    handleBulkRelease
   } = useBulkFileActions({
     activeLibrary,
     subdir: SUBDIR,
@@ -241,6 +267,11 @@ function StatusesPage() {
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}
+        stagedFiles={stagedFiles}
+        stagedNamesByFilename={stagedNamesByFilename}
+        onStage={handleBulkStage}
+        onRelease={handleBulkRelease}
+        onNewStaged={handleNewStaged}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -256,6 +287,7 @@ function StatusesPage() {
         }}
       >
         <SharedKeyNotice type={SUBDIR} file={selectedFile} />
+        <StagedReferenceNotice type={SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load status:</strong> {loadError}
@@ -267,19 +299,26 @@ function StatusesPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingStatus ? (
-          <StatusEditor
-            status={editingStatus}
-            initialFileName={selectedFile?.name ?? null}
-            initialFolder={initialFolder}
-            folderOptions={folderChoices}
-            isArchived={selectedFile?.archived === true}
-            isExisting={!!selectedFile}
-            onSave={handleSave}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-          />
+          <StagingScope
+            file={selectedFile}
+            newStaged={newStaged}
+            onStage={handleStage}
+            onRelease={handleRelease}
+          >
+            <StatusEditor
+              status={editingStatus}
+              initialFileName={selectedFile?.name ?? null}
+              initialFolder={initialFolder}
+              folderOptions={folderChoices}
+              isArchived={selectedFile?.archived === true}
+              isExisting={!!selectedFile}
+              onSave={handleSave}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+            />
+          </StagingScope>
         ) : (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}

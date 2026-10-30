@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   stripXml,
   toSectionFile,
+  toStagedFile,
   displayNameFor,
   matchesFilter,
   filterFiles,
@@ -34,7 +35,9 @@ describe('toSectionFile', () => {
       treePath: 'blast.xml',
       name: 'blast.xml',
       path: `${DIR}/blast.xml`,
-      archived: false
+      dir: DIR,
+      archived: false,
+      staged: false
     })
   })
 
@@ -327,11 +330,13 @@ describe('normalizeFolder', () => {
 // lift a file out of the folder it was filed under.
 describe('resolveSavePath', () => {
   const LIB = 'E:/world/xml'
+  // The path fields alone; `file` has its own tests below.
+  const paths = ({ file: _file, ...rest }) => rest
 
   // ── No folder argument: the pre-picker behaviour, unchanged ──
 
   it('puts a new file at the type root', () => {
-    expect(resolveSavePath(LIB, 'castables', null, 'new.xml')).toEqual({
+    expect(paths(resolveSavePath(LIB, 'castables', null, 'new.xml'))).toEqual({
       newPath: `${LIB}/castables/new.xml`,
       newRel: 'new.xml',
       isRename: false
@@ -340,7 +345,7 @@ describe('resolveSavePath', () => {
 
   it('keeps a renamed file in its subfolder', () => {
     const sel = f('universal/old.xml')
-    expect(resolveSavePath(LIB, 'castables', sel, 'new.xml')).toEqual({
+    expect(paths(resolveSavePath(LIB, 'castables', sel, 'new.xml'))).toEqual({
       newPath: `${LIB}/castables/universal/new.xml`,
       newRel: 'universal/new.xml',
       isRename: true
@@ -349,7 +354,7 @@ describe('resolveSavePath', () => {
 
   it('renames a type-root file without inventing a folder', () => {
     const sel = f('old.xml')
-    expect(resolveSavePath(LIB, 'castables', sel, 'new.xml')).toEqual({
+    expect(paths(resolveSavePath(LIB, 'castables', sel, 'new.xml'))).toEqual({
       newPath: `${LIB}/castables/new.xml`,
       newRel: 'new.xml',
       isRename: true
@@ -372,7 +377,7 @@ describe('resolveSavePath', () => {
   // ── With the picker's folder ──
 
   it('files a new file where the picker says', () => {
-    expect(resolveSavePath(LIB, 'castables', null, 'new.xml', 'universal')).toEqual({
+    expect(paths(resolveSavePath(LIB, 'castables', null, 'new.xml', 'universal'))).toEqual({
       newPath: `${LIB}/castables/universal/new.xml`,
       newRel: 'universal/new.xml',
       isRename: false
@@ -381,7 +386,7 @@ describe('resolveSavePath', () => {
 
   it('moves a file to another folder without renaming it', () => {
     const sel = f('universal/x.xml')
-    expect(resolveSavePath(LIB, 'castables', sel, 'x.xml', 'deep')).toEqual({
+    expect(paths(resolveSavePath(LIB, 'castables', sel, 'x.xml', 'deep'))).toEqual({
       newPath: `${LIB}/castables/deep/x.xml`,
       newRel: 'deep/x.xml',
       isRename: true
@@ -429,5 +434,76 @@ describe('resolveSavePath', () => {
     expect(r.newRel).toBe('.ignore/deep/x.xml')
     expect(r.newPath).toBe(`${LIB}/castables/.ignore/deep/x.xml`)
     expect(r.isRename).toBe(true)
+  })
+
+  // The list entry for where the save lands, so the page selects what it wrote.
+  it('returns the file the save lands in', () => {
+    const sel = f('universal/old.xml')
+    const { file } = resolveSavePath(LIB, 'castables', sel, 'new.xml')
+    expect(file).toEqual(toSectionFile(`${LIB}/castables`, 'universal/new.xml', false))
+  })
+
+  it('returns an archived file for an archived save', () => {
+    const sel = a('.ignore/universal/x.xml')
+    const { file } = resolveSavePath(LIB, 'castables', sel, 'y.xml', 'universal')
+    expect(file.archived).toBe(true)
+    expect(file.rel).toBe('.ignore/universal/y.xml')
+  })
+
+  // HTOO-453: a staged file stays in staging. Building the path under
+  // <library>/<type> would release it on its first rename.
+  describe('a staged file', () => {
+    const STAGED = 'E:/world/.staging/castables'
+    const s = (rel) => toStagedFile(STAGED, rel)
+
+    it('writes back to its own path when nothing changes', () => {
+      const sel = s('animist/x.xml')
+      const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'animist')
+      expect(r.newPath).toBe(sel.path)
+      expect(r.isRename).toBe(false)
+      expect(r.file).toEqual(sel)
+    })
+
+    it('renames inside staging, not into the live tree', () => {
+      const sel = s('animist/x.xml')
+      const r = resolveSavePath(LIB, 'castables', sel, 'y.xml', 'animist')
+      expect(r.newPath).toBe(`${STAGED}/animist/y.xml`)
+      expect(r.newRel).toBe('animist/y.xml')
+      expect(r.isRename).toBe(true)
+      expect(r.file).toEqual(s('animist/y.xml'))
+    })
+
+    it('puts a new file started from the Staged tab into staging', () => {
+      const r = resolveSavePath(LIB, 'castables', null, 'new.xml', 'animist', STAGED)
+      expect(r.newPath).toBe(`${STAGED}/animist/new.xml`)
+      expect(r.isRename).toBe(false)
+      expect(r.file).toEqual(s('animist/new.xml'))
+    })
+
+    it('ignores the staging folder when a live file is open', () => {
+      const r = resolveSavePath(LIB, 'castables', f('x.xml'), 'y.xml', '', STAGED)
+      expect(r.newPath).toBe(`${LIB}/castables/y.xml`)
+      expect(r.file.staged).toBe(false)
+    })
+
+    it('moves to another folder inside staging', () => {
+      const r = resolveSavePath(LIB, 'castables', s('animist/x.xml'), 'x.xml', 'wizard')
+      expect(r.newPath).toBe(`${STAGED}/wizard/x.xml`)
+      expect(r.file.staged).toBe(true)
+    })
+  })
+})
+
+describe('toStagedFile', () => {
+  it('is a section file marked staged, under the staging dir', () => {
+    expect(toStagedFile('E:/world/.staging/castables', 'animist/x.xml')).toEqual({
+      rel: 'animist/x.xml',
+      treePath: 'animist/x.xml',
+      name: 'x.xml',
+      path: 'E:/world/.staging/castables/animist/x.xml',
+      dir: 'E:/world/.staging/castables',
+      archived: false,
+      staged: true
+    })
   })
 })

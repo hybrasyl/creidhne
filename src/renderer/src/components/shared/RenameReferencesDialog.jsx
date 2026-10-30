@@ -11,6 +11,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  ListSubheader,
   Typography
 } from '@mui/material'
 import { countLabel } from '@shared/renameRepair.js'
@@ -61,15 +62,32 @@ export default function RenameReferencesDialog({
             </DialogContentText>
 
             <List dense sx={{ maxHeight: 260, overflowY: 'auto', mt: 1 }}>
-              {files.map((f) => (
-                <ListItem key={`${f.sourceType}/${f.rel}`} disableGutters>
-                  <ListItemText
-                    primary={`${f.sourceType}/${f.rel}`}
-                    secondary={countLabel(f.count, 'reference')}
-                    slotProps={{ primary: { sx: { fontFamily: 'monospace', fontSize: 13 } } }}
-                  />
-                </ListItem>
-              ))}
+              {/* Live files, then staged ones under their own heading (HTOO-453).
+                  A staged file that kept the old name would show the fault
+                  only on the day it is released. */}
+              {[false, true].map((staged) => {
+                const group = files.filter((f) => !!f.staged === staged)
+                if (!group.length) return null
+                return [
+                  staged && (
+                    <ListSubheader key="staged-heading" disableGutters sx={{ lineHeight: 2 }}>
+                      In staging
+                    </ListSubheader>
+                  ),
+                  ...group.map((f) => (
+                    <ListItem
+                      key={`${staged ? 'staged:' : ''}${f.sourceType}/${f.rel}`}
+                      disableGutters
+                    >
+                      <ListItemText
+                        primary={`${staged ? '.staging/' : ''}${f.sourceType}/${f.rel}`}
+                        secondary={countLabel(f.count, 'reference')}
+                        slotProps={{ primary: { sx: { fontFamily: 'monospace', fontSize: 13 } } }}
+                      />
+                    </ListItem>
+                  ))
+                ]
+              })}
             </List>
 
             {unreadable.length > 0 && (

@@ -6,7 +6,7 @@ import {
   sitesIn,
   sourceTypesFor
 } from '../../shared/entityReferences.js'
-import { findReferences, rewriteReferences, scanPlan } from '../entityRefScan.js'
+import { findReferences, referencedNames, rewriteReferences, scanPlan } from '../entityRefScan.js'
 
 /**
  * HTOO-378, part one: the reference table and the scanner over it.
@@ -225,5 +225,46 @@ describe('rewriteReferences (HTOO-378)', () => {
     // Renaming Dockworker itself finds nothing here: its name is the root's
     // attribute, which a text row cannot match.
     expect(rewriteReferences(xml, [row], 'Dockworker', 'Stevedore').count).toBe(0)
+  })
+})
+
+// HTOO-453: the same table read the other way, for staging. A live file that
+// names a staged-only entity is reported from this, so it must agree with the
+// rename scan about what a reference is.
+describe('referencedNames', () => {
+  it('reads every name a file refers to, by the type it names', () => {
+    const xml = `<Castable>
+  <Name>Fireball</Name>
+  <Requirements><Requirement><Items><Item>Ember</Item></Items></Requirement></Requirements>
+  <Effects><Statuses><Add>Burning</Add><Add>Burning</Add><Remove>Frozen</Remove></Statuses></Effects>
+</Castable>`
+    const refs = referencedNames(xml, 'castables')
+    expect(refs.items).toEqual(['Ember'])
+    // Repeats removed, file order kept.
+    expect(refs.statuses).toEqual(['Burning', 'Frozen'])
+  })
+
+  it('keeps the unless rule: a category is not a status', () => {
+    const xml = `<Castable><Effects><Statuses><Add IsCategory="true">Fire</Add></Statuses></Effects></Castable>`
+    expect(referencedNames(xml, 'castables').statuses).toBeUndefined()
+  })
+
+  it('decodes a name, as the scan does', () => {
+    const xml = `<Npc><Roles><Vend><Items><Item Name="Crow &amp; Cask"/></Items></Vend></Roles></Npc>`
+    expect(referencedNames(xml, 'npcs').items).toEqual(['Crow & Cask'])
+  })
+
+  it('finds what findReferences finds, for every site', () => {
+    // One document per site, so the two readings of the table cannot drift.
+    for (const [target, sites] of Object.entries(REFERENCE_SITES)) {
+      for (const site of sites) {
+        const xml = site.attribute
+          ? `<Root><${site.element} ${site.attribute}="Probe"/></Root>`
+          : `<Root><${site.element}>Probe</${site.element}></Root>`
+        const found = findReferences(xml, [site], 'Probe').length > 0
+        const read = (referencedNames(xml, site.type)[target] || []).includes('Probe')
+        expect(read, `${site.type} → ${target} via <${site.element}>`).toBe(found)
+      }
+    }
   })
 })

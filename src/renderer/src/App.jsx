@@ -21,7 +21,8 @@ import {
   npcPortraitPickerModeState,
   soundPickerModeState,
   creaturePickerModeState,
-  reportIssueOpenState
+  reportIssueOpenState,
+  stagedIndexState
 } from './store/appStore'
 import {
   hybrasylTheme,
@@ -49,6 +50,7 @@ import PageRenderer from './components/PageRenderer'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog'
 import UpdateNotice from './components/UpdateNotice'
 import ReportIssueDialog from './components/ReportIssueDialog'
+import ConfirmDialog from './components/ConfirmDialog'
 import ReferencePanel from './components/reference/ReferencePanel'
 import { stopSound } from './data/soundData'
 
@@ -100,6 +102,7 @@ function App() {
   const [creaturePickerMode, setCreaturePickerMode] = useStoreState(creaturePickerModeState)
   const [fileListViewMode, setFileListViewMode] = useStoreState(fileListViewModeState)
   const [reportIssueOpen, setReportIssueOpen] = useStoreState(reportIssueOpenState)
+  const setStagedIndex = useSetStoreValue(stagedIndexState)
   const [pendingNav, setPendingNav] = useState(null)
   const [navDialogOpen, setNavDialogOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
@@ -190,6 +193,25 @@ function App() {
       cancelled = true
     }
   }, [activeLibrary, hydrateLibraryIndex])
+
+  // The staged index (HTOO-453), every type at once, when the library changes.
+  // Pickers in a staged editor offer staged names of other types, so a type's
+  // staged names are needed before its own page has been opened. Each page then
+  // rebuilds its own type after a change (useSectionFiles).
+  useEffect(() => {
+    let cancelled = false
+    setStagedIndex({})
+    if (!activeLibrary) return
+    window.electronAPI
+      .buildStagedIndex(activeLibrary)
+      .then((index) => {
+        if (!cancelled) setStagedIndex(index || {})
+      })
+      .catch((err) => console.error('Failed to build the staged index:', err))
+    return () => {
+      cancelled = true
+    }
+  }, [activeLibrary, setStagedIndex])
 
   // Save settings whenever theme or libraries change. Skip until fetchSettings
   // has populated state, otherwise we'd overwrite the on-disk settings with
@@ -362,6 +384,7 @@ function App() {
       />
       <UpdateNotice />
       <ReportIssueDialog open={reportIssueOpen} onClose={() => setReportIssueOpen(false)} />
+      <ConfirmDialog />
     </ThemeProvider>
   )
 }

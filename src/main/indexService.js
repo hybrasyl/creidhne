@@ -52,5 +52,11 @@ export async function buildSectionInWorker(libraryPath, type) {
   return runWorker('buildSection', { libraryPath, type })
 }
 
+// The staged index for `types` (HTOO-453): `{ [type]: { names,
+// namesByFilename, duplicateNames } }`. Built, never saved.
+export async function buildStagedInWorker(stagingRoot, types) {
+  return runWorker('buildStaged', { stagingRoot, types })
+}
+
 // Lightweight ops stay on main.
 export { loadIndex, getIndexStatus, deleteIndex }

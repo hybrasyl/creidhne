@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
-import { useStoreValue, libraryIndexState } from '../store/appStore'
+import {
+  useStoreValue,
+  useSetStoreValue,
+  libraryIndexState,
+  stagedIndexState
+} from '../store/appStore'
 import { shouldOfferRepair, repairSummary } from '@shared/renameRepair.js'
 
 /**
@@ -27,9 +32,19 @@ import { shouldOfferRepair, repairSummary } from '@shared/renameRepair.js'
  * `apply` is always callable, and does nothing when the user chose Skip or when
  * there was nothing to offer. That keeps the call site free of a second
  * condition to get wrong.
+ *
+ * ## Staging (HTOO-453)
+ *
+ * Main scans and repoints the staged files as well, and tags them `staged`.
+ * For a staged entity (`{ staged: true }`), the old name's claimants are
+ * counted over the live AND the staged files: a staged twin of a live entity
+ * has the live entity's name, and the files that use that name mean the live
+ * one, so the repair is not offered.
  */
 export function useRenameReferences({ activeLibrary, type, setSnackbar, setLibraryIndex }) {
   const libraryIndex = useStoreValue(libraryIndexState)
+  const stagedIndex = useStoreValue(stagedIndexState)
+  const setStagedIndex = useSetStoreValue(stagedIndexState)
   const [state, setState] = useState(null)
   // The dialog's answer arrives from a click, so the promise resolver has to
   // outlive the render that created it.
@@ -42,10 +57,27 @@ export function useRenameReferences({ activeLibrary, type, setSnackbar, setLibra
   }, [])
 
   const confirmRename = useCallback(
-    async (oldName, newName, { isExisting = true } = {}) => {
+    async (oldName, newName, { isExisting = true, staged = false } = {}) => {
       const noop = { cancelled: false, apply: async () => {} }
 
-      const decision = shouldOfferRepair({ libraryIndex, type, oldName, newName, isExisting })
+      // Every file's name, not the deduplicated list, so two files with one
+      // name count as two claimants.
+      const index = staged
+        ? {
+            ...libraryIndex,
+            [type]: [
+              ...(libraryIndex?.[type] || []),
+              ...Object.values(stagedIndex?.[type]?.namesByFilename || {})
+            ]
+          }
+        : libraryIndex
+      const decision = shouldOfferRepair({
+        libraryIndex: index,
+        type,
+        oldName,
+        newName,
+        isExisting
+      })
       if (!decision.offer) {
         // Only the ambiguous case is worth saying out loud. The other three are
         // ordinary: a new entity, an unchanged name, a type nothing refers to.
@@ -104,10 +136,19 @@ export function useRenameReferences({ activeLibrary, type, setSnackbar, setLibra
             // cross-references the index serves (itemVendors, castableTrainers).
             // Leaving them unrefreshed makes the renderer stale for the session
             // in exactly the way that card was about.
-            const touched = [...new Set(applied.changed.map((f) => f.sourceType))]
+            const touched = [
+              ...new Set(applied.changed.filter((f) => !f.staged).map((f) => f.sourceType))
+            ]
             for (const sourceType of touched) {
               const section = await window.electronAPI.buildIndexSection(activeLibrary, sourceType)
               setLibraryIndex?.((prev) => ({ ...prev, ...section }))
+            }
+            const stagedTouched = [
+              ...new Set(applied.changed.filter((f) => f.staged).map((f) => f.sourceType))
+            ]
+            if (stagedTouched.length) {
+              const entry = await window.electronAPI.buildStagedIndex(activeLibrary, stagedTouched)
+              setStagedIndex((prev) => ({ ...prev, ...entry }))
             }
             setSnackbar?.({
               message: repairSummary(applied),
@@ -122,7 +163,7 @@ export function useRenameReferences({ activeLibrary, type, setSnackbar, setLibra
         }
       }
     },
-    [activeLibrary, libraryIndex, type, setSnackbar, setLibraryIndex]
+    [activeLibrary, libraryIndex, stagedIndex, type, setSnackbar, setLibraryIndex, setStagedIndex]
   )
 
   return {
