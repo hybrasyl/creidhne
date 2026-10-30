@@ -4,6 +4,7 @@
 // events back to the parent, and exits.
 
 import { buildIndex, buildSection, saveIndex, saveSection } from '@eriscorp/hybindex-ts'
+import { stagedEntry } from '../shared/staging.js'
 
 function reply(msg) {
   if (process.parentPort) process.parentPort.postMessage(msg)
@@ -23,6 +24,17 @@ async function handle(req) {
       const { fields } = await buildSection(req.libraryPath, req.type, { onProgress })
       await saveSection(req.libraryPath, req.type, fields)
       reply({ kind: 'result', data: fields })
+    } else if (req.op === 'buildStaged') {
+      // The staged index (HTOO-453): the package's own section scan, over the
+      // staging root, so a staged name follows the live index's rules. Never
+      // saved — it is Creidhne's alone, and no progress is sent, because the
+      // build pill describes the live index.
+      const data = {}
+      for (const type of req.types) {
+        const { fields } = await buildSection(req.stagingRoot, type)
+        data[type] = stagedEntry(type, fields)
+      }
+      reply({ kind: 'result', data })
     } else {
       reply({ kind: 'error', error: `Unknown op: ${req.op}` })
     }

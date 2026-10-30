@@ -35,6 +35,8 @@ import { appIdentity } from '../shared/appIdentity.js'
 import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { scanReferences, applyRename } from './entityRefRepair.js'
+import { stagingRoot, listStaged, stageFiles, releaseFiles, namesInFiles } from './staging.js'
+import { STAGED_TYPES } from '../shared/staging.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import { parseOrLog } from './schemaLog.js'
 import {
@@ -55,7 +57,11 @@ import {
   addCategoryBulkArgsSchema,
   spellbookApplyArgsSchema,
   refsScanArgsSchema,
-  refsApplyArgsSchema
+  refsApplyArgsSchema,
+  stagingListArgsSchema,
+  stagingIndexArgsSchema,
+  stagingMoveArgsSchema,
+  refsNamesInArgsSchema
 } from './schemas/index.js'
 import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
 import { installGlobalErrorHandlers } from './errorHandlers.js'
@@ -86,6 +92,7 @@ import { loadReference } from './referenceLoader.js'
 import {
   buildIndexInWorker,
   buildSectionInWorker,
+  buildStagedInWorker,
   loadIndex,
   getIndexStatus,
   deleteIndex
@@ -899,19 +906,84 @@ app.whenReady().then(async () => {
   // one message rewrites every file in the world that names an entity. A
   // rejection discovered part-way through that loop leaves the world in a state
   // neither name describes.
-  ipc.handle('refs:scan', (_, libraryPath, type, oldName) => {
+  //
+  // Both walk the staging root too (HTOO-453), and tag what they find there
+  // `staged: true`. A staged file often names a live entity; a rename that
+  // skipped it would leave the old name in the file, and the fault would show
+  // only on the day the file is released.
+  ipc.handle('refs:scan', async (_, libraryPath, type, oldName) => {
     const p = parseOrLog(schemaCtx, 'refs:scan', refsScanArgsSchema, { libraryPath, type, oldName })
-    return scanReferences(validatePath(p.libraryPath), p.type, p.oldName)
+    const lib = validatePath(p.libraryPath)
+    const live = await scanReferences(lib, p.type, p.oldName)
+    const staged = await scanReferences(stagingRoot(lib), p.type, p.oldName)
+    const tag = (list) => list.map((f) => ({ ...f, staged: true }))
+    return {
+      total: live.total + staged.total,
+      files: [...live.files, ...tag(staged.files)],
+      unreadable: [...live.unreadable, ...tag(staged.unreadable)]
+    }
   })
 
-  ipc.handle('refs:apply', (_, libraryPath, type, oldName, newName) => {
+  ipc.handle('refs:apply', async (_, libraryPath, type, oldName, newName) => {
     const p = parseOrLog(schemaCtx, 'refs:apply', refsApplyArgsSchema, {
       libraryPath,
       type,
       oldName,
       newName
     })
-    return applyRename(validatePath(p.libraryPath), p.type, p.oldName, p.newName)
+    const lib = validatePath(p.libraryPath)
+    const live = await applyRename(lib, p.type, p.oldName, p.newName)
+    const staged = await applyRename(stagingRoot(lib), p.type, p.oldName, p.newName)
+    const tag = (list) => list.map((f) => ({ ...f, staged: true }))
+    return {
+      total: live.total + staged.total,
+      changed: [...live.changed, ...tag(staged.changed)],
+      failed: [...live.failed, ...tag(staged.failed)]
+    }
+  })
+
+  // ── Staging (HTOO-453) ─────────────────────────────────────────────────────
+  // `<world>/.staging/<type>/`, beside `xml/`: the server and the index never
+  // see it. Main computes both ends of every move from the library and the
+  // type, so the renderer can move a file only to the other side of its type.
+  ipc.handle('staging:list', async (_, libraryPath, type) => {
+    const p = parseOrLog(schemaCtx, 'staging:list', stagingListArgsSchema, { libraryPath, type })
+    return listStaged(validatePath(p.libraryPath), p.type)
+  })
+
+  ipc.handle('staging:index', (_, libraryPath, types) => {
+    const p = parseOrLog(schemaCtx, 'staging:index', stagingIndexArgsSchema, {
+      libraryPath,
+      types
+    })
+    return buildStagedInWorker(stagingRoot(validatePath(p.libraryPath)), p.types ?? STAGED_TYPES)
+  })
+
+  ipc.handle('staging:stage', (_, libraryPath, type, srcs) => {
+    const p = parseOrLog(schemaCtx, 'staging:stage', stagingMoveArgsSchema, {
+      libraryPath,
+      type,
+      srcs
+    })
+    return stageFiles(validatePath(p.libraryPath), p.type, p.srcs.map(validatePath))
+  })
+
+  ipc.handle('staging:release', (_, libraryPath, type, srcs) => {
+    const p = parseOrLog(schemaCtx, 'staging:release', stagingMoveArgsSchema, {
+      libraryPath,
+      type,
+      srcs
+    })
+    return releaseFiles(validatePath(p.libraryPath), p.type, p.srcs.map(validatePath))
+  })
+
+  ipc.handle('refs:namesIn', async (_, paths, type) => {
+    const p = parseOrLog(schemaCtx, 'refs:namesIn', refsNamesInArgsSchema, { paths, type })
+    const validated = p.paths.map(validatePath)
+    const byPath = await namesInFiles(validated, p.type)
+    // Keyed by the path the renderer sent: `validatePath` normalizes, which on
+    // Windows turns every `/` into `\`, and the renderer looks up its own spelling.
+    return Object.fromEntries(p.paths.map((orig, i) => [orig, byPath[validated[i]]]))
   })
 
   ipc.handle('index:load', (_, libraryPath) => loadIndex(validatePath(libraryPath)))

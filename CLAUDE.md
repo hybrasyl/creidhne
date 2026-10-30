@@ -70,7 +70,8 @@ src/
                pickerStart.js (where every picker opens), portableSweep.js (removes the
                %TEMP% unpack folders a killed portable launch leaves),
                entityRefScan.js + entityRefRepair.js (rename repair —
-               find/rewrite, then the disk walk), schemas/ (Zod — incl. worldEntity.js for the
+               find/rewrite, then the disk walk), staging.js (the .staging folder: list,
+               stage, release, and the names a file refers to), schemas/ (Zod — incl. worldEntity.js for the
                16 xml:save payloads, ipcArgs.js for the argument-shaped ones and entityRefs.js
                for the two bulk-rewrite channels), and per-domain XML
                (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
@@ -83,7 +84,8 @@ src/
                validation, the old-format conversion), traitValidate.js and speciesValidate.js (the server's trait and species checks), duplicateKeys.js (the keys that more than one active file holds, from the index), elementOptions.js (the element choices
                from the active table, and the copy of hybindex's resolveElementTable), nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
-               renameRepair.js (when to offer a repair), externalUrl.js, scrub.js,
+               renameRepair.js (when to offer a repair), staging.js (the staged types, the
+               merged index view, the release checks), externalUrl.js, scrub.js,
                appIdentity.js, appMenu.js (the macOS menu's channels and Go pages; it imports
                nothing, because the preload bundles it), lootModel.js (the loot table model), …
                Nothing here may import `electron` — main runs it under node and the renderer
@@ -214,6 +216,10 @@ e2e/           Playwright specs against the built app
   Comparison is on the DECODED value, `.ignore/` is never scanned, and a repair refreshes the
   index sections it wrote — it edits OTHER types, which carry the cross-references.
 
+- **Staging is `<world>/.staging/<type>/`, beside `xml/`, never inside it** (HTOO-453). The server roots its load at `xml/` and skips only paths that contain `.ignore`, so a `.staging/` folder inside `xml/<type>/` WOULD load on a local server; beside `xml/`, neither the server nor hybindex sees it, and the world repo ignores it. Creidhne keeps its own staged index: the package's `buildSection` over the staging root, in the index worker (`buildStaged`), names only, never saved. That makes a staged name follow the live index's rules with no package change and no copy of the rule. App builds every type when the library opens, and `useSectionFiles.loadFiles` rebuilds its type after each change — HTOO-372's rule, for staging.
+
+  Four parts carry it, and each is load-bearing. `components/shared/StagingScope.jsx` wraps every page's editor: for a staged file it supplies the merged index through `IndexViewContext`, which `useStoreValue(libraryIndexState)` reads, so the fifty-odd components that read the index from the store offer staged names with no change; a theme default `renderOption` marks the staged-only options; and `EditorHeader` reads it to show Stage or Release. A live file's editor sees live names only, because a live file that names a staged entity cannot be resolved. `useBulkFileActions` stages and releases: Stage names the live referrers first, Release refuses a name that is already live (`releaseClashes`) and follows the staged-only references to offer releasing those files too. `refs:scan` and `refs:apply` walk the staging root as well and tag hits `staged`; a staged rename counts claimants over live AND staged files, so a staged twin of a live entity is never repaired. `StagedReferenceNotice` warns on a live file that names a staged-only entity. Staging has no archive: a staged Save renames in place, and `resolveSavePath` builds a staged file's path under its own `dir`, so a save cannot release it. `stagingSites.test.js` pins the five page sites, and `e2e/staging.spec.js` drives the rest through the built app.
+
 - **`src/shared/` is electron-free, and its `@shared` alias lives in TWO config files** —
   `electron.vite.config.mjs` (renderer) and `vitest.config.mjs`. Vitest does not read the
   electron-vite config, and the error from a missing alias names the import rather than the
@@ -249,10 +255,10 @@ e2e/           Playwright specs against the built app
   `scripts/buildPaths.test.mjs`, `icons.test.mjs`, `testCollection.test.mjs`,
   `remoteSession.test.js`'s call-site position, `src/main/__tests__/ipcSchemaCoverage.test.js`,
   `src/main/__tests__/splashLayout.test.js`, `pickerStart.test.js` (every picker has a
-  `defaultPath`), `replaceSites.test.js` (every `replace` takes a literal or a replacer function, because a replacement string expands `$&` from the value — HTOO-469), and ten under
+  `defaultPath`), `replaceSites.test.js` (every `replace` takes a literal or a replacer function, because a replacement string expands `$&` from the value — HTOO-469), and eleven under
   `src/renderer/src/__tests__/`: `pageSaveFlow.test.js`, `editorHeader.test.js`,
   `reportPresetSource.test.js`, `indexRefreshOnSave.test.js`, `duplicateNameSource.test.js`,
-  `renameRepairSites.test.js`, `renameFileSites.test.js`, `openFileSites.test.js` (each page takes a report's open request and shows the shared-key notice, HTOO-625), `macosSources.test.js` and
+  `renameRepairSites.test.js`, `renameFileSites.test.js`, `openFileSites.test.js` (each page takes a report's open request and shows the shared-key notice, HTOO-625), `stagingSites.test.js` (each page lists, scopes, notices and saves staged files, HTOO-453), `macosSources.test.js` and
   `rendererNodeGlobals.test.js` (no Node global in the sandboxed renderer). Its e2e twin is
   `e2e/nav-pages.spec.js`, which opens every page in the built app and fails on the error
   boundary; its page list is derived from `GO_PAGES`, so a new page is covered unasked.

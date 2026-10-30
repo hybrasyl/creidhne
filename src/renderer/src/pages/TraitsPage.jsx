@@ -14,10 +14,12 @@ import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
 import SharedKeyNotice from '../components/shared/SharedKeyNotice'
+import StagedReferenceNotice from '../components/shared/StagedReferenceNotice'
+import StagingScope from '../components/shared/StagingScope'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
-import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir } from '../utils/fileTree'
 
 const TRAITS_SUBDIR = 'traits'
 const IGNORE_SUBDIR = 'traits/.ignore'
@@ -56,21 +58,22 @@ function TraitsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Trait')
 
-  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
-    activeLibrary,
-    TRAITS_SUBDIR,
-    useCallback(() => {
-      setSelectedFile(null)
-      setEditingTrait(null)
-    }, [])
-  )
+  const { files, archivedFiles, stagedFiles, stagedNamesByFilename, loading, loadFiles } =
+    useSectionFiles(
+      activeLibrary,
+      TRAITS_SUBDIR,
+      useCallback(() => {
+        setSelectedFile(null)
+        setEditingTrait(null)
+      }, [])
+    )
 
   // Save destinations the picker offers: every folder this section already uses,
   // archived ones included — a folder emptied by archiving everything in it is
   // still somewhere you might file a trait.
   const folderChoices = useMemo(
-    () => folderOptions([...files, ...archivedFiles]),
-    [files, archivedFiles]
+    () => folderOptions([...files, ...archivedFiles, ...stagedFiles]),
+    [files, archivedFiles, stagedFiles]
   )
   // treePath, not rel: an archived file's picker shows where it sits within the
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
@@ -117,25 +120,26 @@ function TraitsPage() {
       // Before anything is written: the count the user is shown describes
       // the files as they stand, and Cancel is therefore truthful.
       const rename = await confirmRename(editingTrait?.name, data.name, {
-        isExisting: !!selectedFile
+        isExisting: !!selectedFile,
+        staged: selectedFile?.staged === true
       })
       if (rename.cancelled) return
-      const wasArchived = selectedFile?.archived === true
-      const { newPath, newRel, isRename } = resolveSavePath(
-        activeLibrary,
-        TRAITS_SUBDIR,
-        selectedFile,
-        fileName,
-        folder
-      )
+      // Staging keeps no archive, so a staged Save renames in place (HTOO-453).
+      const wasStaged = selectedFile?.staged === true
+      const {
+        newPath,
+        newRel,
+        isRename,
+        file: savedFile
+      } = resolveSavePath(activeLibrary, TRAITS_SUBDIR, selectedFile, fileName, folder)
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
-      const nextFile = () => toSectionFile(`${activeLibrary}/${TRAITS_SUBDIR}`, newRel, wasArchived)
+      const nextFile = () => savedFile
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -145,7 +149,7 @@ function TraitsPage() {
       await window.electronAPI.saveTrait(newPath, data)
       setEditingTrait(data)
 
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         setSelectedFile(nextFile())
         setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
       } else if (isRename) {
@@ -185,7 +189,11 @@ function TraitsPage() {
     handleBulkArchive,
     handleBulkUnarchive,
     handleBulkDelete,
-    handleDuplicate
+    handleDuplicate,
+    handleStage,
+    handleRelease,
+    handleBulkStage,
+    handleBulkRelease
   } = useBulkFileActions({
     activeLibrary,
     subdir: TRAITS_SUBDIR,
@@ -220,6 +228,10 @@ function TraitsPage() {
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}
+        stagedFiles={stagedFiles}
+        stagedNamesByFilename={stagedNamesByFilename}
+        onStage={handleBulkStage}
+        onRelease={handleBulkRelease}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -235,6 +247,7 @@ function TraitsPage() {
         }}
       >
         <SharedKeyNotice type={TRAITS_SUBDIR} file={selectedFile} />
+        <StagedReferenceNotice type={TRAITS_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load trait:</strong> {loadError}
@@ -246,19 +259,21 @@ function TraitsPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingTrait ? (
-          <TraitEditor
-            trait={editingTrait}
-            initialFileName={selectedFile?.name ?? null}
-            initialFolder={initialFolder}
-            folderOptions={folderChoices}
-            isArchived={selectedFile?.archived === true}
-            isExisting={!!selectedFile}
-            onSave={handleSave}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-          />
+          <StagingScope file={selectedFile} onStage={handleStage} onRelease={handleRelease}>
+            <TraitEditor
+              trait={editingTrait}
+              initialFileName={selectedFile?.name ?? null}
+              initialFolder={initialFolder}
+              folderOptions={folderChoices}
+              isArchived={selectedFile?.archived === true}
+              isExisting={!!selectedFile}
+              onSave={handleSave}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+            />
+          </StagingScope>
         ) : (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}

@@ -1,10 +1,13 @@
-import { Box, Button, IconButton, TextField, Tooltip, Typography } from '@mui/material'
+import { Box, Button, Chip, IconButton, TextField, Tooltip, Typography } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import ArchiveIcon from '@mui/icons-material/Archive'
 import UnarchiveIcon from '@mui/icons-material/Unarchive'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline'
+import PendingActionsIcon from '@mui/icons-material/PendingActions'
+import PublishIcon from '@mui/icons-material/Publish'
 import FolderSelect from './FolderSelect'
+import { useStaging } from './StagingScope'
 
 /**
  * Shared editor header used by all entity editors.
@@ -27,6 +30,11 @@ import FolderSelect from './FolderSelect'
  *   onRenameFile     — () => void  — rename the file in place, keeping only one
  *   onArchive        — () => void
  *   onUnarchive      — () => void
+ *
+ * Stage and Release (HTOO-453) come from the page's `StagingScope`, not from a
+ * prop, so every editor has them without passing them through. A staged file
+ * has no archive: its Save renames in place, so the header says that and shows
+ * no Archive button.
  */
 function EditorHeader({
   title,
@@ -47,6 +55,8 @@ function EditorHeader({
   onArchive,
   onUnarchive
 }) {
+  const staging = useStaging()
+  const staged = staging.staged
   const recyclePending = !!initialFileName && fileName !== computedFileName
   const willRename = !!initialFileName && fileName !== initialFileName
   // A move to another folder is the same operation as a rename — the path
@@ -63,11 +73,13 @@ function EditorHeader({
   // is left behind. Neither touches `<Name>`, which is the server's key — a
   // filename is Creidhne's business alone.
   const helperText =
-    willRename || willMove
-      ? `Save creates "${destination}" and archives "${origin}" · Rename changes the name in place`
-      : recyclePending
-        ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)`
-        : undefined
+    (willRename || willMove) && staged
+      ? `Save renames "${origin}" to "${destination}" · staging keeps no archive`
+      : willRename || willMove
+        ? `Save creates "${destination}" and archives "${origin}" · Rename changes the name in place`
+        : recyclePending
+          ? `Computed name: "${computedFileName}" — click ↺ to apply (saves as new file)`
+          : undefined
 
   const recycleTooltip = recycleDisabled
     ? 'Filename is auto-computed'
@@ -83,8 +95,25 @@ function EditorHeader({
         <Typography variant="h6" noWrap sx={{ flex: 1, mr: 1 }}>
           {title}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {isExisting && !isArchived && (
+        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          {isExisting && staged && (
+            <Chip size="small" label="Staged" variant="outlined" data-testid="staged-chip" />
+          )}
+          {isExisting && staged && staging.onRelease && (
+            <Tooltip title={`Release ${label} to the world`}>
+              <IconButton size="small" onClick={staging.onRelease} aria-label="Release">
+                <PublishIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {isExisting && !staged && !isArchived && staging.onStage && (
+            <Tooltip title={`Stage ${label}`}>
+              <IconButton size="small" onClick={staging.onStage} aria-label="Stage">
+                <PendingActionsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {isExisting && !staged && !isArchived && (
             <Tooltip title={`Archive ${label}`}>
               <IconButton size="small" onClick={onArchive}>
                 <ArchiveIcon fontSize="small" />

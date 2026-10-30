@@ -16,10 +16,12 @@ import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
 import SharedKeyNotice from '../components/shared/SharedKeyNotice'
+import StagedReferenceNotice from '../components/shared/StagedReferenceNotice'
+import StagingScope from '../components/shared/StagingScope'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
 import RenameReferencesDialog from '../components/shared/RenameReferencesDialog'
 import { useRenameReferences } from '../hooks/useRenameReferences'
-import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir } from '../utils/fileTree'
 
 const ITEMS_SUBDIR = 'items'
 const IGNORE_SUBDIR = 'items/.ignore'
@@ -46,21 +48,22 @@ function ItemsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Item')
 
-  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
-    activeLibrary,
-    ITEMS_SUBDIR,
-    useCallback(() => {
-      setSelectedFile(null)
-      setEditingItem(null)
-    }, [])
-  )
+  const { files, archivedFiles, stagedFiles, stagedNamesByFilename, loading, loadFiles } =
+    useSectionFiles(
+      activeLibrary,
+      ITEMS_SUBDIR,
+      useCallback(() => {
+        setSelectedFile(null)
+        setEditingItem(null)
+      }, [])
+    )
 
   // Save destinations the picker offers: every folder this section already uses,
   // archived ones included — a folder emptied by archiving everything in it is
   // still somewhere you might file an item.
   const folderChoices = useMemo(
-    () => folderOptions([...files, ...archivedFiles]),
-    [files, archivedFiles]
+    () => folderOptions([...files, ...archivedFiles, ...stagedFiles]),
+    [files, archivedFiles, stagedFiles]
   )
   // treePath, not rel: an archived file's picker shows where it sits within the
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
@@ -109,25 +112,26 @@ function ItemsPage() {
       // Before anything is written: the count the user is shown describes
       // the files as they stand, and Cancel is therefore truthful.
       const rename = await confirmRename(editingItem?.name, data.name, {
-        isExisting: !!selectedFile
+        isExisting: !!selectedFile,
+        staged: selectedFile?.staged === true
       })
       if (rename.cancelled) return
-      const wasArchived = selectedFile?.archived === true
-      const { newPath, newRel, isRename } = resolveSavePath(
-        activeLibrary,
-        ITEMS_SUBDIR,
-        selectedFile,
-        fileName,
-        folder
-      )
+      // Staging keeps no archive, so a staged Save renames in place (HTOO-453).
+      const wasStaged = selectedFile?.staged === true
+      const {
+        newPath,
+        newRel,
+        isRename,
+        file: savedFile
+      } = resolveSavePath(activeLibrary, ITEMS_SUBDIR, selectedFile, fileName, folder)
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
-      const nextFile = () => toSectionFile(`${activeLibrary}/${ITEMS_SUBDIR}`, newRel, wasArchived)
+      const nextFile = () => savedFile
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -137,7 +141,7 @@ function ItemsPage() {
       await window.electronAPI.saveItem(newPath, data)
       setEditingItem(data) // #6: sync editor to saved data before any selectedFile change
 
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         setSelectedFile(nextFile())
         setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
       } else if (isRename) {
@@ -176,7 +180,11 @@ function ItemsPage() {
     handleBulkArchive,
     handleBulkUnarchive,
     handleBulkDelete,
-    handleDuplicate
+    handleDuplicate,
+    handleStage,
+    handleRelease,
+    handleBulkStage,
+    handleBulkRelease
   } = useBulkFileActions({
     activeLibrary,
     subdir: ITEMS_SUBDIR,
@@ -212,6 +220,10 @@ function ItemsPage() {
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}
+        stagedFiles={stagedFiles}
+        stagedNamesByFilename={stagedNamesByFilename}
+        onStage={handleBulkStage}
+        onRelease={handleBulkRelease}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -227,6 +239,7 @@ function ItemsPage() {
         }}
       >
         <SharedKeyNotice type={ITEMS_SUBDIR} file={selectedFile} />
+        <StagedReferenceNotice type={ITEMS_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load item:</strong> {loadError}
@@ -238,20 +251,22 @@ function ItemsPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingItem ? (
-          <ItemEditor
-            item={editingItem}
-            initialFileName={selectedFile?.name ?? null}
-            initialFolder={initialFolder}
-            folderOptions={folderChoices}
-            isArchived={isArchived}
-            isExisting={!!selectedFile}
-            warnings={editWarnings}
-            onSave={handleSave}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-          />
+          <StagingScope file={selectedFile} onStage={handleStage} onRelease={handleRelease}>
+            <ItemEditor
+              item={editingItem}
+              initialFileName={selectedFile?.name ?? null}
+              initialFolder={initialFolder}
+              folderOptions={folderChoices}
+              isArchived={isArchived}
+              isExisting={!!selectedFile}
+              warnings={editWarnings}
+              onSave={handleSave}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+            />
+          </StagingScope>
         ) : (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}

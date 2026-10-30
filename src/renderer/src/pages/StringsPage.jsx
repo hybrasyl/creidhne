@@ -14,8 +14,10 @@ import { useBulkFileActions } from '../hooks/useBulkFileActions'
 import { useSectionFiles } from '../hooks/useSectionFiles'
 import { useOpenFileRequest } from '../hooks/useOpenFileRequest'
 import SharedKeyNotice from '../components/shared/SharedKeyNotice'
+import StagedReferenceNotice from '../components/shared/StagedReferenceNotice'
+import StagingScope from '../components/shared/StagingScope'
 import UnsavedChangesDialog from '../components/UnsavedChangesDialog'
-import { resolveSavePath, folderOptions, relDir, toSectionFile } from '../utils/fileTree'
+import { resolveSavePath, folderOptions, relDir } from '../utils/fileTree'
 
 const LOCALIZATIONS_SUBDIR = 'localizations'
 const IGNORE_SUBDIR = 'localizations/.ignore'
@@ -52,21 +54,22 @@ function StringsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Localization')
 
-  const { files, archivedFiles, loading, loadFiles } = useSectionFiles(
-    activeLibrary,
-    LOCALIZATIONS_SUBDIR,
-    useCallback(() => {
-      setSelectedFile(null)
-      setEditingLocalization(null)
-    }, [])
-  )
+  const { files, archivedFiles, stagedFiles, stagedNamesByFilename, loading, loadFiles } =
+    useSectionFiles(
+      activeLibrary,
+      LOCALIZATIONS_SUBDIR,
+      useCallback(() => {
+        setSelectedFile(null)
+        setEditingLocalization(null)
+      }, [])
+    )
 
   // Save destinations the picker offers: every folder this section already uses,
   // archived ones included — a folder emptied by archiving everything in it is
   // still somewhere you might file a localization.
   const folderChoices = useMemo(
-    () => folderOptions([...files, ...archivedFiles]),
-    [files, archivedFiles]
+    () => folderOptions([...files, ...archivedFiles, ...stagedFiles]),
+    [files, archivedFiles, stagedFiles]
   )
   // treePath, not rel: an archived file's picker shows where it sits within the
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
@@ -100,23 +103,22 @@ function StringsPage() {
 
   const handleSave = async (data, fileName, folder, mode = 'archive') => {
     try {
-      const wasArchived = selectedFile?.archived === true
-      const { newPath, newRel, isRename } = resolveSavePath(
-        activeLibrary,
-        LOCALIZATIONS_SUBDIR,
-        selectedFile,
-        fileName,
-        folder
-      )
+      // Staging keeps no archive, so a staged Save renames in place (HTOO-453).
+      const wasStaged = selectedFile?.staged === true
+      const {
+        newPath,
+        newRel,
+        isRename,
+        file: savedFile
+      } = resolveSavePath(activeLibrary, LOCALIZATIONS_SUBDIR, selectedFile, fileName, folder)
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
-      const nextFile = () =>
-        toSectionFile(`${activeLibrary}/${LOCALIZATIONS_SUBDIR}`, newRel, wasArchived)
+      const nextFile = () => savedFile
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -127,7 +129,7 @@ function StringsPage() {
       setEditingLocalization(data)
       markClean()
 
-      if (isRename && mode === 'rename') {
+      if (isRename && (mode === 'rename' || wasStaged)) {
         setSelectedFile(nextFile())
         setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
       } else if (isRename) {
@@ -170,7 +172,11 @@ function StringsPage() {
     handleBulkArchive,
     handleBulkUnarchive,
     handleBulkDelete,
-    handleDuplicate
+    handleDuplicate,
+    handleStage,
+    handleRelease,
+    handleBulkStage,
+    handleBulkRelease
   } = useBulkFileActions({
     activeLibrary,
     subdir: LOCALIZATIONS_SUBDIR,
@@ -205,6 +211,10 @@ function StringsPage() {
         loading={loading}
         onArchive={handleBulkArchive}
         onUnarchive={handleBulkUnarchive}
+        stagedFiles={stagedFiles}
+        stagedNamesByFilename={stagedNamesByFilename}
+        onStage={handleBulkStage}
+        onRelease={handleBulkRelease}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -220,6 +230,7 @@ function StringsPage() {
         }}
       >
         <SharedKeyNotice type={LOCALIZATIONS_SUBDIR} file={selectedFile} />
+        <StagedReferenceNotice type={LOCALIZATIONS_SUBDIR} file={selectedFile} />
         {loadError ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             <strong>Failed to load localization:</strong> {loadError}
@@ -231,19 +242,21 @@ function StringsPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingLocalization ? (
-          <LocalizationEditor
-            localization={editingLocalization}
-            initialFileName={selectedFile?.name ?? null}
-            initialFolder={initialFolder}
-            folderOptions={folderChoices}
-            isArchived={selectedFile?.archived === true}
-            isExisting={!!selectedFile}
-            onSave={handleSave}
-            onArchive={handleArchive}
-            onUnarchive={handleUnarchive}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-          />
+          <StagingScope file={selectedFile} onStage={handleStage} onRelease={handleRelease}>
+            <LocalizationEditor
+              localization={editingLocalization}
+              initialFileName={selectedFile?.name ?? null}
+              initialFolder={initialFolder}
+              folderOptions={folderChoices}
+              isArchived={selectedFile?.archived === true}
+              isExisting={!!selectedFile}
+              onSave={handleSave}
+              onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+            />
+          </StagingScope>
         ) : (
           <Box
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
