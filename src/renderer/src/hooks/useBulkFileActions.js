@@ -238,6 +238,101 @@ export function useBulkFileActions({
     [activeLibrary, subdir, liveReferrers, confirm, refreshAfterBulk, reportBulkResult, setSnackbar]
   )
 
+  // Add to `release` the staged files its entries name that are not live,
+  // following each new file's names in turn: a released castable can apply a
+  // staged status, which can name a staged castable. `root` is
+  // `<world>/.staging`. Entries added here have `dependency: true`.
+  const addStagedDependencies = useCallback(
+    async (release, root) => {
+      const nameOf = (type, rel) => stagedIndex?.[type]?.namesByFilename?.[rel] ?? ''
+      const has = (type, name) =>
+        release.some((r) => r.type === type && nameCollisionKey(r.name) === nameCollisionKey(name))
+      let frontier = [...release]
+      while (frontier.length) {
+        const next = []
+        for (const [type, group] of groupBy(frontier, 'type')) {
+          const refs = await window.electronAPI.namesInFiles(
+            group.map((r) => r.path),
+            type
+          )
+          for (const r of group) {
+            for (const ref of stagedOnlyReferences(refs[r.path], libraryIndex, stagedIndex)) {
+              if (has(ref.type, ref.name)) continue
+              const rel = stagedFileFor(stagedIndex, ref.type, ref.name)
+              if (!rel) continue
+              const dep = {
+                type: ref.type,
+                rel,
+                path: `${root}/${ref.type}/${rel}`,
+                name: nameOf(ref.type, rel) || ref.name,
+                dependency: true,
+                neededBy: r.name || r.rel
+              }
+              release.push(dep)
+              next.push(dep)
+            }
+          }
+        }
+        frontier = next
+      }
+      return release
+    },
+    [libraryIndex, stagedIndex]
+  )
+
+  // Refuse a release whose names are already live, in one dialog. True when
+  // the release may go ahead.
+  const refuseClashes = useCallback(
+    async (moving) => {
+      const clashes = releaseClashes(moving, libraryIndex)
+      if (!clashes.length) return true
+      await confirm({
+        title: 'Nothing was released',
+        message:
+          'The server loads only one of two files with the same name. Rename these, or ' +
+          'archive the live file, before you release them.',
+        items: clashes.map(
+          (c) =>
+            `${c.type}/${c.rel}: “${c.name}” ${
+              c.reason === 'live' ? 'is already live' : 'is in this release twice'
+            }`
+        )
+      })
+      return false
+    },
+    [libraryIndex, confirm]
+  )
+
+  // Move `moving` (release entries) into the live tree, type by type, and
+  // rebuild the index sections of the other types they touched: this page's
+  // own type is the caller's to refresh. Returns `{ ok, failed }`.
+  const moveReleased = useCallback(
+    async (moving) => {
+      const ok = []
+      const failed = []
+      for (const [type, group] of groupBy(moving, 'type')) {
+        const r = await window.electronAPI.releaseFiles(
+          activeLibrary,
+          type,
+          group.map((g) => g.path)
+        )
+        ok.push(...r.ok)
+        failed.push(...r.failed)
+      }
+      const others = [...new Set(moving.map((r) => r.type))].filter((t) => t !== subdir)
+      for (const type of others) {
+        const section = await window.electronAPI.buildIndexSection(activeLibrary, type)
+        setLibraryIndex((prev) => ({ ...prev, ...section }))
+      }
+      if (others.length) {
+        const staged = await window.electronAPI.buildStagedIndex(activeLibrary, others)
+        setStagedIndex((prev) => ({ ...prev, ...staged }))
+      }
+      return { ok, failed }
+    },
+    [activeLibrary, subdir, setLibraryIndex, setStagedIndex]
+  )
+
   const handleBulkRelease = useCallback(
     async (selected) => {
       if (!activeLibrary || !selected || selected.length === 0) return
@@ -245,48 +340,15 @@ export function useBulkFileActions({
       if (chosen.length === 0) return
       // `dir` is `<world>/.staging/<type>`, so the root is one segment up.
       const root = chosen[0].dir.slice(0, chosen[0].dir.length - subdir.length - 1)
-      const nameOf = (type, rel) => stagedIndex?.[type]?.namesByFilename?.[rel] ?? ''
       const release = chosen.map((f) => ({
         type: subdir,
         rel: f.rel,
         path: f.path,
-        name: nameOf(subdir, f.rel),
+        name: stagedIndex?.[subdir]?.namesByFilename?.[f.rel] ?? '',
         dependency: false
       }))
-      const has = (type, name) =>
-        release.some((r) => r.type === type && nameCollisionKey(r.name) === nameCollisionKey(name))
-
-      // Follow the staged-only references until none is left: a released
-      // castable can apply a staged status, which can name a staged castable.
       try {
-        let frontier = release
-        while (frontier.length) {
-          const next = []
-          for (const [type, group] of groupBy(frontier, 'type')) {
-            const refs = await window.electronAPI.namesInFiles(
-              group.map((r) => r.path),
-              type
-            )
-            for (const r of group) {
-              for (const ref of stagedOnlyReferences(refs[r.path], libraryIndex, stagedIndex)) {
-                if (has(ref.type, ref.name)) continue
-                const rel = stagedFileFor(stagedIndex, ref.type, ref.name)
-                if (!rel) continue
-                const dep = {
-                  type: ref.type,
-                  rel,
-                  path: `${root}/${ref.type}/${rel}`,
-                  name: nameOf(ref.type, rel) || ref.name,
-                  dependency: true,
-                  neededBy: r.name || r.rel
-                }
-                release.push(dep)
-                next.push(dep)
-              }
-            }
-          }
-          frontier = next
-        }
+        await addStagedDependencies(release, root)
       } catch (err) {
         setSnackbar?.({ message: `Could not check references: ${err.message}`, severity: 'error' })
         return
@@ -309,75 +371,126 @@ export function useBulkFileActions({
         if (!choice) return
         if (choice === 'selected') moving = release.filter((r) => !r.dependency)
       }
+      if (!(await refuseClashes(moving))) return
 
-      const clashes = releaseClashes(moving, libraryIndex)
-      if (clashes.length) {
-        await confirm({
-          title: 'Nothing was released',
-          message:
-            'The server loads only one of two files with the same name. Rename these, or ' +
-            'archive the live file, before you release them.',
-          items: clashes.map(
-            (c) =>
-              `${c.type}/${c.rel}: “${c.name}” ${
-                c.reason === 'live' ? 'is already live' : 'is in this release twice'
-              }`
-          )
-        })
-        return
-      }
-
-      const ok = []
-      const failed = []
-      for (const [type, group] of groupBy(moving, 'type')) {
-        const r = await window.electronAPI.releaseFiles(
-          activeLibrary,
-          type,
-          group.map((g) => g.path)
-        )
-        ok.push(...r.ok)
-        failed.push(...r.failed)
-      }
-      const touched = [...new Set(moving.map((r) => r.type))]
+      const result = await moveReleased(moving)
+      // This page's own type, live and staged.
       await refreshAfterBulk(moving.map((r) => r.path))
-      // refreshAfterBulk rebuilt this page's type, live and staged. The
-      // dependencies moved files of other types, which have their own sections.
-      const others = touched.filter((t) => t !== subdir)
-      for (const type of others) {
-        const section = await window.electronAPI.buildIndexSection(activeLibrary, type)
-        setLibraryIndex((prev) => ({ ...prev, ...section }))
-      }
-      if (others.length) {
-        const staged = await window.electronAPI.buildStagedIndex(activeLibrary, others)
-        setStagedIndex((prev) => ({ ...prev, ...staged }))
-      }
-      reportBulkResult({ ok, failed }, 'Released')
+      reportBulkResult(result, 'Released')
     },
     [
       activeLibrary,
       subdir,
-      libraryIndex,
       stagedIndex,
       confirm,
+      addStagedDependencies,
+      refuseClashes,
+      moveReleased,
       refreshAfterBulk,
       reportBulkResult,
-      setLibraryIndex,
-      setStagedIndex,
+      setSnackbar
+    ]
+  )
+
+  /**
+   * The Staging box in the editor header moves the open file on Save
+   * (HTOO-628). The page calls this before it writes, when the save crosses
+   * between the live tree and staging, and gets back `{ cancelled, apply,
+   * describe }` — the shape `useRenameReferences` gives:
+   *
+   *   - Live into staging runs Stage's check: the live files that name the
+   *     entity, which cannot find it once it is staged.
+   *   - Staging into live runs Release's check before the write: a name that is
+   *     already live is refused. `apply(newPath)`, after the write, offers to
+   *     release the staged files that the released file names.
+   *
+   * The page writes the file itself, with the edits, as a move: one file stays.
+   * `newName` is the name in the editor, which the save is about to write.
+   */
+  const confirmMove = useCallback(
+    async (file, newName) => {
+      const noop = {
+        cancelled: false,
+        apply: async () => {},
+        describe: (rel) => `Renamed to "${rel}".`
+      }
+      const cancelled = { ...noop, cancelled: true }
+      if (!activeLibrary || !file || file.archived) return noop
+
+      if (!file.staged) {
+        let referrers
+        try {
+          referrers = await liveReferrers([file])
+        } catch (err) {
+          setSnackbar?.({
+            message: `Could not check references: ${err.message}`,
+            severity: 'error'
+          })
+          return cancelled
+        }
+        if (referrers.length) {
+          const choice = await confirm({
+            title: 'Save this file into staging?',
+            message:
+              'These live files name it. The server cannot find a staged entity, so these ' +
+              'references stay unresolved until you release it again.',
+            items: referrers,
+            choices: [{ value: 'stage', label: 'Save into staging', variant: 'contained' }]
+          })
+          if (choice !== 'stage') return cancelled
+        }
+        return { ...noop, describe: (rel) => `Saved into staging as "${rel}".` }
+      }
+
+      const entry = { type: subdir, rel: file.rel, name: newName, dependency: false }
+      if (!(await refuseClashes([entry]))) return cancelled
+      return {
+        cancelled: false,
+        describe: (rel) => `Released as "${rel}".`,
+        apply: async (newPath) => {
+          const root = file.dir.slice(0, file.dir.length - subdir.length - 1)
+          const release = [{ ...entry, path: newPath }]
+          try {
+            await addStagedDependencies(release, root)
+          } catch (err) {
+            setSnackbar?.({
+              message: `Released, but could not check references: ${err.message}`,
+              severity: 'warning'
+            })
+            return
+          }
+          const deps = release.filter((r) => r.dependency)
+          if (!deps.length) return
+          const choice = await confirm({
+            title: 'Release the staged files this names?',
+            message:
+              'The file you released names entities that exist only in staging. The server ' +
+              'cannot find those until they are released too.',
+            items: deps.map((d) => `${d.type}/${d.rel} (“${d.name}”)`),
+            choices: [{ value: 'all', label: `Release ${deps.length}`, variant: 'contained' }]
+          })
+          if (choice !== 'all' || !(await refuseClashes(deps))) return
+          const result = await moveReleased(deps)
+          await loadFiles(activeLibrary)
+          reportBulkResult(result, 'Released')
+        }
+      }
+    },
+    [
+      activeLibrary,
+      subdir,
+      liveReferrers,
+      confirm,
+      refuseClashes,
+      addStagedDependencies,
+      moveReleased,
+      loadFiles,
+      reportBulkResult,
       setSnackbar
     ]
   )
 
   // Single-item wrappers for the editor's existing buttons.
-  const handleStage = useCallback(async () => {
-    if (!selectedFile) return
-    await handleBulkStage([selectedFile])
-  }, [selectedFile, handleBulkStage])
-
-  const handleRelease = useCallback(async () => {
-    if (!selectedFile) return
-    await handleBulkRelease([selectedFile])
-  }, [selectedFile, handleBulkRelease])
-
   const handleArchive = useCallback(async () => {
     if (!selectedFile) return
     await handleBulkArchive([selectedFile])
@@ -399,9 +512,8 @@ export function useBulkFileActions({
     handleBulkUnarchive,
     handleBulkDelete,
     handleDuplicate,
-    handleStage,
-    handleRelease,
     handleBulkStage,
-    handleBulkRelease
+    handleBulkRelease,
+    confirmMove
   }
 }

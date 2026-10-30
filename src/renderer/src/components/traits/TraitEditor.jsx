@@ -18,6 +18,7 @@ import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
+import { useEditorAlert } from '../shared/EditorAlerts'
 import IconPicker from '../shared/IconPicker'
 import StatsTab from '../shared/StatsTab'
 import { normalizeFolder } from '../../utils/fileTree'
@@ -202,6 +203,20 @@ function TraitEditor({
   // The "is a trait" check needs the index; before it is built, skip it.
   const problems = validateTrait(data, libraryIndex.traits ? traitNames : null)
 
+  // In the alerts area under the header (HTOO-628), or in place without one.
+  const problemsInArea = useEditorAlert(
+    'problems',
+    problems.length
+      ? {
+          order: 30,
+          severity: 'warning',
+          testId: 'editor-problems',
+          message: 'The server refuses this trait until you correct these problems.',
+          items: problems
+        }
+      : null
+  )
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* ── Header ── */}
@@ -231,7 +246,7 @@ function TraitEditor({
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {problems.length > 0 && (
+        {problems.length > 0 && !problemsInArea && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             The server refuses this trait until you correct these problems.
             <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
