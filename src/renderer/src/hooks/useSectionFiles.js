@@ -26,6 +26,7 @@ export function useSectionFiles(activeLibrary, subdir, onReset) {
   const [files, setFiles] = useState([])
   const [archivedFiles, setArchivedFiles] = useState([])
   const [stagedFiles, setStagedFiles] = useState([])
+  const [stagedDir, setStagedDir] = useState('')
   const [loading, setLoading] = useState(true)
   const stagedIndex = useStoreValue(stagedIndexState)
   const setStagedIndex = useSetStoreValue(stagedIndexState)
@@ -48,6 +49,7 @@ export function useSectionFiles(activeLibrary, subdir, onReset) {
       setFiles(active.map((rel) => toSectionFile(dir, rel, false)))
       setArchivedFiles(archived.map((rel) => toSectionFile(dir, rel, true)))
       setStagedFiles(staged.files.map((rel) => toStagedFile(staged.dir, rel)))
+      setStagedDir(staged.dir)
     },
     [subdir]
   )
@@ -83,6 +85,8 @@ export function useSectionFiles(activeLibrary, subdir, onReset) {
     files,
     archivedFiles,
     stagedFiles,
+    // Where a new staged file goes: <world>/.staging/<type>, which may not exist yet.
+    stagedDir,
     stagedNamesByFilename: stagedIndex?.[subdir]?.namesByFilename,
     loading,
     loadFiles

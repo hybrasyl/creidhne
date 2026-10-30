@@ -71,6 +71,8 @@ function ServerConfigPage() {
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.serverconfigsNamesByFilename
   const [selectedFile, setSelectedFile] = useState(null)
+  // A new entity started from the Staged tab saves into staging (HTOO-453).
+  const [newStaged, setNewStaged] = useState(false)
   const [editingConfig, setEditingConfig] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
@@ -86,15 +88,22 @@ function ServerConfigPage() {
     handleDialogCancel
   } = useUnsavedGuard('Server Config')
 
-  const { files, archivedFiles, stagedFiles, stagedNamesByFilename, loading, loadFiles } =
-    useSectionFiles(
-      activeLibrary,
-      SUBDIR,
-      useCallback(() => {
-        setSelectedFile(null)
-        setEditingConfig(null)
-      }, [])
-    )
+  const {
+    files,
+    archivedFiles,
+    stagedFiles,
+    stagedDir,
+    stagedNamesByFilename,
+    loading,
+    loadFiles
+  } = useSectionFiles(
+    activeLibrary,
+    SUBDIR,
+    useCallback(() => {
+      setSelectedFile(null)
+      setEditingConfig(null)
+    }, [])
+  )
 
   // Save destinations the picker offers: every folder this section already uses,
   // archived ones included — a folder emptied by archiving everything in it is
@@ -107,12 +116,14 @@ function ServerConfigPage() {
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
   const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
 
-  const doNew = () => {
+  const doNew = (staged = false) => {
+    setNewStaged(staged)
     setSelectedFile(null)
     setLoadError(null)
     setEditingConfig(DEFAULT_SERVERCONFIG)
   }
-  const handleNew = () => guard(doNew)
+  const handleNew = () => guard(() => doNew(false))
+  const handleNewStaged = () => guard(() => doNew(true))
 
   const doSelect = async (file) => {
     setSelectedFile(file)
@@ -139,7 +150,14 @@ function ServerConfigPage() {
         newRel,
         isRename,
         file: savedFile
-      } = resolveSavePath(activeLibrary, SUBDIR, selectedFile, fileName, folder)
+      } = resolveSavePath(
+        activeLibrary,
+        SUBDIR,
+        selectedFile,
+        fileName,
+        folder,
+        newStaged ? stagedDir : undefined
+      )
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
       const nextFile = () => savedFile
@@ -237,6 +255,7 @@ function ServerConfigPage() {
         stagedNamesByFilename={stagedNamesByFilename}
         onStage={handleBulkStage}
         onRelease={handleBulkRelease}
+        onNewStaged={handleNewStaged}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -258,7 +277,12 @@ function ServerConfigPage() {
             <strong>Failed to load server config:</strong> {loadError}
           </Alert>
         ) : editingConfig ? (
-          <StagingScope file={selectedFile} onStage={handleStage} onRelease={handleRelease}>
+          <StagingScope
+            file={selectedFile}
+            newStaged={newStaged}
+            onStage={handleStage}
+            onRelease={handleRelease}
+          >
             <ServerConfigEditor
               config={editingConfig}
               initialFileName={selectedFile?.name ?? null}

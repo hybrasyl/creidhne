@@ -164,9 +164,13 @@ export function normalizeFolder(input) {
  * selects the file it wrote. A staged file (HTOO-453) stays in staging: the
  * path is built under its own `dir`, never under `<library>/<type>`, so a save
  * cannot release it by accident.
+ *
+ * `newStagedDir` is the staging folder of the type, for a NEW file that the
+ * user started from the Staged tab. It is ignored when a file is open: an open
+ * file stays where it is.
  */
-export function resolveSavePath(library, subdir, selectedFile, fileName, folder) {
-  const staged = selectedFile?.staged === true
+export function resolveSavePath(library, subdir, selectedFile, fileName, folder, newStagedDir) {
+  const staged = selectedFile ? selectedFile.staged === true : !!newStagedDir
   const archived = selectedFile?.archived === true
   const subDir =
     folder === undefined
@@ -174,7 +178,7 @@ export function resolveSavePath(library, subdir, selectedFile, fileName, folder)
       : joinRel(archived ? '.ignore' : '', normalizeFolder(folder))
   const newRel = joinRel(subDir, fileName)
   const isRename = !!selectedFile && newRel !== selectedFile.rel
-  const dir = staged ? selectedFile.dir : `${library}/${subdir}`
+  const dir = staged ? (selectedFile?.dir ?? newStagedDir) : `${library}/${subdir}`
   // Saving to the same place writes back to the exact path we were handed,
   // rather than a rebuilt one that is equivalent but not string-identical.
   const newPath = selectedFile && !isRename ? selectedFile.path : `${dir}/${newRel}`

@@ -5,11 +5,12 @@ import { fileURLToPath } from 'url'
 import { STAGED_TYPES } from '@shared/staging.js'
 
 /**
- * HTOO-453. Staging reaches each file-backed page in five places, and each one
+ * HTOO-453. Staging reaches each file-backed page in six places, and each one
  * fails silently if a page misses it:
  *
  *  - the Staged tab and the Stage and Release actions (the panel props) — a
  *    page without them shows no staged file and offers no way in;
+ *  - New on the Staged tab — without its state, the new entity saves live;
  *  - the editor inside a StagingScope — without it, a staged editor's pickers
  *    offer live names only, and its header shows Archive in place of Release;
  *  - the staged-reference notice — without it, a live file that names a
@@ -56,9 +57,18 @@ describe('staging reaches every file-backed page (HTOO-453)', () => {
   it('renders the editor inside a StagingScope for the selected file', () => {
     expect(
       lacking(
-        /<StagingScope file=\{selectedFile\} onStage=\{handleStage\} onRelease=\{handleRelease\}>\s*<\w+Editor\b/
+        /<StagingScope\s+file=\{selectedFile\}\s+newStaged=\{newStaged\}\s+onStage=\{handleStage\}\s+onRelease=\{handleRelease\}\s*>\s*<\w+Editor\b/
       )
     ).toEqual([])
+  })
+
+  it('starts a new staged entity from the Staged tab, and saves it into staging', () => {
+    // Without these, + on the Staged tab makes a live file: the editor would
+    // show live names only, and the first save would land in xml/.
+    expect(lacking(/onNewStaged=\{handleNewStaged\}/)).toEqual([])
+    expect(lacking(/const handleNewStaged = \(\) => guard\(\(\) => doNew\(true\)\)/)).toEqual([])
+    expect(lacking(/const doNew = \(staged = false\) => \{\s*setNewStaged\(staged\)/)).toEqual([])
+    expect(lacking(/resolveSavePath\([^)]*\bnewStaged \? stagedDir : undefined\s*\)/)).toEqual([])
   })
 
   it('renders the staged-reference notice beside the shared-key notice', () => {

@@ -213,13 +213,15 @@ export default function EditorFileListPanel({
   onDelete,
   // onDuplicate is single-only; receives the one selected file.
   onDuplicate,
-  // Staging (HTOO-453). The Staged tab shows only while the type has staged
-  // files: a page reaches staging through Stage, on the Active tab.
-  // stagedNamesByFilename is the staged index's, keyed by the staged `rel`.
+  // Staging (HTOO-453). The Staged tab shows whenever a page passes onRelease,
+  // empty or not: its + button (onNewStaged) is where a type's first staged
+  // file is made. stagedNamesByFilename is the staged index's, keyed by the
+  // staged `rel`.
   stagedFiles,
   stagedNamesByFilename,
   onStage,
   onRelease,
+  onNewStaged,
   // Fires whenever the multiselect set changes — pages render the editor-pane
   // dim/blur overlay based on this count.
   onSelectionChange,
@@ -255,12 +257,7 @@ export default function EditorFileListPanel({
   const archivedTab = tab === 'archived'
   const stagedTab = tab === 'staged'
   const stagedCount = (stagedFiles || []).length
-  const showStagedTab = !!onRelease && stagedCount > 0
-  // A release of the last staged file takes the tab away; do not leave the
-  // panel on a tab that is not there.
-  useEffect(() => {
-    if (stagedTab && !showStagedTab) setTab('active')
-  }, [stagedTab, showStagedTab])
+  const showStagedTab = !!onRelease
   // Memoized: a bare conditional would hand `filtered` a new array identity on
   // every render whenever archivedFiles is undefined, defeating its memo.
   const tabFiles = useMemo(
@@ -496,7 +493,9 @@ export default function EditorFileListPanel({
   )
 
   const noun = (title || '').toLowerCase()
-  const newTooltip = `New ${entityLabel || title || 'file'}`
+  // On the Staged tab, + starts a new entity that saves into staging.
+  const newStagedHere = stagedTab && !!onNewStaged
+  const newTooltip = `New ${newStagedHere ? 'staged ' : ''}${entityLabel || title || 'file'}`
   const selectionCount = selectedPaths.size
 
   // Action availability. With tabs, "where the selection lives" is just the
@@ -703,12 +702,16 @@ export default function EditorFileListPanel({
               </span>
             </Tooltip>
           ))}
-          <Tooltip title={newMenuItems?.length ? 'Create…' : newTooltip}>
+          <Tooltip title={newMenuItems?.length && !newStagedHere ? 'Create…' : newTooltip}>
             <span>
               <IconButton
                 size="small"
                 onClick={(e) =>
-                  newMenuItems?.length ? setNewMenuAnchor(e.currentTarget) : onNew?.()
+                  newStagedHere
+                    ? onNewStaged()
+                    : newMenuItems?.length
+                      ? setNewMenuAnchor(e.currentTarget)
+                      : onNew?.()
                 }
                 aria-label={newTooltip}
               >
@@ -803,7 +806,7 @@ export default function EditorFileListPanel({
         {listState === 'empty' && (
           <Typography variant="body2" sx={{ color: 'text.secondary', p: 2 }}>
             {stagedTab
-              ? `No staged ${noun}.`
+              ? `No staged ${noun}. Stage a file from Active, or use + to create one here.`
               : archivedTab
                 ? `No archived ${noun}.`
                 : `No ${noun} found. Check that a library is set in Settings.`}

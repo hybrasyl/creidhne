@@ -67,6 +67,22 @@ describe('StagingScope', () => {
     expect(screen.getByTestId('names').textContent).toBe('Burning')
   })
 
+  it('treats a new entity from the Staged tab as staged before its first save', () => {
+    render(
+      <ThemeProvider theme={hybrasylTheme}>
+        <StagingScope file={null} newStaged>
+          <Names />
+        </StagingScope>
+      </ThemeProvider>
+    )
+    expect(screen.getByTestId('names').textContent).toBe('Burning,Crouch')
+  })
+
+  it('treats a new entity from the Active tab as live', () => {
+    inScope(null, <Names />)
+    expect(screen.getByTestId('names').textContent).toBe('Burning')
+  })
+
   it('leaves the index outside the scope alone', () => {
     render(<Names />)
     expect(screen.getByTestId('names').textContent).toBe('Burning')

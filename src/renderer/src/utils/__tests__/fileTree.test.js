@@ -473,6 +473,19 @@ describe('resolveSavePath', () => {
       expect(r.file).toEqual(s('animist/y.xml'))
     })
 
+    it('puts a new file started from the Staged tab into staging', () => {
+      const r = resolveSavePath(LIB, 'castables', null, 'new.xml', 'animist', STAGED)
+      expect(r.newPath).toBe(`${STAGED}/animist/new.xml`)
+      expect(r.isRename).toBe(false)
+      expect(r.file).toEqual(s('animist/new.xml'))
+    })
+
+    it('ignores the staging folder when a live file is open', () => {
+      const r = resolveSavePath(LIB, 'castables', f('x.xml'), 'y.xml', '', STAGED)
+      expect(r.newPath).toBe(`${LIB}/castables/y.xml`)
+      expect(r.file.staged).toBe(false)
+    })
+
     it('moves to another folder inside staging', () => {
       const r = resolveSavePath(LIB, 'castables', s('animist/x.xml'), 'x.xml', 'wizard')
       expect(r.newPath).toBe(`${STAGED}/wizard/x.xml`)

@@ -96,7 +96,7 @@ function EditorHeader({
           {title}
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          {isExisting && staged && (
+          {staged && (
             <Chip size="small" label="Staged" variant="outlined" data-testid="staged-chip" />
           )}
           {isExisting && staged && staging.onRelease && (

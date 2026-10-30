@@ -183,5 +183,17 @@ test.describe('Staging', () => {
     expect(readFileSync(join(world, '.staging/castables/animist/singe.xml'), 'utf8')).toContain(
       '>Ablaze</Add>'
     )
+
+    // New on the Staged tab. Crouch was released, so the statuses have no staged
+    // file, and the tab is still there: it is where the first one is made.
+    await page.getByRole('tab', { name: 'Staged (0)' }).click()
+    await page.getByRole('button', { name: /^New staged/ }).click()
+    await expect(page.getByTestId('staged-chip')).toBeVisible()
+    await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Seething')
+    const fileName = await page.getByRole('textbox', { name: 'Filename' }).inputValue()
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(page.getByRole('tab', { name: 'Staged (1)' })).toBeVisible()
+    expect(existsSync(join(world, '.staging/statuses', fileName))).toBe(true)
+    expect(existsSync(join(lib, 'statuses', fileName))).toBe(false)
   })
 })

@@ -63,13 +63,17 @@ function markTheme(stagedOnly) {
  * only: a live file that names a staged entity cannot be resolved, so a live
  * picker does not offer one.
  *
+ * `newStaged` marks a new entity, with no file yet, that the user started from
+ * the Staged tab: it is staged from its first render, so its pickers offer
+ * staged names before it is saved.
+ *
  * The tree has the same shape for both, so moving between a live file and a
  * staged one does not remount the editor for that reason alone.
  */
-export default function StagingScope({ file, onStage, onRelease, children }) {
+export default function StagingScope({ file, newStaged = false, onStage, onRelease, children }) {
   const libraryIndex = useAppStore((s) => s.libraryIndex)
   const stagedIndex = useAppStore((s) => s.stagedIndex)
-  const staged = file?.staged === true
+  const staged = file ? file.staged === true : newStaged === true
 
   const view = useMemo(
     () => (staged ? mergeStagedIndex(libraryIndex, stagedIndex) : null),

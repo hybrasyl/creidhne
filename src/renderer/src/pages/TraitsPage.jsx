@@ -42,6 +42,8 @@ function TraitsPage() {
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.traitsNamesByFilename
   const [selectedFile, setSelectedFile] = useState(null)
+  // A new entity started from the Staged tab saves into staging (HTOO-453).
+  const [newStaged, setNewStaged] = useState(false)
   const [editingTrait, setEditingTrait] = useState(null)
   const [loadingTrait, setLoadingTrait] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -58,15 +60,22 @@ function TraitsPage() {
     handleDialogCancel
   } = useUnsavedGuard('Trait')
 
-  const { files, archivedFiles, stagedFiles, stagedNamesByFilename, loading, loadFiles } =
-    useSectionFiles(
-      activeLibrary,
-      TRAITS_SUBDIR,
-      useCallback(() => {
-        setSelectedFile(null)
-        setEditingTrait(null)
-      }, [])
-    )
+  const {
+    files,
+    archivedFiles,
+    stagedFiles,
+    stagedDir,
+    stagedNamesByFilename,
+    loading,
+    loadFiles
+  } = useSectionFiles(
+    activeLibrary,
+    TRAITS_SUBDIR,
+    useCallback(() => {
+      setSelectedFile(null)
+      setEditingTrait(null)
+    }, [])
+  )
 
   // Save destinations the picker offers: every folder this section already uses,
   // archived ones included — a folder emptied by archiving everything in it is
@@ -79,12 +88,14 @@ function TraitsPage() {
   // type, not `.ignore/…`. resolveSavePath puts the prefix back.
   const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
 
-  const doNew = () => {
+  const doNew = (staged = false) => {
+    setNewStaged(staged)
     setSelectedFile(null)
     setLoadError(null)
     setEditingTrait({ ...DEFAULT_TRAIT, conflictsWith: [] })
   }
-  const handleNew = () => guard(doNew)
+  const handleNew = () => guard(() => doNew(false))
+  const handleNewStaged = () => guard(() => doNew(true))
 
   const doSelect = async (file) => {
     setSelectedFile(file)
@@ -131,7 +142,14 @@ function TraitsPage() {
         newRel,
         isRename,
         file: savedFile
-      } = resolveSavePath(activeLibrary, TRAITS_SUBDIR, selectedFile, fileName, folder)
+      } = resolveSavePath(
+        activeLibrary,
+        TRAITS_SUBDIR,
+        selectedFile,
+        fileName,
+        folder,
+        newStaged ? stagedDir : undefined
+      )
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
       const nextFile = () => savedFile
@@ -232,6 +250,7 @@ function TraitsPage() {
         stagedNamesByFilename={stagedNamesByFilename}
         onStage={handleBulkStage}
         onRelease={handleBulkRelease}
+        onNewStaged={handleNewStaged}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
@@ -259,7 +278,12 @@ function TraitsPage() {
             <CircularProgress size={64} thickness={4} color="info" disableShrink />
           </Box>
         ) : editingTrait ? (
-          <StagingScope file={selectedFile} onStage={handleStage} onRelease={handleRelease}>
+          <StagingScope
+            file={selectedFile}
+            newStaged={newStaged}
+            onStage={handleStage}
+            onRelease={handleRelease}
+          >
             <TraitEditor
               trait={editingTrait}
               initialFileName={selectedFile?.name ?? null}
