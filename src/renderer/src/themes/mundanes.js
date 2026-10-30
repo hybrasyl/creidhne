@@ -33,6 +33,14 @@ const mundanesTheme = responsiveFontSizes(
         dark: '#061a4f',
         contrastText: '#ffffff'
       },
+      // The nav bar under the title bar: the theme's own secondary.light: darker navy has no room. Its icons take the bar's
+      // text colour, so contrastText is secondary's.
+      tertiary: {
+        main: '#2f4f8f',
+        light: '#5972a5',
+        dark: '#213764',
+        contrastText: '#ffffff'
+      },
       background: {
         // A clearly cool light-gray canvas so white paper/cards read as raised
         // surfaces (the old #f5f5f5-on-#ffffff had almost no contrast).

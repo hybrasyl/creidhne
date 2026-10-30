@@ -33,6 +33,14 @@ const chadulTheme = responsiveFontSizes(
         dark: '#1e1030',
         contrastText: '#e0d8ea'
       },
+      // The nav bar under the title bar: the bar purple, 15% toward white: darker has no room. Its icons take the bar's
+      // text colour, so contrastText is secondary's.
+      tertiary: {
+        main: '#4d3c65',
+        light: '#716384',
+        dark: '#362a47',
+        contrastText: '#e0d8ea'
+      },
       background: {
         default: '#020804',
         gray: '#020804',

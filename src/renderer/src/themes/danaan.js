@@ -31,6 +31,14 @@ const danaanTheme = responsiveFontSizes(
         dark: '#3a2810',
         contrastText: '#f5e8c0'
       },
+      // The nav bar under the title bar: the bar colour, 40% darker. Its icons take the bar's
+      // text colour, so contrastText is secondary's.
+      tertiary: {
+        main: '#36280a',
+        light: '#5e533b',
+        dark: '#261c07',
+        contrastText: '#f5e8c0'
+      },
       background: {
         default: '#f5e8c0',
         gray: '#f5e8c0',
