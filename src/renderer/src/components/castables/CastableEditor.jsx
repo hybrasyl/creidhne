@@ -377,7 +377,7 @@ function CastableEditor({
               />
             </Box>
 
-            {/* Line 2: Lines, Cooldown, Icon, Book, Elements */}
+            {/* Line 2: Lines, Cooldown, Icon, Book */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <TextField
                 label="Lines"
@@ -428,14 +428,19 @@ function CastableEditor({
                   ))}
                 </Select>
               </FormControl>
+            </Box>
+
+            {/* Line 3: Elements. The full width, so its warning line under it is
+                the full width too. */}
+            <Box sx={{ display: 'flex' }}>
               <ElementSelectorField
                 value={data.elements || ''}
                 onChange={(elements) => updateData((d) => ({ ...d, elements }))}
-                sx={{ minWidth: 180, maxWidth: 360 }}
+                sx={{ flex: 1, minWidth: 220 }}
               />
             </Box>
 
-            {/* Line 3: Class */}
+            {/* Line 4: Class */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <Autocomplete
                 multiple
@@ -457,7 +462,7 @@ function CastableEditor({
               />
             </Box>
 
-            {/* Line 4: Checkboxes */}
+            {/* Line 5: Checkboxes */}
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <FormControlLabel
                 control={
@@ -523,7 +528,7 @@ function CastableEditor({
               />
             </Box>
 
-            {/* Line 5: Export metadata */}
+            {/* Line 6: Export metadata */}
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <FormControlLabel
                 control={

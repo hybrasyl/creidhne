@@ -62,6 +62,20 @@ test.describe('Element pickers', () => {
     await expect(page.getByRole('button', { name: 'RandomTemuair' })).toBeVisible()
     await expect(page.getByText('RandomTemuair is now Random:Cardinal.')).toBeVisible()
 
+    // Elements has its own line, as Class has, so the warning under it has the
+    // full width of the editor. In a row with Book, the field and its warning
+    // were at most 360px wide.
+    const root = (name) =>
+      page
+        .getByRole('combobox', { name })
+        .locator('xpath=ancestor::div[contains(@class,"MuiAutocomplete-root")]')
+    const elementsBox = await root('Elements').boundingBox()
+    const classBox = await root('Class').boundingBox()
+    const warningBox = await page.getByText('RandomTemuair is now Random:Cardinal.').boundingBox()
+    expect(Math.abs(elementsBox.width - classBox.width)).toBeLessThanOrEqual(1)
+    // The helper text has MUI's 14px margin on each side.
+    expect(warningBox.width).toBeGreaterThanOrEqual(elementsBox.width - 30)
+
     // The options are the table's keys, its group, and the state selectors.
     await field.click()
     const listbox = page.getByRole('listbox')

@@ -72,6 +72,7 @@ first section written to the rules above.
 - **The notices about a file are in one area under the editor header,** with a count, and you can collapse it. The area holds the shared key notice, the staged-only reference warning, the staged twin notice, the item warnings, and the lists of problems that make the server refuse a species, a trait or an element table.
 - **The nav bar has its own colour.** Before, it had the colour of the title bar, and the two bars looked like one bar. Its icons keep the colour of the title bar text.
 - **The nav bar has a More button for the tools and Settings.** Formulas, Damage Calculator, Lua Helpers, Dialog Builder, Reports, Constants and Settings are in its menu. The editors stay as buttons. Before, a window at its minimum width did not show the last buttons of the bar. When the open page is in the menu, the More button has the current-page mark.
+- **Castable Elements has its own line,** under Book, so its warning has the full width of the editor.
 - **Castable Elements and spawn Offensive and Defensive Elements take a list.** Each selector is one chip, so a spawn with `Earth Wind Fire Water` shows four chips.
 - **An empty element field means "not set".** Creidhne no longer writes `Elements="None"` into a castable that had no Elements attribute. The server then uses the default element. In the castable balancing export, such a castable shows an empty Elements cell, not `None`.
 - **You enter element multipliers as multipliers, not as percentages.** Enter 0.8, not 80.
