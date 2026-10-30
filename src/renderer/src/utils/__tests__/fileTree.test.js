@@ -3,6 +3,10 @@ import {
   stripXml,
   toSectionFile,
   toStagedFile,
+  selectionActions,
+  buildListRows,
+  fileSet,
+  SECTION_HEIGHT,
   displayNameFor,
   matchesFilter,
   filterFiles,
@@ -331,7 +335,7 @@ describe('normalizeFolder', () => {
 describe('resolveSavePath', () => {
   const LIB = 'E:/world/xml'
   // The path fields alone; `file` has its own tests below.
-  const paths = ({ file: _file, ...rest }) => rest
+  const paths = ({ file: _file, crossesRoot: _crosses, ...rest }) => rest
 
   // ── No folder argument: the pre-picker behaviour, unchanged ──
 
@@ -452,44 +456,68 @@ describe('resolveSavePath', () => {
 
   // HTOO-453: a staged file stays in staging. Building the path under
   // <library>/<type> would release it on its first rename.
-  describe('a staged file', () => {
+  // HTOO-453, HTOO-628: the sixth argument is the staging folder while the
+  // editor's Staging box is checked. It chooses the root; the folder stays the
+  // path inside the type.
+  describe('the Staging box', () => {
     const STAGED = 'E:/world/.staging/castables'
     const s = (rel) => toStagedFile(STAGED, rel)
 
-    it('writes back to its own path when nothing changes', () => {
+    it('writes a staged file back to its own path when nothing changes', () => {
       const sel = s('animist/x.xml')
-      const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'animist')
+      const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'animist', STAGED)
       expect(r.newPath).toBe(sel.path)
       expect(r.isRename).toBe(false)
+      expect(r.crossesRoot).toBe(false)
       expect(r.file).toEqual(sel)
     })
 
-    it('renames inside staging, not into the live tree', () => {
+    it('renames a staged file inside staging, not into the live tree', () => {
       const sel = s('animist/x.xml')
-      const r = resolveSavePath(LIB, 'castables', sel, 'y.xml', 'animist')
+      const r = resolveSavePath(LIB, 'castables', sel, 'y.xml', 'animist', STAGED)
       expect(r.newPath).toBe(`${STAGED}/animist/y.xml`)
       expect(r.newRel).toBe('animist/y.xml')
       expect(r.isRename).toBe(true)
+      expect(r.crossesRoot).toBe(false)
       expect(r.file).toEqual(s('animist/y.xml'))
     })
 
-    it('puts a new file started from the Staged tab into staging', () => {
+    it('moves a staged file to another folder inside staging', () => {
+      const r = resolveSavePath(LIB, 'castables', s('animist/x.xml'), 'x.xml', 'wizard', STAGED)
+      expect(r.newPath).toBe(`${STAGED}/wizard/x.xml`)
+      expect(r.file.staged).toBe(true)
+    })
+
+    it('puts a new file into staging while the box is checked', () => {
       const r = resolveSavePath(LIB, 'castables', null, 'new.xml', 'animist', STAGED)
       expect(r.newPath).toBe(`${STAGED}/animist/new.xml`)
       expect(r.isRename).toBe(false)
+      expect(r.crossesRoot).toBe(false)
       expect(r.file).toEqual(s('animist/new.xml'))
     })
 
-    it('ignores the staging folder when a live file is open', () => {
-      const r = resolveSavePath(LIB, 'castables', f('x.xml'), 'y.xml', '', STAGED)
-      expect(r.newPath).toBe(`${LIB}/castables/y.xml`)
+    it('moves a live file into staging, at the same path inside the type', () => {
+      const r = resolveSavePath(LIB, 'castables', f('animist/x.xml'), 'x.xml', 'animist', STAGED)
+      expect(r.newPath).toBe(`${STAGED}/animist/x.xml`)
+      expect(r.isRename).toBe(true)
+      expect(r.crossesRoot).toBe(true)
+      expect(r.file).toEqual(s('animist/x.xml'))
+    })
+
+    it('releases a staged file into the live tree when the box is cleared', () => {
+      const r = resolveSavePath(LIB, 'castables', s('animist/x.xml'), 'x.xml', 'animist')
+      expect(r.newPath).toBe(`${LIB}/castables/animist/x.xml`)
+      expect(r.isRename).toBe(true)
+      expect(r.crossesRoot).toBe(true)
       expect(r.file.staged).toBe(false)
     })
 
-    it('moves to another folder inside staging', () => {
-      const r = resolveSavePath(LIB, 'castables', s('animist/x.xml'), 'x.xml', 'wizard')
-      expect(r.newPath).toBe(`${STAGED}/wizard/x.xml`)
-      expect(r.file.staged).toBe(true)
+    it('keeps an archived file in the archive, box or not', () => {
+      const sel = a('.ignore/universal/x.xml')
+      const r = resolveSavePath(LIB, 'castables', sel, 'x.xml', 'universal', STAGED)
+      expect(r.newPath).toBe(sel.path)
+      expect(r.crossesRoot).toBe(false)
+      expect(r.file.archived).toBe(true)
     })
   })
 })
@@ -505,5 +533,108 @@ describe('toStagedFile', () => {
       archived: false,
       staged: true
     })
+  })
+})
+
+// HTOO-628: the page toolbar's item actions follow the selection.
+describe('selectionActions', () => {
+  const live = toSectionFile('E:/w/xml/items', 'a.xml', false)
+  const live2 = toSectionFile('E:/w/xml/items', 'b.xml', false)
+  const arch = toSectionFile('E:/w/xml/items', '.ignore/c.xml', true)
+  const staged = toStagedFile('E:/w/.staging/items', 'd.xml')
+
+  it('names each set', () => {
+    expect([live, arch, staged].map(fileSet)).toEqual(['active', 'archived', 'staged'])
+  })
+
+  it('enables nothing but its defaults with no selection', () => {
+    const a = selectionActions([])
+    expect(a.archive).toEqual({ kind: 'archive', label: 'Archive', enabled: false })
+    expect(a.move).toEqual({ kind: 'stage', label: 'Stage', enabled: false })
+    expect(a.copy.enabled).toBe(false)
+    expect(a.delete.enabled).toBe(false)
+  })
+
+  it('offers Archive and Stage for live files', () => {
+    const a = selectionActions([live, live2])
+    expect(a.archive).toEqual({ kind: 'archive', label: 'Archive', enabled: true })
+    expect(a.move).toEqual({ kind: 'stage', label: 'Stage', enabled: true })
+    expect(a.copy.enabled).toBe(false)
+    expect(a.delete.enabled).toBe(true)
+  })
+
+  it('offers Unarchive, and no Stage, for archived files', () => {
+    const a = selectionActions([arch])
+    expect(a.archive).toEqual({ kind: 'unarchive', label: 'Unarchive', enabled: true })
+    expect(a.move.enabled).toBe(false)
+    expect(a.copy.enabled).toBe(true)
+  })
+
+  it('offers Release, and no Archive, for staged files', () => {
+    const a = selectionActions([staged])
+    expect(a.move).toEqual({ kind: 'release', label: 'Release', enabled: true })
+    expect(a.archive.enabled).toBe(false)
+  })
+
+  it('enables only Delete for a selection across sets', () => {
+    const a = selectionActions([live, staged])
+    expect(a.archive.enabled).toBe(false)
+    expect(a.move.enabled).toBe(false)
+    expect(a.copy.enabled).toBe(false)
+    expect(a.delete.enabled).toBe(true)
+  })
+})
+
+describe('buildListRows', () => {
+  const act = [f('a.xml'), f('animist/b.xml')]
+  const stg = [toStagedFile('E:/w/.staging/castables', 'animist/c.xml')]
+  const sections = (keys) =>
+    [
+      { key: 'active', label: 'Active', files: act },
+      { key: 'staged', label: 'Staged', files: stg }
+    ].filter((sec) => keys.includes(sec.key))
+
+  it('shows one set with no header, as the tabs did', () => {
+    const { rows } = buildListRows({
+      sections: sections(['active']),
+      folderMode: false,
+      expanded: new Set(),
+      expandAll: false
+    })
+    expect(rows.map((r) => r.kind)).toEqual(['file', 'file'])
+  })
+
+  it('puts a header with a count before each set when two or more show', () => {
+    const { rows } = buildListRows({
+      sections: sections(['active', 'staged']),
+      folderMode: false,
+      expanded: new Set(),
+      expandAll: false
+    })
+    expect(rows.map((r) => (r.kind === 'section' ? `${r.name}:${r.count}` : r.kind))).toEqual([
+      'Active:2',
+      'file',
+      'file',
+      'Staged:1',
+      'file'
+    ])
+  })
+
+  it('keeps each set’s folders apart, so a folder opens in one set only', () => {
+    const { rows, folderKeys } = buildListRows({
+      sections: sections(['active', 'staged']),
+      folderMode: true,
+      expanded: new Set(['staged:animist']),
+      expandAll: false
+    })
+    expect(folderKeys).toEqual(['active:animist', 'staged:animist'])
+    const open = rows.filter((r) => r.kind === 'folder').map((r) => `${r.key}:${r.open}`)
+    expect(open).toEqual(['active:animist:false', 'staged:animist:true'])
+  })
+
+  it('gives a header row its own height', () => {
+    const rows = [{ kind: 'section' }, { kind: 'folder' }, { kind: 'file' }]
+    const height = rowHeightFor(rows)
+    expect([height(0), height(1), height(2)]).toEqual([SECTION_HEIGHT, FOLDER_HEIGHT, ITEM_HEIGHT])
   })
 })

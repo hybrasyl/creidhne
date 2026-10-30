@@ -24,6 +24,7 @@ import { useStoreValue, libraryIndexState } from '../../store/appStore'
 import { useDuplicateName } from '../../hooks/useDuplicateName'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
+import { useEditorAlert } from '../shared/EditorAlerts'
 import { ElementField } from '../shared/ElementFields'
 import { normalizeFolder } from '../../utils/fileTree'
 import { nameCollisionKey } from '@shared/nameCollision.js'
@@ -245,6 +246,20 @@ function SpeciesEditor({
       : undefined
   )
 
+  // In the alerts area under the header (HTOO-628), or in place without one.
+  const problemsInArea = useEditorAlert(
+    'problems',
+    problems.length
+      ? {
+          order: 30,
+          severity: 'warning',
+          testId: 'editor-problems',
+          message: 'The server refuses this species until you correct these problems.',
+          items: problems
+        }
+      : null
+  )
+
   const isBranch = !!data.branchOf
   const inherited = (field) =>
     isBranch
@@ -287,7 +302,7 @@ function SpeciesEditor({
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
       {/* ── Form ── */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {problems.length > 0 && (
+        {problems.length > 0 && !problemsInArea && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             The server refuses this species until you correct these problems.
             <Box component="ul" sx={{ m: 0, pl: 2.5 }}>

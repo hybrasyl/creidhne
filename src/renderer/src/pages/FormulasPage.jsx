@@ -423,43 +423,54 @@ function FormulasPage() {
         extraActions={extraActions}
         newMenuItems={newMenuItems}
         renderSecondary={renderCategoryChip}
-      />
-      <Box
-        sx={{
-          flex: 1,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative'
-        }}
       >
-        {loading ? (
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          >
-            <CircularProgress size={64} thickness={4} color="info" disableShrink />
-          </Box>
-        ) : editingFormula ? (
-          <FormulaEditor
-            formula={editingFormula}
-            allFormulas={formulasData.formulas}
-            isExisting={formulasData.formulas.some((f) => f.id === editingFormula.id)}
-            onSave={handleSave}
-            onDirtyChange={handleDirtyChange}
-            saveRef={saveRef}
-            settings={formulasData.settings}
-          />
-        ) : (
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          >
-            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-              Select a formula or create a new one.
-            </Typography>
-          </Box>
-        )}
-        <MultiSelectOverlay count={selectionCount} />
-      </Box>
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative'
+          }}
+        >
+          {loading ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%'
+              }}
+            >
+              <CircularProgress size={64} thickness={4} color="info" disableShrink />
+            </Box>
+          ) : editingFormula ? (
+            <FormulaEditor
+              formula={editingFormula}
+              allFormulas={formulasData.formulas}
+              isExisting={formulasData.formulas.some((f) => f.id === editingFormula.id)}
+              onSave={handleSave}
+              onDirtyChange={handleDirtyChange}
+              saveRef={saveRef}
+              settings={formulasData.settings}
+            />
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%'
+              }}
+            >
+              <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                Select a formula or create a new one.
+              </Typography>
+            </Box>
+          )}
+          <MultiSelectOverlay count={selectionCount} />
+        </Box>
+      </EditorFileListPanel>
       <FormulaSettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}

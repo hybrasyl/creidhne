@@ -15,6 +15,8 @@
 /** Folder header rows are single-line; file rows carry a name + subtitle. */
 export const ITEM_HEIGHT = 52
 export const FOLDER_HEIGHT = 32
+/** A set's header row, shown when the list shows two or three sets (HTOO-628). */
+export const SECTION_HEIGHT = 28
 
 /** Matches Mabon's nav trees, so the house trees indent alike. */
 export const INDENT_STEP = 1.5
@@ -161,29 +163,64 @@ export function normalizeFolder(input) {
  * name, a new folder, or both.
  *
  * Also returns `file`, the list entry for where the save lands, so a page
- * selects the file it wrote. A staged file (HTOO-453) stays in staging: the
- * path is built under its own `dir`, never under `<library>/<type>`, so a save
- * cannot release it by accident.
+ * selects the file it wrote.
  *
- * `newStagedDir` is the staging folder of the type, for a NEW file that the
- * user started from the Staged tab. It is ignored when a file is open: an open
- * file stays where it is.
+ * `stagedDir` chooses the root (HTOO-453, HTOO-628). It is the type's staging
+ * folder when the editor's Staging box is checked, and undefined when it is
+ * clear. The folder is the path inside the type on both sides, because staging
+ * has the same layout as `xml/`. An archived file ignores it: it stays in the
+ * archive, and Unarchive is its way out.
+ *
+ * `crossesRoot` is true when an open file moves between the live tree and
+ * staging. The page then moves the file (one file stays, never a supersede) and
+ * runs the checks that Stage or Release run.
  */
-export function resolveSavePath(library, subdir, selectedFile, fileName, folder, newStagedDir) {
-  const staged = selectedFile ? selectedFile.staged === true : !!newStagedDir
+export function resolveSavePath(library, subdir, selectedFile, fileName, folder, stagedDir) {
   const archived = selectedFile?.archived === true
+  const staged = !archived && !!stagedDir
   const subDir =
     folder === undefined
       ? relDir(selectedFile?.rel ?? '')
       : joinRel(archived ? '.ignore' : '', normalizeFolder(folder))
   const newRel = joinRel(subDir, fileName)
-  const isRename = !!selectedFile && newRel !== selectedFile.rel
-  const dir = staged ? (selectedFile?.dir ?? newStagedDir) : `${library}/${subdir}`
+  const crossesRoot = !!selectedFile && !archived && (selectedFile.staged === true) !== staged
+  const isRename = !!selectedFile && (crossesRoot || newRel !== selectedFile.rel)
+  const dir = staged ? stagedDir : `${library}/${subdir}`
   // Saving to the same place writes back to the exact path we were handed,
   // rather than a rebuilt one that is equivalent but not string-identical.
   const newPath = selectedFile && !isRename ? selectedFile.path : `${dir}/${newRel}`
   const file = staged ? toStagedFile(dir, newRel) : toSectionFile(dir, newRel, archived)
-  return { newPath, newRel, isRename, file }
+  return { newPath, newRel, isRename, crossesRoot, file }
+}
+
+/** Which set a file is in: `'active'`, `'archived'` or `'staged'`. */
+export function fileSet(file) {
+  return file?.staged ? 'staged' : file?.archived ? 'archived' : 'active'
+}
+
+/**
+ * The page toolbar's item actions for a selection (HTOO-628). Each is enabled
+ * only when it applies to every selected file, and two of them change with the
+ * selection: Archive is Unarchive for archived files, and Stage is Release for
+ * staged files. Staging has no archive, so Archive does not apply to a staged
+ * file, and an archived file cannot be staged.
+ */
+export function selectionActions(selected) {
+  const sets = new Set((selected || []).map(fileSet))
+  const only = sets.size === 1 ? [...sets][0] : null
+  const count = (selected || []).length
+  return {
+    archive:
+      only === 'archived'
+        ? { kind: 'unarchive', label: 'Unarchive', enabled: true }
+        : { kind: 'archive', label: 'Archive', enabled: only === 'active' },
+    move:
+      only === 'staged'
+        ? { kind: 'release', label: 'Release', enabled: true }
+        : { kind: 'stage', label: 'Stage', enabled: only === 'active' },
+    copy: { enabled: count === 1 },
+    delete: { enabled: count > 0 }
+  }
 }
 
 /**
@@ -197,14 +234,17 @@ export function resolveSavePath(library, subdir, selectedFile, fileName, folder,
  * step to keep in sync.
  *
  * Children come out folders-first, then files, each group alphabetical.
+ *
+ * `prefix` goes in front of every folder key. The list gives each set its own
+ * (`staged:`), so a folder opened under one set stays closed under another.
  */
-export function buildFileTree(files) {
+export function buildFileTree(files, prefix = '') {
   const root = { children: new Map(), files: [] }
   for (const file of files) {
     const segs = file.treePath.split('/')
     let node = root
     for (let i = 0; i < segs.length - 1; i++) {
-      const key = segs.slice(0, i + 1).join('/')
+      const key = prefix + segs.slice(0, i + 1).join('/')
       if (!node.children.has(key)) {
         node.children.set(key, { name: segs[i], key, children: new Map(), files: [] })
       }
@@ -293,5 +333,53 @@ export function flattenFlat(files) {
  * must be a function rather than a constant.
  */
 export function rowHeightFor(rows) {
-  return (index) => (rows[index]?.kind === 'folder' ? FOLDER_HEIGHT : ITEM_HEIGHT)
+  return (index) => {
+    const kind = rows[index]?.kind
+    return kind === 'section' ? SECTION_HEIGHT : kind === 'folder' ? FOLDER_HEIGHT : ITEM_HEIGHT
+  }
+}
+
+/**
+ * The sets a list can show, in list order (HTOO-628). The page toolbar's
+ * toggles choose which ones are shown; Active is the default.
+ */
+export const LIST_SETS = Object.freeze([
+  { key: 'active', label: 'Active' },
+  { key: 'staged', label: 'Staged' },
+  { key: 'archived', label: 'Archived' }
+])
+
+/**
+ * The rows of a list that shows one or more sets. `sections` is the shown sets
+ * in list order, each `{ key, label, files }` with its files already filtered.
+ *
+ * With one set, the rows are that set's rows, as the tabs had them. With two or
+ * three, each set starts with a `section` row that names it and counts its
+ * files, so a file's set is always clear from where it sits.
+ *
+ * Returns `{ rows, folderKeys }`: the folder keys of every set, for expand-all.
+ */
+export function buildListRows({ sections, folderMode, expanded, expandAll }) {
+  const headed = sections.length > 1
+  const rows = []
+  const keys = []
+  for (const section of sections) {
+    if (headed) {
+      rows.push({
+        kind: 'section',
+        key: `section:${section.key}`,
+        name: section.label,
+        count: section.files.length,
+        depth: 0
+      })
+    }
+    if (!folderMode) {
+      rows.push(...flattenFlat(section.files))
+      continue
+    }
+    const tree = buildFileTree(section.files, `${section.key}:`)
+    keys.push(...folderKeys(tree))
+    rows.push(...flattenTree(tree, expanded, expandAll))
+  }
+  return { rows, folderKeys: keys }
 }

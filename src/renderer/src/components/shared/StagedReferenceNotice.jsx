@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Alert, Box } from '@mui/material'
 import { useStoreValue, libraryIndexState, stagedIndexState } from '../../store/appStore'
 import { STAGED_TYPES, stagedNames, stagedOnlyReferences } from '@shared/staging.js'
+import { EditorAlert, useEditorAlert } from './EditorAlerts'
 
 /**
  * A warning above the editor of a LIVE file that names an entity that exists
@@ -14,7 +14,8 @@ import { STAGED_TYPES, stagedNames, stagedOnlyReferences } from '@shared/staging
  * repair agree about what a reference is. It reads again whenever either index
  * changes, which every save, stage and release does.
  *
- * Each file-backed page renders it beside `SharedKeyNotice`;
+ * It shows in the editor's alerts area (HTOO-628), or in place when there is
+ * none. Each file-backed page renders it beside `SharedKeyNotice`;
  * `stagingSites.test.js` counts them.
  */
 export default function StagedReferenceNotice({ type, file }) {
@@ -45,22 +46,18 @@ export default function StagedReferenceNotice({ type, file }) {
 
   // A result for another file, or one from before the file went out of scope,
   // is not shown.
-  if (!path || found.path !== path || found.refs.length === 0) return null
-  return (
-    <Alert
-      severity="warning"
-      data-testid="staged-reference-notice"
-      sx={{ mb: 2, flexShrink: 0, '& ~ div': { minHeight: 0 } }}
-    >
-      This file names entities that exist only in staging. The server cannot find them until they
-      are released.
-      <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-        {found.refs.map((r) => (
-          <li key={`${r.type}:${r.name}`}>
-            {r.type}: {r.name}
-          </li>
-        ))}
-      </Box>
-    </Alert>
-  )
+  const alert =
+    !path || found.path !== path || found.refs.length === 0
+      ? null
+      : {
+          order: 20,
+          severity: 'warning',
+          testId: 'staged-reference-notice',
+          message:
+            'This file names entities that exist only in staging. The server cannot find them until they are released.',
+          items: found.refs.map((r) => `${r.type}: ${r.name}`)
+        }
+  const inArea = useEditorAlert('staged-reference', alert)
+  if (!alert || inArea) return null
+  return <EditorAlert alert={alert} sx={{ mb: 2, flexShrink: 0, '& ~ div': { minHeight: 0 } }} />
 }

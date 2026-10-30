@@ -23,6 +23,7 @@ import {
 } from '@mui/material'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import EditorHeader from '../shared/EditorHeader'
+import { useEditorAlert } from '../shared/EditorAlerts'
 import ItemSpritePicker from '../shared/ItemSpritePicker'
 import DisplaySpritePicker from '../shared/DisplaySpritePicker'
 import ColorSwatch from '../shared/ColorSwatch'
@@ -163,6 +164,20 @@ function ItemEditor({
   const [fileNameEdited, setFileNameEdited] = useState(!!initialFileName)
   const [folder, setFolder] = useState(initialFolder)
   const [warningsDismissed, setWarningsDismissed] = useState(false)
+  // In the alerts area under the header (HTOO-628), which collapses, or in
+  // place without one.
+  const warningsInArea = useEditorAlert(
+    'item-warnings',
+    warnings.length
+      ? {
+          order: 30,
+          severity: 'warning',
+          testId: 'editor-problems',
+          message: 'This file has values that Creidhne does not know.',
+          items: warnings
+        }
+      : null
+  )
 
   const [openFlags, setOpenFlags] = useState(item.properties.flags?.length > 0)
   const [openCategories, setOpenCategories] = useState(item.properties.categories?.length > 0)
@@ -339,7 +354,10 @@ function ItemEditor({
       />
       <Divider sx={{ mb: 1, flexShrink: 0 }} />
       {/* Warnings */}
-      <Collapse in={warnings.length > 0 && !warningsDismissed} sx={{ flexShrink: 0 }}>
+      <Collapse
+        in={warnings.length > 0 && !warningsDismissed && !warningsInArea}
+        sx={{ flexShrink: 0 }}
+      >
         <Alert severity="warning" onClose={() => setWarningsDismissed(true)} sx={{ mb: 1 }}>
           {warnings.map((w, i) => (
             <div key={i}>{w}</div>
