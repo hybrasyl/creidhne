@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
+  Autocomplete,
   Box,
   Button,
   Typography,
@@ -107,24 +108,34 @@ function KeyInput({ value, taken, onCommit, style, label }) {
 }
 
 /**
- * One group's members as the text the user types: keys separated by spaces.
- * The text is kept here, so a space typed at the end is not lost when the
- * parent splits it into keys.
+ * One group's members, picked from the elements of this table. A member may
+ * repeat, because a member listed twice is picked twice as often, so no option
+ * equals a value and picking one again adds it again. A member that is not an
+ * element stays, so a file that names one saves unchanged and the problem list
+ * names it; typed text that is not an element is dropped. freeSolo keeps MUI
+ * from warning about those values.
  */
-function GroupMembersField({ members, onChange }) {
-  const [text, setText] = useState(members.join(' '))
+function GroupMembersField({ members, elementKeys, onChange }) {
   return (
-    <TextField
-      label="Members"
+    <Autocomplete
+      multiple
+      freeSolo
+      disableCloseOnSelect
+      options={elementKeys}
+      value={members}
+      isOptionEqualToValue={() => false}
+      onChange={(_, vals) =>
+        onChange(vals.filter((v) => elementKeys.includes(v) || members.includes(v)))
+      }
       size="small"
-      value={text}
       sx={{ flex: 1 }}
-      helperText="Element keys, separated by spaces. A key listed twice is picked twice as often."
-      onChange={(e) => {
-        setText(e.target.value)
-        onChange(e.target.value.split(/\s+/).filter(Boolean))
-      }}
-      slotProps={{ htmlInput: { spellCheck: false } }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Members"
+          helperText="Pick an element twice to make it twice as likely."
+        />
+      )}
     />
   )
 }
@@ -454,15 +465,16 @@ function ElementTableEditor({
                 slotProps={{ htmlInput: { inputMode: 'decimal', spellCheck: false } }}
               />
             )}
-            <CommentField
-              value={comment}
-              onChange={(e) => {
-                setComment(e.target.value)
-                markDirty()
-              }}
-              sx={{ flex: 1 }}
-            />
           </Box>
+          <CommentField
+            value={comment}
+            onChange={(e) => {
+              setComment(e.target.value)
+              markDirty()
+            }}
+            fullWidth
+            sx={{ mt: 2 }}
+          />
         </Paper>
 
         {/* ── Format and problems ── */}
@@ -633,6 +645,7 @@ function ElementTableEditor({
                       />
                       <GroupMembersField
                         members={g.members}
+                        elementKeys={keys}
                         onChange={(members) =>
                           setGroups((gs) => gs.map((x, j) => (j === i ? { ...x, members } : x)))
                         }

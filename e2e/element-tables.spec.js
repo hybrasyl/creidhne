@@ -97,7 +97,7 @@ test.describe('Element tables', () => {
     const { page, file } = await openTable('element_registry.xml', REGISTRY, 'registry')
 
     await expect(page.getByLabel('Key of element 1')).toHaveValue('Force')
-    await expect(page.getByLabel('Members')).toHaveValue('Fire')
+    await expect(page.locator('.MuiAutocomplete-tag')).toHaveText(['Fire'])
     // An undeclared pair is empty, and shows the table default it uses.
     const cell = page.getByLabel('Force against Fire')
     await expect(cell).toHaveValue('')
@@ -113,5 +113,26 @@ test.describe('Element tables', () => {
     expect(saved).toContain('<Source Element="Force" DefaultMultiplier="1.1"/>')
     expect(saved).toContain('<Group Key="Hot" Members="Fire"/>')
     expect(saved.match(/<Target\b/g)).toHaveLength(2)
+  })
+
+  test('group members are picked from the elements, and one can repeat', async () => {
+    const { page, file } = await openTable('element_registry.xml', REGISTRY, 'registry')
+
+    const members = page.getByRole('combobox', { name: 'Members' })
+    await members.click()
+    await expect(page.getByRole('option')).toHaveText(['Force', 'Fire'])
+    // Fire is a member already. Picking it again adds it again.
+    await page.getByRole('option', { name: 'Fire', exact: true }).click()
+    await page.getByRole('option', { name: 'Force', exact: true }).click()
+    // Typed text that is not an element is not added.
+    await members.fill('Ice')
+    await members.press('Enter')
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.MuiAutocomplete-tag')).toHaveText(['Fire', 'Fire', 'Force'])
+
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(() => readFileSync(file, 'utf-8'))
+      .toContain('<Group Key="Hot" Members="Fire Fire Force"/>')
   })
 })

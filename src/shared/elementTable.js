@@ -36,8 +36,9 @@ export const GROUP_SELECTOR_PREFIX = 'Random:'
 
 /**
  * The HXML-24 element set: the Id and RetailId of each key that the design
- * names. Ids 0 to 9 keep their retail meaning; 7 (Wood) is retired; 10 to 14
- * held the old selectors and are not used again; new elements start at 15.
+ * names. Convert uses it to number an old-format table. Ids 0 to 9 keep their
+ * retail meaning. The table defines every element, so 15 to 22 are only the
+ * design's suggestion, not a reservation.
  */
 export const HXML24_ELEMENT_IDS = {
   Force: { id: 0, retailId: 0 },
@@ -59,8 +60,12 @@ export const HXML24_ELEMENT_IDS = {
   Void: { id: 22, retailId: 0 }
 }
 
-const RETIRED_IDS = new Set([7, 10, 11, 12, 13, 14])
-const FIRST_NEW_ID = 23
+/**
+ * Ids 10 to 14 held the old selectors (RandomTemuair, RandomExpanded, Necklace,
+ * Belt, Current) in the ElementType enum. Server main still reads an Id as that
+ * enum until HS-1239, so an old value there must not read as an element.
+ */
+export const RETIRED_IDS = [10, 11, 12, 13, 14]
 
 /** A new, empty element entry. */
 export function blankElement(key) {
@@ -210,21 +215,20 @@ export function addElement(table, key) {
   }
 }
 
-/**
- * The lowest free Id from 23 up. New elements start at 15 in the design, and
- * 15 to 22 are the Ids it gives its own new elements, so a custom element
- * starts after them and cannot take an Id that one of them will need.
- */
+/** The lowest Id from 0 up that is free and not retired. */
 export function nextFreeId(table) {
-  const used = new Set(table.elements.map((e) => Number(e.id)))
-  let id = FIRST_NEW_ID
-  while (used.has(id) || RETIRED_IDS.has(id)) id++
+  return lowestFreeId(new Set(table.elements.map((e) => Number(e.id))))
+}
+
+function lowestFreeId(used) {
+  let id = 0
+  while (used.has(id) || RETIRED_IDS.includes(id)) id++
   return id
 }
 
 /**
  * Give an old-format table an <Elements> block. Each key that HXML-24 names
- * takes its Id and RetailId; any other key takes the next free Id and
+ * takes its Id and RetailId; any other key takes the lowest free Id and
  * RetailId 0. Force is the default when the table has it, else the first
  * element. No key is renamed: `None` and `Wood` are the content migration's
  * to change, and validation names them.
@@ -242,10 +246,9 @@ export function convertToRegistry(table) {
     }
     return next
   })
-  let id = FIRST_NEW_ID
   for (const e of elements) {
     if (e.id !== '') continue
-    while (used.has(id) || RETIRED_IDS.has(id)) id++
+    const id = lowestFreeId(used)
     e.id = String(id)
     e.retailId = '0'
     used.add(id)
@@ -284,6 +287,8 @@ export function validateElementTable(table) {
     for (const e of table.elements) {
       if (!isWholeIn(e.id, 0, 254))
         problems.push(`${e.key}: the Id must be a whole number from 0 to 254.`)
+      else if (RETIRED_IDS.includes(Number(e.id)))
+        problems.push(`${e.key}: the Ids 10 to 14 are retired. Use another Id.`)
       if (e.retailId !== '' && !isWholeIn(e.retailId, 0, 9))
         problems.push(`${e.key}: the RetailId must be a whole number from 0 to 9.`)
     }
