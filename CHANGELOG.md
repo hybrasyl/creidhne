@@ -61,6 +61,9 @@ first section written to the rules above.
 - **An empty element field means "not set".** Creidhne no longer writes `Elements="None"` into a castable that had no Elements attribute. The server then uses the default element. In the castable balancing export, such a castable shows an empty Elements cell, not `None`.
 - **You enter element multipliers as multipliers, not as percentages.** Enter 0.8, not 80.
 - **A new element table is in the registry format,** with Force as its default element.
+- **Element table groups take their members from a list of the table's elements.** Pick an element two times to make it two times as likely. Before, you typed the keys, separated by spaces.
+- **The element table comment has its own line,** below the name and the default multiplier.
+- **A new element takes the lowest free Id.** Add element and Convert start at 0 and skip the Ids 10 to 14, which held the old selectors. Convert gives the world table the Ids of the old element list: None is 0 and Wood is 7. Before, a new element started at 23. The editor names an Id from 10 to 14 as a problem.
 - **The Danaan and Grinneal title bars are dark.** The Danaan bars are bronze and the Grinneal bars are brown. The bar text and the icons are light, with a black outline, as on Hybrasyl and Chadul.
 - **The accent colour and the status colours are easy to read as text.** In every theme, the accent colour and the error, warning, info and success colours now have a contrast of 4.5:1 or more against the page, against cards and against dark panels. Chadul, Danaan, Mundanes and Dubhaimid have new accent colours. Danaan and Mundanes have darker status colours, so that they show clearly on the light page. In Chadul and Dubhaimid, filled buttons and selected chips now have dark labels.
 - **The title bar is the house title bar.** It is the same in each house app. The logo is smaller, and the window buttons have the same highlight in each theme.

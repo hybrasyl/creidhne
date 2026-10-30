@@ -5,6 +5,7 @@ import {
   convertToRegistry,
   effectiveMultiplier,
   nextFreeId,
+  RETIRED_IDS,
   removeElement,
   renameElement,
   setPair,
@@ -139,7 +140,7 @@ describe('renameElement and removeElement', () => {
 describe('addElement', () => {
   it('in the registry format, declares no pairs and takes a free Id', () => {
     const t = addElement(registryTable(), 'Arcane')
-    expect(t.elements.at(-1)).toMatchObject({ key: 'Arcane', id: '23' })
+    expect(t.elements.at(-1)).toMatchObject({ key: 'Arcane', id: '2' })
     expect(t.sources).toHaveLength(2)
   })
   it('in the old format, fills the new row and column with 1, as the server needs', () => {
@@ -148,9 +149,12 @@ describe('addElement', () => {
     expect(t.sources.every((r) => r.targets.length === 4)).toBe(true)
     expect(effectiveMultiplier(t, 'Metal', 'Fire')).toBe(1)
   })
-  it('skips the retired Ids', () => {
-    const t = { ...registryTable(), elements: [el('A', 23), el('B', 24)] }
-    expect(nextFreeId(t)).toBe(25)
+  it('takes the lowest free Id, never a retired one or one in use', () => {
+    expect(nextFreeId({ ...registryTable(), elements: [] })).toBe(0)
+    const t = { ...registryTable(), elements: [el('A', 0), el('B', 2)] }
+    expect(nextFreeId(t)).toBe(1)
+    const full = { ...registryTable(), elements: [...Array(10).keys()].map((i) => el(`E${i}`, i)) }
+    expect(nextFreeId(full)).toBe(15)
   })
 })
 
@@ -159,10 +163,26 @@ describe('convertToRegistry', () => {
     const t = convertToRegistry(legacyTable())
     expect(t.registry).toBe(true)
     expect(t.elements.map((e) => [e.key, e.id, e.retailId])).toEqual([
-      ['None', '23', '0'],
+      ['None', '0', '0'],
       ['Fire', '1', '1'],
-      ['Wood', '24', '0']
+      ['Wood', '2', '0']
     ])
+  })
+  it('numbers the world table as the old enum did: None is 0 and Wood is 7', () => {
+    const keys = [
+      'None',
+      'Fire',
+      'Water',
+      'Wind',
+      'Earth',
+      'Light',
+      'Dark',
+      'Wood',
+      'Metal',
+      'Undead'
+    ]
+    const t = convertToRegistry({ ...legacyTable(), elements: keys.map(blankElement), sources: [] })
+    expect(t.elements.map((e) => Number(e.id))).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   })
   it('makes Force the default when the table has it, else the first element', () => {
     expect(convertToRegistry(legacyTable()).elements.filter((e) => e.isDefault)).toEqual([
@@ -200,6 +220,14 @@ describe('validateElementTable', () => {
   })
   it('an Id out of range', () => {
     expect(problemsOf((t) => (t.elements[2].id = '255')).join()).toMatch(/from 0 to 254/)
+  })
+  it('a retired Id, 10 to 14', () => {
+    for (const id of RETIRED_IDS)
+      expect(problemsOf((t) => (t.elements[2].id = String(id))).join()).toMatch(/are retired/)
+    expect(RETIRED_IDS).toEqual([10, 11, 12, 13, 14])
+  })
+  it('allows Id 7, which was Wood', () => {
+    expect(problemsOf((t) => (t.elements[2].id = '7'))).toEqual([])
   })
   it('a RetailId of 10', () => {
     expect(problemsOf((t) => (t.elements[2].retailId = '10')).join()).toMatch(/from 0 to 9/)
