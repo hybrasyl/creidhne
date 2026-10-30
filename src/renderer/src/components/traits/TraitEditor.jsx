@@ -5,6 +5,7 @@ import {
   TextField,
   Paper,
   Autocomplete,
+  createFilterOptions,
   Snackbar,
   Alert,
   FormControl,
@@ -44,7 +45,7 @@ function deriveTraitPrefix(fileName, name) {
   return 'trait'
 }
 
-/** A free-text field with suggestions, for Category and ExclusiveGroup. */
+/** A free-text field with suggestions, for Category. */
 function SuggestField({ label, value, options, onChange, sx, helperText }) {
   return (
     <Autocomplete
@@ -58,6 +59,43 @@ function SuggestField({ label, value, options, onChange, sx, helperText }) {
       size="small"
       sx={sx}
       renderInput={(params) => <TextField {...params} label={label} helperText={helperText} />}
+    />
+  )
+}
+
+const filterGroups = createFilterOptions()
+
+/**
+ * The trait's exclusive group, picked from the groups that other traits name.
+ * The XML has no list of groups: a group is the traits that name it, so the
+ * first trait in a group creates it with "Add group". Text typed and not
+ * picked is not kept.
+ */
+function GroupPicker({ value, groups, onChange, sx, helperText }) {
+  return (
+    <Autocomplete
+      freeSolo
+      selectOnFocus
+      clearOnBlur
+      handleHomeEndKeys
+      options={groups}
+      value={value || null}
+      filterOptions={(options, params) => {
+        const filtered = filterGroups(options, params)
+        const typed = params.inputValue.trim()
+        if (typed && !options.includes(typed))
+          filtered.push({ newGroup: typed, label: `Add group "${typed}"` })
+        return filtered
+      }}
+      getOptionLabel={(o) => (typeof o === 'string' ? o : o.label)}
+      onChange={(_, val) =>
+        onChange(val == null ? '' : typeof val === 'string' ? val.trim() : val.newGroup)
+      }
+      size="small"
+      sx={sx}
+      renderInput={(params) => (
+        <TextField {...params} label="Exclusive Group" helperText={helperText} />
+      )}
     />
   )
 }
@@ -154,7 +192,10 @@ function TraitEditor({
   // ── Index-backed choices ──────────────────────────────────────────────────
   const traitNames = useMemo(() => libraryIndex.traits || [], [libraryIndex])
   const categories = libraryIndex.traitCategories || []
-  const groups = Object.keys(libraryIndex.traitExclusiveGroups || {})
+  const groups = Object.keys(libraryIndex.traitExclusiveGroups || {}).sort()
+  const groupMates = (libraryIndex.traitExclusiveGroups?.[data.exclusiveGroup] || []).filter(
+    (n) => n !== data.name && n !== trait.name
+  )
   // Not the trait itself (under its saved name or the one being typed).
   const conflictOptions = traitNames.filter((n) => n !== data.name && n !== trait.name)
 
@@ -288,13 +329,18 @@ function TraitEditor({
             Exclusivity
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start', mb: 2 }}>
-            <SuggestField
-              label="Exclusive Group"
+            <GroupPicker
               value={data.exclusiveGroup}
-              options={groups}
+              groups={groups}
               onChange={setField('exclusiveGroup')}
               sx={{ width: 220 }}
-              helperText="A character has at most one trait from each group."
+              helperText={
+                !data.exclusiveGroup
+                  ? 'A character has at most one trait from each group.'
+                  : groupMates.length
+                    ? `Also in this group: ${groupMates.join(', ')}.`
+                    : 'No other trait is in this group yet.'
+              }
             />
             {data.exclusiveGroup && (
               <FormControl size="small" sx={{ minWidth: 220 }}>
@@ -323,8 +369,12 @@ function TraitEditor({
             filterSelectedOptions
             options={conflictOptions}
             value={data.conflictsWith}
+            // Only traits can be added. A name the file holds that is not a
+            // trait stays, so it saves unchanged and the problem list names it.
             onChange={(_, vals) =>
-              setField('conflictsWith')(vals.map((v) => v.trim()).filter(Boolean))
+              setField('conflictsWith')(
+                vals.filter((v) => conflictOptions.includes(v) || data.conflictsWith.includes(v))
+              )
             }
             size="small"
             renderInput={(params) => (

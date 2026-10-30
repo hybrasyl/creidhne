@@ -61,6 +61,8 @@ first section written to the rules above.
 - **An empty element field means "not set".** Creidhne no longer writes `Elements="None"` into a castable that had no Elements attribute. The server then uses the default element. In the castable balancing export, such a castable shows an empty Elements cell, not `None`.
 - **You enter element multipliers as multipliers, not as percentages.** Enter 0.8, not 80.
 - **A new element table is in the registry format,** with Force as its default element.
+- **A trait's Exclusive Group is a list of the groups that other traits name.** To make a group, pick Add group. The field says which other traits are in the group. Before, you typed the group, and the field did not show that it put the trait in the group.
+- **Conflicts With adds only traits.** Typed text that is not a trait is not added. A name that the file holds and that is not a trait stays, and the problem list names it.
 - **Element table groups take their members from a list of the table's elements.** Pick an element two times to make it two times as likely. Before, you typed the keys, separated by spaces.
 - **The element table comment has its own line,** below the name and the default multiplier.
 - **A new element takes the lowest free Id.** Add element and Convert start at 0 and skip the Ids 10 to 14, which held the old selectors. Convert gives the world table the Ids of the old element list: None is 0 and Wood is 7. Before, a new element started at 23. The editor names an Id from 10 to 14 as a problem.
