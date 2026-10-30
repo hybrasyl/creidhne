@@ -4,11 +4,12 @@ import { useAppStore, IndexViewContext } from '../../store/appStore'
 import { STAGED_TYPES, mergeStagedIndex, stagedOnlyNameSet } from '@shared/staging.js'
 
 /**
- * What an editor knows about where its file lives (HTOO-453). Read by
- * `EditorHeader`, so the header of every editor shows Stage or Release without
- * a prop through each one.
+ * Where an editor's next save goes (HTOO-453, HTOO-628). Read by
+ * `EditorHeader`, so the Staging box is in every editor without a prop through
+ * each one. `onSaveStagedChange` is null outside a file-backed page, and the
+ * header then shows no box.
  */
-const StagingContext = createContext({ staged: false, onStage: null, onRelease: null })
+const StagingContext = createContext({ staged: false, onSaveStagedChange: null })
 
 export function useStaging() {
   return useContext(StagingContext)
@@ -57,23 +58,21 @@ function markTheme(stagedOnly) {
  * Wraps an editor. Each file-backed page renders its editor inside one, and
  * `stagingSites.test.js` counts them.
  *
- * For a staged file, the editor sees the live index with each type's staged
- * names added (`IndexViewContext`), so its pickers offer both and its duplicate
- * check compares against both. For a live file the editor sees the live index
- * only: a live file that names a staged entity cannot be resolved, so a live
- * picker does not offer one.
- *
- * `newStaged` marks a new entity, with no file yet, that the user started from
- * the Staged tab: it is staged from its first render, so its pickers offer
- * staged names before it is saved.
+ * `saveStaged` is the page's Staging box: where the next save writes. It
+ * starts as where the open file is, and for a new entity it starts checked when
+ * the list shows only staged files. While it is checked, the editor sees the
+ * live index with each type's staged names added (`IndexViewContext`), so its
+ * pickers offer both and its duplicate check compares against both. While it
+ * is clear, the editor sees the live index only: a live file that names a
+ * staged entity cannot be resolved, so a live picker does not offer one.
  *
  * The tree has the same shape for both, so moving between a live file and a
  * staged one does not remount the editor for that reason alone.
  */
-export default function StagingScope({ file, newStaged = false, onStage, onRelease, children }) {
+export default function StagingScope({ saveStaged = false, onSaveStagedChange = null, children }) {
   const libraryIndex = useAppStore((s) => s.libraryIndex)
   const stagedIndex = useAppStore((s) => s.stagedIndex)
-  const staged = file ? file.staged === true : newStaged === true
+  const staged = saveStaged === true
 
   const view = useMemo(
     () => (staged ? mergeStagedIndex(libraryIndex, stagedIndex) : null),
@@ -87,7 +86,7 @@ export default function StagingScope({ file, newStaged = false, onStage, onRelea
     }
     return markTheme(stagedOnly)
   }, [staged, libraryIndex, stagedIndex])
-  const context = useMemo(() => ({ staged, onStage, onRelease }), [staged, onStage, onRelease])
+  const context = useMemo(() => ({ staged, onSaveStagedChange }), [staged, onSaveStagedChange])
 
   return (
     <StagingContext.Provider value={context}>

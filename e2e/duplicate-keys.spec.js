@@ -62,12 +62,15 @@ test.describe('Duplicate keys', () => {
     await expect(notice).toContainText('lorica.xml')
     await expect(page.getByRole('textbox', { name: 'Filename' })).toHaveValue('lorica-copy.xml')
 
-    // The editor after the notice ends inside its pane: the notice does not
-    // push the editor's bottom out of view.
-    const fits = await notice.evaluate((el) => {
-      const pane = el.parentElement.getBoundingClientRect()
-      const editor = el.nextElementSibling.getBoundingClientRect()
-      return editor.bottom <= pane.bottom + 1
+    // The notice is in the alerts area under the editor header (HTOO-628), and
+    // the editor still ends inside its pane: the alerts do not push the
+    // editor's bottom out of view. The area is in the header, the header is the
+    // editor's first child, and the editor is the pane's last.
+    await expect(page.getByTestId('editor-alerts')).toContainText('lorica.xml')
+    const fits = await page.getByTestId('editor-alerts').evaluate((el) => {
+      const editor = el.parentElement.parentElement
+      const pane = editor.parentElement.getBoundingClientRect()
+      return editor.getBoundingClientRect().bottom <= pane.bottom + 1
     })
     expect(fits).toBe(true)
   })

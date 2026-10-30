@@ -39,8 +39,9 @@ function NationsPage() {
   const [libraryIndex, setLibraryIndex] = useStoreState(libraryIndexState)
   const namesByFilename = libraryIndex?.nationsNamesByFilename
   const [selectedFile, setSelectedFile] = useState(null)
-  // A new entity started from the Staged tab saves into staging (HTOO-453).
-  const [newStaged, setNewStaged] = useState(false)
+  // Where the next save writes: the live tree, or staging while the editor's
+  // Staging box is checked (HTOO-453, HTOO-628).
+  const [saveStaged, setSaveStaged] = useState(false)
   const [editingNation, setEditingNation] = useState(null)
   const [loadingNation, setLoadingNation] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -86,16 +87,17 @@ function NationsPage() {
   const initialFolder = selectedFile ? relDir(selectedFile.treePath) : ''
 
   const doNew = (staged = false) => {
-    setNewStaged(staged)
+    setSaveStaged(staged)
     setSelectedFile(null)
     setLoadError(null)
     setEditingNation({ ...DEFAULT_NATION, spawnPoints: [] })
   }
-  const handleNew = () => guard(() => doNew(false))
-  const handleNewStaged = () => guard(() => doNew(true))
+  // The panel passes `{ staged }`: true when the list shows only staged files.
+  const handleNew = (opts) => guard(() => doNew(opts?.staged === true))
 
   const doSelect = async (file) => {
     setSelectedFile(file)
+    setSaveStaged(file.staged === true)
     setLoadError(null)
     setEditingNation(null)
     setLoadingNation(true)
@@ -137,6 +139,7 @@ function NationsPage() {
         newPath,
         newRel,
         isRename,
+        crossesRoot,
         file: savedFile
       } = resolveSavePath(
         activeLibrary,
@@ -144,16 +147,20 @@ function NationsPage() {
         selectedFile,
         fileName,
         folder,
-        newStaged ? stagedDir : undefined
+        saveStaged ? stagedDir : undefined
       )
       // The list's own shape, so the next save reads back the folder it landed
       // in rather than an ad-hoc object with no treePath.
       const nextFile = () => savedFile
+      // The Staging box moves the file between the live tree and staging
+      // (HTOO-628): Stage's or Release's checks, before anything is written.
+      const move = await confirmMove(crossesRoot ? selectedFile : null, data.name)
+      if (move.cancelled) return
 
       // Rename: change the file's name before anything is written, so a
       // collision is refused while both files still exist. `moveFile`
       // treats a change of capitalisation as the same file, not a clash.
-      if (isRename && (mode === 'rename' || wasStaged)) {
+      if (isRename && (mode === 'rename' || wasStaged || crossesRoot)) {
         const moved = await window.electronAPI.moveFile(selectedFile.path, newPath)
         if (moved?.conflict) {
           setSnackbar({ message: `"${newRel}" already exists.`, severity: 'error' })
@@ -163,9 +170,9 @@ function NationsPage() {
       await window.electronAPI.saveNation(newPath, data)
       setEditingNation(data)
 
-      if (isRename && (mode === 'rename' || wasStaged)) {
+      if (isRename && (mode === 'rename' || wasStaged || crossesRoot)) {
         setSelectedFile(nextFile())
-        setSnackbar({ message: `Renamed to "${newRel}".`, severity: 'success' })
+        setSnackbar({ message: move.describe(newRel), severity: 'success' })
       } else if (isRename) {
         const result = await window.electronAPI.archiveFile(
           selectedFile.path,
@@ -189,6 +196,7 @@ function NationsPage() {
       // Last, and only once the entity itself is on disk: a failed entity
       // save must not leave the world repointed at a name never written.
       await rename.apply()
+      await move.apply(newPath)
     } catch (err) {
       console.error('Failed to save nation:', err)
       setSnackbar({ message: 'Save failed.', severity: 'error' })
@@ -204,10 +212,9 @@ function NationsPage() {
     handleBulkUnarchive,
     handleBulkDelete,
     handleDuplicate,
-    handleStage,
-    handleRelease,
     handleBulkStage,
-    handleBulkRelease
+    handleBulkRelease,
+    confirmMove
   } = useBulkFileActions({
     activeLibrary,
     subdir: NATIONS_SUBDIR,
@@ -220,6 +227,15 @@ function NationsPage() {
     setSnackbar,
     markClean
   })
+
+  // The Staging box is an edit: the next Save moves the file.
+  const handleSaveStagedChange = useCallback(
+    (staged) => {
+      setSaveStaged(staged)
+      markDirty()
+    },
+    [markDirty]
+  )
 
   const handleDirtyChange = useCallback(
     (dirty) => {
@@ -246,70 +262,75 @@ function NationsPage() {
         stagedNamesByFilename={stagedNamesByFilename}
         onStage={handleBulkStage}
         onRelease={handleBulkRelease}
-        onNewStaged={handleNewStaged}
         onDelete={handleBulkDelete}
         onDuplicate={handleDuplicate}
         onSelectionChange={onSelectionChange}
-      />
-      <Box
-        sx={{
-          flex: 1,
-          p: 2,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative'
-        }}
       >
-        <SharedKeyNotice type={NATIONS_SUBDIR} file={selectedFile} />
-        <StagedReferenceNotice type={NATIONS_SUBDIR} file={selectedFile} />
-        {loadError ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <strong>Failed to load nation:</strong> {loadError}
-          </Alert>
-        ) : loadingNation ? (
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          >
-            <CircularProgress size={64} thickness={4} color="info" disableShrink />
-          </Box>
-        ) : editingNation ? (
-          <StagingScope
-            file={selectedFile}
-            newStaged={newStaged}
-            onStage={handleStage}
-            onRelease={handleRelease}
-          >
-            <NationEditor
-              nation={editingNation}
-              initialFileName={selectedFile?.name ?? null}
-              initialFolder={initialFolder}
-              folderOptions={folderChoices}
-              isArchived={selectedFile?.archived === true}
-              isExisting={!!selectedFile}
-              onSave={handleSave}
-              onArchive={handleArchive}
-              onUnarchive={handleUnarchive}
-              onDirtyChange={handleDirtyChange}
-              saveRef={saveRef}
-            />
-          </StagingScope>
-        ) : (
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-          >
-            <Typography
-              variant="body1"
+        <Box
+          sx={{
+            flex: 1,
+            p: 2,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative'
+          }}
+        >
+          <SharedKeyNotice type={NATIONS_SUBDIR} file={selectedFile} />
+          <StagedReferenceNotice type={NATIONS_SUBDIR} file={selectedFile} />
+          {loadError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              <strong>Failed to load nation:</strong> {loadError}
+            </Alert>
+          ) : loadingNation ? (
+            <Box
               sx={{
-                color: 'text.secondary'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%'
               }}
             >
-              Select a nation or create a new one.
-            </Typography>
-          </Box>
-        )}
-        <MultiSelectOverlay count={selectionCount} />
-      </Box>
+              <CircularProgress size={64} thickness={4} color="info" disableShrink />
+            </Box>
+          ) : editingNation ? (
+            <StagingScope saveStaged={saveStaged} onSaveStagedChange={handleSaveStagedChange}>
+              <NationEditor
+                nation={editingNation}
+                initialFileName={selectedFile?.name ?? null}
+                initialFolder={initialFolder}
+                folderOptions={folderChoices}
+                isArchived={selectedFile?.archived === true}
+                isExisting={!!selectedFile}
+                onSave={handleSave}
+                onArchive={handleArchive}
+                onUnarchive={handleUnarchive}
+                onDirtyChange={handleDirtyChange}
+                saveRef={saveRef}
+              />
+            </StagingScope>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%'
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
+                Select a nation or create a new one.
+              </Typography>
+            </Box>
+          )}
+          <MultiSelectOverlay count={selectionCount} />
+        </Box>
+      </EditorFileListPanel>
       <Snackbar
         open={!!snackbar}
         autoHideDuration={6000}

@@ -21,6 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
+import { useEditorAlert } from '../shared/EditorAlerts'
 import { useDuplicateName } from '../../hooks/useDuplicateName'
 import { normalizeFolder } from '../../utils/fileTree'
 import {
@@ -246,6 +247,22 @@ function ElementTableEditor({
 
   const keys = elementKeys(model)
   const problems = useMemo(() => validateElementTable(model), [model])
+  // In the alerts area under the header (HTOO-628), or in place without one.
+  // The old-format notice stays in the form: its Convert button acts on the
+  // table beside it.
+  const problemsInArea = useEditorAlert(
+    'problems',
+    problems.length
+      ? {
+          order: 30,
+          severity: 'warning',
+          testId: 'editor-problems',
+          message:
+            'The server refuses this table until you correct these problems. A save still writes the file.',
+          items: problems
+        }
+      : null
+  )
 
   const handleAddElement = () => {
     let counter = keys.length + 1
@@ -493,7 +510,7 @@ function ElementTableEditor({
             that the table can use groups and default multipliers. Convert changes no multiplier.
           </Alert>
         )}
-        {problems.length > 0 && (
+        {problems.length > 0 && !problemsInArea && (
           <Alert severity="warning" sx={{ flexShrink: 0 }}>
             The server refuses this table until you correct these problems. A save still writes the
             file.
