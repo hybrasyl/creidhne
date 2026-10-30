@@ -112,14 +112,22 @@ test.describe('Staging', () => {
     await expect(listbox.getByRole('option').filter({ hasText: 'Crouch' })).toHaveCount(0)
     await page.keyboard.press('Escape')
 
-    // With two sets on, the list has a header for each.
+    // Each set shown has a header with its count, and a header collapses its set.
+    await expect(page.getByTestId('list-section-active')).toContainText('2')
     await toggle('Staged').click()
     await expect(page.getByTestId('list-section-active')).toContainText('2')
     await expect(page.getByTestId('list-section-staged')).toContainText('3')
+    const fileList = page.getByTestId('file-list')
+    await page.getByTestId('list-section-active').click()
+    await expect(page.getByTestId('list-section-active')).toHaveAttribute('aria-expanded', 'false')
+    await expect(fileList.getByText('Strike', { exact: true })).toHaveCount(0)
+    await page.getByTestId('list-section-active').click()
+    await expect(fileList.getByText('Strike', { exact: true })).toBeVisible()
 
     // The staged castables alone, by name.
     await only('Staged')
-    await expect(page.getByTestId('list-section-staged')).toHaveCount(0)
+    await expect(page.getByTestId('list-section-active')).toHaveCount(0)
+    await expect(page.getByTestId('list-section-staged')).toBeVisible()
     await page.getByText('Ambush', { exact: true }).first().click()
     await expect(stagingBox).toBeChecked()
     // The live twin is named, because Release will refuse it.

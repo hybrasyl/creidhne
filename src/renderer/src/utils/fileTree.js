@@ -353,26 +353,29 @@ export const LIST_SETS = Object.freeze([
  * The rows of a list that shows one or more sets. `sections` is the shown sets
  * in list order, each `{ key, label, files }` with its files already filtered.
  *
- * With one set, the rows are that set's rows, as the tabs had them. With two or
- * three, each set starts with a `section` row that names it and counts its
- * files, so a file's set is always clear from where it sits.
+ * Each set starts with a `section` row that names it and counts its files, with
+ * one set shown or three, so a file's set is always clear from where it sits.
+ * A header collapses its set: `collapsed` holds the keys of the collapsed
+ * sets, and their files have no rows. `expandAll` (a live filter) opens every
+ * set as it opens every folder, so a match is never inside a closed set.
  *
  * Returns `{ rows, folderKeys }`: the folder keys of every set, for expand-all.
  */
-export function buildListRows({ sections, folderMode, expanded, expandAll }) {
-  const headed = sections.length > 1
+export function buildListRows({ sections, folderMode, expanded, expandAll, collapsed }) {
   const rows = []
   const keys = []
   for (const section of sections) {
-    if (headed) {
-      rows.push({
-        kind: 'section',
-        key: `section:${section.key}`,
-        name: section.label,
-        count: section.files.length,
-        depth: 0
-      })
-    }
+    const open = expandAll || !collapsed?.has(section.key)
+    rows.push({
+      kind: 'section',
+      key: `section:${section.key}`,
+      set: section.key,
+      name: section.label,
+      count: section.files.length,
+      open,
+      depth: 0
+    })
+    if (!open) continue
     if (!folderMode) {
       rows.push(...flattenFlat(section.files))
       continue

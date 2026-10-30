@@ -65,7 +65,7 @@ first section written to the rules above.
 - **A rename also updates the staged files that use the name.** The list of files to update shows them under **In staging**.
 - **Save in a staged file renames the file in place.** Staging has no archive, so Save does not keep the old file.
 - **Each editor page has a toolbar across the page.** It shows the page name, New, the flat or folder view, the Staged, Archived and Active toggles, and the item actions Archive, Stage, Duplicate and Delete. The title, the buttons and the tabs at the top of the file list are gone.
-- **The toggles choose which files the list shows.** Active is on at the start. With one toggle on, the list shows those files only. With two or three on, each set has a header with its count. At least one toggle stays on.
+- **The toggles choose which files the list shows.** Active is on at the start, and at least one toggle stays on. Each set that the list shows has a header with its count. Click a header to collapse or expand its set. While you filter the list, every set is expanded.
 - **The item actions follow the selection.** Archive becomes Unarchive for archived files, and Stage becomes Release for staged files. An action that does not apply to every selected file is disabled.
 - **Rename is always next to Save,** and it is disabled until you change the filename or the folder. Before, it showed only after a change.
 - **↺ is inside the Filename field.** The line that says what Save and Rename will do, or which filename Creidhne computes, uses the full width of the editor.

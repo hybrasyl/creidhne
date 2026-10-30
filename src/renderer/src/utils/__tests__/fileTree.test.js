@@ -594,14 +594,44 @@ describe('buildListRows', () => {
       { key: 'staged', label: 'Staged', files: stg }
     ].filter((sec) => keys.includes(sec.key))
 
-  it('shows one set with no header, as the tabs did', () => {
+  it('puts a header with a count before the set, with one set shown too', () => {
     const { rows } = buildListRows({
       sections: sections(['active']),
       folderMode: false,
       expanded: new Set(),
       expandAll: false
     })
-    expect(rows.map((r) => r.kind)).toEqual(['file', 'file'])
+    expect(rows.map((r) => (r.kind === 'section' ? `${r.name}:${r.count}` : r.kind))).toEqual([
+      'Active:2',
+      'file',
+      'file'
+    ])
+  })
+
+  it('collapses a set under its header, and keeps the header', () => {
+    const { rows } = buildListRows({
+      sections: sections(['active', 'staged']),
+      folderMode: false,
+      expanded: new Set(),
+      expandAll: false,
+      collapsed: new Set(['active'])
+    })
+    expect(rows.map((r) => (r.kind === 'section' ? `${r.name}:${r.open}` : r.kind))).toEqual([
+      'Active:false',
+      'Staged:true',
+      'file'
+    ])
+  })
+
+  it('opens every set while a filter is on, so no match is in a closed set', () => {
+    const { rows } = buildListRows({
+      sections: sections(['active']),
+      folderMode: false,
+      expanded: new Set(),
+      expandAll: true,
+      collapsed: new Set(['active'])
+    })
+    expect(rows.map((r) => r.kind)).toEqual(['section', 'file', 'file'])
   })
 
   it('puts a header with a count before each set when two or more show', () => {

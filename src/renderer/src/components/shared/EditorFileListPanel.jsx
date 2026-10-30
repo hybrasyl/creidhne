@@ -94,6 +94,7 @@ const VirtualRow = memo(function VirtualRow({
   onRowClick,
   onRowContextMenu,
   onToggleFolder,
+  onToggleSet,
   namesByFilename,
   stagedNamesByFilename,
   renderSecondary
@@ -103,27 +104,29 @@ const VirtualRow = memo(function VirtualRow({
 
   if (row.kind === 'section') {
     return (
-      <Box
-        style={style}
-        data-testid={`list-section-${row.key.slice('section:'.length)}`}
-        sx={{
-          height: SECTION_HEIGHT,
-          px: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          bgcolor: 'action.hover',
-          borderBottom: 1,
-          borderColor: 'divider'
-        }}
-      >
-        <Typography variant="overline" sx={{ lineHeight: 1 }}>
-          {row.name}
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {row.count}
-        </Typography>
-      </Box>
+      <ListItem disablePadding style={style}>
+        <ListItemButton
+          data-testid={`list-section-${row.set}`}
+          aria-expanded={row.open}
+          onClick={() => onToggleSet(row.set)}
+          sx={{
+            height: SECTION_HEIGHT,
+            px: 1,
+            gap: 0.5,
+            bgcolor: 'action.hover',
+            borderBottom: 1,
+            borderColor: 'divider'
+          }}
+        >
+          {row.open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+          <Typography variant="overline" sx={{ lineHeight: 1, flex: 1 }}>
+            {row.name}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {row.count}
+          </Typography>
+        </ListItemButton>
+      </ListItem>
     )
   }
 
@@ -214,8 +217,8 @@ function ToolbarButton({ title, label, disabled, onClick, children }) {
  * shows under the editor header.
  *
  * The set toggles choose what the list shows; Active is the default and at
- * least one stays on. With one set on, the list shows that set's files alone;
- * with two or three, each set has a header row. The item actions are smart:
+ * least one stays on. Each shown set has a header row with its count, and a
+ * click on the header collapses or expands the set. The item actions are smart:
  * each is enabled only when it applies to every selected file, Archive becomes
  * Unarchive for archived files, and Stage becomes Release for staged files
  * (`selectionActions`).
@@ -291,6 +294,8 @@ export default function EditorFileListPanel({
   // persisting would mean a library/type-keyed map to prune as worlds come and
   // go. Keys carry their set (`staged:animist`), so one Set serves every set.
   const [expanded, setExpanded] = useState(() => new Set())
+  // The sets whose header is collapsed. Not persisted, like folder expansion.
+  const [collapsedSets, setCollapsedSets] = useState(() => new Set())
 
   const hasStaging = !!onRelease
   const hasArchive = !!(onArchive || onUnarchive)
@@ -317,8 +322,15 @@ export default function EditorFileListPanel({
   // A live filter forces everything open — the surviving tree is only matches
   // plus their ancestors, so revealing all of it is exactly right.
   const { rows, folderKeys: allFolders } = useMemo(
-    () => buildListRows({ sections, folderMode, expanded, expandAll: !!search }),
-    [sections, folderMode, expanded, search]
+    () =>
+      buildListRows({
+        sections,
+        folderMode,
+        expanded,
+        expandAll: !!search,
+        collapsed: collapsedSets
+      }),
+    [sections, folderMode, expanded, search, collapsedSets]
   )
   const rowHeight = useMemo(() => rowHeightFor(rows), [rows])
 
@@ -362,6 +374,15 @@ export default function EditorFileListPanel({
 
   const toggleFolder = useCallback((key) => {
     setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
+
+  const toggleSet = useCallback((key) => {
+    setCollapsedSets((prev) => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
       else next.add(key)
@@ -490,6 +511,7 @@ export default function EditorFileListPanel({
       onRowClick: handleRowClick,
       onRowContextMenu: handleRowContextMenu,
       onToggleFolder: toggleFolder,
+      onToggleSet: toggleSet,
       namesByFilename,
       stagedNamesByFilename,
       renderSecondary
@@ -501,6 +523,7 @@ export default function EditorFileListPanel({
       handleRowClick,
       handleRowContextMenu,
       toggleFolder,
+      toggleSet,
       namesByFilename,
       stagedNamesByFilename,
       renderSecondary
