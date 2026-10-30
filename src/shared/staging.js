@@ -6,8 +6,9 @@ import { nameCollisionKey } from './nameCollision.js'
  * A staged file lives in `<world>/.staging/<type>/`, with the same layout as
  * `<world>/xml/<type>/`. The server roots its load at `<world>/xml`, and
  * hybindex walks `xml/<type>/` only, so neither of them sees a staged file. The
- * world repository ignores `.staging/`. Release moves a file to the same
- * relative path under `xml/<type>/`.
+ * world repository tracks `.staging/`, and the world deploy copies only `xml/`
+ * to a server. Release moves a file to the same relative path under
+ * `xml/<type>/`.
  *
  * Creidhne keeps its own index of the staged files: names only, built with the
  * package's `buildSection` over the staging root, so a staged name follows the
