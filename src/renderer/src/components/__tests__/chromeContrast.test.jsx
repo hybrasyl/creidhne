@@ -154,8 +154,8 @@ describe('a nav-bar button', () => {
     )
     const button = (label) => screen.getByRole('button', { name: label })
     const style = (label) => getComputedStyle(button(label))
-    // The icon, not the button: the DA themes colour every MUI icon, and an
-    // icon that does not inherit drew 1.0:1 on danaan's bar.
+    // The icon, not the button: the DA themes coloured every MUI icon, and an
+    // icon that did not inherit drew 1.0:1 on danaan's bar.
     const icon = (label) => getComputedStyle(button(label).querySelector('svg')).color
     const rest = style('rest')
     const current = style('current')

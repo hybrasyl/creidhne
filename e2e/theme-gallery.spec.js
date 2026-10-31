@@ -23,6 +23,8 @@ const THEMES = [
   ['Chadul', 'chadul'],
   ['Danaan', 'danaan'],
   ['Grinneal', 'grinneal'],
+  ['Shattered', 'shattered'],
+  ['Untamed', 'untamed'],
   ['Mundanes (light)', 'mundanes'],
   ['Dubhaimid (dark)', 'dubhaimid']
 ]

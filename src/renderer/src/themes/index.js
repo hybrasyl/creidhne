@@ -11,10 +11,21 @@ import hybrasylTheme from './hybrasyl'
 import chadulTheme from './chadul'
 import danaanTheme from './danaan'
 import grinnealTheme from './grinneal'
+import shatteredTheme from './shattered'
+import untamedTheme from './untamed'
 import mundanesTheme from './mundanes'
 import dubhaimidTheme from './dubhaimid'
 
-export { hybrasylTheme, chadulTheme, danaanTheme, grinnealTheme, mundanesTheme, dubhaimidTheme }
+export {
+  hybrasylTheme,
+  chadulTheme,
+  danaanTheme,
+  grinnealTheme,
+  shatteredTheme,
+  untamedTheme,
+  mundanesTheme,
+  dubhaimidTheme
+}
 
 // name → MUI theme, so a ThemePicker (or anything else) can paint a preview in
 // that theme's own palette without making it the active theme. Mirrors the map
@@ -24,6 +35,8 @@ export const themesByName = {
   chadul: chadulTheme,
   danaan: danaanTheme,
   grinneal: grinnealTheme,
+  shattered: shatteredTheme,
+  untamed: untamedTheme,
   mundanes: mundanesTheme,
   dubhaimid: dubhaimidTheme
 }

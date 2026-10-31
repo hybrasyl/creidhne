@@ -334,7 +334,7 @@ function createWindow() {
   })
 
   // A window keeps its native background — Electron's default white, because no
-  // `backgroundColor` can be right for six themes of which two are light — while
+  // `backgroundColor` can be right for eight themes of which three are light — while
   // the renderer's compositor tears down. That background is what paints for the
   // last frame or two before the window leaves the screen, which reads as a white
   // flash on quit. Hiding the window takes it off screen first; `close` runs

@@ -41,7 +41,7 @@ first section written to the rules above.
 
 ## [Unreleased]
 
-## [1.15.0] - 2026-10-30
+## [1.15.0] - 2026-10-31
 
 ### Added
 
@@ -63,6 +63,7 @@ first section written to the rules above.
 - **Staging includes the maps that Taliesin stages.** Creidhne does not stage a map. A live nation, server config or item that names a staged-only map shows the warning. When a released file names a staged-only map, Release offers to release that map too, and the staged maps that it warps to.
 - **A staged file names the live file that has its key.** Release refuses the staged file until you rename it or archive the live file.
 - **Settings → Appearance → Theme gallery** shows each type of control in the theme that you use, on the page, on a card and on a dark panel. Under each control, the gallery shows its measured contrast. Use it to examine a theme. **Back** returns to Settings.
+- **Two new themes: Shattered and Untamed.** Shattered is dark, with oxblood bars, a gunmetal page and a steel accent. Untamed is light, with deep forest bars, a pale green page and a leaf-green accent. Select them in Settings → Appearance.
 
 ### Changed
 
@@ -117,6 +118,8 @@ first section written to the rules above.
 - **The nav bar icons are easy to read in Danaan and Mundanes.** They used the colour of the page text, which had too little contrast against the bar. They now use the text colour of the bar in every theme.
 - **Coloured chips show their colour.** In every theme, a chip with a colour looked like a plain chip. For example, **Index not built**, the **Active** library and the formula category chips looked like plain chips. Each chip now shows its colour.
 - **Destructive buttons show their colour.** In Hybrasyl, Chadul, Danaan and Grinneal, every button had the theme's button colour, so **Clear**, **Delete** and **Discard** looked like any other button. They now show the error colour.
+- **A disabled button looks disabled.** In Hybrasyl, Chadul, Danaan and Grinneal, a disabled icon button kept its coloured icon, and a disabled text, outlined or filled button kept the theme's accent colour. They are now grey.
+- **An icon takes the colour that it is given, or the colour of the text around it.** In Hybrasyl, Chadul, Danaan and Grinneal, every icon had the theme's icon colour, so an error icon or an icon in a coloured button did not show its own colour. An unchecked checkbox is now grey, like an unselected radio button, and is easier to see.
 - **The close button on the title bar turns red under the pointer.** In Hybrasyl, Chadul, Danaan and Grinneal, it showed a yellow skull on cyan, which was almost not visible.
 - **The update notice shows its link, its close button and its icon in the colour of its text.** Before, the **View release** link and the close button used the accent colour on the accent fill. Labels on filled chips and filled alerts now have enough contrast against their fill.
 - **Mundanes: a link is easy to read after you open it.** A visited link had too little contrast against the page. In every theme, a link now has a contrast of 4.5:1 or more at rest, under the pointer and after you open it.

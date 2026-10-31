@@ -22,7 +22,7 @@ const THEME_NAMES = Object.keys(themesByName)
  */
 describe('the tertiary colour (the nav bar)', () => {
   it('is defined for every theme (guard the guard)', () => {
-    expect(THEME_NAMES.length).toBeGreaterThanOrEqual(6)
+    expect(THEME_NAMES.length).toBeGreaterThanOrEqual(8)
     for (const name of THEME_NAMES) {
       expect(themesByName[name].palette.tertiary?.main, name).toMatch(/^#[0-9a-f]{6}$/i)
     }

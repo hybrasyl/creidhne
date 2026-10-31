@@ -163,7 +163,7 @@ describe('REMOTE_SESSION_CSS', () => {
 
   it('does not touch text-shadow, because Creidhne’s themes declare none', () => {
     // Narrower than epona's rule, and measured rather than copied: epona kills
-    // text-shadow because its themes carry shadows widely. Creidhne's six declare
+    // text-shadow because its themes carry shadows widely. Creidhne's eight declare
     // none — the only ones in the app are the title-bar wordmark and one line in the
     // multi-select overlay. Two elements are not a repaint cost worth a global
     // `!important`, and a rule that changes how the app looks should earn it.
@@ -172,11 +172,11 @@ describe('REMOTE_SESSION_CSS', () => {
   })
 
   it('is the mitigation the themes actually need', () => {
-    // Not decoration: four of the six themes put backdropFilter on MuiPaper.root,
+    // Not decoration: six of the eight themes put backdropFilter on MuiPaper.root,
     // which backs Card, Dialog, Accordion and Menu. If that ever stops being true
-    // this rule is dead weight — and if a seventh theme adds one, the rule already
+    // this rule is dead weight — and if a ninth theme adds one, the rule already
     // covers it, because it is unconditional.
-    for (const name of ['chadul', 'danaan', 'grinneal', 'hybrasyl']) {
+    for (const name of ['chadul', 'danaan', 'grinneal', 'hybrasyl', 'shattered', 'untamed']) {
       const src = readFileSync(
         join(import.meta.dirname, '..', '..', 'renderer', 'src', 'themes', `${name}.js`),
         'utf8'
@@ -186,7 +186,7 @@ describe('REMOTE_SESSION_CSS', () => {
   })
 
   it('is not needed by the two themes that carry no blur', () => {
-    // The corporate pair. Pinned so "four of six" stays a measurement rather than a
+    // The corporate pair. Pinned so "six of eight" stays a measurement rather than a
     // remembered number: if one of these grows a blur, the claim above is stale even
     // though the rule still covers it.
     for (const name of ['mundanes', 'dubhaimid']) {

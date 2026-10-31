@@ -18,11 +18,11 @@ The specs below run these on every `npm run e2e`, so they need no manual pass:
 - The title bar on each platform (`title-bar.spec.js`)
 - A loot set with many tables (`loot-tables.spec.js`)
 - Every page opens without hitting the error boundary (`nav-pages.spec.js`)
-- The theme gallery measures every sample in the six themes (`theme-gallery.spec.js`). It writes each low ratio to `theme-gallery.json` in its `test-results/` folder. The by-eye check below still applies.
+- The theme gallery measures every sample in the eight themes (`theme-gallery.spec.js`). It writes each low ratio to `theme-gallery.json` in its `test-results/` folder. The by-eye check below still applies.
 
 ## Pending: any platform, the house palette (HTOO-572)
 
-Use a dev build or a packaged build. Do each check in each of the six themes. Settings → Appearance → Theme gallery shows most of the controls on one page.
+Use a dev build or a packaged build. Do each check in each of the eight themes. Settings → Appearance → Theme gallery shows most of the controls on one page.
 
 - [ ] **The title bar.** Danaan has a bronze bar and Grinneal a brown bar. On both, the name, the logo and the window buttons are light, with a black outline. Hybrasyl and Chadul also have light text with a black outline. Mundanes and Dubhaimid have flat bars with no outline. Nothing on any bar is engraved. The name and the three window buttons are easy to read.
 - [ ] **The close button.** Under the pointer, the close button turns red in every theme.

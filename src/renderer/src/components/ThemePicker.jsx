@@ -2,12 +2,14 @@ import { Box, ButtonBase, Typography } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { themesByName } from '../themes'
 
-// Ordered list + labels for the six themes (matches the Settings THEMES list).
+// Ordered list + labels for the eight themes (matches the Settings THEMES list).
 const THEME_OPTIONS = [
   { value: 'hybrasyl', label: 'Hybrasyl' },
   { value: 'chadul', label: 'Chadul' },
   { value: 'danaan', label: 'Danaan' },
   { value: 'grinneal', label: 'Grinneal' },
+  { value: 'shattered', label: 'Shattered' },
+  { value: 'untamed', label: 'Untamed' },
   { value: 'mundanes', label: 'Mundanes (light)' },
   { value: 'dubhaimid', label: 'Dubhaimid (dark)' }
 ]
@@ -51,7 +53,7 @@ function ThemeSwatch({ name, label }) {
   )
 }
 
-// The Settings theme picker: the six themes as selectable preview cards (a swatch
+// The Settings theme picker: the eight themes as selectable preview cards (a swatch
 // of each palette + its name) rather than a bare dropdown — theming is a flagship
 // feature, so it's worth showing. Selecting one round-trips through the store like
 // the old Select did.

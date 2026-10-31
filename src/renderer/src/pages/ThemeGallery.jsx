@@ -267,7 +267,7 @@ function Buttons() {
             </Measure>
           ))}
           <Measure min={0}>
-            <Button variant={variant} disabled>
+            <Button variant={variant} disabled startIcon={<AddIcon />}>
               disabled
             </Button>
           </Measure>
@@ -296,6 +296,16 @@ function IconButtons() {
           </span>
         </Tooltip>
       ))}
+      {/* A disabled icon button takes MUI's grey (HTOO-639). */}
+      <Tooltip title="disabled">
+        <span>
+          <Measure min={0} part="svg">
+            <IconButton disabled aria-label="disabled">
+              <DeleteIcon />
+            </IconButton>
+          </Measure>
+        </span>
+      </Tooltip>
     </Row>
   )
 }

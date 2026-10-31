@@ -30,13 +30,13 @@ a real desktop session, so no virtual display (xvfb) is needed.
 - **`settings-persistence.spec.js`** — change theme via the IPC bridge → wait for the write to
   hit disk → relaunch same userData → assert it hydrated. The full renderer → IPC → disk →
   reload loop.
-- **`theme-gallery.spec.js`** — opens Settings → Appearance → Theme gallery, selects each of the six themes, and reads every measured contrast. It fails on a sample it cannot measure, and writes each low ratio to `theme-gallery.json` in its `test-results/` folder (HTOO-572).
+- **`theme-gallery.spec.js`** — opens Settings → Appearance → Theme gallery, selects each of the eight themes, and reads every measured contrast. It fails on a sample it cannot measure, and writes each low ratio to `theme-gallery.json` in its `test-results/` folder (HTOO-572).
 
 ## Adapting / extending
 
 - **`USERDATA_SUBPATH`** in `helpers.js` must match `src/main/index.js`'s userData dir
   (`['Erisco', 'Creidhne']`).
-- Add specs for behavior the app actually has. Good candidates: theme-switch smoke (all six
+- Add specs for behavior the app actually has. Good candidates: theme-switch smoke (all eight
   themes render, no `pageerror`), window-geometry invariants, filesystem-effecting IPC flows
   against a temp dir (index build/delete, archive/trash).
 

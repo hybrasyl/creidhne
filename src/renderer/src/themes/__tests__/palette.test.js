@@ -8,7 +8,7 @@ import { blend, contrast, luminance } from '@renderer/lib/contrast'
 const THEME_NAMES = Object.keys(themesByName)
 
 /**
- * Palette invariants. The template holds the canonical six palettes and these
+ * Palette invariants. The template holds the canonical eight palettes and these
  * tests (HTOO-572); each app takes both, and keeps its own component overrides
  * only where its own tests say why.
  *
@@ -72,7 +72,8 @@ function surfaces(p) {
 /**
  * A contained primary button as the theme draws it, at rest and on hover, or
  * null when the theme draws contained buttons as a tint rather than an accent
- * fill (hybrasyl, chadul, grinneal: their accent fill is the selected chip).
+ * fill (hybrasyl, chadul, grinneal, shattered: their accent fill is the selected
+ * chip).
  * Read from the overrides, because jsdom cannot apply `:hover`.
  */
 function containedPrimary(theme) {
@@ -101,8 +102,8 @@ function containedPrimary(theme) {
 }
 
 describe('theme palettes', () => {
-  it('registers all six themes', () => {
-    expect(THEME_NAMES).toHaveLength(6)
+  it('registers all eight themes', () => {
+    expect(THEME_NAMES).toHaveLength(8)
     for (const name of THEME_NAMES) expect(themesByName[name]).toBeDefined()
   })
 
@@ -112,7 +113,7 @@ describe('theme palettes', () => {
   })
 
   it('draws at least one contained button as an accent fill, so the hover rule runs', () => {
-    expect(THEME_NAMES.filter((n) => containedPrimary(themesByName[n]) !== null).length).toBe(3)
+    expect(THEME_NAMES.filter((n) => containedPrimary(themesByName[n]) !== null).length).toBe(4)
   })
 
   describe.each(THEME_NAMES)('%s', (name) => {
@@ -280,6 +281,20 @@ describe('theme palettes', () => {
       const hover = plainChip(theme, true)?.['&:hover'] ?? {}
       expect(hover.backgroundColor, 'the hover keeps the tint').toBe(tint)
       expect(hover.borderColor, 'the hover shows in the border').toBeDefined()
+    })
+
+    it('an unchecked checkbox reads as a control on every surface', () => {
+      // 3:1 (1.4.11). Each decorated theme drew it in the accent at 50%, 2.0:1
+      // to 2.8:1. Every MUI icon took the theme's icon accent then, so the
+      // box drew the accent at full strength and nobody saw it.
+      const root = theme.components?.MuiCheckbox?.styleOverrides?.root
+      if (!root) return
+      // Mundanes and Dubhaimid use a translucent grey, so the colour is
+      // measured as it draws over each surface.
+      const c = root.color
+      expect(c, 'the unchecked colour is set').toBeDefined()
+      for (const [name, surface] of surfaces(p))
+        expect(contrast(blend(c, surface), surface), name).toBeGreaterThanOrEqual(3)
     })
 
     it('a selected list item reads on its tint, on every surface', () => {

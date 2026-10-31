@@ -87,9 +87,9 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
             Appearance
           </Typography>
           <Typography variant="body2" sx={cardDescSx}>
-            Pick a theme. The four stylized themes get gamified window chrome; Mundanes and
-            Dubhaimid are flat/corporate. The theme gallery shows each type of control in the theme
-            that you use.
+            Pick a theme. The six stylized themes get gamified window chrome; Mundanes and Dubhaimid
+            are flat/corporate. The theme gallery shows each type of control in the theme that you
+            use.
           </Typography>
           <ThemePicker value={theme} onChange={setTheme} />
           <Button

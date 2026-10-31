@@ -9,38 +9,49 @@ const SEVERITIES = ['error', 'warning', 'info', 'success']
  * of its `components`. A theme must not set `MuiButtonBase` or `MuiAlert`
  * itself: its key would replace the spread one.
  *
- * - **`color="inherit"` wins.** Each theme's MuiButton, MuiLink and MuiSvgIcon
- *   overrides give the control an accent of its own, and that beat the inherit.
+ * - **`color="inherit"` wins.** Each theme's MuiButton and MuiLink overrides
+ *   give the control an accent of its own, and that beat the inherit.
  *   The house update notice drew "View release" and its close X in the theme's
  *   teal on the teal fill (1.59:1 in hybrasyl, 1.11:1 for grinneal's X). The
  *   rules sit on `MuiButtonBase`, because each theme has its own `MuiButton`.
  *   Two classes are more specific than one theme class, and `:visited` beats
  *   the theme's link rule.
- * - **A contained button draws its icon in its label colour.** The MuiSvgIcon
- *   accent drew danaan's dark gold on its gold fill (1.34:1).
- * - **An alert's icon takes the colour MUI gives it.** The MuiSvgIcon accent
- *   beat the severity colour, so every alert icon was the theme's accent.
+ * - **A disabled button looks disabled.** The theme accents beat MUI's
+ *   disabled colour, so a disabled button kept its accent label, border and
+ *   fill (HTOO-639).
  * - **A filled alert picks its label against its fill.** MUI fills a dark-mode
  *   alert with `.dark`, but picks the label against `.main`. With the
  *   palettes' `contrastThreshold: 4.5` the label is then wrong on the fill, so
  *   this picks it against the colour that is drawn.
+ *
+ * No theme sets an icon colour, so an icon takes its control's colour with no
+ * rule here (`icons.test.tsx`). The themes set one accent on every icon, and
+ * this object carried four rules to undo it.
  *
  * `filledControls.test.tsx` renders each case in each theme.
  */
 export const filledControls = {
   MuiButtonBase: {
     styleOverrides: {
-      root: {
+      root: ({ theme }) => ({
         '&.MuiButton-colorInherit, &.MuiButton-colorInherit:hover, &.MuiButton-colorInherit:visited':
           { color: 'inherit' },
-        '&.MuiButton-colorInherit .MuiSvgIcon-root, &.MuiButton-contained .MuiSvgIcon-root, &.MuiIconButton-colorInherit .MuiSvgIcon-root':
-          { color: 'inherit' }
-      }
+        // A disabled control looks disabled (HTOO-639). The themes' text and
+        // outlined primary button rules have three classes, and they beat MUI's
+        // disabled colour and a three-class rule here. So the primary button
+        // rule here has four classes. The border is MUI's disabled border.
+        '&.MuiButtonBase-root.Mui-disabled, &.MuiButton-root.MuiButton-colorPrimary.Mui-disabled': {
+          color: theme.palette.action.disabled,
+          borderColor: theme.palette.action.disabledBackground
+        },
+        '&.MuiButton-contained.Mui-disabled': {
+          backgroundColor: theme.palette.action.disabledBackground
+        }
+      })
     }
   },
   MuiAlert: {
     styleOverrides: {
-      icon: { '& .MuiSvgIcon-root': { color: 'inherit' } },
       root: {
         variants: SEVERITIES.map((severity) => ({
           props: { colorSeverity: severity, variant: 'filled' },

@@ -259,7 +259,9 @@ const hybrasylTheme = responsiveFontSizes(
       MuiCheckbox: {
         styleOverrides: {
           root: {
-            color: 'rgba(58,158,144,0.5)',
+            // Unchecked: text.secondary, as MUI and the Radio draw it. The accent at
+            // 50% was 2.0:1 to 2.8:1, below the 3:1 for a control.
+            color: '#a8b8c4',
             '&.Mui-checked': { color: '#3a9e90' }
           }
         }
@@ -292,11 +294,6 @@ const hybrasylTheme = responsiveFontSizes(
             // text.visited: 4.63:1 on the page. #1e5e56 was 2.35:1.
             '&:visited': { color: '#399086' }
           }
-        }
-      },
-      MuiSvgIcon: {
-        styleOverrides: {
-          root: ({ theme }) => ({ color: theme.palette.secondary.dark })
         }
       },
       MuiCircularProgress: {

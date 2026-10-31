@@ -125,8 +125,8 @@ export function shouldDisableHardwareAcceleration(platform, env, systemRemoteSes
 /**
  * Injected into the main window when software rendering is in force.
  *
- * Four of Creidhne's six themes put `backdropFilter: blur(2px)` on `MuiPaper.root`
- * — chadul, danaan, grinneal and hybrasyl — which backs Card, Dialog, Accordion and
+ * Six of Creidhne's eight themes put `backdropFilter: blur(2px)` on `MuiPaper.root`
+ * — chadul, danaan, grinneal, hybrasyl, shattered and untamed — which backs Card, Dialog, Accordion and
  * Menu. A blur makes Chromium read back everything behind the surface and blur it on
  * every repaint, including every frame of a drag. With a GPU that is nearly free;
  * under software compositing it is not. Disabling the GPU and leaving the blur in
@@ -141,7 +141,7 @@ export function shouldDisableHardwareAcceleration(platform, env, systemRemoteSes
  *
  * **Narrower than epona's, and measured rather than copied.** Epona also kills
  * `text-shadow` and forces antialiased smoothing, because its themes carry text
- * shadows widely. Creidhne's six themes declare none: the only `textShadow` in the
+ * shadows widely. Creidhne's eight themes declare none: the only `textShadow` in the
  * app is the title-bar wordmark, already dropped on the two corporate themes, and one
  * line in the multi-select overlay. Two elements' shadows are not a repaint cost
  * worth a global `!important`, and a rule that changes how the app looks should earn

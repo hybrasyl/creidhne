@@ -126,6 +126,41 @@ describe('a filled control', () => {
       expect(drawn(button.querySelector('svg'))).toBe(drawn(button))
     })
 
+    it.each(['icon', 'text', 'outlined', 'contained'])(
+      'a disabled %s button draws its label and icon in the disabled colour',
+      (variant) => {
+        // The decorated themes give every icon an accent colour on the icon
+        // itself, and it beat the disabled colour that MUI sets on the button.
+        // In Taliesin a disabled Duplicate button kept its teal icon (HTOO-639).
+        render(
+          <ThemeProvider theme={theme}>
+            <Box data-testid="disabled" sx={{ color: 'action.disabled' }} />
+            <Box data-testid="fill" sx={{ bgcolor: 'action.disabledBackground' }} />
+            {variant === 'icon' ? (
+              <IconButton disabled aria-label="Duplicate">
+                <AddIcon />
+              </IconButton>
+            ) : (
+              <Button disabled variant={variant} startIcon={<AddIcon />}>
+                Duplicate
+              </Button>
+            )}
+          </ThemeProvider>
+        )
+        const disabled = drawn(screen.getByTestId('disabled'))
+        const button = screen.getByRole('button', { name: 'Duplicate' })
+        expect(drawn(button), 'the button').toBe(disabled)
+        expect(drawn(button.querySelector('svg')), 'the icon').toBe(disabled)
+        // A disabled button loses the accent border, and a contained one the
+        // accent fill.
+        const grey = getComputedStyle(screen.getByTestId('fill')).backgroundColor
+        if (variant === 'outlined')
+          expect(getComputedStyle(button).borderTopColor, 'the border').toBe(grey)
+        if (variant === 'contained')
+          expect(getComputedStyle(button).backgroundColor, 'the fill').toBe(grey)
+      }
+    )
+
     it.each(['text', 'outlined', 'contained'])(
       'a %s error button does not draw like a primary one',
       (variant) => {
