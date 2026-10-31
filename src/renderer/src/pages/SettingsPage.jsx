@@ -15,6 +15,7 @@ import ManageLibraries from '../components/ManageLibraries'
 import DAClientPathSection from '../components/DAClientPathSection'
 import TaliesinPathSection from '../components/TaliesinPathSection'
 import BrigidAssetsPathSection from '../components/BrigidAssetsPathSection'
+import IndexCacheSection from '../components/IndexCacheSection'
 import AboutDialog from '../components/AboutDialog'
 import WhatsNewDialog from '../components/WhatsNewDialog'
 import { useMenuRequest } from '../hooks/useMenuRequest'
@@ -108,6 +109,11 @@ const SettingsPage = ({ libraries, onAddLibrary, onRemoveLibrary }) => {
             onAddLibrary={onAddLibrary}
             onRemoveLibrary={onRemoveLibrary}
           />
+        </Paper>
+
+        {/* World indexes: remove the old index caches (HTOO-583) */}
+        <Paper sx={cardSx}>
+          <IndexCacheSection />
         </Paper>
 
         {/* Dark Ages Client */}

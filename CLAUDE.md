@@ -161,7 +161,7 @@ e2e/           Playwright specs against the built app
   The renderer save effect is gated on `settingsLoaded` so defaults never clobber the real file.
 - **World index is a rebuildable cache** outside the world's git folder
   (`%LOCALAPPDATA%\Erisco\hybindex`, shared with Taliesin), built incrementally off-thread and
-  self-healed on load. `world/.creidhne/` holds the three authoritative files Creidhne owns:
+  self-healed on load. Settings → World indexes (`IndexCacheSection.jsx`, HTOO-583) lists the caches that hybindex-ts marks as old (`listIndexCaches`) and removes them on request (`pruneIndexCaches`); the renderer names no cache, and nothing prunes on its own. `world/.creidhne/` holds the three authoritative files Creidhne owns:
   `constants.json`, `formulas.json` and `reports.json` (user report definitions, WP2). A report
   goes with the world so it is shareable through the world repo.
 

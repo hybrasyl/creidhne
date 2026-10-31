@@ -8,7 +8,13 @@
 
 import { utilityProcess, BrowserWindow } from 'electron'
 import { join } from 'path'
-import { loadIndex, getIndexStatus, deleteIndex } from '@eriscorp/hybindex-ts'
+import {
+  loadIndex,
+  getIndexStatus,
+  deleteIndex,
+  listIndexCaches,
+  pruneIndexCaches
+} from '@eriscorp/hybindex-ts'
 
 const WORKER_PATH = join(__dirname, 'indexWorker.js')
 const PROGRESS_CHANNEL = 'index:build-progress'
@@ -59,4 +65,4 @@ export async function buildStagedInWorker(stagingRoot, types) {
 }
 
 // Lightweight ops stay on main.
-export { loadIndex, getIndexStatus, deleteIndex }
+export { loadIndex, getIndexStatus, deleteIndex, listIndexCaches, pruneIndexCaches }

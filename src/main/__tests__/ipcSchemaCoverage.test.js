@@ -66,6 +66,11 @@ const EXEMPT = {
   'get-user-data-path': { category: 'no-payload', reason: 'returns a constant' },
   'app:getVersion': { category: 'no-payload', reason: 'returns app.getVersion()' },
   'app:checkForUpdate': { category: 'no-payload', reason: 'reads the house version manifest' },
+  'index:listCaches': { category: 'no-payload', reason: 'lists the index cache base' },
+  'index:pruneCaches': {
+    category: 'no-payload',
+    reason: 'hybindex-ts picks the old caches; the renderer names none'
+  },
   'app:revealSettings': { category: 'no-payload', reason: 'shows settings.json in the OS shell' },
   'app:launchCompanion': {
     category: 'no-payload',

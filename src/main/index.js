@@ -95,7 +95,9 @@ import {
   buildStagedInWorker,
   loadIndex,
   getIndexStatus,
-  deleteIndex
+  deleteIndex,
+  listIndexCaches,
+  pruneIndexCaches
 } from './indexService.js'
 import { saveSection } from '@eriscorp/hybindex-ts'
 import {
@@ -989,6 +991,11 @@ app.whenReady().then(async () => {
   ipc.handle('index:load', (_, libraryPath) => loadIndex(validatePath(libraryPath)))
   ipc.handle('index:status', (_, libraryPath) => getIndexStatus(validatePath(libraryPath)))
   ipc.handle('index:delete', (_, libraryPath) => deleteIndex(validatePath(libraryPath)))
+  // The index caches that a schema bump or a moved world left behind (HTOO-583).
+  // The renderer sends nothing: the package decides which caches are old, and
+  // it never removes a cache of the current schema whose world exists.
+  ipc.handle('index:listCaches', () => listIndexCaches())
+  ipc.handle('index:pruneCaches', () => pruneIndexCaches())
 
   // Bulk-add a category to each of the given castables (by display Name).
   // Used by the Spell Books tab in Constants: after persisting the spellbook
