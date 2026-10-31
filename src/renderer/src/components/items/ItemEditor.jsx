@@ -23,7 +23,7 @@ import {
 } from '@mui/material'
 import ConstantAutocomplete from '../shared/ConstantAutocomplete'
 import EditorHeader from '../shared/EditorHeader'
-import { useEditorAlert } from '../shared/EditorAlerts'
+import { useEditorAlert } from '../editorShell/EditorAlerts'
 import ItemSpritePicker from '../shared/ItemSpritePicker'
 import DisplaySpritePicker from '../shared/DisplaySpritePicker'
 import ColorSwatch from '../shared/ColorSwatch'

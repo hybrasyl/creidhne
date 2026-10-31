@@ -76,5 +76,18 @@ test.describe('page toolbar', () => {
         }
       }
     }
+
+    // The context menu is the house shell's (HTOO-637). A right-click on a row
+    // selects it and opens the menu with the toolbar's actions.
+    await openPage(page, 'Castables')
+    await page
+      .getByTestId('file-list')
+      .getByText('Ember', { exact: true })
+      .click({ button: 'right' })
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitem', { name: 'Archive' })).toBeEnabled()
+    await expect(menu.getByRole('menuitem', { name: 'Stage' })).toBeEnabled()
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
   })
 })

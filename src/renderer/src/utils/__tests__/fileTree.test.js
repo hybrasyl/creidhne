@@ -3,9 +3,7 @@ import {
   stripXml,
   toSectionFile,
   toStagedFile,
-  selectionActions,
   buildListRows,
-  fileSet,
   SECTION_HEIGHT,
   displayNameFor,
   matchesFilter,
@@ -22,6 +20,7 @@ import {
   ITEM_HEIGHT,
   FOLDER_HEIGHT
 } from '../fileTree'
+import { fileSet, selectionActions } from '../../components/editorShell/selectionActions'
 
 const DIR = 'E:/world/xml/castables'
 
@@ -536,8 +535,9 @@ describe('toStagedFile', () => {
   })
 })
 
-// HTOO-628: the page toolbar's item actions follow the selection.
-describe('selectionActions', () => {
+// HTOO-628: the page toolbar's item actions follow the selection. The rule is
+// the house editor shell's (HTOO-637); this checks it on Creidhne's file objects.
+describe('selectionActions on Creidhne files', () => {
   const live = toSectionFile('E:/w/xml/items', 'a.xml', false)
   const live2 = toSectionFile('E:/w/xml/items', 'b.xml', false)
   const arch = toSectionFile('E:/w/xml/items', '.ignore/c.xml', true)
@@ -547,37 +547,40 @@ describe('selectionActions', () => {
     expect([live, arch, staged].map(fileSet)).toEqual(['active', 'archived', 'staged'])
   })
 
-  it('enables nothing but its defaults with no selection', () => {
-    const a = selectionActions([])
-    expect(a.archive).toEqual({ kind: 'archive', label: 'Archive', enabled: false })
-    expect(a.move).toEqual({ kind: 'stage', label: 'Stage', enabled: false })
+  it('enables nothing with no selection', () => {
+    const a = selectionActions([], 'item')
+    expect(a.archive).toMatchObject({ kind: 'archive', label: 'Archive', enabled: false })
+    expect(a.move).toMatchObject({ kind: 'stage', label: 'Stage', enabled: false })
     expect(a.copy.enabled).toBe(false)
     expect(a.delete.enabled).toBe(false)
   })
 
   it('offers Archive and Stage for live files', () => {
-    const a = selectionActions([live, live2])
-    expect(a.archive).toEqual({ kind: 'archive', label: 'Archive', enabled: true })
-    expect(a.move).toEqual({ kind: 'stage', label: 'Stage', enabled: true })
+    const a = selectionActions([live, live2], 'item')
+    expect(a.archive).toMatchObject({ kind: 'archive', enabled: true })
+    expect(a.move).toMatchObject({ kind: 'stage', enabled: true })
     expect(a.copy.enabled).toBe(false)
     expect(a.delete.enabled).toBe(true)
   })
 
   it('offers Unarchive, and no Stage, for archived files', () => {
-    const a = selectionActions([arch])
-    expect(a.archive).toEqual({ kind: 'unarchive', label: 'Unarchive', enabled: true })
-    expect(a.move.enabled).toBe(false)
+    const a = selectionActions([arch], 'item')
+    expect(a.archive).toMatchObject({ kind: 'unarchive', label: 'Unarchive', enabled: true })
+    expect(a.move).toMatchObject({
+      enabled: false,
+      reason: 'Unarchive this item before you stage it'
+    })
     expect(a.copy.enabled).toBe(true)
   })
 
   it('offers Release, and no Archive, for staged files', () => {
-    const a = selectionActions([staged])
-    expect(a.move).toEqual({ kind: 'release', label: 'Release', enabled: true })
+    const a = selectionActions([staged], 'item')
+    expect(a.move).toMatchObject({ kind: 'release', label: 'Release', enabled: true })
     expect(a.archive.enabled).toBe(false)
   })
 
   it('enables only Delete for a selection across sets', () => {
-    const a = selectionActions([live, staged])
+    const a = selectionActions([live, staged], 'item')
     expect(a.archive.enabled).toBe(false)
     expect(a.move.enabled).toBe(false)
     expect(a.copy.enabled).toBe(false)
