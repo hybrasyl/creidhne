@@ -41,10 +41,6 @@ first section written to the rules above.
 
 ## [Unreleased]
 
-### Changed
-
-- **The editor pages use the house editor shell**, which Taliesin also uses. The toolbar, the context menu and the header work as before. A tooltip on an action says what it acts on, for example `Archive "Mileth Guard"` or `Archive 3 files`. A disabled action's tooltip says what to do, for example "Select a status to archive it" or "Unarchive this status before you stage it". The delete confirmation names the file.
-
 ## [1.15.0] - 2026-10-30
 
 ### Added
@@ -70,6 +66,7 @@ first section written to the rules above.
 
 ### Changed
 
+- **The editor pages use the house editor shell**, which Taliesin also uses. The toolbar, the context menu and the header work as before. A tooltip on an action says what it acts on, for example `Archive "Mileth Guard"` or `Archive 3 files`. A disabled action's tooltip says what to do, for example "Select a status to archive it" or "Unarchive this status before you stage it". The delete confirmation names the file.
 - **A rename also updates the staged files that use the name.** The list of files to update shows them under **In staging**.
 - **Save in a staged file renames the file in place.** Staging has no archive, so Save does not keep the old file.
 - **Each editor page has a toolbar across the page.** It shows the page name, New, the flat or folder view, the Staged, Archived and Active toggles, and the item actions Archive, Stage, Duplicate and Delete. The title, the buttons and the tabs at the top of the file list are gone.
