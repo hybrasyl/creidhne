@@ -866,8 +866,8 @@ app.whenReady().then(async () => {
   })
 
   // Suggested default location for brigid's .datf packs, so the settings UI can
-  // offer a "Use default" prefill. Mirrors brigid's AppPaths.AssetsDir:
-  // %LOCALAPPDATA%\erisco\Brigid\assets on Windows.
+  // offer a "Use default" prefill: <base>/Erisco/Brigid/assets, with each OS's
+  // own base (HTOO-585; the function's comment lists them).
   ipc.handle('pack:suggestedBrigidAssetsPath', () => suggestedBrigidAssetsPath())
 
   // Initial pack load from saved source paths, if any.
