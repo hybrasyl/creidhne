@@ -118,6 +118,16 @@ describe('stageFiles and releaseFiles', () => {
     expect(r.failed.map((f) => f.src)).toEqual([b])
   })
 
+  it('releases a staged map, and stages none (HTOO-636)', async () => {
+    // Taliesin stages maps. Creidhne releases one that a released file names.
+    const map = write('.staging/maps/grove.xml', '<Map><Name>Hidden Grove</Name></Map>')
+    const r = await releaseFiles(lib, 'maps', [map])
+    expect(r.failed).toEqual([])
+    expect(exists('xml/maps/grove.xml')).toBe(true)
+    expect(() => stageFiles(lib, 'maps', [join(lib, 'maps/grove.xml')])).toThrow(/cannot be staged/)
+    expect(() => releaseFiles(lib, 'worldmaps', [])).toThrow(/cannot be released/)
+  })
+
   it('reports a missing source as a failure, not a throw', async () => {
     const r = await transferFiles(
       [join(lib, 'items/gone.xml')],
@@ -137,6 +147,19 @@ describe('namesInFiles', () => {
     )
     const out = await namesInFiles([p], 'castables')
     expect(out[p].statuses).toEqual(['Burning'])
+  })
+
+  it('reads the maps a nation and a map name', async () => {
+    const nation = write(
+      'xml/nations/mileth.xml',
+      `<Nation Flag="1"><Name>Mileth</Name><SpawnPoints><SpawnPoint MapName="Hidden Grove" X="1" Y="1"/></SpawnPoints></Nation>`
+    )
+    const map = write(
+      '.staging/maps/grove.xml',
+      `<Map Id="1" X="10" Y="10"><Name>Hidden Grove</Name><Warps><Warp X="0" Y="0"><MapTarget X="5" Y="5">Deep Grove</MapTarget></Warp></Warps></Map>`
+    )
+    expect((await namesInFiles([nation], 'nations'))[nation].maps).toEqual(['Hidden Grove'])
+    expect((await namesInFiles([map], 'maps'))[map].maps).toEqual(['Deep Grove'])
   })
 
   it('maps an unreadable file to no references', async () => {

@@ -36,7 +36,7 @@ import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteS
 import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
 import { scanReferences, applyRename } from './entityRefRepair.js'
 import { stagingRoot, listStaged, stageFiles, releaseFiles, namesInFiles } from './staging.js'
-import { STAGED_TYPES } from '../shared/staging.js'
+import { STAGING_FOLDER_TYPES } from '../shared/staging.js'
 import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
 import { parseOrLog } from './schemaLog.js'
 import {
@@ -60,7 +60,8 @@ import {
   refsApplyArgsSchema,
   stagingListArgsSchema,
   stagingIndexArgsSchema,
-  stagingMoveArgsSchema,
+  stagingStageArgsSchema,
+  stagingReleaseArgsSchema,
   refsNamesInArgsSchema
 } from './schemas/index.js'
 import { initSessionLog, captureError, getLogsDir } from './sessionLog.js'
@@ -958,11 +959,14 @@ app.whenReady().then(async () => {
       libraryPath,
       types
     })
-    return buildStagedInWorker(stagingRoot(validatePath(p.libraryPath)), p.types ?? STAGED_TYPES)
+    return buildStagedInWorker(
+      stagingRoot(validatePath(p.libraryPath)),
+      p.types ?? STAGING_FOLDER_TYPES
+    )
   })
 
   ipc.handle('staging:stage', (_, libraryPath, type, srcs) => {
-    const p = parseOrLog(schemaCtx, 'staging:stage', stagingMoveArgsSchema, {
+    const p = parseOrLog(schemaCtx, 'staging:stage', stagingStageArgsSchema, {
       libraryPath,
       type,
       srcs
@@ -971,7 +975,7 @@ app.whenReady().then(async () => {
   })
 
   ipc.handle('staging:release', (_, libraryPath, type, srcs) => {
-    const p = parseOrLog(schemaCtx, 'staging:release', stagingMoveArgsSchema, {
+    const p = parseOrLog(schemaCtx, 'staging:release', stagingReleaseArgsSchema, {
       libraryPath,
       type,
       srcs

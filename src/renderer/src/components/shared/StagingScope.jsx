@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo } from 'react'
 import { Box, ThemeProvider } from '@mui/material'
 import { useAppStore, IndexViewContext } from '../../store/appStore'
-import { STAGED_TYPES, mergeStagedIndex, stagedOnlyNameSet } from '@shared/staging.js'
+import { STAGING_FOLDER_TYPES, mergeStagedIndex, stagedOnlyNameSet } from '@shared/staging.js'
 
 /**
  * Where an editor's next save goes (HTOO-453, HTOO-628). Read by
@@ -81,7 +81,7 @@ export default function StagingScope({ saveStaged = false, onSaveStagedChange = 
   const theme = useMemo(() => {
     if (!staged) return identityTheme
     const stagedOnly = new Set()
-    for (const type of STAGED_TYPES) {
+    for (const type of STAGING_FOLDER_TYPES) {
       for (const name of stagedOnlyNameSet(libraryIndex, stagedIndex, type)) stagedOnly.add(name)
     }
     return markTheme(stagedOnly)

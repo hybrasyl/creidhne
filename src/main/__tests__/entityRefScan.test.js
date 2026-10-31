@@ -254,6 +254,18 @@ describe('referencedNames', () => {
     expect(referencedNames(xml, 'npcs').items).toEqual(['Crow & Cask'])
   })
 
+  it('reads the maps a file names, and not an element that only starts with Map', () => {
+    // HTOO-636. `<LagMap>` is a number in a server config, not a map name.
+    const config = `<ServerConfig Name="c"><Constants><LagMap>1001</LagMap></Constants>
+  <Handlers><Death><Map X="1" Y="2">Chapel</Map></Death>
+  <NewPlayer><StartMaps><StartMap X="3" Y="4">Mileth</StartMap></StartMaps></NewPlayer></Handlers></ServerConfig>`
+    expect(referencedNames(config, 'serverconfigs').maps).toEqual(['Chapel', 'Mileth'])
+    const item = `<Item><Name>Scroll</Name><Use><Teleport X="1" Y="1">Mileth</Teleport></Use></Item>`
+    expect(referencedNames(item, 'items').maps).toEqual(['Mileth'])
+    const nation = `<Nation Flag="1"><Name>Mileth</Name><Territory><Map Name="Mileth Inn"/></Territory></Nation>`
+    expect(referencedNames(nation, 'nations').maps).toEqual(['Mileth Inn'])
+  })
+
   it('finds what findReferences finds, for every site', () => {
     // One document per site, so the two readings of the table cannot drift.
     for (const [target, sites] of Object.entries(REFERENCE_SITES)) {

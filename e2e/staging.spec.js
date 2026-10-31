@@ -231,4 +231,77 @@ test.describe('Staging', () => {
     expect(existsSync(join(world, '.staging/statuses', fileName))).toBe(true)
     expect(existsSync(join(lib, 'statuses', fileName))).toBe(false)
   })
+
+  // Taliesin stages maps (HTOO-634); Creidhne indexes and releases them (HTOO-636).
+  //
+  //   xml/nations/mileth.xml        live, spawns on the staged-only "Hidden Grove"
+  //   .staging/nations/grove.xml    staged, spawns on "Hidden Grove"
+  //   .staging/maps/grove.xml       staged map "Hidden Grove", warps to "Deep Grove"
+  //   .staging/maps/deep.xml        staged map "Deep Grove"
+  test('a nation names a staged map, and Release brings the maps along', async () => {
+    const world = mkdtempSync(join(tmpdir(), 'creidhne-e2e-world-'))
+    const lib = join(world, 'xml')
+    const put = (rel, xml) => {
+      const full = join(world, rel)
+      mkdirSync(join(full, '..'), { recursive: true })
+      writeFileSync(full, xml)
+    }
+    const nation = (name, map) => `<?xml version="1.0"?>
+<Nation xmlns="${XMLNS}" Flag="1">
+  <Name>${name}</Name>
+  <SpawnPoints>
+    <SpawnPoint MapName="${map}" X="5" Y="5"/>
+  </SpawnPoints>
+</Nation>
+`
+    const map = (id, name, warpTo) => `<?xml version="1.0"?>
+<Map xmlns="${XMLNS}" Id="${id}" X="20" Y="20">
+  <Name>${name}</Name>${
+    warpTo
+      ? `
+  <Warps>
+    <Warp X="0" Y="0">
+      <MapTarget X="5" Y="5">${warpTo}</MapTarget>
+    </Warp>
+  </Warps>`
+      : ''
+  }
+</Map>
+`
+    put('xml/nations/mileth.xml', nation('Mileth', 'Hidden Grove'))
+    put('.staging/nations/grove.xml', nation('Grove Folk', 'Hidden Grove'))
+    put('.staging/maps/grove.xml', map(9001, 'Hidden Grove', 'Deep Grove'))
+    put('.staging/maps/deep.xml', map(9002, 'Deep Grove'))
+
+    ;({ electronApp } = await launchApp({
+      seedSettings: { libraries: [lib], activeLibrary: lib, theme: 'hybrasyl' }
+    }))
+    const page = await getMainWindow(electronApp)
+    await expect(page.getByText('Index complete')).toBeVisible({ timeout: 30000 })
+    await openPage(page, 'Nations')
+    const dialog = page.getByTestId('confirm-dialog')
+    const refNotice = page.getByTestId('staged-reference-notice')
+
+    await page.getByText('Mileth', { exact: true }).first().click()
+    await expect(refNotice).toContainText('maps: Hidden Grove')
+
+    await page.getByRole('button', { name: /^Staged \(/ }).click()
+    await page.getByText('Grove Folk', { exact: true }).first().click()
+    await page.getByRole('button', { name: 'Release', exact: true }).click()
+    // The map the nation names, and the map that map warps to.
+    await expect(dialog).toContainText('maps/grove.xml')
+    await expect(dialog).toContainText('maps/deep.xml')
+    await dialog.getByRole('button', { name: 'Release all 3' }).click()
+    await expect(dialog).toBeHidden()
+    await expect(page.getByText('Released 3 items.')).toBeVisible()
+    for (const rel of ['nations/grove.xml', 'maps/grove.xml', 'maps/deep.xml']) {
+      expect(existsSync(join(lib, rel)), rel).toBe(true)
+      expect(existsSync(join(world, '.staging', rel)), rel).toBe(false)
+    }
+
+    // Hidden Grove is live now, so Mileth's notice is gone.
+    await page.getByText('Mileth', { exact: true }).first().click()
+    await expect(page.getByRole('textbox', { name: 'Filename' })).toHaveValue('mileth.xml')
+    await expect(refNotice).toHaveCount(0)
+  })
 })

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import { join, normalize, relative, isAbsolute } from 'path'
 import { listSectionFiles, isArchivedPath } from '@eriscorp/hybindex-ts'
-import { STAGED_TYPES, STAGING_DIR } from '../shared/staging.js'
+import { STAGED_TYPES, STAGING_FOLDER_TYPES, STAGING_DIR } from '../shared/staging.js'
 import { moveFile } from './fsHandlers.js'
 import { referencedNames } from './entityRefScan.js'
 
@@ -21,6 +21,11 @@ export function stagingRoot(libraryPath) {
 
 function assertStagedType(type) {
   if (!STAGED_TYPES.includes(type)) throw new Error(`staging: "${type}" cannot be staged`)
+}
+
+/** Release also takes a staged map, which Taliesin stages (HTOO-636). */
+function assertFolderType(type) {
+  if (!STAGING_FOLDER_TYPES.includes(type)) throw new Error(`staging: "${type}" cannot be released`)
 }
 
 /**
@@ -83,7 +88,7 @@ export function stageFiles(libraryPath, type, srcs) {
 
 /** Staged → live. */
 export function releaseFiles(libraryPath, type, srcs) {
-  assertStagedType(type)
+  assertFolderType(type)
   return transferFiles(srcs, join(stagingRoot(libraryPath), type), join(libraryPath, type))
 }
 

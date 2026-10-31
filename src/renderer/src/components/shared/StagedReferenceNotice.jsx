@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStoreValue, libraryIndexState, stagedIndexState } from '../../store/appStore'
-import { STAGED_TYPES, stagedNames, stagedOnlyReferences } from '@shared/staging.js'
+import { STAGING_FOLDER_TYPES, stagedNames, stagedOnlyReferences } from '@shared/staging.js'
 import { EditorAlert, useEditorAlert } from './EditorAlerts'
 
 /**
@@ -24,7 +24,7 @@ export default function StagedReferenceNotice({ type, file }) {
   const [found, setFound] = useState({ path: null, refs: [] })
 
   const live = !!file && !file.archived && !file.staged
-  const anyStaged = STAGED_TYPES.some((t) => stagedNames(stagedIndex, t).length > 0)
+  const anyStaged = STAGING_FOLDER_TYPES.some((t) => stagedNames(stagedIndex, t).length > 0)
   const path = live && anyStaged ? file.path : null
 
   useEffect(() => {

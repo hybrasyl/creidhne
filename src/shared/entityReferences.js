@@ -199,6 +199,29 @@ export const REFERENCE_SITES = Object.freeze({
     // as referrer files either way.
     { type: 'maps', element: 'Npc', attribute: 'Name' }
   ],
+  maps: [
+    // Creidhne renames no map; Taliesin does (its `mapReferences.ts`). These
+    // rows let staging find the maps a file names (HTOO-636): a live nation
+    // that names a staged-only map shows the notice, and Release brings the
+    // map along. Counts are world / ceridwen, active files, 2026-10-31, and
+    // every name resolves except one item teleport and the ceridwen death map.
+    //
+    // A warp: `<Warp><MapTarget X Y>…</MapTarget>`. 6235 / 5845.
+    { type: 'maps', element: 'MapTarget', attribute: null },
+    // A nation's spawn points, 118 / 25, and `<Territory><Map Name>`, 0 / 0
+    // (the shape is the schema's NationMap).
+    { type: 'nations', element: 'SpawnPoint', attribute: 'MapName' },
+    { type: 'nations', element: 'Map', attribute: 'Name' },
+    // `<Death><Map X Y>…</Map>`, 5 / 1, and `<StartMaps><StartMap>`, 45 / 4.
+    // `<LagMap>` is another element, so the anchored match does not take it.
+    { type: 'serverconfigs', element: 'Map', attribute: null },
+    { type: 'serverconfigs', element: 'StartMap', attribute: null },
+    // An item's `<Use><Teleport X Y>…</Teleport>`, 13 / 1. Taliesin's table
+    // does not have this row.
+    { type: 'items', element: 'Teleport', attribute: null },
+    // A world map point's `<Target>`, 37 / 27. Its own `<Name>` is a label.
+    { type: 'worldmaps', element: 'Target', attribute: null }
+  ],
   // Measured and genuinely empty. Recorded rather than omitted, so "no edge" is
   // distinguishable from "nobody looked" — an omitted key and an empty one read
   // identically at a call site, and only one of them is a finding.

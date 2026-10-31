@@ -18,6 +18,7 @@ export { refsScanArgsSchema, refsApplyArgsSchema } from './entityRefs.js'
 export {
   stagingListArgsSchema,
   stagingIndexArgsSchema,
-  stagingMoveArgsSchema,
+  stagingStageArgsSchema,
+  stagingReleaseArgsSchema,
   refsNamesInArgsSchema
 } from './staging.js'

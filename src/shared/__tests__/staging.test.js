@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   STAGED_TYPES,
+  STAGING_FOLDER_TYPES,
   stagingRootFor,
   stagedEntry,
   mergeStagedIndex,
@@ -20,6 +21,24 @@ describe('STAGED_TYPES', () => {
     // A new page gets staging, or this fails: PAGE_FOR_TYPE is itself pinned to
     // the pages by openFileSites.test.js.
     expect([...STAGED_TYPES].sort()).toEqual(Object.keys(PAGE_FOR_TYPE).sort())
+  })
+})
+
+describe('STAGING_FOLDER_TYPES', () => {
+  it('is the staged types and the maps that Taliesin stages (HTOO-636)', () => {
+    expect([...STAGING_FOLDER_TYPES].sort()).toEqual([...STAGED_TYPES, 'maps'].sort())
+    expect(STAGED_TYPES).not.toContain('maps')
+  })
+
+  it('holds every type that a staged file can name', () => {
+    // A staged entity that a file names must be in the staged index, or the
+    // notice and Release cannot see it. Read from the table, so a new target
+    // fails here until staging indexes it.
+    const named = Object.entries(REFERENCE_SITES)
+      .filter(([, sites]) => sites.length)
+      .map(([target]) => target)
+    expect(named, 'the reference table has stopped being read').toContain('maps')
+    expect(named.filter((t) => !STAGING_FOLDER_TYPES.includes(t))).toEqual([])
   })
 })
 
@@ -47,6 +66,19 @@ describe('stagedEntry', () => {
 
   it('is empty for a type with no staged files', () => {
     expect(stagedEntry('items', {})).toEqual({ names: [], namesByFilename: {}, duplicateNames: {} })
+  })
+
+  it('takes a map’s filename from its detail, which hybindex-ts gives maps instead', () => {
+    const fields = {
+      maps: ['Mileth', 'No Id'],
+      mapsDuplicateNames: {},
+      mapDetails: [{ id: 500, name: 'Mileth', filename: 'towns/mileth.xml', x: 10, y: 10 }]
+    }
+    expect(stagedEntry('maps', fields)).toEqual({
+      names: ['Mileth', 'No Id'],
+      namesByFilename: { 'towns/mileth.xml': 'Mileth' },
+      duplicateNames: {}
+    })
   })
 })
 
@@ -81,6 +113,11 @@ describe('mergeStagedIndex', () => {
     const merged = mergeStagedIndex(live, staged)
     expect(merged.castableClasses).toBe(live.castableClasses)
     expect(live.castables).toEqual(['Ambush'])
+  })
+
+  it('adds the staged maps, which no page stages (HTOO-636)', () => {
+    const maps = { maps: { names: ['Hidden Grove'], namesByFilename: {}, duplicateNames: {} } }
+    expect(mergeStagedIndex({ maps: ['Mileth'] }, maps).maps).toEqual(['Hidden Grove', 'Mileth'])
   })
 })
 

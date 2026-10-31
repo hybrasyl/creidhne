@@ -43,6 +43,15 @@ export const STAGED_TYPES = Object.freeze([
   'variantgroups'
 ])
 
+/**
+ * The types that a staging folder can hold: the sixteen above, and `maps`,
+ * which Taliesin stages (HTOO-634). Creidhne has no map editor and stages no
+ * map. It indexes the staged maps and releases them, so a live file that names
+ * a staged-only map shows the notice, and Release brings that map along
+ * (HTOO-636). Stage and the page lists take `STAGED_TYPES`.
+ */
+export const STAGING_FOLDER_TYPES = Object.freeze([...STAGED_TYPES, 'maps'])
+
 /** The staging root for a library (`<world>/xml` → `<world>/.staging`). */
 export function stagingRootFor(libraryPath) {
   const lib = String(libraryPath ?? '').replace(/[\\/]+$/, '')
@@ -57,9 +66,22 @@ export function stagingRootFor(libraryPath) {
 export function stagedEntry(type, fields) {
   return {
     names: fields?.[type] || [],
-    namesByFilename: fields?.[`${type}NamesByFilename`] || {},
+    namesByFilename: fields?.[`${type}NamesByFilename`] || namesFromMapDetails(fields?.mapDetails),
     duplicateNames: fields?.[`${type}DuplicateNames`] || {}
   }
+}
+
+/**
+ * hybindex-ts gives maps no `mapsNamesByFilename`. Each map detail has the
+ * filename and the name. A map with no Id, X or Y has no detail, so Release
+ * cannot find its file; its name is still in `names`, and the notice shows it.
+ */
+function namesFromMapDetails(details) {
+  const out = {}
+  for (const d of details || []) {
+    if (d?.filename && d.name) out[d.filename] = d.name
+  }
+  return out
 }
 
 /** The staged names of a type, or `[]`. */
@@ -76,7 +98,7 @@ export function stagedNames(stagedIndex, type) {
  */
 export function mergeStagedIndex(libraryIndex, stagedIndex) {
   const merged = { ...(libraryIndex || {}) }
-  for (const type of STAGED_TYPES) {
+  for (const type of STAGING_FOLDER_TYPES) {
     const staged = stagedNames(stagedIndex, type)
     if (!staged.length) continue
     const live = merged[type] || []
