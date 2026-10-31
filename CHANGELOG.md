@@ -41,6 +41,10 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Changed
+
+- **The editor pages use the house editor shell**, which Taliesin also uses. The toolbar, the context menu and the header work as before. A tooltip on an action says what it acts on, for example `Archive "Mileth Guard"` or `Archive 3 files`. A disabled action's tooltip says what to do, for example "Select a status to archive it" or "Unarchive this status before you stage it". The delete confirmation names the file.
+
 ## [1.15.0] - 2026-10-30
 
 ### Added

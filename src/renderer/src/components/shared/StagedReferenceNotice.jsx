@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStoreValue, libraryIndexState, stagedIndexState } from '../../store/appStore'
 import { STAGING_FOLDER_TYPES, stagedNames, stagedOnlyReferences } from '@shared/staging.js'
-import { EditorAlert, useEditorAlert } from './EditorAlerts'
+import { EditorAlert, useEditorAlert } from '../editorShell/EditorAlerts'
 
 /**
  * A warning above the editor of a LIVE file that names an entity that exists

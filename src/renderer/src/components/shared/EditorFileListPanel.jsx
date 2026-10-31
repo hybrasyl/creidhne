@@ -7,43 +7,21 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-  Divider,
   Tooltip,
   TextField,
   InputAdornment,
   IconButton,
-  CircularProgress,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  ToggleButton,
-  ToggleButtonGroup
+  CircularProgress
 } from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
 import SearchIcon from '@mui/icons-material/Search'
-import ArchiveIcon from '@mui/icons-material/Archive'
-import UnarchiveIcon from '@mui/icons-material/Unarchive'
-import DeleteIcon from '@mui/icons-material/Delete'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import FolderIcon from '@mui/icons-material/Folder'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import AccountTreeIcon from '@mui/icons-material/AccountTree'
-import ViewListIcon from '@mui/icons-material/ViewList'
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
-import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
 import ClearIcon from '@mui/icons-material/Clear'
-import PendingActionsIcon from '@mui/icons-material/PendingActions'
-import PublishIcon from '@mui/icons-material/Publish'
 import { useStoreState, fileListViewModeState } from '../../store/appStore'
 import { isModKey } from '../../utils/modKey'
-import { EditorAlertsProvider } from './EditorAlerts'
+import EditorPageShell from '../editorShell/EditorPageShell'
 import {
   ITEM_HEIGHT,
   FOLDER_HEIGHT,
@@ -54,8 +32,7 @@ import {
   displayNameFor,
   filterFiles,
   buildListRows,
-  rowHeightFor,
-  selectionActions
+  rowHeightFor
 } from '../../utils/fileTree'
 
 // Measures the bounding rect of a box and re-measures on resize so the virtual
@@ -192,36 +169,20 @@ const VirtualRow = memo(function VirtualRow({
   )
 })
 
-/** An icon button with a tooltip that still shows while the button is disabled. */
-function ToolbarButton({ title, label, disabled, onClick, children }) {
-  return (
-    <Tooltip title={title}>
-      <span>
-        <IconButton size="small" disabled={disabled} onClick={onClick} aria-label={label}>
-          {children}
-        </IconButton>
-      </span>
-    </Tooltip>
-  )
-}
-
 /**
- * The shell of an editor page (HTOO-628): a toolbar across the page, the file
- * list on the left, and the page's editor column (`children`) on the right.
+ * Creidhne's editor page: the house editor shell
+ * (`editorShell/EditorPageShell.jsx`, HTOO-637) with Creidhne's list.
  *
  *   (Page name) | (New) | (Flat) (Staged) (Archived) (Active) | (Archive) (Stage) (Copy) (Delete)
  *
- * One component owns the toolbar and the list because the toolbar's item
- * actions act on the list's selection. It also provides the editor's alerts
- * area (`EditorAlerts.jsx`) around the right column, so a notice anywhere in it
- * shows under the editor header.
+ * The shell owns the toolbar, the context menu, the delete confirmation and the
+ * alerts provider around the editor column. Its item actions follow the
+ * selection this file gives it: each is enabled only when it applies to every
+ * selected file, Archive becomes Unarchive for archived files, and Stage
+ * becomes Release for staged files (`editorShell/selectionActions.js`).
  *
- * The set toggles choose what the list shows; Active is the default and at
- * least one stays on. Each shown set has a header row with its count, and a
- * click on the header collapses or expands the set. The item actions are smart:
- * each is enabled only when it applies to every selected file, Archive becomes
- * Unarchive for archived files, and Stage becomes Release for staged files
- * (`selectionActions`).
+ * This file owns the list: the filter, the set headers, the folder tree, the
+ * virtualized rows and the multi-select.
  *
  * Files arrive as `{ rel, treePath, name, path, archived, staged }` from
  * `utils/fileTree`. Lookups key on `rel` — the index's own
@@ -281,15 +242,13 @@ export default function EditorFileListPanel({
   // The page's editor column.
   children
 }) {
-  const [newMenuAnchor, setNewMenuAnchor] = useState(null)
   const [search, setSearch] = useState('')
   const [shown, setShown] = useState(['active'])
   const [viewMode, setViewMode] = useStoreState(fileListViewModeState)
   const [listRef, listSize] = useAutoSize()
   const [selectedPaths, setSelectedPaths] = useState(() => new Set())
+  const shell = useRef(null)
   const [lastClickedPath, setLastClickedPath] = useState(null)
-  const [contextMenu, setContextMenu] = useState(null)
-  const [pendingDelete, setPendingDelete] = useState(null) // file[] | null
   // Expansion is deliberately not persisted: filtering auto-expands anyway, and
   // persisting would mean a library/type-keyed map to prune as worlds come and
   // go. Keys carry their set (`staged:animist`), so one Set serves every set.
@@ -440,12 +399,10 @@ export default function EditorFileListPanel({
         updateSelection(next)
         setLastClickedPath(file.path)
       }
-      setContextMenu({ x: e.clientX, y: e.clientY, file })
+      shell.current?.openContextMenu(e)
     },
     [selectedPaths, updateSelection]
   )
-
-  const closeContextMenu = useCallback(() => setContextMenu(null), [])
 
   const selectedFiles = useMemo(() => {
     const out = []
@@ -455,51 +412,6 @@ export default function EditorFileListPanel({
     }
     return out
   }, [selectedPaths, filesByPath])
-
-  const handlers = useMemo(
-    () => ({
-      archive: onArchive,
-      unarchive: onUnarchive,
-      stage: onStage,
-      release: onRelease,
-      duplicate: onDuplicate
-    }),
-    [onArchive, onUnarchive, onStage, onRelease, onDuplicate]
-  )
-
-  const runAction = useCallback(
-    async (kind) => {
-      closeContextMenu()
-      if (kind === 'delete') {
-        // Stage for confirmation — actual onDelete fires from the dialog.
-        if (onDelete) setPendingDelete(selectedFiles.slice())
-        return
-      }
-      const handler = handlers[kind]
-      if (!handler) return
-      if (kind === 'duplicate') {
-        if (selectedFiles.length !== 1) return
-        await handler(selectedFiles[0])
-      } else {
-        await handler(selectedFiles)
-      }
-      clearSelection()
-    },
-    [handlers, onDelete, selectedFiles, clearSelection, closeContextMenu]
-  )
-
-  const confirmDelete = useCallback(async () => {
-    if (!pendingDelete || pendingDelete.length === 0) {
-      setPendingDelete(null)
-      return
-    }
-    const list = pendingDelete
-    setPendingDelete(null)
-    await onDelete?.(list)
-    clearSelection()
-  }, [pendingDelete, onDelete, clearSelection])
-
-  const cancelDelete = useCallback(() => setPendingDelete(null), [])
 
   // Stable rowProps identity so react-window doesn't re-render every visible
   // row on unrelated state changes (memoized VirtualRow can then bail out).
@@ -534,32 +446,6 @@ export default function EditorFileListPanel({
   const label = entityLabel || title || 'file'
   const onlyStaged = shown.length === 1 && shown[0] === 'staged'
   const newTooltip = `New ${onlyStaged ? 'staged ' : ''}${label}`
-  const selectionCount = selectedPaths.size
-
-  // The smart actions, from the selection, gated on what the page supports.
-  const actions = selectionActions(selectedFiles)
-  const archiveEnabled = actions.archive.enabled && !!handlers[actions.archive.kind]
-  const moveEnabled = actions.move.enabled && !!handlers[actions.move.kind]
-  const copyEnabled = actions.copy.enabled && !!onDuplicate
-  const deleteEnabled = actions.delete.enabled && !!onDelete
-  const archiveIcon =
-    actions.archive.kind === 'unarchive' ? (
-      <UnarchiveIcon fontSize="small" />
-    ) : (
-      <ArchiveIcon fontSize="small" />
-    )
-  const moveIcon =
-    actions.move.kind === 'release' ? (
-      <PublishIcon fontSize="small" />
-    ) : (
-      <PendingActionsIcon fontSize="small" />
-    )
-  const why = (action, enabled) =>
-    enabled
-      ? `${action} ${selectionCount} item${selectionCount === 1 ? '' : 's'}`
-      : selectionCount === 0
-        ? `Select item(s) to ${action.toLowerCase()}`
-        : `${action} does not apply to this selection`
 
   // Toggle values in toolbar order, as the mockup has them.
   const toggles = [
@@ -587,222 +473,42 @@ export default function EditorFileListPanel({
         ? `No ${noun} found. Check that a library is set in Settings.`
         : `No ${noun} in the sets shown.`
 
+  const describeFile = useCallback(
+    (f) => displayNameFor(f, f.staged ? stagedNamesByFilename : namesByFilename),
+    [namesByFilename, stagedNamesByFilename]
+  )
+
   return (
-    <Box
-      sx={{
-        flex: 1,
-        minWidth: 0,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}
-    >
-      {/* ── The page toolbar ── */}
-      <Box
-        data-testid="page-toolbar"
-        role="toolbar"
-        aria-label={`${title} toolbar`}
-        sx={{
-          display: 'flex',
-          alignItems: 'stretch',
-          flexShrink: 0,
-          minHeight: 44,
-          borderBottom: 1,
-          borderColor: 'divider'
-        }}
-      >
-        <Box
-          sx={{
-            width,
-            flexShrink: 0,
-            px: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRight: 1,
-            borderColor: 'divider'
-          }}
-        >
-          <Typography variant="h6" noWrap>
-            {title}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, minWidth: 0 }}>
-          {(extraActions || []).map((action, idx) => (
-            <ToolbarButton
-              key={idx}
-              title={action.tooltip || ''}
-              label={action.tooltip}
-              disabled={!!action.disabled}
-              onClick={action.onClick}
-            >
-              {action.icon}
-            </ToolbarButton>
-          ))}
-          <ToolbarButton
-            title={newMenuItems?.length ? 'Create…' : newTooltip}
-            label={newTooltip}
-            onClick={(e) =>
-              newMenuItems?.length
-                ? setNewMenuAnchor(e.currentTarget)
-                : onNew?.({ staged: hasStaging && onlyStaged })
-            }
-          >
-            <AddIcon fontSize="small" />
-          </ToolbarButton>
-
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-
-          <ToolbarButton
-            title={folderMode ? 'Grouping by folder' : 'Flat list'}
-            label={folderMode ? 'Switch to flat list' : 'Group by folder'}
-            onClick={() => setViewMode(folderMode ? 'flat' : 'folder')}
-          >
-            {folderMode ? <AccountTreeIcon fontSize="small" /> : <ViewListIcon fontSize="small" />}
-          </ToolbarButton>
-          {folderMode && allFolders.length > 0 && (
-            // Disabled while filtering rather than hidden: a live filter forces
-            // every surviving folder open, so the button would appear to do
-            // nothing. Saying why is better than a control that ignores clicks.
-            <ToolbarButton
-              title={
-                search
-                  ? 'Filtering already shows every match'
-                  : allExpanded
-                    ? 'Collapse all folders'
-                    : 'Expand all folders'
-              }
-              label={allExpanded ? 'Collapse all folders' : 'Expand all folders'}
-              disabled={!!search}
-              onClick={toggleExpandAll}
-            >
-              {allExpanded ? (
-                <UnfoldLessIcon fontSize="small" />
-              ) : (
-                <UnfoldMoreIcon fontSize="small" />
-              )}
-            </ToolbarButton>
-          )}
-          {toggles.length > 1 && (
-            <ToggleButtonGroup
-              size="small"
-              value={shown}
-              // At least one set stays on: an empty list with no way to say why
-              // is worse than a toggle that does not turn off.
-              onChange={(_, next) => {
-                if (next.length) setShown(next)
-              }}
-              aria-label="Sets to show"
-              sx={{ ml: 0.5 }}
-            >
-              {toggles.map((t) => (
-                <ToggleButton
-                  key={t.key}
-                  value={t.key}
-                  aria-label={`${t.label} (${t.count})`}
-                  sx={{ py: 0.25, px: 1, textTransform: 'none', whiteSpace: 'nowrap' }}
-                >
-                  {t.label}
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    sx={{ ml: 0.75, color: 'text.secondary' }}
-                  >
-                    {t.count}
-                  </Typography>
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          )}
-
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-
-          {hasArchive && (
-            <ToolbarButton
-              title={why(actions.archive.label, archiveEnabled)}
-              label={actions.archive.label}
-              disabled={!archiveEnabled}
-              onClick={() => runAction(actions.archive.kind)}
-            >
-              {archiveIcon}
-            </ToolbarButton>
-          )}
-          {hasStaging && (
-            <ToolbarButton
-              title={why(actions.move.label, moveEnabled)}
-              label={actions.move.label}
-              disabled={!moveEnabled}
-              onClick={() => runAction(actions.move.kind)}
-            >
-              {moveIcon}
-            </ToolbarButton>
-          )}
-          {!!onDuplicate && (
-            <ToolbarButton
-              title={
-                copyEnabled
-                  ? 'Duplicate'
-                  : selectionCount > 1
-                    ? 'Duplicate is single-item only'
-                    : 'Select an item to duplicate'
-              }
-              label="Duplicate"
-              disabled={!copyEnabled}
-              onClick={() => runAction('duplicate')}
-            >
-              <ContentCopyIcon fontSize="small" />
-            </ToolbarButton>
-          )}
-          {!!onDelete && (
-            <ToolbarButton
-              title={why('Delete', deleteEnabled)}
-              label="Delete"
-              disabled={!deleteEnabled}
-              onClick={() => runAction('delete')}
-            >
-              <DeleteIcon fontSize="small" />
-            </ToolbarButton>
-          )}
-        </Box>
-      </Box>
-
-      {/* New (+) dropdown — only when newMenuItems provided */}
-      <Menu
-        open={!!newMenuAnchor}
-        anchorEl={newMenuAnchor}
-        onClose={() => setNewMenuAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-      >
-        {(newMenuItems || []).map((item, i) => (
-          <MenuItem
-            key={i}
-            onClick={() => {
-              setNewMenuAnchor(null)
-              item.onClick?.()
-            }}
-          >
-            {item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
-            {item.label}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-        {/* ── The file list ── */}
-        <Box
-          data-testid="file-list"
-          sx={{
-            width,
-            flexShrink: 0,
-            borderRight: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
-        >
+    <EditorPageShell
+      ref={shell}
+      title={title}
+      entityLabel={label}
+      width={width}
+      newLabel={newTooltip}
+      onNew={() => onNew?.({ staged: hasStaging && onlyStaged })}
+      newMenuItems={newMenuItems}
+      extraActions={extraActions}
+      folderMode={folderMode}
+      onFolderModeChange={(folder) => setViewMode(folder ? 'folder' : 'flat')}
+      expandAll={
+        folderMode && allFolders.length > 0
+          ? { allExpanded, filtering: !!search, onToggle: toggleExpandAll }
+          : null
+      }
+      sets={toggles}
+      shownSets={shown}
+      onShownSetsChange={setShown}
+      selection={selectedFiles}
+      describeFile={describeFile}
+      onArchive={onArchive}
+      onUnarchive={onUnarchive}
+      onStage={onStage}
+      onRelease={onRelease}
+      onDuplicate={onDuplicate}
+      onDelete={onDelete}
+      onActionDone={clearSelection}
+      list={
+        <>
           <Box sx={{ px: 1, py: 1 }}>
             <TextField
               size="small"
@@ -868,97 +574,10 @@ export default function EditorFileListPanel({
               </Box>
             )}
           </Box>
-        </Box>
-
-        {/* ── The editor column, with the alerts area for its header ── */}
-        <EditorAlertsProvider>{children}</EditorAlertsProvider>
-      </Box>
-
-      {/* Context menu — mirrors the toolbar's item actions */}
-      <Menu
-        open={!!contextMenu}
-        onClose={closeContextMenu}
-        anchorReference="anchorPosition"
-        anchorPosition={contextMenu ? { top: contextMenu.y, left: contextMenu.x } : undefined}
-      >
-        {hasArchive && (
-          <MenuItem disabled={!archiveEnabled} onClick={() => runAction(actions.archive.kind)}>
-            <ListItemIcon>{archiveIcon}</ListItemIcon>
-            {actions.archive.label}
-            {selectionCount > 1 ? ` (${selectionCount})` : ''}
-          </MenuItem>
-        )}
-        {hasStaging && (
-          <MenuItem disabled={!moveEnabled} onClick={() => runAction(actions.move.kind)}>
-            <ListItemIcon>{moveIcon}</ListItemIcon>
-            {actions.move.label}
-            {selectionCount > 1 ? ` (${selectionCount})` : ''}
-          </MenuItem>
-        )}
-        {!!onDuplicate && (
-          <MenuItem disabled={!copyEnabled} onClick={() => runAction('duplicate')}>
-            <ListItemIcon>
-              <ContentCopyIcon fontSize="small" />
-            </ListItemIcon>
-            Duplicate
-          </MenuItem>
-        )}
-        {!!onDelete && (
-          <MenuItem disabled={!deleteEnabled} onClick={() => runAction('delete')}>
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" />
-            </ListItemIcon>
-            Delete{selectionCount > 1 ? ` (${selectionCount})` : ''}
-          </MenuItem>
-        )}
-      </Menu>
-
-      {/* Delete confirmation. Files go to the OS trash (Recycle Bin /
-          Trash), so this is a soft "are you sure" rather than a final
-          warning — the user can still recover from the OS. */}
-      <Dialog open={!!pendingDelete} onClose={cancelDelete}>
-        <DialogTitle>
-          {pendingDelete && pendingDelete.length === 1
-            ? 'Delete this item?'
-            : `Delete ${pendingDelete?.length ?? 0} items?`}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 1 }}>
-            {pendingDelete && pendingDelete.length === 1
-              ? 'This file will be moved to your system trash.'
-              : 'These files will be moved to your system trash. You can recover them from the OS Recycle Bin / Trash.'}
-          </DialogContentText>
-          {pendingDelete && pendingDelete.length > 0 && (
-            <Box
-              sx={{
-                maxHeight: 200,
-                overflow: 'auto',
-                bgcolor: 'action.hover',
-                borderRadius: 1,
-                px: 1.5,
-                py: 1
-              }}
-            >
-              {pendingDelete.slice(0, 20).map((f) => (
-                <Typography key={f.path} variant="body2" sx={{ fontFamily: 'monospace' }} noWrap>
-                  {displayNameFor(f, f.staged ? stagedNamesByFilename : namesByFilename)}
-                </Typography>
-              ))}
-              {pendingDelete.length > 20 && (
-                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                  …and {pendingDelete.length - 20} more
-                </Typography>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDelete}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        </>
+      }
+    >
+      {children}
+    </EditorPageShell>
   )
 }

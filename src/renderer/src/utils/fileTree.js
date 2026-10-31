@@ -193,36 +193,6 @@ export function resolveSavePath(library, subdir, selectedFile, fileName, folder,
   return { newPath, newRel, isRename, crossesRoot, file }
 }
 
-/** Which set a file is in: `'active'`, `'archived'` or `'staged'`. */
-export function fileSet(file) {
-  return file?.staged ? 'staged' : file?.archived ? 'archived' : 'active'
-}
-
-/**
- * The page toolbar's item actions for a selection (HTOO-628). Each is enabled
- * only when it applies to every selected file, and two of them change with the
- * selection: Archive is Unarchive for archived files, and Stage is Release for
- * staged files. Staging has no archive, so Archive does not apply to a staged
- * file, and an archived file cannot be staged.
- */
-export function selectionActions(selected) {
-  const sets = new Set((selected || []).map(fileSet))
-  const only = sets.size === 1 ? [...sets][0] : null
-  const count = (selected || []).length
-  return {
-    archive:
-      only === 'archived'
-        ? { kind: 'unarchive', label: 'Unarchive', enabled: true }
-        : { kind: 'archive', label: 'Archive', enabled: only === 'active' },
-    move:
-      only === 'staged'
-        ? { kind: 'release', label: 'Release', enabled: true }
-        : { kind: 'stage', label: 'Stage', enabled: only === 'active' },
-    copy: { enabled: count === 1 },
-    delete: { enabled: count > 0 }
-  }
-}
-
 /**
  * Group files into a nested tree on their `treePath` segments. Each folder node
  * carries its own descendant `count`, stamped here — the build already visits

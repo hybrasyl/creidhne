@@ -1,7 +1,7 @@
 import { useStoreValue, libraryIndexState, stagedIndexState } from '../../store/appStore'
 import { sharedKeyGroup } from '@shared/duplicateKeys.js'
 import { stagedKeyClash } from '@shared/staging.js'
-import { EditorAlert, useEditorAlert } from './EditorAlerts'
+import { EditorAlert, useEditorAlert } from '../editorShell/EditorAlerts'
 
 /** In place (outside an alerts area), the notice keeps its height and the editor after it may shrink. */
 const NOTICE_SX = { mb: 2, flexShrink: 0, '& ~ div': { minHeight: 0 } }

@@ -9,7 +9,7 @@ import { useAppStore, useStoreValue, libraryIndexState } from '../../store/appSt
 import StagingScope from '../shared/StagingScope'
 import IndexNamePicker from '../shared/IndexNamePicker'
 import EditorHeader from '../shared/EditorHeader'
-import { EditorAlertsProvider, useEditorAlert } from '../shared/EditorAlerts'
+import { EditorAlertsProvider, useEditorAlert } from '../editorShell/EditorAlerts'
 
 /**
  * HTOO-453, HTOO-628. StagingScope decides what an editor sees, at render

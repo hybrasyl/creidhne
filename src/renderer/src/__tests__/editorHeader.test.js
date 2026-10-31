@@ -75,12 +75,13 @@ describe('editor save-destination header (HTOO-159)', () => {
   })
 
   it('keeps the Filename field in one place', () => {
-    // The field and its warning states are one rule, so they live in one file. A second
-    // Filename field is a second copy of that rule, and the copy is what drifts.
+    // The field and its warning states are one rule, so they live in one file: the house
+    // header (HTOO-637). A second Filename field is a second copy of that rule, and the
+    // copy is what drifts.
     const owners = jsxFilesUnder(rendererDir)
       .filter(({ src }) => src.includes('label="Filename"'))
       .map((f) => f.rel)
-    expect(owners).toEqual(['components/shared/EditorHeader.jsx'])
+    expect(owners).toEqual(['components/editorShell/EditorHeader.jsx'])
   })
 
   it('keeps the folder picker in one place', () => {

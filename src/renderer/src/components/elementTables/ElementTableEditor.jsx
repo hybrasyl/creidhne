@@ -21,7 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import CommentField from '../shared/CommentField'
 import EditorHeader from '../shared/EditorHeader'
-import { useEditorAlert } from '../shared/EditorAlerts'
+import { useEditorAlert } from '../editorShell/EditorAlerts'
 import { useDuplicateName } from '../../hooks/useDuplicateName'
 import { normalizeFolder } from '../../utils/fileTree'
 import {
