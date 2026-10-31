@@ -28,7 +28,7 @@ const BrigidAssetsPathSection = () => {
           Brigid Asset Packs
         </Typography>
         <Tooltip
-          title="Folder where Brigid stores its modern .datf asset packs (default: %LOCALAPPDATA%\erisco\Brigid\assets). Sprite pickers scan this folder — in addition to the Dark Ages client folder — for Hybrasyl overrides."
+          title="Folder where Brigid stores its modern .datf asset packs (Use default: %LOCALAPPDATA%\Erisco\Brigid\assets on Windows, ~/Library/Application Support/Erisco/Brigid/assets on macOS, ~/.config/Erisco/Brigid/assets on Linux). Sprite pickers scan this folder — in addition to the Dark Ages client folder — for Hybrasyl overrides."
           placement="top"
         >
           <IconButton sx={{ ml: 1, color: 'text.button' }}>

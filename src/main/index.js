@@ -106,7 +106,8 @@ import {
   listActivePacks,
   listCoveredIds,
   resolveAsset,
-  resolveAssetUrl
+  resolveAssetUrl,
+  suggestedBrigidAssetsPath
 } from './assetPacks/index.js'
 import originalFs from 'original-fs'
 import { sweepPortableLeftovers } from './portableSweep.js'
@@ -867,11 +868,7 @@ app.whenReady().then(async () => {
   // Suggested default location for brigid's .datf packs, so the settings UI can
   // offer a "Use default" prefill. Mirrors brigid's AppPaths.AssetsDir:
   // %LOCALAPPDATA%\erisco\Brigid\assets on Windows.
-  ipc.handle('pack:suggestedBrigidAssetsPath', () => {
-    const localAppData = process.env.LOCALAPPDATA
-    if (!localAppData) return null
-    return join(localAppData, 'erisco', 'Brigid', 'assets')
-  })
+  ipc.handle('pack:suggestedBrigidAssetsPath', () => suggestedBrigidAssetsPath())
 
   // Initial pack load from saved source paths, if any.
   settingsManager

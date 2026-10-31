@@ -5,7 +5,8 @@
 // handler module.
 
 import { promises as fs } from 'fs'
-import { join } from 'path'
+import { homedir } from 'os'
+import { isAbsolute, join } from 'path'
 import unzipper from 'unzipper'
 import { validateManifest } from './manifest.js'
 import { getHandler } from './handlers/index.js'
@@ -257,6 +258,37 @@ export async function resolveAssetUrl(subtype, id) {
     }
   }
   return null
+}
+
+/**
+ * The folder where Brigid keeps its asset packs, for Settings' Use default
+ * (HTOO-585, ported from Taliesin's assetPacks.ts). The base is each OS's own:
+ * - Windows: `%LOCALAPPDATA%`, else the home folder's `AppData\Local`.
+ * - macOS: `~/Library/Application Support`. A macOS pass of Brigid recorded
+ *   packs there (2026-10-21).
+ * - Linux: `$XDG_CONFIG_HOME` when it is an absolute path, else `~/.config`.
+ *
+ * The vendor folder is `Erisco`, as Brigid writes it since it moved from
+ * `erisco`. Linux keeps the two apart.
+ *
+ * Null only when there is no base. The arguments are for the tests; the app
+ * passes none.
+ */
+export function suggestedBrigidAssetsPath(
+  platform = process.platform,
+  env = process.env,
+  home = homedir()
+) {
+  let base
+  if (platform === 'win32') {
+    base = env.LOCALAPPDATA || (home ? join(home, 'AppData', 'Local') : undefined)
+  } else if (platform === 'darwin') {
+    base = home ? join(home, 'Library', 'Application Support') : undefined
+  } else {
+    const xdg = env.XDG_CONFIG_HOME
+    base = xdg && isAbsolute(xdg) ? xdg : home ? join(home, '.config') : undefined
+  }
+  return base ? join(base, 'Erisco', 'Brigid', 'assets') : null
 }
 
 // Test hook — reset state between tests.
