@@ -41,6 +41,8 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-30
+
 ### Added
 
 - **The Species page edits species.** The page edits the key, Id, origin, player option, the three name forms, the parent species of a branch, Affinity and Resistance, the description and the bodies. Affinity and Resistance offer the elements of the active element table. A branch with an empty Affinity or Resistance shows the value that it takes from its parent. Branch Of lists only the species that can be a parent: each one that is ByBranch and is not a branch. The page lists each problem that makes the server refuse the species, including an Id or a body Id that another species uses. Player saves store the species key and the body keys, so you cannot change a key after the first save. The one exception is a copy that Duplicate makes: it has the key of the original, and the page tells you to give it a new key.
