@@ -196,6 +196,37 @@ describe('the window icon, per platform', () => {
   })
 })
 
+describe('the desktop entry (HTOO-63)', () => {
+  // A correct hicolor set is only half of it. Without these, the .desktop entry and
+  // the running window disagree, and the taskbar and the switcher draw a generic
+  // icon. This replaced a check by eye on a Linux desktop (Sabrael, 2026-11-02).
+  const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'))
+  const builderYml = readFileSync(join(repoRoot, 'electron-builder.yml'), 'utf8').replace(
+    /\r\n/g,
+    '\n'
+  )
+
+  it('desktopName is in package.json, where the schema expects it', () => {
+    expect(pkg.desktopName).toBe('creidhne.desktop')
+  })
+
+  it('linux.syncDesktopName is on', () => {
+    expect(builderYml).toMatch(/^ {2}syncDesktopName: true$/m)
+  })
+
+  it('linux.icon points at the hicolor directory', () => {
+    expect(builderYml).toMatch(/^ {2}icon: build\/icons$/m)
+  })
+
+  it('the deb target has a maintainer', () => {
+    // The .deb installs the desktop entry, and electron-builder fails the Linux
+    // build without a maintainer. The author here has no email, so
+    // linux.maintainer is the one that has to be present.
+    expect(builderYml).toMatch(/^ {4}- deb$/m)
+    expect(builderYml).toMatch(/^ {2}maintainer: \S/m)
+  })
+})
+
 describe('build/icon.icns', () => {
   it('is an icns container whose declared length matches the file', () => {
     // A truncated .icns is accepted by electron-builder and rejected by macOS at
