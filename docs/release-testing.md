@@ -30,7 +30,7 @@ Use a dev build or a packaged build. Do each check in each of the eight themes. 
 
 The title bar, the close button and the nav bar are no longer checked by eye. Sabrael retired the house's chrome checks on 2026-11-02, and tests cover them:
 
-- **The title bar and the close button.** `chromeContrast.test.jsx` checks the name and the window buttons on each bar, the black outline or the flat bar, the hover colours, and that the close button turns red. `TitleBar.test.jsx` checks that each window button calls its control.
+- **The title bar and the close button.** `chromeContrast.test.jsx` checks the name and the window buttons on each bar, the black outline or the flat bar, the hover colours, and that the close button turns red. `TitleBar.test.jsx` checks that each window button calls its control, and `src/main/__tests__/windowControls.test.js` what main does with it: minimise minimises, maximise maximises and a second press restores, and close asks the window's close guard.
 - **The nav bar.** `chromeContrast.test.jsx` checks the icons on the bar, the current page's ring and the hover. `tertiary.test.js` checks that the nav bar differs from the title bar.
 - **The Linux taskbar icon.** `scripts/icons.test.mjs` checks the hicolor set, the window icon, `desktopName`, `linux.syncDesktopName` and the deb's maintainer. The icon check under Done below is not run again.
 - **The splash spinner.** `splashLayout.test.js` keeps every item in the splash from shrinking, and the spinner square.
