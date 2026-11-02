@@ -24,12 +24,16 @@ The specs below run these on every `npm run e2e`, so they need no manual pass:
 
 Use a dev build or a packaged build. Do each check in each of the eight themes. Settings → Appearance → Theme gallery shows most of the controls on one page.
 
-- [ ] **The title bar.** Danaan has a bronze bar and Grinneal a brown bar. On both, the name, the logo and the window buttons are light, with a black outline. Hybrasyl and Chadul also have light text with a black outline. Mundanes and Dubhaimid have flat bars with no outline. Nothing on any bar is engraved. The name and the three window buttons are easy to read.
-- [ ] **The close button.** Under the pointer, the close button turns red in every theme.
-- [ ] **The nav bar.** The icons are easy to read on the bar. The current page has a light background and a ring around its button. Under the pointer, an icon has the same highlight as the window buttons.
 - [ ] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, **Clear** on a Settings path card and **Delete** in the delete confirmation of a file list show the error colour.
 - [ ] **A coloured chip.** The **Active** chip on a library and the formula category chips show their colour.
 - [ ] **A filled button and a hover.** A contained button changes under the pointer.
+
+The title bar, the close button and the nav bar are no longer checked by eye. Sabrael retired the house's chrome checks on 2026-11-02, and tests cover them:
+
+- **The title bar and the close button.** `chromeContrast.test.jsx` checks the name and the window buttons on each bar, the black outline or the flat bar, the hover colours, and that the close button turns red. `TitleBar.test.jsx` checks that each window button calls its control.
+- **The nav bar.** `chromeContrast.test.jsx` checks the icons on the bar, the current page's ring and the hover. `tertiary.test.js` checks that the nav bar differs from the title bar.
+- **The Linux taskbar icon.** `scripts/icons.test.mjs` checks the hicolor set, the window icon, `desktopName`, `linux.syncDesktopName` and the deb's maintainer. The icon check under Done below is not run again.
+- **The splash spinner.** `splashLayout.test.js` keeps every item in the splash from shrinking, and the spinner square.
 
 ## Pending: Windows
 
