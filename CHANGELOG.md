@@ -41,9 +41,19 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Changed
+
+- **Creidhne runs on Electron 45.**
+- **The world index moves to a new version.** The first time Creidhne opens a world after the update, it builds the index again. Settings → World indexes removes the old one.
+
 ### Fixed
 
 - **A formula save writes `formulas.lua` to `scripts/modules/`.** The server loads `require("formulas")` only from `scripts/modules/formulas.lua`, so a script could not load the file in `scripts/`. Remove the old `scripts/formulas.lua` from your world.
+- **Creidhne no longer takes itself for a portable launch when another portable app started it.** It then cleaned the temporary folders of a portable run that it was not, and the log showed an error. Programs that Creidhne starts no longer receive the portable settings either.
+
+### Security
+
+- **The macOS app no longer accepts `DYLD_*` environment variables.** With them, a variable could load unsigned code into the signed app.
 
 ## [1.15.0] - 2026-10-31
 
