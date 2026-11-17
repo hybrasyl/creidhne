@@ -320,16 +320,19 @@ function App() {
     dirtyEditorRef.current = dirtyEditor
   }, [dirtyEditor])
 
-  // Register the close listener once — reads state via ref to avoid stacking
-  useEffect(() => {
-    window.electronAPI.onCheckClose(() => {
-      if (dirtyEditorRef.current) {
-        setCloseDialogOpen(true)
-      } else {
-        window.electronAPI.confirmClose()
-      }
-    })
-  }, [])
+  // Register the close listener once — reads state via ref to avoid stacking.
+  // The cleanup removes it, so a remount leaves one listener (HTOO-682).
+  useEffect(
+    () =>
+      window.electronAPI.onCheckClose(() => {
+        if (dirtyEditorRef.current) {
+          setCloseDialogOpen(true)
+        } else {
+          window.electronAPI.confirmClose()
+        }
+      }),
+    []
+  )
 
   const handleCloseSave = useCallback(async () => {
     setCloseDialogOpen(false)

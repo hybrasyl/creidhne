@@ -10,6 +10,7 @@ import { isAbsolute, join } from 'path'
 import unzipper from 'unzipper'
 import { validateManifest } from './manifest.js'
 import { getHandler } from './handlers/index.js'
+import { PACK_LIMITS, packLimitViolation, readEntryBounded } from './limits.js'
 
 // Single-active state: the merged set of packs loaded from the currently
 // configured source directories. Reloaded whenever a source path changes;
@@ -21,12 +22,32 @@ let state = { sources: [], packs: [] }
 // with main's startup load and return an empty array.
 let pendingLoad = Promise.resolve()
 
-async function loadPack(filePath) {
+// `limits` is for the tests; the app passes none.
+async function loadPack(filePath, limits = PACK_LIMITS) {
+  // The file size first: it bounds the central directory the zip reader parses
+  // (HTOO-684).
+  let fileBytes
+  try {
+    fileBytes = (await fs.stat(filePath)).size
+  } catch (err) {
+    console.warn(`[assetPackLoader] cannot open ${filePath}: ${err.message}`)
+    return null
+  }
+  if (fileBytes > limits.maxPackBytes) {
+    console.warn(`[assetPackLoader] refused ${filePath}: the file is above the size limit`)
+    return null
+  }
   let directory
   try {
     directory = await unzipper.Open.file(filePath)
   } catch (err) {
     console.warn(`[assetPackLoader] cannot open ${filePath}: ${err.message}`)
+    return null
+  }
+  // A refused pack does not enter the active set at all.
+  const violation = packLimitViolation(fileBytes, directory.files, limits)
+  if (violation) {
+    console.warn(`[assetPackLoader] refused ${filePath}: ${violation}`)
     return null
   }
 
@@ -38,7 +59,7 @@ async function loadPack(filePath) {
 
   let rawManifest
   try {
-    const buf = await manifestEntry.buffer()
+    const buf = await readEntryBounded(manifestEntry, limits.maxManifestBytes)
     rawManifest = JSON.parse(buf.toString('utf8'))
   } catch (err) {
     console.warn(`[assetPackLoader] malformed manifest in ${filePath}: ${err.message}`)
@@ -214,7 +235,7 @@ export async function resolveAsset(subtype, id) {
     const entry = pack.entries.get(key)
     if (!entry) continue
     try {
-      return await entry.buffer()
+      return await readEntryBounded(entry, PACK_LIMITS.maxEntryBytes)
     } catch (err) {
       console.warn(
         `[assetPackLoader] failed reading ${subtype}${id} from ${pack.fileName}: ${err.message}`
@@ -247,7 +268,7 @@ export async function resolveAssetUrl(subtype, id) {
     const entry = pack.entries.get(key)
     if (!entry) continue
     try {
-      const buf = await entry.buffer()
+      const buf = await readEntryBounded(entry, PACK_LIMITS.maxEntryBytes)
       const ext = String(entry.path).split('.').pop().toLowerCase()
       const mime = MIME_BY_EXT[ext] || 'application/octet-stream'
       return `data:${mime};base64,${buf.toString('base64')}`
@@ -289,6 +310,11 @@ export function suggestedBrigidAssetsPath(
     base = xdg && isAbsolute(xdg) ? xdg : home ? join(home, '.config') : undefined
   }
   return base ? join(base, 'Erisco', 'Brigid', 'assets') : null
+}
+
+// Test hook — load one pack with its own limits.
+export function _loadPackForTests(filePath, limits) {
+  return loadPack(filePath, limits)
 }
 
 // Test hook — reset state between tests.

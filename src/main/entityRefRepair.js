@@ -92,7 +92,11 @@ export async function scanReferences(libraryPath, type, oldName) {
  * keeps a no-op out of the world's git history, and it means `changed` counts
  * files this call actually altered rather than files it visited.
  */
-export async function applyRename(libraryPath, type, oldName, newName) {
+//
+// `guard` checks each file before the write (main passes `validatePath`), so a
+// link below the library cannot lead a rewrite out of the world (HTOO-681). A
+// refused file is reported in `failed` and is not written.
+export async function applyRename(libraryPath, type, oldName, newName, guard = (p) => p) {
   if (!String(oldName ?? '').trim()) return { total: 0, changed: [], failed: [] }
 
   const changed = []
@@ -117,7 +121,7 @@ export async function applyRename(libraryPath, type, oldName, newName) {
         continue
       }
       try {
-        await writeFile(join(dir, r.rel), r.next, 'utf8')
+        await writeFile(guard(join(dir, r.rel)), r.next, 'utf8')
         changed.push({ sourceType, rel: r.rel, count: r.count })
       } catch (err) {
         failed.push({ sourceType, rel: r.rel, error: err.message })

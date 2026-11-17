@@ -121,8 +121,7 @@ e2e/           Playwright specs against the built app
 
 - **Main owns all disk/IPC I/O; the renderer only calls `window.electronAPI`** (the bridge in
   `src/preload/index.js`). Adding a feature = IPC handler → preload method → renderer call.
-- **Path safety**: every renderer-supplied path is validated against session-allowed roots via
-  `assertInsideAnyRoot` (`src/main/pathSafety.js`) before any fs op — never trust a renderer path.
+- **Path safety and authority** (HTOO-679, HTOO-681, `docs/authority-model.md`): every renderer-supplied path goes through `validatePath` (`authorizePath` in `src/main/handlerContext.js`) before any fs op — never trust a renderer path. It checks the path against the session's roots as a string AND as a real path, so a junction or a symlink cannot lead out, and it refuses the settings folder and the approved Taliesin program. The roots come from `grants.json`, which only main writes: a settings save can keep or drop a grant, never add one, and a new folder comes only from a native dialog. A path main joins under a checked folder and then writes takes the same check (`validateLibraryForWrite`, or a `guard` argument). Never pass `shell: true` to a child process (`scriptOpen.test.js` reads main's sources).
 - **Zod at the IPC boundary, and every channel is accounted for** (HTOO-370). A new
   `ipc.handle` must either `parseOrLog` its payload or be listed in `EXEMPT` in
   `src/main/__tests__/ipcSchemaCoverage.test.js` with a category and a reason — the suite
