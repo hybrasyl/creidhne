@@ -180,6 +180,17 @@ describe('saveFormulas', () => {
       'utf-8'
     )
   })
+
+  // The server resolves require("formulas") to scripts/modules/formulas.lua
+  // only (HTOO-687). scripts/formulas.lua cannot be loaded.
+  it('writes formulas.lua into scripts/modules, where require() looks', async () => {
+    const data = { settings: {}, patterns: [], formulas: [{ id: '1', name: 'X', formula: 'LVL' }] }
+    await saveFormulas('/worlds/test/xml', data)
+    const luaPath = join('/worlds/test/xml', '..', 'scripts', 'modules', 'formulas.lua')
+    expect(mockFs.writeFile).toHaveBeenCalledWith(luaPath, expect.any(String), 'utf-8')
+    const luaWrites = mockFs.writeFile.mock.calls.filter(([p]) => p.endsWith('formulas.lua'))
+    expect(luaWrites).toHaveLength(1)
+  })
 })
 
 // ── importFormulas ──────────────────────────────────────────────────────────

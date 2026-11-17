@@ -41,6 +41,10 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A formula save writes `formulas.lua` to `scripts/modules/`.** The server loads `require("formulas")` only from `scripts/modules/formulas.lua`, so a script could not load the file in `scripts/`. Remove the old `scripts/formulas.lua` from your world.
+
 ## [1.15.0] - 2026-10-31
 
 ### Added

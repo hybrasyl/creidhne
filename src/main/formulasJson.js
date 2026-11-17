@@ -82,6 +82,11 @@ export function getFormulasPath(libraryPath) {
   return getCreidhneFilePath(libraryPath, 'formulas.json')
 }
 
+/** The folder that holds formulas.lua: world/scripts/modules, where require() looks. */
+export function getFormulasLuaDir(libraryPath) {
+  return join(libraryPath, '..', 'scripts', 'modules')
+}
+
 export async function loadFormulas(libraryPath) {
   try {
     const raw = JSON.parse(await fs.readFile(getFormulasPath(libraryPath), 'utf-8'))
@@ -100,12 +105,13 @@ export async function saveFormulas(libraryPath, data) {
   await ensureCreidhneDir(libraryPath)
   await fs.writeFile(getFormulasPath(libraryPath), JSON.stringify(data, null, 2), 'utf-8')
 
-  // Regenerate world/scripts/formulas.lua so Lua authors can require("formulas")
+  // Regenerate the Lua module so Lua authors can require("formulas"). The
+  // server resolves require("x") to scripts/modules/x.lua only (HTOO-687).
   try {
-    const scriptsDir = join(libraryPath, '..', 'scripts')
-    await fs.mkdir(scriptsDir, { recursive: true })
+    const modulesDir = getFormulasLuaDir(libraryPath)
+    await fs.mkdir(modulesDir, { recursive: true })
     const luaSrc = generateFormulasLua(data.formulas)
-    await fs.writeFile(join(scriptsDir, 'formulas.lua'), luaSrc, 'utf-8')
+    await fs.writeFile(join(modulesDir, 'formulas.lua'), luaSrc, 'utf-8')
   } catch (err) {
     console.error('formulaTranspiler: failed to write formulas.lua —', err.message)
   }
