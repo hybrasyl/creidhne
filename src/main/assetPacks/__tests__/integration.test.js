@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Readable } from 'stream'
 
-const mockFs = { readdir: vi.fn() }
+const mockFs = { readdir: vi.fn(), stat: vi.fn() }
 const mockUnzipper = { Open: { file: vi.fn() } }
 
 vi.mock('fs', () => ({ promises: mockFs }))
@@ -16,23 +17,28 @@ const {
   _resetForTests
 } = await import('../index.js')
 
+// A fake unzipper entry: the central directory's sizes, and the content as a
+// stream (main reads it bounded, HTOO-684) and as a buffer.
+function zipEntry(path, bytes) {
+  return {
+    path,
+    type: 'File',
+    uncompressedSize: bytes.length,
+    compressedSize: bytes.length,
+    stream: () => Readable.from([bytes]),
+    buffer: () => Promise.resolve(bytes)
+  }
+}
+
 // Build a fake unzipper directory object. Entries are filename → buffer.
 // `manifest` is stringified+encoded into _manifest.json unless `omitManifest` is set.
 function fakeDirectory({ manifest, entries = {}, omitManifest = false } = {}) {
   const files = []
   if (!omitManifest) {
-    files.push({
-      path: '_manifest.json',
-      type: 'File',
-      buffer: () => Promise.resolve(Buffer.from(JSON.stringify(manifest)))
-    })
+    files.push(zipEntry('_manifest.json', Buffer.from(JSON.stringify(manifest))))
   }
   for (const [name, bytes] of Object.entries(entries)) {
-    files.push({
-      path: name,
-      type: 'File',
-      buffer: () => Promise.resolve(bytes)
-    })
+    files.push(zipEntry(name, bytes))
   }
   return { files }
 }
@@ -53,6 +59,7 @@ function manifest(overrides = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockFs.stat.mockResolvedValue({ size: 1024, mtimeMs: 1 })
   _resetForTests()
 })
 
@@ -134,13 +141,7 @@ describe('loadPacksForClientPath: bad inputs', () => {
   it('silently skips a pack with malformed manifest JSON', async () => {
     mockFs.readdir.mockResolvedValueOnce(['malformed.datf'])
     mockUnzipper.Open.file.mockResolvedValueOnce({
-      files: [
-        {
-          path: '_manifest.json',
-          type: 'File',
-          buffer: () => Promise.resolve(Buffer.from('{ this is not json'))
-        }
-      ]
+      files: [zipEntry('_manifest.json', Buffer.from('{ this is not json'))]
     })
     await loadPacksForClientPath('/fake/client')
     expect(await listActivePacks()).toHaveLength(0)

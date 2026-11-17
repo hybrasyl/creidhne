@@ -55,6 +55,14 @@ first section written to the rules above.
 
 - **The macOS app no longer accepts `DYLD_*` environment variables.** With them, a variable could load unsigned code into the signed app.
 
+### Security
+
+- **A settings save cannot give Creidhne access to a new folder or a new program.** Creidhne keeps the folders and the Taliesin program that you chose in a dialog in its own file, `grants.json`, beside the settings. The first start of this version accepts the folders and the program in your settings one time, so nothing changes for you. A whole drive is never accepted. Before Creidhne starts the Taliesin program that you chose, it checks that the file did not change. If the file changed, choose it again in Settings.
+- **A junction or a symbolic link cannot lead a read or a write out of your world.** Creidhne checks the real location of each file, and refuses a file that a link puts outside the folders that you chose.
+- **Open on a script runs no command shell.** A script file name that holds shell characters could run a command when you clicked Open. Creidhne now starts VS Code directly, or opens the file with the default program when it does not find VS Code.
+- **Creidhne refuses an asset pack that is too large.** A damaged or hostile `.datf` file could make Creidhne use a very large amount of memory. Creidhne now refuses a pack with too many entries or too large an entry, and the log names the limit. The limits are far above the size of real packs.
+- **The release build pins each tool that it runs.** Each GitHub action is pinned to one commit, the build jobs cannot change the repository, and the signing tool must match a known checksum before it gets the signing credentials.
+
 ## [1.15.0] - 2026-10-31
 
 ### Added

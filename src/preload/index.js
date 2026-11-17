@@ -177,7 +177,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('index:build-progress', listener)
     return () => ipcRenderer.removeListener('index:build-progress', listener)
   },
-  onCheckClose: (callback) => ipcRenderer.on('app:check-close', callback),
+  // Wrapped like the others: the IpcRendererEvent (and its `sender`) never
+  // crosses the bridge, and the caller gets the unsubscribe (HTOO-682).
+  onCheckClose: (callback) => {
+    const listener = () => callback()
+    ipcRenderer.on('app:check-close', listener)
+    return () => ipcRenderer.removeListener('app:check-close', listener)
+  },
   confirmClose: () => ipcRenderer.send('app:confirm-close'),
   // Signals the main process that the renderer has hydrated its settings, so
   // it can reveal the main window and tear down the splash.

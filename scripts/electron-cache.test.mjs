@@ -60,7 +60,7 @@ describe('the Electron binary cache in release.yml (HTOO-388)', () => {
     '%s caches the binary under runner.temp, keyed on the OS and the lockfile',
     (_, job) => {
       const cache = step(job, 'Cache the Electron binary')
-      expect(cache).toMatch(/uses: actions\/cache@v\d+\n/)
+      expect(cache).toMatch(/uses: actions\/cache@[0-9a-f]{40} # v\d+\.\d+\.\d+\n/)
       expect(cache).toContain(`path: ${CACHE_PATH}\n`)
       expect(cache).toContain(
         "key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}\n"

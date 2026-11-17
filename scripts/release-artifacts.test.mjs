@@ -181,11 +181,11 @@ describe('Windows signing in release.yml (HTOO-517)', () => {
     expect(workflow).not.toMatch(/uses: sslcom\/esigner-codesign@/)
     expect(workflow).not.toMatch(/CodeSignTool\.bat|jdk-11/)
     expect(step('Set up Java 17 for CodeSignTool')).toMatch(
-      /uses: actions\/setup-java@v5\n\s+with:\n\s+distribution: temurin\n\s+java-version: '17'/
+      /uses: actions\/setup-java@[0-9a-f]{40} # v5\.\d+\.\d+\n\s+with:\n\s+distribution: temurin\n\s+java-version: '17'/
     )
     const sign = step('Sign installer + portable exe')
     expect(sign).toContain("Join-Path $env:JAVA_HOME 'bin/java.exe'")
-    expect(sign).toMatch(/CODESIGNTOOL_VERSION: '1\.3\.2'/)
+    expect(step('Fetch and verify CodeSignTool')).toMatch(/CODESIGNTOOL_VERSION: '1\.3\.2'/)
   })
 
   it('runs the jar in its own folder, with an output folder', () => {
