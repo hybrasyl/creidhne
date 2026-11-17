@@ -33,11 +33,23 @@ import { buildMenuTemplate, menuStateSchema } from './appMenu.js'
 import { INITIAL_MENU_STATE, MENU_COMMAND_CHANNEL, MENU_STATE_CHANNEL } from '../shared/appMenu.js'
 import { appIdentity } from '../shared/appIdentity.js'
 import { shouldDisableHardwareAcceleration, REMOTE_SESSION_CSS } from './remoteSession.js'
-import { assertInside, assertInsideAnyRoot } from './pathSafety.js'
+import { assertInside } from './pathSafety.js'
 import { scanReferences, applyRename } from './entityRefRepair.js'
 import { stagingRoot, listStaged, stageFiles, releaseFiles, namesInFiles } from './staging.js'
 import { STAGING_FOLDER_TYPES } from '../shared/staging.js'
-import { applySettingsRoots, bless, allRoots } from './handlerContext.js'
+import {
+  applySettingsRoots,
+  bless,
+  authorizePath,
+  initAuthority,
+  isSettingsRoot,
+  reconcileSettingsSave,
+  withGrantedTaliesin,
+  grantTaliesin,
+  approvedTaliesin,
+  getGrants
+} from './handlerContext.js'
+import { loadOrMigrateGrants } from './grants.js'
 import { parseOrLog } from './schemaLog.js'
 import {
   settingsSchema,
@@ -111,6 +123,7 @@ import {
 } from './assetPacks/index.js'
 import originalFs from 'original-fs'
 import { sweepPortableLeftovers } from './portableSweep.js'
+import { openWorldScript } from './scriptOpen.js'
 
 /** The time after boot that the portable sweep waits (see portableSweep.js). */
 const PORTABLE_SWEEP_DELAY_MS = 30_000
@@ -201,11 +214,23 @@ installGlobalErrorHandlers(captureError)
 void initSessionLog(logsDir)
 
 // Gate every renderer-supplied path through the session's allowed roots
-// (libraries + clientPath from settings, plus anything the user picked
-// through a dialog this session). Throws on any path that isn't inside
-// one of those roots — defence in depth against a renderer compromise
-// addressing arbitrary disk locations.
-const validatePath = (p) => assertInsideAnyRoot(allRoots(), p)
+// (the granted settings paths, plus anything the user picked through a dialog
+// this session). Throws on any path that isn't inside one of those roots, on a
+// path that leaves them through a junction or a symlink, and on a path in the
+// settings folder (handlerContext.js, HTOO-679, HTOO-681) — defence in depth
+// against a renderer compromise addressing arbitrary disk locations.
+const validatePath = (p) => authorizePath(p)
+
+// A library, and the world folders beside it that main writes from a library
+// path alone: .creidhne/, scripts/ and .staging/. A link at one of them must not
+// lead a write out of the world (HTOO-681). Used by the handlers that write;
+// a read through a link that stays inside the roots is still fine.
+const WORLD_WRITE_DIRS = ['.creidhne', 'scripts', '.staging']
+const validateLibraryForWrite = (p) => {
+  const lib = validatePath(p)
+  for (const dir of WORLD_WRITE_DIRS) validatePath(join(lib, '..', dir))
+  return lib
+}
 
 // Save dialogs used to offer a CSV filter no matter what was being saved, which
 // was wrong the moment an export produced JSON. One entry, derived from the
@@ -423,13 +448,31 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // Populate the path-safety roots before any IPC handler can fire so
-  // settings-derived paths are accepted from the first request. Tolerates
-  // a fresh install with no saved settings (applySettingsRoots no-ops).
-  try {
-    applySettingsRoots(await settingsManager.load())
-  } catch {
-    /* missing/corrupt settings — start with empty roots until first save */
+  // Load main's grants, then populate the path-safety roots, before any IPC
+  // handler can fire, so the granted settings paths are accepted from the first
+  // request. The first start of this version migrates the paths settings.json
+  // already names into grants.json, once (grants.js, HTOO-679). A fresh install
+  // with no saved settings starts with no roots.
+  {
+    let startSettings = null
+    try {
+      startSettings = await settingsManager.load()
+    } catch {
+      /* missing/corrupt settings — start with empty roots until first save */
+    }
+    try {
+      initAuthority({
+        settingsDir: settingsPath,
+        grants: await loadOrMigrateGrants(settingsPath, startSettings, (message) =>
+          captureError({ source: 'grants', message })
+        )
+      })
+    } catch (err) {
+      // An unreadable grants.json grants nothing (fail closed).
+      captureError({ source: 'grants', message: err?.message || String(err) })
+      initAuthority({ settingsDir: settingsPath, grants: null })
+    }
+    applySettingsRoots(startSettings)
   }
 
   // Record the renderer locations we trust, BEFORE any window loads. The IPC
@@ -529,17 +572,30 @@ app.whenReady().then(async () => {
   // main controls. `taliesinPath` in settings is an optional override now rather
   // than the only route, so an existing setting keeps working with no migration.
   //
-  // These three lines pass the real probe and are the only place that does. The
+  // These lines pass the real probe and are the only place that does. The
   // injectable seam lives in companion.js, where the tests drive every platform's
   // discovery: registry queries and Applications-folder scans cannot run in a unit
   // test, and a resolver whose precedence is exercised on one machine has one
   // tested path.
-  ipc.handle('app:companionStatus', async () =>
-    resolveCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
+  //
+  // The override is main's grant, never the settings field, which the renderer
+  // writes (HTOO-679). A chosen file that changed since the user chose it does not
+  // run; a missing one is left to resolveCompanion, which falls back to discovery.
+  ipc.handle('app:companionStatus', () =>
+    resolveCompanion(nodeProbe(), 'taliesin', getGrants().executables.taliesin?.path)
   )
-  ipc.handle('app:launchCompanion', async () =>
-    launchCompanion(nodeProbe(), 'taliesin', (await settingsManager.load()).taliesinPath)
-  )
+  ipc.handle('app:launchCompanion', async () => {
+    const probe = nodeProbe()
+    const grant = getGrants().executables.taliesin
+    if (grant && (await probe.exists(grant.path))) {
+      try {
+        await approvedTaliesin()
+      } catch (err) {
+        return { ok: false, reason: 'changed', target: grant.path, message: err?.message }
+      }
+    }
+    return launchCompanion(probe, 'taliesin', getGrants().executables.taliesin?.path)
+  })
   ipc.handle('app:getVersion', () => app.getVersion())
   // Update check (house module update-check v1). Never throws: "up to date" and
   // "could not tell" come back as different values. `net.fetch` uses the system
@@ -780,7 +836,7 @@ app.whenReady().then(async () => {
 
   ipc.handle('fs:moveFile', (_, src, dest) => moveFile(validatePath(src), validatePath(dest)))
   ipc.handle('fs:archiveFile', (_, src, archiveDir) =>
-    archiveFile(validatePath(src), validatePath(archiveDir))
+    archiveFile(validatePath(src), validatePath(archiveDir), validatePath)
   )
 
   // Bulk file ops — accept arrays of paths so the renderer can dispatch a
@@ -790,7 +846,7 @@ app.whenReady().then(async () => {
   ipc.handle('fs:archiveFiles', (_, srcs, archiveDir) => {
     const validatedArchiveDir = validatePath(archiveDir)
     const validatedSrcs = (srcs || []).map((s) => validatePath(s))
-    return archiveFiles(validatedSrcs, validatedArchiveDir)
+    return archiveFiles(validatedSrcs, validatedArchiveDir, validatePath)
   })
 
   ipc.handle('fs:duplicateFile', (_, src) => duplicateFile(validatePath(src)))
@@ -798,7 +854,7 @@ app.whenReady().then(async () => {
   ipc.handle('fs:unarchiveFiles', (_, srcs, destDir) => {
     const validatedDest = validatePath(destDir)
     const validatedSrcs = (srcs || []).map((s) => validatePath(s))
-    return unarchiveFiles(validatedSrcs, validatedDest)
+    return unarchiveFiles(validatedSrcs, validatedDest, validatePath)
   })
 
   // shell.trashItem moves to the OS recycle bin (Windows Recycle Bin /
@@ -819,26 +875,36 @@ app.whenReady().then(async () => {
     return { ok, failed }
   })
 
-  // Handling settings load and save
-  ipc.handle('settings:load', () => settingsManager.load())
+  // Handling settings load and save. `taliesinPath` comes from main's grant on
+  // both sides: the field in settings.json is only a copy for display (HTOO-679).
+  ipc.handle('settings:load', async () => withGrantedTaliesin(await settingsManager.load()))
 
+  // The save cannot add authority (HTOO-679): a path the user did not choose in a
+  // dialog, and that no grant covers, is saved but is not a root. The grants are
+  // pruned to the paths the settings still name, so a removed folder loses its
+  // grant.
   ipc.handle('settings:save', async (_, data) => {
-    const parsed = parseOrLog(schemaCtx, 'settings:save', settingsSchema, data)
+    const parsed = await reconcileSettingsSave(
+      parseOrLog(schemaCtx, 'settings:save', settingsSchema, data)
+    )
     const before = await settingsManager.load()
     await settingsManager.save(parsed)
     // Refresh path-safety roots in lockstep with the persisted settings so a
     // newly-added library, clientPath, or brigidAssetsPath becomes immediately valid.
-    applySettingsRoots(parsed)
+    const refused = applySettingsRoots(parsed)
+    if (refused.length > 0) {
+      captureError({
+        source: 'settings:save',
+        message: `not a root, because no grant covers it: ${refused.join(', ')}`
+      })
+    }
     // .datf packs are scanned from both the brigid assets dir and the DA client
     // dir; reload when either source path changes.
     if (
       before?.clientPath !== parsed?.clientPath ||
       before?.brigidAssetsPath !== parsed?.brigidAssetsPath
     ) {
-      await loadPacks({
-        brigidAssetsPath: parsed?.brigidAssetsPath || null,
-        clientPath: parsed?.clientPath || null
-      })
+      await loadPacks(packSources(parsed))
     }
   })
 
@@ -858,27 +924,23 @@ app.whenReady().then(async () => {
   // is running get picked up (pickers call this on open). Re-reads the current
   // settings paths and reloads.
   ipc.handle('pack:reload', async () => {
-    const s = await settingsManager.load()
-    await loadPacks({
-      brigidAssetsPath: s?.brigidAssetsPath || null,
-      clientPath: s?.clientPath || null
-    })
+    await loadPacks(packSources(await settingsManager.load()))
   })
 
   // Suggested default location for brigid's .datf packs, so the settings UI can
   // offer a "Use default" prefill: <base>/Erisco/Brigid/assets, with each OS's
-  // own base (HTOO-585; the function's comment lists them).
-  ipc.handle('pack:suggestedBrigidAssetsPath', () => suggestedBrigidAssetsPath())
+  // own base (HTOO-585; the function's comment lists them). Main computes it, so
+  // main blesses it when it offers it, as a dialog result would be (HTOO-679).
+  ipc.handle('pack:suggestedBrigidAssetsPath', () => {
+    const suggested = suggestedBrigidAssetsPath()
+    bless(suggested)
+    return suggested
+  })
 
   // Initial pack load from saved source paths, if any.
   settingsManager
     .load()
-    .then((s) =>
-      loadPacks({
-        brigidAssetsPath: s?.brigidAssetsPath || null,
-        clientPath: s?.clientPath || null
-      })
-    )
+    .then((s) => loadPacks(packSources(s)))
     .catch(() => {})
 
   ipc.handle('get-user-data-path', async () => {
@@ -931,9 +993,9 @@ app.whenReady().then(async () => {
       oldName,
       newName
     })
-    const lib = validatePath(p.libraryPath)
-    const live = await applyRename(lib, p.type, p.oldName, p.newName)
-    const staged = await applyRename(stagingRoot(lib), p.type, p.oldName, p.newName)
+    const lib = validateLibraryForWrite(p.libraryPath)
+    const live = await applyRename(lib, p.type, p.oldName, p.newName, validatePath)
+    const staged = await applyRename(stagingRoot(lib), p.type, p.oldName, p.newName, validatePath)
     const tag = (list) => list.map((f) => ({ ...f, staged: true }))
     return {
       total: live.total + staged.total,
@@ -968,7 +1030,12 @@ app.whenReady().then(async () => {
       type,
       srcs
     })
-    return stageFiles(validatePath(p.libraryPath), p.type, p.srcs.map(validatePath))
+    return stageFiles(
+      validateLibraryForWrite(p.libraryPath),
+      p.type,
+      p.srcs.map(validatePath),
+      validatePath
+    )
   })
 
   ipc.handle('staging:release', (_, libraryPath, type, srcs) => {
@@ -977,7 +1044,12 @@ app.whenReady().then(async () => {
       type,
       srcs
     })
-    return releaseFiles(validatePath(p.libraryPath), p.type, p.srcs.map(validatePath))
+    return releaseFiles(
+      validateLibraryForWrite(p.libraryPath),
+      p.type,
+      p.srcs.map(validatePath),
+      validatePath
+    )
   })
 
   ipc.handle('refs:namesIn', async (_, paths, type) => {
@@ -1010,9 +1082,11 @@ app.whenReady().then(async () => {
     if (!libraryPath) return { ok: false, error: 'No active library' }
     try {
       validatePath(libraryPath)
-      const scriptsDir = join(libraryPath, '..', 'scripts')
-      const typesDir = join(scriptsDir, '.hybrasyl-types')
-      const luarcDest = join(scriptsDir, '.luarc.json')
+      // Each target through validatePath too: a link at scripts/ must not lead
+      // the copies out of the world (HTOO-681).
+      const scriptsDir = validatePath(join(libraryPath, '..', 'scripts'))
+      const typesDir = validatePath(join(scriptsDir, '.hybrasyl-types'))
+      const luarcDest = validatePath(join(scriptsDir, '.luarc.json'))
 
       // Source: bundled stubs from the app resources
       const stubsSrc = join(app.getAppPath(), 'lua-stubs')
@@ -1035,11 +1109,12 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Open a world script file in the OS default application (typically VS Code
-  // or whatever the user has registered for .lua). Accepts a relative path
-  // under world/scripts/ (e.g. "castables/SkillWindblade" or "npc/Piet/Narve")
-  // — no extension. Returns { ok, path } on success, { ok: false, error } on
-  // failure (file missing, no library, etc.).
+  // Open a world script file in VS Code, or in the OS default application when
+  // VS Code is not found. Accepts a relative path under world/scripts/ (e.g.
+  // "castables/SkillWindblade" or "npc/Piet/Narve") — no extension. Returns
+  // { ok, path } on success, { ok: false, error } on failure (file missing, no
+  // library, etc.). The script path is world text, so nothing here goes through
+  // a command shell (scriptOpen.js, HTOO-680).
   ipc.handle('script:open', async (_, libraryPath, relativePath) => {
     if (!libraryPath || !relativePath) {
       return { ok: false, error: 'Missing libraryPath or relativePath' }
@@ -1053,8 +1128,9 @@ app.whenReady().then(async () => {
     let scriptPath
     try {
       // Category-B guard: relativePath is renderer-supplied; assertInside
-      // catches `../escape.lua` style attempts to read outside scripts/.
-      scriptPath = assertInside(scriptsDir, `${relativePath}.lua`)
+      // catches `../escape.lua` style attempts to read outside scripts/, and
+      // validatePath a link that leads out of the world.
+      scriptPath = validatePath(assertInside(scriptsDir, `${relativePath}.lua`))
     } catch (err) {
       return { ok: false, error: err.message }
     }
@@ -1068,22 +1144,14 @@ app.whenReady().then(async () => {
     // world/scripts/.luarc.json). If a window for this folder already exists,
     // VS Code reuses it; otherwise a new window opens.
     try {
-      const { spawn } = require('child_process')
-      // Use shell: true so Windows resolves code.cmd (batch wrapper).
-      // --new-window forces a separate window rooted at the scripts dir
-      // so sumneko finds .luarc.json at the workspace root.
-      const child = spawn('code', ['--new-window', scriptsDir, '--goto', scriptPath], {
-        shell: true,
-        detached: true,
-        stdio: 'ignore'
+      const { ok, path, error } = await openWorldScript({
+        scriptsDir,
+        scriptPath,
+        openPath: (p) => shell.openPath(p)
       })
-      child.unref()
-      return { ok: true, path: scriptPath }
-    } catch {
-      // Fallback: OS default handler for .lua
-      const failReason = await shell.openPath(scriptPath)
-      if (failReason) return { ok: false, error: failReason }
-      return { ok: true, path: scriptPath }
+      return ok ? { ok, path } : { ok, error }
+    } catch (err) {
+      return { ok: false, error: err?.message || String(err) }
     }
   })
 
@@ -1467,7 +1535,7 @@ app.whenReady().then(async () => {
 
   ipc.handle('constants:addValue', async (_, libraryPath, type, value) => {
     if (!libraryPath || !type || !value) return null
-    validatePath(libraryPath)
+    validateLibraryForWrite(libraryPath)
     const parsed = parseOrLog(schemaCtx, 'constants:addValue', constantsAddValueSchema, {
       type,
       value
@@ -1503,7 +1571,7 @@ app.whenReady().then(async () => {
   ipc.handle('constants:saveUserConstants', async (_, libraryPath, data) => {
     if (!libraryPath) return
     const parsed = parseOrLog(schemaCtx, 'constants:saveUserConstants', constantsSchema, data)
-    await saveConstants(validatePath(libraryPath), parsed)
+    await saveConstants(validateLibraryForWrite(libraryPath), parsed)
   })
 
   // --- Formulas ---
@@ -1516,7 +1584,7 @@ app.whenReady().then(async () => {
   ipc.handle('formulas:save', async (_, libraryPath, data) => {
     if (!libraryPath) return
     const parsed = parseOrLog(schemaCtx, 'formulas:save', formulasSchema, data)
-    await saveFormulas(validatePath(libraryPath), parsed)
+    await saveFormulas(validateLibraryForWrite(libraryPath), parsed)
   })
 
   ipc.handle('formulas:import', async (_, libraryPath) => {
@@ -1651,7 +1719,7 @@ app.whenReady().then(async () => {
       // not redundant: it is what puts a rejection in the schema log under a
       // channel name, and what lets the coverage check see the channel at all.
       parseOrLog(schemaCtx, 'reports:save', reportsFileSchema, { version: 1, reports })
-      const saved = await saveReports(validatePath(libraryPath), reports)
+      const saved = await saveReports(validateLibraryForWrite(libraryPath), reports)
       return { reports: saved.reports }
     } catch (err) {
       return { error: err.message }
@@ -1699,7 +1767,7 @@ app.whenReady().then(async () => {
     if (!libraryPath) return { error: 'No library selected.' }
     try {
       const parsed = parseOrLog(schemaCtx, 'dialogs:save', dialogDocumentSchema, document)
-      const root = validatePath(libraryPath)
+      const root = validateLibraryForWrite(libraryPath)
       // A rename must not silently replace another document. The check and the
       // write are not atomic, but two writers on one machine is not the case
       // this guards; a hand-edited duplicate is.
@@ -1720,7 +1788,7 @@ app.whenReady().then(async () => {
   ipc.handle('dialogs:delete', async (_, libraryPath, name) => {
     try {
       parseOrLog(schemaCtx, 'dialogs:delete', dialogNameSchema, name)
-      await deleteDialog(validatePath(libraryPath), name)
+      await deleteDialog(validateLibraryForWrite(libraryPath), name)
       return { ok: true }
     } catch (err) {
       return { error: err.message }
@@ -1847,23 +1915,30 @@ async function handleFileOpen() {
 // `openFile` alone cannot select a macOS `.app`, which is a directory. macOS needs
 // both properties, and `treatPackageAsDirectory` must stay off so the bundle comes
 // back whole instead of being browsed into.
+//
+// The pick is the approval (HTOO-679): main records the program here, with its
+// size, mtime and SHA-256, and checks it again before each launch. The picked
+// path is NOT blessed as a folder root, so the renderer cannot overwrite it.
 async function handleExeFileOpen() {
-  let current = null
-  try {
-    current = (await settingsManager.load())?.taliesinPath ?? null
-  } catch {
-    /* no override set */
-  }
+  const current = getGrants().executables.taliesin?.path ?? null
   const { canceled, filePaths } = await dialog.showOpenDialog({
     defaultPath: await pickerStart(current ? dirname(current) : null),
     properties: process.platform === 'darwin' ? ['openFile', 'openDirectory'] : ['openFile'],
     filters: pickerFilters(process.platform)
   })
-  if (!canceled) {
-    bless(filePaths[0])
+  if (!canceled && filePaths[0]) {
+    await grantTaliesin(filePaths[0])
     rememberPicked(filePaths[0], false)
     return filePaths[0]
   }
+}
+
+// The installed-pack sources from a settings snapshot, each only when it is a
+// current root. A source the renderer named without a grant does not count
+// (HTOO-679).
+function packSources(s) {
+  const ok = (p) => (isSettingsRoot(p) ? p : null)
+  return { brigidAssetsPath: ok(s?.brigidAssetsPath), clientPath: ok(s?.clientPath) }
 }
 
 async function handleDirectoryOpen() {

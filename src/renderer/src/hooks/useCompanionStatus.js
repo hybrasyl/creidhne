@@ -85,6 +85,8 @@ export function companionLaunchMessage(result) {
       return 'Taliesin was not found. Install it beside Creidhne, or choose it manually.'
     case 'not-executable':
       return `Taliesin was found at ${result.target} but is not executable.`
+    case 'changed':
+      return `The file at ${result.target} changed after you chose it, so Creidhne did not start it. Choose it again in Settings.`
     default:
       return `Taliesin could not be started: ${result.message || 'the operating system refused to launch it'}.`
   }

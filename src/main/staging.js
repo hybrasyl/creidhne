@@ -55,7 +55,11 @@ function relWithin(fromDir, src) {
  * back. A file whose destination exists fails with `conflict` and does not
  * move, because the other file is someone's work.
  */
-export async function transferFiles(srcs, fromDir, toDir) {
+//
+// `guard` checks each destination before the move (main passes `validatePath`),
+// so a link below the destination folder cannot lead a move out of the world
+// (HTOO-681). A refused destination fails that file and moves nothing.
+export async function transferFiles(srcs, fromDir, toDir, guard = (p) => p) {
   const ok = []
   const failed = []
   for (const src of srcs || []) {
@@ -70,6 +74,7 @@ export async function transferFiles(srcs, fromDir, toDir) {
     }
     const dest = join(toDir, rel)
     try {
+      guard(dest)
       const r = await moveFile(src, dest)
       if (r?.conflict) failed.push({ src, reason: 'conflict' })
       else ok.push({ src, dest: dest.replace(/\\/g, '/') })
@@ -81,15 +86,15 @@ export async function transferFiles(srcs, fromDir, toDir) {
 }
 
 /** Live → staged. */
-export function stageFiles(libraryPath, type, srcs) {
+export function stageFiles(libraryPath, type, srcs, guard) {
   assertStagedType(type)
-  return transferFiles(srcs, join(libraryPath, type), join(stagingRoot(libraryPath), type))
+  return transferFiles(srcs, join(libraryPath, type), join(stagingRoot(libraryPath), type), guard)
 }
 
 /** Staged → live. */
-export function releaseFiles(libraryPath, type, srcs) {
+export function releaseFiles(libraryPath, type, srcs, guard) {
   assertFolderType(type)
-  return transferFiles(srcs, join(stagingRoot(libraryPath), type), join(libraryPath, type))
+  return transferFiles(srcs, join(stagingRoot(libraryPath), type), join(libraryPath, type), guard)
 }
 
 /**

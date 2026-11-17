@@ -159,12 +159,16 @@ function subDirWithinType(src, archiveDir) {
 // would silently rename one to `x_1.xml`. Mirroring also lets unarchive put the
 // file back where it came from. `isArchivedPath` matches `.ignore` at any depth,
 // so the nested entry is still correctly classified as archived by the index.
-export async function archiveFile(src, archiveDir) {
+//
+// `guard` checks the destination folder before the mkdir (main passes
+// `validatePath`), so a link at the mirrored subfolder cannot lead the archive
+// out of the world (HTOO-681).
+export async function archiveFile(src, archiveDir, guard = (p) => p) {
   const baseName = src.split(/[\\/]/).pop()
   const ext = baseName.toLowerCase().endsWith('.xml') ? '.xml' : ''
   const stem = ext ? baseName.slice(0, -ext.length) : baseName
   const subDir = subDirWithinType(src, archiveDir)
-  const destDir = subDir ? join(archiveDir, subDir) : archiveDir
+  const destDir = guard(subDir ? join(archiveDir, subDir) : archiveDir)
   await fs.mkdir(destDir, { recursive: true })
   let dest = join(destDir, baseName)
   let counter = 1
@@ -189,12 +193,12 @@ export async function archiveFile(src, archiveDir) {
 // Bulk wrappers — settle each independently so a single failure doesn't
 // strand the rest of the batch. Caller renders ok/failed counts to the user.
 
-export async function archiveFiles(srcs, archiveDir) {
+export async function archiveFiles(srcs, archiveDir, guard) {
   const ok = []
   const failed = []
   for (const src of srcs) {
     try {
-      const r = await archiveFile(src, archiveDir)
+      const r = await archiveFile(src, archiveDir, guard)
       ok.push({ src, archivedAs: r.archivedAs })
     } catch (err) {
       failed.push({ src, reason: err?.message || 'archive failed' })
@@ -242,12 +246,15 @@ function pathWithinArchive(src) {
 // Restores to the subdirectory the file was archived from, mirroring
 // archiveFile: `.ignore/universal/x.xml` → `universal/x.xml`. Flattening here
 // would silently relocate the file to the type root on a round-trip.
-export async function unarchiveFiles(srcs, destDir) {
+//
+// `guard` checks each destination before the move, as in archiveFile.
+export async function unarchiveFiles(srcs, destDir, guard = (p) => p) {
   const ok = []
   const failed = []
   for (const src of srcs) {
     const dest = join(destDir, pathWithinArchive(src))
     try {
+      guard(dest)
       const r = await moveFile(src, dest)
       if (r?.conflict) {
         failed.push({ src, reason: 'conflict' })
