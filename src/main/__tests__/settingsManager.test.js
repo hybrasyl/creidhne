@@ -30,6 +30,7 @@ const VALID = {
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
   creaturePickerMode: 'vanilla',
+  itemPickerMode: 'vanilla',
   fileListViewMode: 'flat'
 }
 
@@ -45,6 +46,7 @@ const DEFAULTS = {
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
   creaturePickerMode: 'vanilla',
+  itemPickerMode: 'vanilla',
   fileListViewMode: 'flat'
 }
 
@@ -208,6 +210,7 @@ describe('settingsManager', () => {
       npcPortraitPickerMode: 'hybrasyl',
       soundPickerMode: 'hybrasyl',
       creaturePickerMode: 'hybrasyl',
+      itemPickerMode: 'hybrasyl',
       // Must differ from DEFAULTS — the round-trip test asserts every key does.
       fileListViewMode: 'folder'
     }

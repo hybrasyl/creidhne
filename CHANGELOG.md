@@ -41,6 +41,10 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Added
+
+- **The item sprite picker shows the icons of your `item_icons` packs.** The Sprite and Equip Sprite fields of items and variants draw the pack icon when a pack has the id, as Brigid does, and the picker has the Vanilla and Hybrasyl choice of the other pack pickers. Hybrasyl lists every pack icon, so you can pick a modern icon (20001 and up). A pack icon takes the item colour by Brigid's rules: a modern icon is never dyed, and a pack's `dyeable` or `no_dye` list decides the others. With packs and no Dark Ages client folder, the picker lists the pack icons only. The Sprite fields accept ids up to 32767, the largest that the server can send.
+
 ### Fixed
 
 - **Creidhne chooses between asset packs as Brigid does.** A pack with no `priority` now ranks as 100, as in Brigid, and not below every pack that has one. At one priority, the pack whose file name sorts first wins, with case ignored. Before, a picker could show the art of another pack than the one that the client shows.

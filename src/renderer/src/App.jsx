@@ -21,6 +21,7 @@ import {
   npcPortraitPickerModeState,
   soundPickerModeState,
   creaturePickerModeState,
+  itemPickerModeState,
   reportIssueOpenState,
   stagedIndexState
 } from './store/appStore'
@@ -104,6 +105,7 @@ function App() {
   )
   const [soundPickerMode, setSoundPickerMode] = useStoreState(soundPickerModeState)
   const [creaturePickerMode, setCreaturePickerMode] = useStoreState(creaturePickerModeState)
+  const [itemPickerMode, setItemPickerMode] = useStoreState(itemPickerModeState)
   const [fileListViewMode, setFileListViewMode] = useStoreState(fileListViewModeState)
   const [reportIssueOpen, setReportIssueOpen] = useStoreState(reportIssueOpenState)
   const setStagedIndex = useSetStoreValue(stagedIndexState)
@@ -132,6 +134,7 @@ function App() {
       setNpcPortraitPickerMode(settings.npcPortraitPickerMode || 'vanilla')
       setSoundPickerMode(settings.soundPickerMode || 'vanilla')
       setCreaturePickerMode(settings.creaturePickerMode || 'vanilla')
+      setItemPickerMode(settings.itemPickerMode || 'vanilla')
       setFileListViewMode(settings.fileListViewMode || 'flat')
       setSettingsLoaded(true)
       // Tell main the first frame is populated so it can reveal the window and
@@ -152,6 +155,7 @@ function App() {
     setNpcPortraitPickerMode,
     setSoundPickerMode,
     setCreaturePickerMode,
+    setItemPickerMode,
     setFileListViewMode
   ])
 
@@ -240,6 +244,7 @@ function App() {
         npcPortraitPickerMode,
         soundPickerMode,
         creaturePickerMode,
+        itemPickerMode,
         fileListViewMode
       })
     )
@@ -258,6 +263,7 @@ function App() {
     npcPortraitPickerMode,
     soundPickerMode,
     creaturePickerMode,
+    itemPickerMode,
     fileListViewMode,
     // Stable across renders (a zustand setter), so listing it costs nothing and
     // keeps the rule honest rather than disabled.

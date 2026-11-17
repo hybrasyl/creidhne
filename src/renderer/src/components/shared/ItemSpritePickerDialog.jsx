@@ -8,13 +8,21 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import { useRescanPacksOnOpen } from '../../hooks/usePackRescan'
 import { Grid } from 'react-window'
-import { useStoreValue, clientPathState } from '../../store/appStore'
+import {
+  useStoreValue,
+  useStoreState,
+  clientPathState,
+  packCoverageState,
+  itemPickerModeState
+} from '../../store/appStore'
 import { getItemSpriteIndex } from '../../data/itemSpriteData'
 import ItemSpriteCanvas from './ItemSpriteCanvas'
 
@@ -22,17 +30,18 @@ const COLS = 8
 const CELL_SIZE = 96
 const IMAGE_SIZE = 64
 const GRID_H = 480
+const NO_IDS = []
 
 // ── Single grid cell ──────────────────────────────────────────────────────────
 
-function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect }) {
+function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect, preferPack }) {
   const index = rowIndex * COLS + columnIndex
   if (index >= ids.length) return <div style={style} />
   const id = ids[index]
   const selected = id === selectedId
 
   return (
-    <div style={style} onClick={() => onSelect(id)}>
+    <div style={style} onClick={() => onSelect(id)} data-testid={`item-sprite-cell-${id}`}>
       <Box
         sx={{
           width: CELL_SIZE,
@@ -50,7 +59,7 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect })
           '&:hover': { bgcolor: selected ? 'action.selected' : 'action.hover' }
         }}
       >
-        <ItemSpriteCanvas value={id} size={IMAGE_SIZE} />
+        <ItemSpriteCanvas value={id} size={IMAGE_SIZE} preferPack={preferPack} />
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', lineHeight: 1 }}>
           {id}
         </Typography>
@@ -64,14 +73,23 @@ function SpriteCell({ columnIndex, rowIndex, style, ids, selectedId, onSelect })
 export default function ItemSpritePickerDialog({ open, value, onClose, onChange }) {
   useRescanPacksOnOpen(open)
   const clientPath = useStoreValue(clientPathState)
+  const packCoverage = useStoreValue(packCoverageState)
+  const [mode, setMode] = useStoreState(itemPickerModeState)
   const [search, setSearch] = useState('')
   const [index, setIndex] = useState(null) // null = loading, { total, visibleIds } = ready
   const [loadError, setLoadError] = useState(null)
   const gridRef = useRef(null)
 
   // Load index when dialog opens (cached internally so re-open is instant).
+  // With no client path there is no legend.dat to read, so the picker lists
+  // the pack icons only (HTOO-695).
   useEffect(() => {
-    if (!open || !clientPath) return
+    if (!open) return
+    if (!clientPath) {
+      setIndex({ total: 0, visibleIds: [] })
+      setLoadError(null)
+      return
+    }
     let cancelled = false
     setIndex(null)
     setLoadError(null)
@@ -87,12 +105,26 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
     }
   }, [open, clientPath])
 
+  // The Hybrasyl toggle shows only when a pack has item icons (HTOO-695). With
+  // no pack the picker reads as it always did.
+  const packIds = packCoverage.item ?? NO_IDS
+  const packHasItems = packIds.length > 0
+  const preferPack = packHasItems && (mode === 'hybrasyl' || !clientPath)
+
   const filteredIds = useMemo(() => {
     if (!index) return []
+    // Vanilla: the legend.dat ids. Hybrasyl: those and every pack id, so a
+    // modern icon (20001 and up) that only a pack has can be picked.
+    let baseIds = index.visibleIds
+    if (preferPack) {
+      const merged = new Set(index.visibleIds)
+      for (const id of packIds) merged.add(id)
+      baseIds = Array.from(merged).sort((a, b) => a - b)
+    }
     const q = search.trim()
-    if (!q) return index.visibleIds
-    return index.visibleIds.filter((id) => String(id).includes(q))
-  }, [index, search])
+    if (!q) return baseIds
+    return baseIds.filter((id) => String(id).includes(q))
+  }, [index, search, preferPack, packIds])
 
   const selectedId = useMemo(() => {
     const n = Number(value)
@@ -113,8 +145,8 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
   }, [open, selectedId, filteredIds])
 
   const cellData = useMemo(
-    () => ({ ids: filteredIds, selectedId, onSelect: onChange }),
-    [filteredIds, selectedId, onChange]
+    () => ({ ids: filteredIds, selectedId, onSelect: onChange, preferPack }),
+    [filteredIds, selectedId, onChange, preferPack]
   )
   const rowCount = Math.ceil(filteredIds.length / COLS)
 
@@ -131,8 +163,20 @@ export default function ItemSpritePickerDialog({ open, value, onClose, onChange 
         Item Sprites
         {index && (
           <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-            ({index.visibleIds.length.toLocaleString()} shown, {index.total.toLocaleString()} total)
+            ({filteredIds.length.toLocaleString()} shown, {index.total.toLocaleString()} total)
           </Typography>
+        )}
+        {packHasItems && clientPath && (
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={mode}
+            onChange={(_, v) => v && setMode(v)}
+            sx={{ ml: 2 }}
+          >
+            <ToggleButton value="vanilla">Vanilla</ToggleButton>
+            <ToggleButton value="hybrasyl">Hybrasyl</ToggleButton>
+          </ToggleButtonGroup>
         )}
         <IconButton size="small" onClick={onClose} sx={{ ml: 'auto' }}>
           <CloseIcon fontSize="small" />

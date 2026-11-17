@@ -21,6 +21,7 @@ describe('settingsSchema', () => {
     npcPortraitPickerMode: 'vanilla',
     soundPickerMode: 'vanilla',
     creaturePickerMode: 'vanilla',
+    itemPickerMode: 'vanilla',
     fileListViewMode: 'flat'
   }
 

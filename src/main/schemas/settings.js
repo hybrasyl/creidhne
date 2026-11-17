@@ -19,5 +19,6 @@ export const settingsSchema = z.object({
   npcPortraitPickerMode: PickerMode,
   soundPickerMode: PickerMode,
   creaturePickerMode: PickerMode,
+  itemPickerMode: PickerMode,
   fileListViewMode: z.enum(['flat', 'folder'])
 })

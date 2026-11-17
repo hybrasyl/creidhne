@@ -13,6 +13,7 @@ const DEFAULTS = {
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
   creaturePickerMode: 'vanilla',
+  itemPickerMode: 'vanilla',
   // Editor file lists: group by folder, or show one flat list. Defaults to
   // 'flat' — today's behavior, and the right default while subfolders are rare.
   fileListViewMode: 'flat'
@@ -54,6 +55,9 @@ function withDefaults(data) {
     creaturePickerMode: PICKER_MODES.has(data?.creaturePickerMode)
       ? data.creaturePickerMode
       : DEFAULTS.creaturePickerMode,
+    itemPickerMode: PICKER_MODES.has(data?.itemPickerMode)
+      ? data.itemPickerMode
+      : DEFAULTS.itemPickerMode,
     fileListViewMode: FILE_LIST_VIEW_MODES.has(data?.fileListViewMode)
       ? data.fileListViewMode
       : DEFAULTS.fileListViewMode
