@@ -16,10 +16,16 @@
 // first hit. No extra registry plumbing required.
 
 import { makeFlatPatternHandler } from './flatPattern.js'
+import { itemDyeRule } from '../../../shared/itemIcons.js'
 
-export default makeFlatPatternHandler({
-  contentType: 'item_icons',
-  subtypes: ['item'],
-  padding: 5,
-  spec: 'item-asset-pack-scoping.md'
-})
+// The pack that gives an icon also decides its dye (Brigid's ItemIconSource),
+// so the handler gives the rule from that pack's manifest (HTOO-695).
+export default {
+  ...makeFlatPatternHandler({
+    contentType: 'item_icons',
+    subtypes: ['item'],
+    padding: 5,
+    spec: 'item-asset-pack-scoping.md'
+  }),
+  dyeRule: itemDyeRule
+}
