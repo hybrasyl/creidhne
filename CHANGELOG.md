@@ -44,6 +44,7 @@ first section written to the rules above.
 ### Changed
 
 - **Creidhne runs on Electron 45.**
+- **Creidhne builds with vite 8, `@vitejs/plugin-react` 6 and electron-vite 6, and tests with vitest 5 and jsdom 31.** Nothing changes in the app.
 - **The world index moves to a new version.** The first time Creidhne opens a world after the update, it builds the index again. Settings → World indexes removes the old one.
 
 ### Fixed
@@ -54,9 +55,6 @@ first section written to the rules above.
 ### Security
 
 - **The macOS app no longer accepts `DYLD_*` environment variables.** With them, a variable could load unsigned code into the signed app.
-
-### Security
-
 - **A settings save cannot give Creidhne access to a new folder or a new program.** Creidhne keeps the folders and the Taliesin program that you chose in a dialog in its own file, `grants.json`, beside the settings. The first start of this version accepts the folders and the program in your settings one time, so nothing changes for you. A whole drive is never accepted. Before Creidhne starts the Taliesin program that you chose, it checks that the file did not change. If the file changed, choose it again in Settings.
 - **A junction or a symbolic link cannot lead a read or a write out of your world.** Creidhne checks the real location of each file, and refuses a file that a link puts outside the folders that you chose.
 - **Open on a script runs no command shell.** A script file name that holds shell characters could run a command when you clicked Open. Creidhne now starts VS Code directly, or opens the file with the default program when it does not find VS Code.
