@@ -1,6 +1,6 @@
 // content_type: 'town_maps' (brigid's canonical name; see brigid
 // Brigid.Data/AssetPacks/AssetPackRegistry.GetTownMapPack + TownMapPack.cs,
-// spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#town_maps)
+// spec: asset-pack-format.md (document repo), town_maps)
 //
 // Town-map packs override the client's T-key town-map popup — a single
 // pre-composited `town_{mapId:D5}.png` per numeric map id, replacing the

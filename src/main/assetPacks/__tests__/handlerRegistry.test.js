@@ -120,13 +120,14 @@ describe('handler registry', () => {
     }
   })
 
-  it('listHandlers returns all 14 registered handlers', () => {
+  it('listHandlers returns all 16 registered handlers', () => {
     expect(
       listHandlers()
         .map((h) => h.contentType)
         .sort()
     ).toEqual([
       'ability_icons',
+      'ambient_sounds',
       'creature_sprites',
       'display_sprites',
       'effects',
@@ -139,12 +140,21 @@ describe('handler registry', () => {
       'static_tiles',
       'town_maps',
       'ui_sprite_overrides',
+      'ui_theme',
       'world_maps'
     ])
   })
 
   it('exposes UI/runtime-only + Taliesin-owned types as out_of_scope (recognized, silently skipped)', () => {
-    for (const ct of ['ui_sprite_overrides', 'static_tiles', 'world_maps', 'town_maps', 'music']) {
+    for (const ct of [
+      'ui_sprite_overrides',
+      'static_tiles',
+      'world_maps',
+      'town_maps',
+      'music',
+      'ui_theme',
+      'ambient_sounds'
+    ]) {
       const h = getHandler(ct)
       expect(h, ct).not.toBeNull()
       expect(h.status, ct).toBe('out_of_scope')

@@ -212,6 +212,44 @@ describe('priority ordering', () => {
     await loadPacksForClientPath('/fake/client')
     expect(await listCoveredIds('skill')).toEqual([1, 2, 3])
   })
+
+  // Brigid's AssetPackManifest defaults Priority to 100, so a pack with no
+  // priority outranks one at 50. Creidhne once defaulted to 0 and showed the
+  // other pack's art.
+  it('a pack with no priority ranks as 100, as in Brigid', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['p50.datf', 'unset.datf'])
+    const { priority: _omit, ...noPriority } = manifest({ pack_id: 'unset' })
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({ pack_id: 'p50', priority: 50 }),
+          entries: { 'skill0001.png': Buffer.from('P50') }
+        })
+      )
+      .mockResolvedValueOnce(
+        fakeDirectory({ manifest: noPriority, entries: { 'skill0001.png': Buffer.from('UNSET') } })
+      )
+
+    await loadPacksForClientPath('/fake/client')
+    expect((await resolveAsset('skill', 1))?.toString()).toBe('UNSET')
+  })
+
+  // At one priority Brigid asks the pack whose file name sorts first, ordinal
+  // with case ignored. A plain sort puts 'B1' before 'a2'; Brigid puts 'a2' first.
+  it('at one priority, the file name decides, ordinal with case ignored', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['B1.datf', 'a2.datf'])
+    mockUnzipper.Open.file.mockImplementation(async (path) =>
+      fakeDirectory({
+        manifest: manifest({ pack_id: path.includes('a2') ? 'a2' : 'b1' }),
+        entries: { 'skill0001.png': Buffer.from(path.includes('a2') ? 'A2' : 'B1') }
+      })
+    )
+
+    await loadPacksForClientPath('/fake/client')
+    expect((await resolveAsset('skill', 1))?.toString()).toBe('A2')
+    expect((await listActivePacks()).map((p) => p.fileName)).toEqual(['a2.datf', 'B1.datf'])
+    mockUnzipper.Open.file.mockReset()
+  })
 })
 
 describe('file-extension filtering', () => {
@@ -473,7 +511,30 @@ describe('content_type dispatch', () => {
 
     expect(await listActivePacks()).toHaveLength(0)
     // No "unknown content_type" or "not yet implemented" warning for a
-    // valid Comhaigne type that Creidhne doesn't consume.
+    // valid content type that Creidhne doesn't consume.
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('silently skips the client-only theme and ambience types (ui_theme, ambient_sounds)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFs.readdir.mockResolvedValueOnce(['ambience.datf', 'theme.datf'])
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({ pack_id: 'ambience', content_type: 'ambient_sounds', covers: {} }),
+          entries: { 'amb_1.ogg': Buffer.from('rain') }
+        })
+      )
+      .mockResolvedValueOnce(
+        fakeDirectory({
+          manifest: manifest({ pack_id: 'icy-steel', content_type: 'ui_theme', covers: {} }),
+          entries: { 'theme.json': Buffer.from('{}') }
+        })
+      )
+    await loadPacksForClientPath('/fake/client')
+
+    expect(await listActivePacks()).toHaveLength(0)
     expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
   })

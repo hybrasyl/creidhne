@@ -81,7 +81,7 @@ async function loadPack(filePath, limits = PACK_LIMITS) {
     return null
   }
   if (handler.status === 'out_of_scope') {
-    // Valid Comhaigne content type that Creidhne deliberately doesn't
+    // Valid content type that Creidhne deliberately doesn't
     // consume (e.g. ui_sprite_overrides — runtime-only UI art with no
     // editor surface). Silent skip: not a warning, not "unknown".
     return null
@@ -128,6 +128,23 @@ async function loadPack(filePath, limits = PACK_LIMITS) {
   }
 }
 
+// Brigid's default when a manifest gives no `priority` (asset-pack-format.md).
+export const DEFAULT_PACK_PRIORITY = 100
+
+function priorityOf(pack) {
+  const p = pack.manifest.priority
+  return Number.isInteger(p) ? p : DEFAULT_PACK_PRIORITY
+}
+
+// Brigid's order (AssetPackRegistry): ordinal with case ignored, then ordinal.
+// Compare the upper-case forms code unit by code unit, then the names.
+function byNameIgnoringCase(a, b) {
+  const x = a.toUpperCase()
+  const y = b.toUpperCase()
+  if (x !== y) return x < y ? -1 : 1
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 // List one directory's *.datf files (top-level, sorted) with their stat info.
 // Mirrors brigid's TopDirectoryOnly discovery. Missing/unreadable dirs yield an
 // empty list. The readdir happens once here and is reused for both the change
@@ -140,7 +157,9 @@ async function listDatfFiles(dir) {
   } catch {
     return []
   }
-  const datf = files.filter((f) => f.toLowerCase().endsWith('.datf')).sort()
+  // Brigid orders packs of one priority by file name, ordinal and case
+  // ignored, so Creidhne does the same (asset-pack-format.md, `priority`).
+  const datf = files.filter((f) => f.toLowerCase().endsWith('.datf')).sort(byNameIgnoringCase)
   const out = []
   for (const f of datf) {
     const filePath = join(dir, f)
@@ -162,7 +181,8 @@ async function listDatfFiles(dir) {
 // the .datf set is unchanged, skipping the expensive re-open/unzip of every
 // pack. Packs are otherwise not watched for changes within a session.
 // Sources are scanned in order (brigid assets dir first, then the DA client
-// dir); ties in priority resolve to the first source scanned.
+// dir); ties in priority resolve to the first source scanned, then to the file
+// name. A pack with no `priority` has Brigid's default, 100.
 export function loadPacks({ brigidAssetsPath = null, clientPath = null } = {}) {
   pendingLoad = (async () => {
     const sources = [brigidAssetsPath, clientPath].filter(Boolean)
@@ -185,7 +205,7 @@ export function loadPacks({ brigidAssetsPath = null, clientPath = null } = {}) {
       }
     }
     // Higher priority resolves first. Stable sort preserves source order for ties.
-    packs.sort((a, b) => (b.manifest.priority ?? 0) - (a.manifest.priority ?? 0))
+    packs.sort((a, b) => priorityOf(b) - priorityOf(a))
     state = { sources, packs, signature }
   })()
   return pendingLoad

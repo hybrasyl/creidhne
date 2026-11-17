@@ -8,7 +8,7 @@ Electron stack.
 
 ## Canonical references (read these first)
 
-The house standard lives in the internal **document repo** (`Comhaigne`), under
+The house standard lives in the internal **document repo**, under
 `docs/architecture/`. Consult it before inventing a pattern:
 
 - **`dev-practices.md`** — git/commit discipline, PR prep, verify-before-commit, security posture.

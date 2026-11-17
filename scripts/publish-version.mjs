@@ -12,7 +12,7 @@
 // If it ever fails for a reason other than the checks below, the design is wrong
 // and needs rethinking; do not add retries around it.
 //
-// Design: Comhaigne docs/architecture/update-check-module.md, §4.
+// Design: update-check-module.md in the document repo, §4.
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'

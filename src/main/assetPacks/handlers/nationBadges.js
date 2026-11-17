@@ -1,5 +1,5 @@
 // content_type: 'nation_badges'
-// Spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#nation_badges
+// Spec: asset-pack-format.md (document repo), nation_badges
 //
 // Replaces legacy _nui_nat.spf frames. Subtype 'nation' is consumed by
 // NationCrestCanvas (renderer).
