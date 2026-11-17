@@ -3,7 +3,7 @@
 // The pure core of the update check: the manifest shape, the version compare
 // and the URL rule. No electron or node imports, so main, the publish script's
 // tests and the renderer can all use it. Design:
-// Comhaigne docs/architecture/update-check-module.md (HTOO-382, HTOO-65).
+// update-check-module.md in the document repo (HTOO-382, HTOO-65).
 // JavaScript port of the template's src/shared/updateVersion.ts.
 
 /**

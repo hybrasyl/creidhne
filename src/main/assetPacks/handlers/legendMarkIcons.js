@@ -1,5 +1,5 @@
 // content_type: 'legend_mark_icons'
-// Spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#legend_mark_icons
+// Spec: asset-pack-format.md (document repo), legend_mark_icons
 //
 // Replaces legacy legends.epf frames (palette 3 of national.dat). Subtype
 // 'legend' is exposed by listCoveredIds(). Note that legend mark icon IDs

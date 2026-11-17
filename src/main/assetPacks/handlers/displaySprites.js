@@ -1,10 +1,10 @@
-// content_type: 'display_sprites' (Creidhne-defined; not yet in Comhaigne)
+// content_type: 'display_sprites' (Creidhne-defined; not yet in the format spec)
 //
 // Will replace legacy khan{m|w}{ad,eh,im,ns,tz}.dat worn-equipment sprites
 // (per-gender, per-letter-range archives covering Armor, Weapon, Shield,
 // Coat, Helmet, etc. — see src/renderer/src/data/khanData.js).
 //
-// Open questions to resolve in a Comhaigne scoping pass before
+// Open questions to resolve in a scoping pass before
 // implementing:
 //   1. Filename schema. The legacy entry layout is
 //      {gender}{category}{id:D3}{pose}.epf with poses '01'..'03' and
@@ -19,14 +19,14 @@
 //      rather than item Color in legacy — see the helmet gate in
 //      DisplaySpritePicker.jsx.
 //   3. content_type discriminator name. 'display_sprites' is the
-//      working title; Comhaigne may prefer 'equipment_sprites' or
+//      working title; the format spec may prefer 'equipment_sprites' or
 //      'worn_sprites' — defer to whatever the format spec lands on.
 
 export default {
   contentType: 'display_sprites',
   status: 'planned',
   subtypes: [],
-  spec: 'TBD: needs Comhaigne scoping pass',
+  spec: 'TBD: needs a scoping pass',
   parseEntry() {
     return null
   },

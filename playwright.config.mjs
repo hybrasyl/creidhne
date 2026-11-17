@@ -6,7 +6,7 @@ import { defineConfig } from '@playwright/test'
 // geometry, so keep this fully serial (workers: 1, no retries hiding
 // flakiness). The `e2e` job in release.yml runs these on every PR, on a Windows
 // runner (real desktop session, so no xvfb is needed).
-// See e2e/README.md and Comhaigne/docs/architecture/e2e-playwright-electron.md.
+// See e2e/README.md and e2e-playwright-electron.md in the document repo.
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.js',

@@ -1,7 +1,7 @@
 // house module: update-check v1 — change it in the template, then port
 //
 // Main-process half of the update check (HTOO-65, HTOO-382). Design:
-// Comhaigne docs/architecture/update-check-module.md. JavaScript port of the
+// update-check-module.md in the document repo. JavaScript port of the
 // template's src/main/updateCheck.ts.
 //
 // One GET of the house version manifest, with no authentication. It sends no

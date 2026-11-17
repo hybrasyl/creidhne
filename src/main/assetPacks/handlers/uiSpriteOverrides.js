@@ -1,9 +1,9 @@
 // content_type: 'ui_sprite_overrides'
-// Spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#ui_sprite_overrides
+// Spec: asset-pack-format.md (document repo), ui_sprite_overrides
 //
-// This is a *valid* Comhaigne content type — it covers per-frame overrides
+// This is a *valid* content type — it covers per-frame overrides
 // for arbitrary EPF/SPF files inside setoa.dat (buttons, dialog frames,
-// chat panel backgrounds, scroll arrows, etc.). The hybrasyl.client uses
+// chat panel backgrounds, scroll arrows, etc.). Brigid uses
 // it to ship modern UI replacements.
 //
 // Creidhne is a content editor, not a runtime UI surface — it doesn't

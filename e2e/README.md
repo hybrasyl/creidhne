@@ -3,7 +3,7 @@
 End-to-end specs that drive the **built** app via Playwright's `_electron` launcher — the
 house standard for cross-boundary behavior Vitest can't reach (disk round-trips, real window
 geometry, full themed renders). Full rationale + patterns:
-`Comhaigne/docs/architecture/e2e-playwright-electron.md`.
+`e2e-playwright-electron.md` in the document repo (`docs/architecture/`).
 
 ## Running
 

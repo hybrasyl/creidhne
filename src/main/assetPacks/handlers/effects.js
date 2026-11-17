@@ -1,5 +1,5 @@
 // content_type: 'effects'
-// Spec: Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md#future-content-types (planned)
+// Spec: asset-pack-format.md (document repo), future content types (planned)
 //
 // Will replace legacy EFA spell/combat effect frames. Like creatures, this
 // is a multi-frame schema with per-pack metadata (frame timings, blend

@@ -1,6 +1,6 @@
 // content_type: 'item_icons'
-// Spec: docs/plans/hybrasyl.client/item-asset-pack-scoping.md (Phase 1)
-//       Comhaigne docs/plans/hybrasyl.client/asset-pack-format.md (future-types entry)
+// Spec: item-asset-pack-scoping.md (document repo, Phase 1)
+//       asset-pack-format.md (document repo), item_icons
 //
 // Replaces legacy item###.epf sheets in legend.dat. Filename schema is
 // flat: item{id:D5}.png (5-digit zero-padded, 1-based item ID matching
