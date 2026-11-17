@@ -43,6 +43,8 @@ first section written to the rules above.
 
 ### Fixed
 
+- **Creidhne chooses between asset packs as Brigid does.** A pack with no `priority` now ranks as 100, as in Brigid, and not below every pack that has one. At one priority, the pack whose file name sorts first wins, with case ignored. Before, a picker could show the art of another pack than the one that the client shows.
+- **A theme pack or an ambience pack no longer logs an unknown-type warning.** Creidhne has no field for `ui_theme` or `ambient_sounds` packs, so it skips them.
 - **A formula save writes `formulas.lua` to `scripts/modules/`.** The server loads `require("formulas")` only from `scripts/modules/formulas.lua`, so a script could not load the file in `scripts/`. Remove the old `scripts/formulas.lua` from your world.
 
 ### Security

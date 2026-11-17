@@ -23,6 +23,8 @@ import staticTiles from './staticTiles.js'
 import worldMaps from './worldMaps.js'
 import townMaps from './townMaps.js'
 import uiSpriteOverrides from './uiSpriteOverrides.js'
+import uiTheme from './uiTheme.js'
+import ambientSounds from './ambientSounds.js'
 
 const HANDLERS = new Map()
 
@@ -50,6 +52,8 @@ register(staticTiles)
 register(worldMaps)
 register(townMaps)
 register(uiSpriteOverrides)
+register(uiTheme)
+register(ambientSounds)
 
 /** Lookup the registered handler for a given manifest content_type. */
 export function getHandler(contentType) {
