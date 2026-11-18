@@ -1,104 +1,58 @@
-# Release testing: changes since 1.13.1
+# Release testing: changes since 1.15.0
 
-These are the manual checks the next release needs: everything in `CHANGELOG.md`
-under `[Unreleased]` that the automated gate cannot see. Check off each item as it
-is done, and record the build and the tester next to it.
+These are the checks by hand that the next release needs: each change in `CHANGELOG.md` under `[Unreleased]` that the automated gate cannot see. Tick each item when it is done, and write the build, the tester and the date beside it. The record of 1.14.0 and 1.15.0 is this file at the tag `v1.15.0`.
 
-As of `e292882`, the automated gate is green on macOS: `lint:check`, `npm test`
-(2007 passed), `build`, and `e2e:only` (18 of 18). Before `npm test` on a fresh
-clone, and after the pin in `scripts/xsdRef.cjs` moves, run `npm run fetch-xsd`. The XSDs are not in the repo, and 7 XSD tests fail
-without them.
+Each check names its tracker card in the document repo. Write the result as a comment on that card too.
 
-## Already covered by E2E
+The automated gate is green on Windows at `72303d3`: `lint:check`, `npm test` (3046 passed, 21 skipped), `build` and `e2e` (32 passed, 5 skipped). On a fresh clone, and after the pin in `scripts/xsdRef.cjs` moves, run `npm run fetch-xsd` before `npm test`. Run `unset ELECTRON_RUN_AS_NODE` in each shell that builds or runs e2e.
 
-The specs below run these on every `npm run e2e`, so they need no manual pass:
+## Already covered by e2e
 
-- The macOS app menu, and ⌘Q with unsaved changes (`app-menu.spec.js`)
-- Closing while another app is in front (`close-unfocused.spec.js`)
-- The title bar on each platform (`title-bar.spec.js`)
-- A loot set with many tables (`loot-tables.spec.js`)
-- Every page opens without hitting the error boundary (`nav-pages.spec.js`)
-- The theme gallery measures every sample in the eight themes (`theme-gallery.spec.js`). It writes each low ratio to `theme-gallery.json` in its `test-results/` folder. The by-eye check below still applies.
+These run on each `npm run e2e`, so they need no pass by hand. On macOS and Linux, run `npm run e2e` once and report the counts.
 
-## Pending: any platform, the house palette (HTOO-572)
+- A pack icon in the Sprite field, and a pick from the picker with packs and no client folder (`item-icon-packs.spec.js`, HTOO-695)
+- The old world indexes in Settings → World indexes, and their removal (`index-caches.spec.js`)
+- A settings save that names a new folder does not get access to it (`settings-authority.spec.js`, HTOO-679)
+- The preload stays sandboxed, and the IPC guard holds (`preload-sandbox.spec.js`, `ipc-guard.spec.js`)
+- Every page opens (`nav-pages.spec.js`), the macOS menu (`app-menu.spec.js`), and close while another app is in front (`close-unfocused.spec.js`)
 
-Use a dev build or a packaged build. Do each check in each of the eight themes. Settings → Appearance → Theme gallery shows most of the controls on one page.
+## Any platform
 
-- [ ] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, **Clear** on a Settings path card and **Delete** in the delete confirmation of a file list show the error colour.
-- [ ] **A coloured chip.** The **Active** chip on a library and the formula category chips show their colour.
+Use a packaged build. The checks marked "upgrade" need a machine that had 1.15.0 installed, with a world, a client folder and a Taliesin program set in Settings.
+
+- [ ] **Upgrade: Creidhne keeps its access (HTOO-679).** Install the new build over 1.15.0 and start it. The world opens, the client sprites draw, and Open in Taliesin starts Taliesin. `grants.json` is now beside `settings.json`. Nothing asks you to choose a folder again.
+- [ ] **A changed Taliesin program is refused (HTOO-679).** Replace the Taliesin program that you chose with another build of it, or change one byte of a copy and choose the copy. Open in Taliesin must refuse and tell you to choose the program again in Settings. Choose it again, and Taliesin starts.
+- [ ] **Upgrade: the world index builds again.** The first start after the upgrade builds the index of the world. Settings → World indexes lists the 1.15.0 index as old, and Remove removes it.
+- [ ] **Open on a script (HTOO-680).** On an NPC, a creature or a castable whose script exists in the world, click the open button (the arrow-out icon) beside the script name. With VS Code installed, VS Code opens the file. On a machine with no VS Code, or with `code` not on PATH, the default program for `.lua` opens it. No command window shows on Windows.
+- [ ] **Pack icon dye, by eye (HTOO-695).** Set a client folder and a Brigid assets folder with an `item_icons` pack. Open an item whose Sprite is a pack icon that has the purple dye colours, and set its Color to a colour such as Crimson. The Sprite preview shows the icon in that colour. Set the Sprite to a modern id (20001 or more): that icon stays undyed with any Color. If a pack has a `no_dye` list, an id in it stays undyed.
+- [ ] **The item picker toggle (HTOO-695).** With a client folder and an `item_icons` pack, the item sprite picker shows Vanilla and Hybrasyl. Vanilla shows the `legend.dat` frames only. Hybrasyl adds the pack icons, and a pack icon replaces the legacy frame of the same id. Close Creidhne and start it again: the picker opens in the mode that you chose last.
+- [ ] **Packs in Brigid's order (HTOO-695).** With the real Brigid assets folder, an id that two packs have shows the same art in Creidhne as in Brigid. The log shows no unknown-type warning for the `ui_theme` or `ambient_sounds` packs.
+- [ ] **The formula file loads on the server.** Save a formula. `scripts/modules/formulas.lua` is written, and nothing is written to `scripts/formulas.lua`. A local server that runs a script with `require("formulas")` loads it.
+
+Carried from 1.15.0, still not ticked. Do each in the eight themes; Settings → Appearance → Theme gallery shows most controls on one page (HTOO-572):
+
+- [ ] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, Clear on a Settings path card and Delete in the delete confirmation of a file list show the error colour.
+- [ ] **A coloured chip.** The Active chip on a library and the formula category chips show their colour.
 - [ ] **A filled button and a hover.** A contained button changes under the pointer.
 
-The title bar, the close button and the nav bar are no longer checked by eye. Sabrael retired the house's chrome checks on 2026-11-02, and tests cover them:
+## Windows
 
-- **The title bar and the close button.** `chromeContrast.test.jsx` checks the name and the window buttons on each bar, the black outline or the flat bar, the hover colours, and that the close button turns red. `TitleBar.test.jsx` checks that each window button calls its control, and `src/main/__tests__/windowControls.test.js` what main does with it: minimise minimises, maximise maximises and a second press restores, and close asks the window's close guard.
-- **The nav bar.** `chromeContrast.test.jsx` checks the icons on the bar, the current page's ring and the hover. `tertiary.test.js` checks that the nav bar differs from the title bar.
-- **The Linux taskbar icon.** `scripts/icons.test.mjs` checks the hicolor set, the window icon, `desktopName`, `linux.syncDesktopName` and the deb's maintainer. The icon check under Done below is not run again.
-- **The splash spinner.** `splashLayout.test.js` keeps every item in the splash from shrinking, and the spinner square.
+Use the release build. The signing steps run only in CI.
 
-## Pending: Windows
+- [ ] **Electron 45 starts from each package (HTOO-694).** Run the NSIS installer fresh, then the portable exe. Each starts, opens a world, saves a file and closes. Then install over 1.15.0 (the upgrade checks above).
+- [ ] **The files are signed (HTOO-683).** Properties → Digital Signatures on the installer, the portable exe and the installed `Creidhne.exe` each show a valid signature. This is the first release with each action pinned and the signing tool checksummed, so the release workflow itself must also finish green.
+- [ ] **Creidhne refuses a changed app archive on Electron 45 (HTOO-381).** Change one byte of `resources\app.asar` in the install folder, keeping a backup. Creidhne does not start. Put the original back, and it starts.
+- [ ] **A portable launch finds Taliesin beside it (HTOO-667).** Put the portable Creidhne exe and a portable or unpacked Taliesin in one folder, with no Taliesin installed and no Taliesin program in Settings. Start the portable Creidhne, and Open in Taliesin starts the Taliesin beside it.
+- [ ] **A portable Creidhne started by another portable app (HTOO-667).** Start the portable Taliesin, and from it open Creidhne (installed or portable). Creidhne starts, and its log shows no portable sweep error. A Taliesin that the portable Creidhne starts does not take itself for a portable launch.
 
-Use a packaged build from `npm run build:win` or from the release workflow. The
-signing steps only run in CI.
+## macOS
 
-- [x] **The portable exe does not flash on close (HTOO-466).** _Sabrael, 2026-10-10, 1.14.0 release build._ Launch
-      `creidhne-<version>-portable.exe`. While it unpacks you should see a busy
-      cursor and no image, then the Creidhne splash. Close Creidhne. No blank Setup
-      window should appear afterwards. Repeat a few times; the old flash came on
-      every close.
-- [x] **The portable exe sweeps its leftover folders.** _Fintan, 2026-10-10, unsigned local portable build: an 805 MB leftover `ns*.tmp` folder was removed._ Launch the portable exe, then
-      end its process in Task Manager while Creidhne is still open, so its
-      `%TEMP%\ns*.tmp` folder is left behind. Note the folder's name. After 10 minutes,
-      launch the portable exe again and wait 30 seconds. The old folder should be
-      gone. The folder of the copy that is running must remain.
-      `src/main/portableSweep.js` has the rules. A folder is removed only when it
-      holds a copy of Creidhne, is more than ten minutes old, and no running copy is
-      using it.
-- [x] **Creidhne refuses a changed app archive (HTOO-381).** _Fintan, 2026-10-10, unsigned `--dir` package: one changed byte in the main bundle exits with code 1, no window, `ASAR Integrity Violation` on stderr; the unchanged build opens._ Install a build. Change one
-      byte of `resources\app.asar` in the install folder, keeping a backup. Creidhne
-      should not start. Put the original file back, and Creidhne should start again.
-- [x] **The files are signed.** _Sabrael, 2026-10-10, 1.14.0 release build._ Open Properties → Digital Signatures on the
-      installer, the portable exe and the installed `Creidhne.exe`. Each should
-      show a valid signature. This is the first release signed with CodeSignTool.
-- [x] **The NSIS installer works end to end.** _Sabrael, 2026-10-10, 1.14.0 release build._ Install fresh, then upgrade over
-      1.13.1. Settings and the world path should survive the upgrade. Uninstall
-      afterwards. Run the installer once while Creidhne is open, and it should ask
-      you to close it.
-- [x] **Closing from the taskbar.** _Sabrael, 2026-10-10, 1.14.0 release build._ With another window in front, right-click
-      Creidhne in the taskbar and choose Close window. Creidhne should close, and
-      with unsaved edits it should ask first. E2E covers this, but the taskbar
-      click itself is only real on Windows.
+Use the `.dmg` from the release workflow.
 
-## Done
+- [ ] **Electron 45 starts (HTOO-694).** The `.dmg` installs. Creidhne starts, opens a world, saves a file and quits with ⌘Q.
+- [ ] **No DYLD entitlement (HTOO-664).** Run `codesign -d --entitlements - /Applications/Creidhne.app`. It lists three keys and no `com.apple.security.cs.allow-dyld-environment-variables`. Creidhne still starts with the hardened runtime. If the build is not signed, write "not signed" and skip the read-back.
+- [ ] **Creidhne refuses a changed app archive.** As on Windows, with `Contents/Resources/app.asar`.
 
-These were checked on 2026-10-10.
+## Linux
 
-**macOS**
-
-- [x] ⌘-click adds a file to the selection in the file list.
-- [x] ⌘1–⌘9 open the Go menu's pages, ⌘S saves and ⌘, opens Settings. Menu commands
-      do nothing while a dialog is open.
-- [x] The `.dmg` installs, and Creidhne refuses a changed app archive.
-
-**Linux**
-
-- [x] The icon is the navy-and-gold tile. Install the `.deb`, and run the
-      AppImage. The launcher entry and the taskbar should both show the
-      navy-and-gold tile, not the Windows star.
-- [x] A smoke test of both packages. The `.deb` and the AppImage start, open a
-      world, and save a file.
-
-**Any platform**
-
-- [x] Check for updates gives each of its three results: up to date, a newer
-      version (with its link), and the reason a check failed. The notice 10 seconds
-      after start appears once, and closing it hides that version.
-- [x] Each picker opens in its own folder first, then the last folder you picked,
-      then the active world, then Documents. None opens in Downloads.
-- [x] Saving the ceridwen Mileth Crypt loot sets with no edit keeps all their
-      tables. Saving a creature with loot written directly on it keeps that loot,
-      and its notice shows (HTOO-522).
-- [x] `a $& b` in a designer comment, an NPC location and a formula template field
-      is saved as typed, and the formula editor does not freeze (HTOO-469).
-- [x] Dialog export of the sequences `farewell_end` and `quest_1` writes the keys
-      `s_end` and `s_1`, and the Lua parses (HTOO-498).
-- [x] A formula saved with Stepped Tiers opens as None (HTOO-132).
+- [ ] **Electron 45 starts from each package (HTOO-694).** Install the `.deb`, and run the AppImage. Each starts, opens a world, saves a file and closes.
