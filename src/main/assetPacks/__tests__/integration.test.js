@@ -14,6 +14,7 @@ const {
   listCoveredIds,
   resolveAsset,
   resolveAssetUrl,
+  resolveItemIcon,
   _resetForTests
 } = await import('../index.js')
 
@@ -649,5 +650,59 @@ describe('loadPacks: dual-source (brigid assets + client) scan', () => {
     await loadPacks({ brigidAssetsPath: '/brigid/assets', clientPath: '/fake/client' })
 
     expect((await resolveAsset('nation', 1))?.toString()).toBe('client-flag')
+  })
+})
+
+// HTOO-695: the pack that gives an item icon also decides its dye, as in
+// Brigid's ItemIconSource.
+describe('resolveItemIcon', () => {
+  function itemPack(packId, priority, itemIcons, entries) {
+    return fakeDirectory({
+      manifest: manifest({
+        pack_id: packId,
+        content_type: 'item_icons',
+        priority,
+        covers: { item_icons: itemIcons }
+      }),
+      entries
+    })
+  }
+
+  it("gives the icon of the first pack in order, with that pack's dye rule", async () => {
+    mockFs.readdir.mockResolvedValueOnce(['high.datf', 'low.datf'])
+    mockUnzipper.Open.file
+      .mockResolvedValueOnce(
+        itemPack('high', 200, { no_dye: [7] }, { 'item00007.png': Buffer.from('HIGH') })
+      )
+      .mockResolvedValueOnce(
+        itemPack(
+          'low',
+          100,
+          {},
+          {
+            'item00007.png': Buffer.from('LOW'),
+            'item00008.png': Buffer.from('LOW8'),
+            'item20001.png': Buffer.from('MODERN')
+          }
+        )
+      )
+    await loadPacksForClientPath('/fake/client')
+
+    const seven = await resolveItemIcon(7)
+    expect(Buffer.from(seven.url.split(',')[1], 'base64').toString()).toBe('HIGH')
+    expect(seven.dye).toBe('never')
+    // The low pack has no no_dye list, so its icon is detected.
+    expect((await resolveItemIcon(8)).dye).toBe('detect')
+    expect((await resolveItemIcon(20001)).dye).toBe('never')
+    expect(await resolveItemIcon(9)).toBeNull()
+  })
+
+  it('ignores packs of other types', async () => {
+    mockFs.readdir.mockResolvedValueOnce(['skills.datf'])
+    mockUnzipper.Open.file.mockResolvedValueOnce(
+      fakeDirectory({ manifest: manifest(), entries: { 'skill0001.png': Buffer.from('x') } })
+    )
+    await loadPacksForClientPath('/fake/client')
+    expect(await resolveItemIcon(1)).toBeNull()
   })
 })

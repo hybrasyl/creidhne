@@ -175,6 +175,10 @@ const EXEMPT = {
     category: 'registry-key',
     reason: 'subtype + id key the same map; a miss returns null'
   },
+  'pack:resolveItemIcon': {
+    category: 'registry-key',
+    reason: 'an item id keys the same map; a miss returns null'
+  },
   'reference:load': {
     category: 'registry-key',
     reason: 'library path via validatePath; type + name look up a record and return it'

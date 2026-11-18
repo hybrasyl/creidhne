@@ -10,6 +10,8 @@ import { EpfFile, PaletteLookup, renderEpf } from '@eriscorp/dalib-ts'
 import { toImageData } from '@eriscorp/dalib-ts/helpers/imageData'
 import { loadArchive, clearArchiveCache, registerCacheClearer } from '../utils/daClient'
 import { getItemColorEntry } from './itemColorData'
+import { getPackItemIcon, onPackCacheClear } from './packAssetCache'
+import { applyItemDye, packIconTakesDye } from '@shared/itemIcons.js'
 
 const FRAMES_PER_EPF = 266
 
@@ -23,9 +25,9 @@ const indexCache = new Map() // clientPath → { total, visibleIds }
  * Build the cache key for a rendered sprite bitmap. '' and 'None' are the
  * legacy un-dyed sentinels and collapse to the same key so we render once.
  */
-export function buildItemSpriteCacheKey(clientPath, id, colorName) {
+export function buildItemSpriteCacheKey(clientPath, id, colorName, source = 'legacy') {
   const dye = !colorName || colorName === 'None' ? '' : colorName
-  return `${clientPath}|${id}|${dye}`
+  return `${clientPath}|${id}|${dye}|${source}`
 }
 
 /**
@@ -165,7 +167,16 @@ export async function getItemSpriteIndex(clientPath) {
  * matching color0.tbl entry before rendering — mirroring the legacy DA
  * client's `palette.Dye()` step.
  */
-export async function getItemSpriteBitmap(clientPath, id, colorName = '') {
+export async function getItemSpriteBitmap(
+  clientPath,
+  id,
+  colorName = '',
+  { preferPack = false } = {}
+) {
+  if (preferPack) {
+    const fromPack = await getPackItemSpriteBitmap(clientPath, id, colorName)
+    if (fromPack) return fromPack
+  }
   if (!clientPath) return null
   const resolved = resolveItemSprite(id)
   if (!resolved) return null
@@ -206,6 +217,46 @@ export async function getItemSpriteBitmap(clientPath, id, colorName = '') {
 }
 
 /**
+ * Draw an item sprite from the first pack that has it (Brigid's ItemIconSource,
+ * HTOO-695), dyed by the rule of that pack. Returns null when no pack has the
+ * id or the image does not decode, so the caller falls back to legend.dat.
+ * The dye needs color0.tbl, so with no client path a pack icon is not dyed.
+ */
+async function getPackItemSpriteBitmap(clientPath, id, colorName) {
+  const key = buildItemSpriteCacheKey(clientPath, id, colorName, 'pack')
+  const cached = bitmapCache.get(key)
+  if (cached) return cached
+
+  const icon = await getPackItemIcon(Number(id))
+  if (!icon?.url) return null
+  let bitmap
+  try {
+    const img = new Image()
+    img.src = icon.url
+    await img.decode()
+    bitmap = await createImageBitmap(img)
+  } catch {
+    return null
+  }
+
+  const dyeEntry = clientPath ? await getItemColorEntry(clientPath, colorName) : null
+  if (dyeEntry && icon.dye !== 'never') {
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(bitmap, 0, 0)
+    const pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height)
+    if (packIconTakesDye(icon.dye, pixels.data)) {
+      const dyed = applyItemDye(pixels.data, dyeEntry.colors)
+      bitmap.close?.()
+      bitmap = await createImageBitmap(new ImageData(dyed, pixels.width, pixels.height))
+    }
+  }
+
+  bitmapCache.set(key, bitmap)
+  return bitmap
+}
+
+/**
  * Drop all item-sprite caches. Call when clientPath changes — the underlying
  * archive cache (in daClient.js) should also be cleared.
  */
@@ -227,3 +278,16 @@ export function clearItemSpriteCache() {
 
 // Auto-register so DAClientPathSection's central clear flushes us too.
 registerCacheClearer(clearItemSpriteCache)
+
+// A pack rescan can add or replace pack icons, so it drops the pack bitmaps.
+onPackCacheClear(() => {
+  for (const [key, bitmap] of bitmapCache) {
+    if (!key.endsWith('|pack')) continue
+    try {
+      bitmap.close?.()
+    } catch {
+      /* ignore */
+    }
+    bitmapCache.delete(key)
+  }
+})

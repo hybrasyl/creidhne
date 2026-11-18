@@ -81,7 +81,7 @@ src/
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
                exportSerializers.js, elementTable.js (the element table model: lookup order,
-               validation, the old-format conversion), traitValidate.js and speciesValidate.js (the server's trait and species checks), duplicateKeys.js (the keys that more than one active file holds, from the index), elementOptions.js (the element choices
+               validation, the old-format conversion), traitValidate.js and speciesValidate.js (the server's trait and species checks), duplicateKeys.js (the keys that more than one active file holds, from the index), itemIcons.js (Brigid's item sprite ids, the item_icons dye rule, the ramp and the dye pass, HTOO-695), elementOptions.js (the element choices
                from the active table, and the copy of hybindex's resolveElementTable), nameCollision.js (the server's name-key rule + the editors'
                duplicate check), entityReferences.js (the declared reference graph) +
                renameRepair.js (when to offer a repair), staging.js (the staged types, the

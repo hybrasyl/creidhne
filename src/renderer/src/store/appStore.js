@@ -18,6 +18,7 @@ export const useAppStore = create((set) => ({
   npcPortraitPickerMode: 'vanilla',
   soundPickerMode: 'vanilla',
   creaturePickerMode: 'vanilla',
+  itemPickerMode: 'vanilla',
   libraries: [],
   libraryIndex: {},
   // The staged index (HTOO-453): `{ [type]: { names, namesByFilename,
@@ -56,6 +57,7 @@ export const brigidAssetsPathState = { key: 'brigidAssetsPath' }
 export const npcPortraitPickerModeState = { key: 'npcPortraitPickerMode' }
 export const soundPickerModeState = { key: 'soundPickerMode' }
 export const creaturePickerModeState = { key: 'creaturePickerMode' }
+export const itemPickerModeState = { key: 'itemPickerMode' }
 export const librariesState = { key: 'libraries' }
 export const libraryIndexState = { key: 'libraryIndex' }
 export const stagedIndexState = { key: 'stagedIndex' }

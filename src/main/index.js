@@ -125,6 +125,7 @@ import {
   listCoveredIds,
   resolveAsset,
   resolveAssetUrl,
+  resolveItemIcon,
   suggestedBrigidAssetsPath
 } from './assetPacks/index.js'
 import originalFs from 'original-fs'
@@ -939,6 +940,8 @@ app.whenReady().then(async () => {
   // MIME-aware variant for non-PNG assets (e.g. sound_effects audio). Returns a
   // full data URL with the correct MIME inferred from the pack entry extension.
   ipc.handle('pack:resolveAssetUrl', (_, subtype, id) => resolveAssetUrl(subtype, id))
+  // An item icon and the dye rule of the pack that gives it (HTOO-695).
+  ipc.handle('pack:resolveItemIcon', (_, id) => resolveItemIcon(id))
 
   // On-demand rescan of the .datf source dirs so packs dropped in while the app
   // is running get picked up (pickers call this on open). Re-reads the current

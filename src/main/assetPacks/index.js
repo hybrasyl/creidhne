@@ -265,6 +265,32 @@ export async function resolveAsset(subtype, id) {
   return null
 }
 
+// The icon of an item sprite from the first pack, in pack order, that has it,
+// and the dye rule of that pack (HTOO-695): `{ url, dye }`, or null when no
+// pack has the id. The renderer applies the rule; see src/shared/itemIcons.js.
+export async function resolveItemIcon(id) {
+  await pendingLoad
+  for (const pack of state.packs) {
+    if (typeof pack.handler.dyeRule !== 'function') continue
+    const key = pack.handler.keyFor('item', id)
+    if (!key) continue
+    const entry = pack.entries.get(key)
+    if (!entry) continue
+    try {
+      const buf = await readEntryBounded(entry, PACK_LIMITS.maxEntryBytes)
+      return {
+        url: `data:image/png;base64,${buf.toString('base64')}`,
+        dye: pack.handler.dyeRule(pack.manifest, Number(id))
+      }
+    } catch (err) {
+      console.warn(
+        `[assetPackLoader] failed reading item${id} from ${pack.fileName}: ${err.message}`
+      )
+    }
+  }
+  return null
+}
+
 // MIME lookup for building data URLs. Covers the image extensions used by the
 // flat/manifest handlers and the audio extensions used by sound_effects.
 const MIME_BY_EXT = {

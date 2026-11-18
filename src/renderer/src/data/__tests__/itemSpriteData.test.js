@@ -90,7 +90,12 @@ describe('isFrameBlank', () => {
 
 describe('buildItemSpriteCacheKey', () => {
   it('includes clientPath, id, and color in the key', () => {
-    expect(buildItemSpriteCacheKey('/p', 42, 'Crimson')).toBe('/p|42|Crimson')
+    expect(buildItemSpriteCacheKey('/p', 42, 'Crimson')).toBe('/p|42|Crimson|legacy')
+  })
+
+  // A pack icon and the legacy frame of one id are different images (HTOO-695).
+  it('keeps the pack image apart from the legacy frame', () => {
+    expect(buildItemSpriteCacheKey('/p', 42, 'Crimson', 'pack')).toBe('/p|42|Crimson|pack')
   })
 
   it('produces different keys for different colors on the same sprite', () => {

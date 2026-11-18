@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Box, TextField, IconButton, Tooltip } from '@mui/material'
 import GridViewIcon from '@mui/icons-material/GridView'
 import HelpIcon from '@mui/icons-material/Help'
-import { useStoreValue, clientPathState } from '../../store/appStore'
+import { useStoreValue, clientPathState, packCoverageState } from '../../store/appStore'
 import ItemSpriteCanvas from './ItemSpriteCanvas'
 import ItemSpritePickerDialog from './ItemSpritePickerDialog'
+import { ITEM_SPRITE_MAX } from '@shared/itemIcons.js'
 
 const PREVIEW_SIZE = 48
 
@@ -13,12 +14,17 @@ export default function ItemSpritePicker({
   onChange,
   label = 'Sprite',
   required = false,
-  max = 65535,
+  // The server sends `sprite + 0x8000` as a u16, so 32767 is the largest id
+  // that reaches the client, though the XSD allows 65535 (HTOO-695).
+  max = ITEM_SPRITE_MAX,
   helpTooltip,
   color = ''
 }) {
   const [open, setOpen] = useState(false)
   const clientPath = useStoreValue(clientPathState)
+  // A pack's item icons can be picked with no client path (HTOO-695).
+  const packHasItems = (useStoreValue(packCoverageState).item?.length ?? 0) > 0
+  const canBrowse = Boolean(clientPath) || packHasItems
 
   const handleSelect = (id) => {
     onChange(String(id))
@@ -57,13 +63,13 @@ export default function ItemSpritePicker({
       />
       <Tooltip
         title={
-          clientPath
+          canBrowse
             ? 'Browse item sprites'
             : 'Set Dark Ages client path in Settings to browse sprites'
         }
       >
         <span>
-          <IconButton size="small" onClick={() => setOpen(true)} disabled={!clientPath}>
+          <IconButton size="small" onClick={() => setOpen(true)} disabled={!canBrowse}>
             <GridViewIcon fontSize="small" />
           </IconButton>
         </span>
