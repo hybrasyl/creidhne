@@ -45,9 +45,9 @@ There is **no `typecheck`** — Creidhne is JavaScript, not TypeScript. Gate bef
 
 ## Stack
 
-electron-vite 5 · Electron 44 · **React 19** · **JavaScript (`.jsx`, not TS)** ·
+electron-vite 6 (vite 8) · Electron 45 · **React 19** · **JavaScript (`.jsx`, not TS)** ·
 MUI v9 + Emotion (style via `sx`, never styled-components) · **Zustand 5** · Zod 4 ·
-Vitest 4 (`environment: 'node'` by default; a component test opts into jsdom per file with a
+Vitest 5 (`environment: 'node'` by default; a component test opts into jsdom 31 per file with a
 `@vitest-environment jsdom` docblock) · Playwright (E2E). Package manager: **npm** — 12 on the dev
 machines (Node from `.nvmrc`), and npm 12 skips dependency install scripts unless `allowScripts` in
 `package.json` approves them. `electron`'s downloads the binary, so a missing approval leaves a fresh

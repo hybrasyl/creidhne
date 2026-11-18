@@ -401,12 +401,25 @@ export function pickerFilters(platform) {
   ]
 }
 
+// The folder of this app's own portable exe, saved at boot. Main removes the
+// stub's variables from process.env before anything can start a child
+// (HTOO-667), so the probe gets the folder from here. An inherited folder from
+// another app's stub is never saved, so it cannot steer the sibling search.
+let portableLauncherDir = null
+
+/** Called once at boot with `ownPortableLauncherDir`'s answer (portableSweep.js). */
+export function setPortableLauncherDir(dir) {
+  portableLauncherDir = dir || null
+}
+
 /** The real probe. Everything platform-specific is in here and nowhere else. */
 export function nodeProbe() {
   return {
     platform: process.platform,
     execPath: process.execPath,
-    env: process.env,
+    env: portableLauncherDir
+      ? { ...process.env, PORTABLE_EXECUTABLE_DIR: portableLauncherDir }
+      : process.env,
     exists: async (p) => {
       try {
         await fs.stat(p)

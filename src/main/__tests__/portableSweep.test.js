@@ -3,7 +3,15 @@ import { mkdir, mkdtemp, readdir, rm, symlink, utimes, writeFile } from 'fs/prom
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { MIN_AGE_MS, ownUnpackDir, sweepPortableLeftovers } from '../portableSweep.js'
+import {
+  isOwnPortableLaunch,
+  MIN_AGE_MS,
+  ownPortableLauncherDir,
+  ownUnpackDir,
+  PORTABLE_ENV_KEYS,
+  sweepPortableLeftovers,
+  takePortableLaunch
+} from '../portableSweep.js'
 
 /**
  * The portable sweep (HTOO-494), over a fake `%TEMP%`.
@@ -195,5 +203,72 @@ describe('sweepPortableLeftovers', () => {
     })
     expect(result).toEqual({ removed: [], skipped: [] })
     expect(errors[0]).toMatch(/cannot read/)
+  })
+})
+
+describe('isOwnPortableLaunch and takePortableLaunch (HTOO-667)', () => {
+  // The values Balor's portable stub set, as recorded on the card. A child
+  // of Balor (VS Code, then a terminal, then this app) inherits all three.
+  const BALOR_ENV = {
+    PORTABLE_EXECUTABLE_DIR: 'C:/Users/me/Downloads',
+    PORTABLE_EXECUTABLE_FILE: 'C:/Users/me/Downloads/balor-1.3.0-portable.exe',
+    PORTABLE_EXECUTABLE_APP_FILENAME: 'balor'
+  }
+
+  it("is true for this app's own stub, case folded", () => {
+    expect(
+      isOwnPortableLaunch(
+        { ...BALOR_ENV, PORTABLE_EXECUTABLE_APP_FILENAME: 'Creidhne' },
+        'creidhne'
+      )
+    ).toBe(true)
+  })
+
+  it("is false for another app's inherited variables", () => {
+    expect(isOwnPortableLaunch(BALOR_ENV, 'creidhne')).toBe(false)
+  })
+
+  it('is false without the stub variables, or with the directory only', () => {
+    expect(isOwnPortableLaunch({}, 'creidhne')).toBe(false)
+    expect(isOwnPortableLaunch({ PORTABLE_EXECUTABLE_DIR: 'C:/x' }, 'creidhne')).toBe(false)
+    expect(isOwnPortableLaunch({ PORTABLE_EXECUTABLE_APP_FILENAME: 'creidhne' }, 'creidhne')).toBe(
+      false
+    )
+  })
+
+  it('removes all three variables, and keeps the rest of the environment', () => {
+    const env = { ...BALOR_ENV, PATH: 'C:/bin' }
+    expect(takePortableLaunch(env, 'creidhne')).toBe(false)
+    for (const key of PORTABLE_ENV_KEYS) expect(env).not.toHaveProperty(key)
+    expect(env.PATH).toBe('C:/bin')
+  })
+
+  it('removes them on its own launch too, and still answers true', () => {
+    const env = { ...BALOR_ENV, PORTABLE_EXECUTABLE_APP_FILENAME: 'creidhne' }
+    expect(takePortableLaunch(env, 'creidhne')).toBe(true)
+    for (const key of PORTABLE_ENV_KEYS) expect(env).not.toHaveProperty(key)
+  })
+
+  it("keeps the launcher folder only for this app's own launch", () => {
+    expect(ownPortableLauncherDir(BALOR_ENV, 'creidhne')).toBeNull()
+    expect(
+      ownPortableLauncherDir(
+        { ...BALOR_ENV, PORTABLE_EXECUTABLE_APP_FILENAME: 'creidhne' },
+        'creidhne'
+      )
+    ).toBe('C:/Users/me/Downloads')
+  })
+
+  it("does not sweep, and logs nothing, under another app's variables", async () => {
+    // An old leftover of ours: a sweep that runs removes it.
+    const leftover = await unpack('nsOLD2.tmp')
+    const errors = []
+    const result = await run({
+      isPortable: takePortableLaunch({ ...BALOR_ENV }, 'creidhne'),
+      onError: (m) => errors.push(m)
+    })
+    expect(result).toEqual({ removed: [], skipped: [] })
+    expect(existsSync(leftover)).toBe(true)
+    expect(errors).toEqual([])
   })
 })
