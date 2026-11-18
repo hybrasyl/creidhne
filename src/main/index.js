@@ -26,7 +26,13 @@ import { parseSpawngroupXml, serializeSpawngroupXml } from './spawngroupXml'
 import { parseServerConfigXml, serializeServerConfigXml } from './serverConfigXml'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createSettingsManager } from './settingsManager'
-import { launchCompanion, resolveCompanion, pickerFilters, nodeProbe } from './companion.js'
+import {
+  launchCompanion,
+  resolveCompanion,
+  pickerFilters,
+  nodeProbe,
+  setPortableLauncherDir
+} from './companion.js'
 import { createSplashWindow } from './splash.js'
 import { pickerStartPath, pickedFolder } from './pickerStart.js'
 import { buildMenuTemplate, menuStateSchema } from './appMenu.js'
@@ -122,11 +128,25 @@ import {
   suggestedBrigidAssetsPath
 } from './assetPacks/index.js'
 import originalFs from 'original-fs'
-import { sweepPortableLeftovers } from './portableSweep.js'
+import {
+  sweepPortableLeftovers,
+  ownPortableLauncherDir,
+  takePortableLaunch
+} from './portableSweep.js'
+import { name as PACKAGE_NAME } from '../../package.json'
 import { openWorldScript } from './scriptOpen.js'
 
 /** The time after boot that the portable sweep waits (see portableSweep.js). */
 const PORTABLE_SWEEP_DELAY_MS = 30_000
+
+// First, before anything can start a child process: read whether THIS app's
+// portable stub started us, and the launcher folder the companion search needs,
+// then remove the stub's variables from our own environment, so that no editor,
+// companion or other program we start inherits them (HTOO-667).
+// `portableLaunchOrder.test.js` asserts that these stay the first statements
+// that read `process.env`.
+setPortableLauncherDir(ownPortableLauncherDir(process.env, PACKAGE_NAME))
+const isOwnPortable = takePortableLaunch(process.env, PACKAGE_NAME)
 
 // Local per-user app-data root. On Windows, Electron's app.getPath('cache')
 // actually returns the ROAMING dir (Windows has no standard per-user cache dir,
@@ -1836,7 +1856,7 @@ app.whenReady().then(async () => {
       // keeps it open, so Windows refuses each rename.
       fs: originalFs.promises,
       execPath: process.execPath,
-      isPortable: app.isPackaged && Boolean(process.env['PORTABLE_EXECUTABLE_DIR']),
+      isPortable: app.isPackaged && isOwnPortable,
       onError: (message) => captureError({ source: 'portable-sweep', message })
     })
   }, PORTABLE_SWEEP_DELAY_MS).unref()

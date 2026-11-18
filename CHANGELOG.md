@@ -41,14 +41,22 @@ first section written to the rules above.
 
 ## [Unreleased]
 
+### Changed
+
+- **Creidhne runs on Electron 45.**
+- **Creidhne builds with vite 8, `@vitejs/plugin-react` 6 and electron-vite 6, and tests with vitest 5 and jsdom 31.** Nothing changes in the app.
+- **The world index moves to a new version.** The first time Creidhne opens a world after the update, it builds the index again. Settings → World indexes removes the old one.
+
 ### Fixed
 
 - **Creidhne chooses between asset packs as Brigid does.** A pack with no `priority` now ranks as 100, as in Brigid, and not below every pack that has one. At one priority, the pack whose file name sorts first wins, with case ignored. Before, a picker could show the art of another pack than the one that the client shows.
 - **A theme pack or an ambience pack no longer logs an unknown-type warning.** Creidhne has no field for `ui_theme` or `ambient_sounds` packs, so it skips them.
 - **A formula save writes `formulas.lua` to `scripts/modules/`.** The server loads `require("formulas")` only from `scripts/modules/formulas.lua`, so a script could not load the file in `scripts/`. Remove the old `scripts/formulas.lua` from your world.
+- **Creidhne no longer takes itself for a portable launch when another portable app started it.** It then cleaned the temporary folders of a portable run that it was not, and the log showed an error. Programs that Creidhne starts no longer receive the portable settings either.
 
 ### Security
 
+- **The macOS app no longer accepts `DYLD_*` environment variables.** With them, a variable could load unsigned code into the signed app.
 - **A settings save cannot give Creidhne access to a new folder or a new program.** Creidhne keeps the folders and the Taliesin program that you chose in a dialog in its own file, `grants.json`, beside the settings. The first start of this version accepts the folders and the program in your settings one time, so nothing changes for you. A whole drive is never accepted. Before Creidhne starts the Taliesin program that you chose, it checks that the file did not change. If the file changed, choose it again in Settings.
 - **A junction or a symbolic link cannot lead a read or a write out of your world.** Creidhne checks the real location of each file, and refuses a file that a link puts outside the folders that you chose.
 - **Open on a script runs no command shell.** A script file name that holds shell characters could run a command when you clicked Open. Creidhne now starts VS Code directly, or opens the file with the default program when it does not find VS Code.

@@ -70,7 +70,8 @@ describe('the title bar', () => {
     // jsdom reports `none` as a transparent colour, so the plain case asserts
     // what is absent rather than the keyword.
     if (PLAIN_CHROME_THEMES.includes(name)) expect(shadow).not.toMatch(/#000|rgb\(0, 0, 0\)/)
-    else expect(shadow).toMatch(/#000/)
+    // jsdom 31 serializes the colour (`rgb(0, 0, 0)`); jsdom 29 kept `#000`.
+    else expect(shadow).toMatch(/#000|rgb\(0, 0, 0\) 1px 1px/)
   })
 
   // jsdom cannot apply :hover, so this reads the hover colours from
@@ -127,7 +128,8 @@ describe('the title bar', () => {
         />
       </ThemeProvider>
     )
-    expect(getComputedStyle(screen.getByText('Epona')).fontSize).toBe('1.15rem')
+    // jsdom 31 computes rem to px at the 16px root (1.15 × 16); jsdom 29 kept rem.
+    expect(['1.15rem', '18.4px']).toContain(getComputedStyle(screen.getByText('Epona')).fontSize)
   })
 
   it('gives every decorated bar light text, which the keyline outlines', () => {
