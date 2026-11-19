@@ -6,7 +6,7 @@ A check that is ticked on a platform is done. The next release does not list it 
 
 Each check names its tracker card in the document repo. Write the result as a comment on that card too.
 
-The automated gate is green on Windows at `72303d3`: `lint:check`, `npm test` (3046 passed, 21 skipped), `build` and `e2e` (32 passed, 5 skipped). On a fresh clone, and after the pin in `scripts/xsdRef.cjs` moves, run `npm run fetch-xsd` before `npm test`. Run `unset ELECTRON_RUN_AS_NODE` in each shell that builds or runs e2e.
+The automated gate is green on Windows at `765c3ad`: `lint:check`, `npm test` (3046 passed, 21 skipped), `build` and `e2e` (32 passed, 5 skipped). `npm audit` reports 6 moderate, all in dev dependencies; `npm audit --omit=dev` reports 0. On a fresh clone, and after the pin in `scripts/xsdRef.cjs` moves, run `npm run fetch-xsd` before `npm test`. Run `unset ELECTRON_RUN_AS_NODE` in each shell that builds or runs e2e.
 
 ## Already covered by e2e
 
@@ -41,13 +41,16 @@ These three are theme checks, and they are done on both OS. They do not come bac
 
 ## Windows
 
-Use the release build. The signing steps run only in CI.
+Before the tag, use a local unsigned build from `npm run build:win`. The signing steps run only in CI.
 
-- [ ] **Electron 45 starts from each package (HTOO-694).** Run the NSIS installer fresh, then the portable exe. Each starts, opens a world, saves a file and closes. Then install over 1.15.0 (the upgrade checks above).
-- [ ] **The files are signed (HTOO-683).** Properties → Digital Signatures on the installer, the portable exe and the installed `Creidhne.exe` each show a valid signature. This is the first release with each action pinned and the signing tool checksummed, so the release workflow itself must also finish green.
-- [ ] **Creidhne refuses a changed app archive on Electron 45 (HTOO-381).** Change one byte of `resources\app.asar` in the install folder, keeping a backup. Creidhne does not start. Put the original back, and it starts.
+- [ ] **Electron 45 starts from each package (HTOO-694).** Run the NSIS installer fresh, then the portable exe. Each starts, opens a world, saves a file and closes. Then install over 1.15.0 (the upgrade checks above). Portable exe: Fintan, 2026-11-19, local unsigned build at `765c3ad`: it unpacks and starts, a normal close ends every process, and the stub removes its `%TEMP%\ns*.tmp` folder. The installer (fresh and over 1.15.0) is owed.
+- [x] **Creidhne refuses a changed app archive on Electron 45 (HTOO-381).** Change one byte of `resources\app.asar` in the install folder, keeping a backup. Creidhne does not start. Put the original back, and it starts. Fintan, 2026-11-19, local unsigned `win-unpacked` at `765c3ad`: one changed byte in `out/main/index.js` exits with code 1 and `ASAR Integrity Violation` on stderr; the unchanged copy runs. `scripts/verify-fuses.test.mjs` passes against the packaged build.
 - [ ] **A portable launch finds Taliesin beside it (HTOO-667).** Put the portable Creidhne exe and a portable or unpacked Taliesin in one folder, with no Taliesin installed and no Taliesin program in Settings. Start the portable Creidhne, and Open in Taliesin starts the Taliesin beside it.
 - [ ] **A portable Creidhne started by another portable app (HTOO-667).** Start the portable Taliesin, and from it open Creidhne (installed or portable). Creidhne starts, and its log shows no portable sweep error. A Taliesin that the portable Creidhne starts does not take itself for a portable launch.
+
+After the tag, with the release build:
+
+- [ ] **The files are signed (HTOO-683).** Properties → Digital Signatures on the installer, the portable exe and the installed `Creidhne.exe` each show a valid signature. This is the first release with each action pinned and the signing tool checksummed, so the release workflow itself must also finish green.
 
 ## macOS
 
