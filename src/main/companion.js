@@ -22,7 +22,7 @@
  * Ported from Taliesin's `src/main/companion.ts`, which is the same module with
  * the two candidate lists swapped. Change one, look at the other.
  */
-import { basename, dirname, join } from 'path'
+import { basename, dirname, join, posix, win32 } from 'path'
 import { promises as fs, constants as fsConstants } from 'fs'
 import { execFile, spawn } from 'child_process'
 import { promisify } from 'util'
@@ -155,13 +155,17 @@ function kindOf(target) {
  * itself: electron-builder's AppRun (`generateAppRunScript` in app-builder-lib)
  * reads an empty `APPIMAGE` as "not running from within an AppImage". Its
  * directory is the one the user put both apps in.
+ *
+ * The directory is split with the probe's platform, not the host's: a `win32`
+ * probe on a Linux test box must still split `C:\app\creidhne.exe` on the
+ * backslash (HTOO-667).
  */
 export function launcherDir(probe) {
   const portable = probe.env.PORTABLE_EXECUTABLE_DIR
   if (probe.platform === 'win32' && portable) return portable
   const appImage = probe.env.APPIMAGE
   if (probe.platform === 'linux' && appImage) return dirname(appImage)
-  return dirname(probe.execPath)
+  return (probe.platform === 'win32' ? win32 : posix).dirname(probe.execPath)
 }
 
 /** A file in `dir` matching one of `names`, whatever its casing. */
