@@ -20,20 +20,20 @@ These run on each `npm run e2e`, so they need no pass by hand. On macOS and Linu
 
 Use a packaged build. The checks marked "upgrade" need a machine that had 1.15.0 installed, with a world, a client folder and a Taliesin program set in Settings.
 
-- [ ] **Upgrade: Creidhne keeps its access (HTOO-679).** Install the new build over 1.15.0 and start it. The world opens, the client sprites draw, and Open in Taliesin starts Taliesin. `grants.json` is now beside `settings.json`. Nothing asks you to choose a folder again.
-- [ ] **A changed Taliesin program is refused (HTOO-679).** Replace the Taliesin program that you chose with another build of it, or change one byte of a copy and choose the copy. Open in Taliesin must refuse and tell you to choose the program again in Settings. Choose it again, and Taliesin starts.
-- [ ] **Upgrade: the world index builds again.** The first start after the upgrade builds the index of the world. Settings → World indexes lists the 1.15.0 index as old, and Remove removes it.
-- [ ] **Open on a script (HTOO-680).** On an NPC, a creature or a castable whose script exists in the world, click the open button (the arrow-out icon) beside the script name. With VS Code installed, VS Code opens the file. On a machine with no VS Code, or with `code` not on PATH, the default program for `.lua` opens it. No command window shows on Windows.
-- [ ] **Pack icon dye, by eye (HTOO-695).** Set a client folder and a Brigid assets folder with an `item_icons` pack. Open an item whose Sprite is a pack icon that has the purple dye colours, and set its Color to a colour such as Crimson. The Sprite preview shows the icon in that colour. Set the Sprite to a modern id (20001 or more): that icon stays undyed with any Color. If a pack has a `no_dye` list, an id in it stays undyed.
-- [ ] **The item picker toggle (HTOO-695).** With a client folder and an `item_icons` pack, the item sprite picker shows Vanilla and Hybrasyl. Vanilla shows the `legend.dat` frames only. Hybrasyl adds the pack icons, and a pack icon replaces the legacy frame of the same id. Close Creidhne and start it again: the picker opens in the mode that you chose last.
-- [ ] **Packs in Brigid's order (HTOO-695).** With the real Brigid assets folder, an id that two packs have shows the same art in Creidhne as in Brigid. The log shows no unknown-type warning for the `ui_theme` or `ambient_sounds` packs.
-- [ ] **The formula file loads on the server.** Save a formula. `scripts/modules/formulas.lua` is written, and nothing is written to `scripts/formulas.lua`. A local server that runs a script with `require("formulas")` loads it.
+- [x] **Upgrade: Creidhne keeps its access (HTOO-679).** Install the new build over 1.15.0 and start it. The world opens, the client sprites draw, and Open in Taliesin starts Taliesin. `grants.json` is now beside `settings.json`. Nothing asks you to choose a folder again. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **A changed Taliesin program is refused (HTOO-679).** Replace the Taliesin program that you chose with another build of it, or change one byte of a copy and choose the copy. Open in Taliesin must refuse and tell you to choose the program again in Settings. Choose it again, and Taliesin starts. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **Upgrade: the world index builds again.** The first start after the upgrade builds the index of the world. Settings → World indexes lists the 1.15.0 index as old, and Remove removes it. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **Open on a script (HTOO-680).** On an NPC, a creature or a castable whose script exists in the world, click the open button (the arrow-out icon) beside the script name. With VS Code installed, VS Code opens the file. On a machine with no VS Code, or with `code` not on PATH, the default program for `.lua` opens it. No command window shows on Windows. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **Pack icon dye, by eye (HTOO-695).** Set a client folder and a Brigid assets folder with an `item_icons` pack. Open an item whose Sprite is a pack icon that has the purple dye colours, and set its Color to a colour such as Crimson. The Sprite preview shows the icon in that colour. Set the Sprite to a modern id (20001 or more): that icon stays undyed with any Color. If a pack has a `no_dye` list, an id in it stays undyed. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **The item picker toggle (HTOO-695).** With a client folder and an `item_icons` pack, the item sprite picker shows Vanilla and Hybrasyl. Vanilla shows the `legend.dat` frames only. Hybrasyl adds the pack icons, and a pack icon replaces the legacy frame of the same id. Close Creidhne and start it again: the picker opens in the mode that you chose last. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **Packs in Brigid's order (HTOO-695).** With the real Brigid assets folder, an id that two packs have shows the same art in Creidhne as in Brigid. The log shows no unknown-type warning for the `ui_theme` or `ambient_sounds` packs. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **The formula file loads on the server.** Save a formula. `scripts/modules/formulas.lua` is written, and nothing is written to `scripts/formulas.lua`. A local server that runs a script with `require("formulas")` loads it. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
 
 Carried from 1.15.0, still not ticked. Do each in the eight themes; Settings → Appearance → Theme gallery shows most controls on one page (HTOO-572):
 
-- [ ] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, Clear on a Settings path card and Delete in the delete confirmation of a file list show the error colour.
-- [ ] **A coloured chip.** The Active chip on a library and the formula category chips show their colour.
-- [ ] **A filled button and a hover.** A contained button changes under the pointer.
+- [x] **A destructive button.** On Hybrasyl, Chadul, Danaan and Grinneal, Clear on a Settings path card and Delete in the delete confirmation of a file list show the error colour. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **A coloured chip.** The Active chip on a library and the formula category chips show their colour. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
+- [x] **A filled button and a hover.** A contained button changes under the pointer. Linux Mint 22.3, packaged build at `2c634fd`, Sabrael, 2026-11-19: pass.
 
 ## Windows
 
@@ -55,4 +55,4 @@ Use the `.dmg` from the release workflow.
 
 ## Linux
 
-- [ ] **Electron 45 starts from each package (HTOO-694).** Install the `.deb`, and run the AppImage. Each starts, opens a world, saves a file and closes.
+- [x] **Electron 45 starts from each package (HTOO-694).** Install the `.deb`, and run the AppImage. Each starts, opens a world, saves a file and closes. Linux Mint 22.3, the `.deb` and the AppImage built at `2c634fd`, Sabrael, 2026-11-19: pass.
