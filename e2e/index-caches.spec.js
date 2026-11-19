@@ -67,8 +67,12 @@ test.describe('World indexes', () => {
     const page = await getMainWindow(electronApp)
     await expect(page.getByText('Index complete')).toBeVisible({ timeout: 30000 })
     // The launch built the open world's index in vN, beside the moved world's.
-    const live = readdirSync(join(base, CURRENT)).filter((k) => k !== 'moved-world')
-    expect(live).toHaveLength(1)
+    // hybindex-ts reports 'done' (the "Index complete" pill) before the worker
+    // saves the index, so wait for the folder rather than read it once; a slow
+    // runner read it empty.
+    const liveKeys = () => readdirSync(join(base, CURRENT)).filter((k) => k !== 'moved-world')
+    await expect.poll(liveKeys, { timeout: 15000 }).toHaveLength(1)
+    const live = liveKeys()
 
     await openPage(page, 'Settings')
     const section = page.getByTestId('index-cache-section')

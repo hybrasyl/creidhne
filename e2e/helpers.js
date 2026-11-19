@@ -17,6 +17,25 @@ export const USERDATA_SUBPATH = ['Erisco', 'Creidhne']
 // %LOCALAPPDATA% is redirected to a throwaway temp dir because src/main/index.js
 // derives its userData (settings.json) from %LOCALAPPDATA% at module load —
 // pointing it at a temp dir keeps every run hermetic and off the real profile.
+// Copy the app's output into the test log: main's stdout and stderr (an IPC
+// handler that throws prints there), and the renderer's errors and warnings.
+// On by default under CI, where a failure comes with no other record of what
+// the app did; set CREIDHNE_E2E_APP_LOG=1 to turn it on locally.
+function copyAppLog(electronApp) {
+  const proc = electronApp.process()
+  const write = (d) => process.stdout.write(`[app] ${d}`)
+  proc.stdout?.on('data', write)
+  proc.stderr?.on('data', write)
+  const watch = (page) =>
+    page.on('console', (m) => {
+      if (m.type() === 'error' || m.type() === 'warning') {
+        console.log(`[renderer ${m.type()}] ${m.text()}`)
+      }
+    })
+  for (const page of electronApp.windows()) watch(page)
+  electronApp.on('window', watch)
+}
+
 // Pass `seedSettings` to pre-write settings.json; pass an existing `localAppData`
 // to reuse one dir across two launches (persistence-across-relaunch tests).
 export async function launchApp({ seedSettings, localAppData: reuseDir } = {}) {
@@ -42,6 +61,7 @@ export async function launchApp({ seedSettings, localAppData: reuseDir } = {}) {
   }
   delete env.ELECTRON_RUN_AS_NODE
   const electronApp = await electron.launch({ args: [mainEntry], cwd: repoRoot, env })
+  if (process.env.CI || process.env.CREIDHNE_E2E_APP_LOG) copyAppLog(electronApp)
   await assertIsolated(electronApp, localAppData)
   await placeWindowsOffPrimary(electronApp)
   return { electronApp, localAppData }
