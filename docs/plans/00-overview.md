@@ -29,16 +29,16 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 | 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
 | 6   | Spawngroup spellbook references         | M    | Planned          | —          |
 | 7   | XSD validation at the IPC save boundary | L    | Planned, blocked | —          |
-| 8   | An agent interface for world data       | L    | Built, in review | —          |
 
 ## Complete
 
-| WP  | Title                                       | Shipped    | Doc                                             |
-| --- | ------------------------------------------- | ---------- | ----------------------------------------------- |
-| 1   | Castables export cleanup (3 presets)        | 2026-08-01 | `complete/01-castables-export-cleanup.md`       |
-| 2   | Castables report builder                    | 2026-08-11 | `complete/02-castables-report-builder.md`       |
-| 3   | Report builder for other XML types (items)  | 2026-08-11 | `complete/03-report-builder-other-xml-types.md` |
-| 5   | `EditorFileListPanel` secondary render prop | 2026-08-01 | `complete/05-file-list-render-secondary.md`     |
+| WP  | Title                                        | Shipped    | Doc                                             |
+| --- | -------------------------------------------- | ---------- | ----------------------------------------------- |
+| 1   | Castables export cleanup (3 presets)         | 2026-08-01 | `complete/01-castables-export-cleanup.md`       |
+| 2   | Castables report builder                     | 2026-08-11 | `complete/02-castables-report-builder.md`       |
+| 3   | Report builder for other XML types (items)   | 2026-08-11 | `complete/03-report-builder-other-xml-types.md` |
+| 5   | `EditorFileListPanel` secondary render prop  | 2026-08-01 | `complete/05-file-list-render-secondary.md`     |
+| 8   | An agent interface for world data (CLI, MCP) | 2026-11-19 | `complete/08-world-agent-interface.md`          |
 
 **WP2 was detailed and built on 2026-08-11.** WP1 was built for it, and it showed: the canonical
 record, the serializers and the presets in `src/shared/` were already preset-agnostic, so the builder

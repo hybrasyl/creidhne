@@ -1,6 +1,6 @@
 # WP8 — An agent interface for world data
 
-**Card:** HTOO-705. **Size:** L. **Depends on:** —. **Status:** Built (2026-11-19), in review. **Prompted by:** Mabon's WP107 (`mabon-map`), which gave the lore map a headless CLI and an MCP server.
+**Card:** HTOO-705. **Size:** L. **Depends on:** —. **Status:** Shipped (2026-11-19, #106). **Prompted by:** Mabon's WP107 (`mabon-map`), which gave the lore map a headless CLI and an MCP server.
 
 ## Why
 
