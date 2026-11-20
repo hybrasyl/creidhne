@@ -29,7 +29,7 @@ system, only two hygiene docs. Corrected 2026-07-31.)
 | 4   | Weapons tab and creature attack revamp  | L    | Planned          | —          |
 | 6   | Spawngroup spellbook references         | M    | Planned          | —          |
 | 7   | XSD validation at the IPC save boundary | L    | Planned, blocked | —          |
-| 8   | An agent interface for world data       | L    | Planned          | —          |
+| 8   | An agent interface for world data       | L    | Built, in review | —          |
 
 ## Complete
 
