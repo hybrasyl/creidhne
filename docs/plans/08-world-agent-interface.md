@@ -1,6 +1,6 @@
 # WP8 — An agent interface for world data
 
-**Card:** HTOO-705. **Size:** L. **Depends on:** —. **Status:** Planned (scoped 2026-11-19). **Prompted by:** Mabon's WP107 (`mabon-map`), which gave the lore map a headless CLI and an MCP server.
+**Card:** HTOO-705. **Size:** L. **Depends on:** —. **Status:** Built (2026-11-19), in review. **Prompted by:** Mabon's WP107 (`mabon-map`), which gave the lore map a headless CLI and an MCP server.
 
 ## Why
 
@@ -99,3 +99,16 @@ Made at scoping, from the evidence. Sabrael can overrule any of them before the 
 5. **`refs` and `rename` take `--scripts`.** It searches `scripts/` as plain text and reports the hits as unanchored. It never repoints a Lua file. It would have found fault 3.
 6. **Ceridwen needs nothing extra.** The commands take any world folder, and the repo's own agent rules govern the commits and the PRs.
 7. **`report` covers castables and items**, the two types WP3 built. A further type is a registry row when a report needs it.
+
+## Outcome
+
+Built on `wp8-world-agent`, 2026-11-19.
+
+- **The core:** `src/main/worldAgent/`: `context.js` (the world, the write guard, the two indexes, built on first use), `commands.js` (one function for each command), `entityName.js` (the name rule for `rename`), `cli.js`, `mcp.js` and `bin.js`. Every command in the Goal is built, with the names, flags and refusals the Goal gives.
+- **The MCP front** is the agent-mcp v1 house module, `src/main/agentMcp/agentMcp.js`, copied verbatim from the template's `house-js/` (hyb-electron-template PR #2). `mcp.js` holds only the tools and the spec. Add it with `claude mcp add creidhne-world -- node <path-to-creidhne>/scripts/world.mjs mcp --root <path-to-world>`.
+- **The name rule:** hybindex-ts does not export its map, so `entityName.js` restates it: ten types named by a root attribute (`Name`, `Key` for species, `Locale` for localizations), six by the first `<Name>` element. An element table or a server config with no `Name` attribute is named `default`, and `rename` refuses it, because there is no attribute to edit. `entityName.test.js` builds an index over one fixture of each type and checks that the two agree, before and after a rename.
+- **The build:** Vite 8 bundles with rolldown, so Creidhne had no esbuild. It is now a direct devDependency at `^0.28.2`, Mabon's version; `allowScripts` already approved it. Audit unchanged: 6 moderate (dev only), `--omit=dev` 0.
+- **The XSD validator** is `src/main/xsdValidator.js`. `KNOWN_DRIFT` moved with it, so the tests and `validate` read one list. It finds `xsd/` through `CREIDHNE_REPO`, which `scripts/world.mjs` sets, so the MCP server finds the checkout's schemas from any folder. A world element table in the old format is reported as drift.
+- **Tests:** `worldAgent.test.js` (31 tests) on a small world in a temporary git repo, with the index cache in a temp folder (`HYBINDEX_CACHE_DIR`), and `entityName.test.js` (20). The acceptance case fails when staged-only detection is removed (checked), and the bundle guard builds `bin.js` and fails on any `electron` require.
+- **On the production world** (the branch that holds fault 1, 2026-11-19): a cold `check` takes 23 s (the first index build), a warm one 2.3 s, and `find` or `refs` under 1 s. `check` reports 559 references from live files to staged-only entities, among them the trainer NPCs of fault 1, plus 1142 missing references (841 of them NPC vend items), 1 duplicate key and 151 staged files whose name is already live. A dry-run rename of a live castable to the name of a staged one refuses. The evidence doc in the document repo has the names.
+- **Not done:** the parity test against the GUI's `refs:apply` (both call `applyRename` with the same arguments, so it would compare a function with itself); the Lua search does not change Lua.

@@ -18,7 +18,7 @@
 import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { join } from 'path'
-import { validateHybrasylXml } from './xsdValidator.js'
+import { validateHybrasylXml, KNOWN_DRIFT } from '../xsdValidator.js'
 
 import { parseItemXml, serializeItemXml } from '../itemXml'
 import { parseRecipeXml, serializeRecipeXml } from '../recipeXml'
@@ -61,8 +61,9 @@ async function roundtripValid(parseFn, serializeFn, xml) {
 
 // ── Tier 1: fixture validity ────────────────────────────────────────────────
 
-// Known upstream XSD↔reality drift — the bundled schema file is stricter or
-// differently-shaped than what live XML files use. Fix is in the hybrasyl/xml
+// KNOWN_DRIFT (in src/main/xsdValidator.js) is the known upstream XSD↔reality
+// drift — the bundled schema file is stricter or differently-shaped than what
+// live XML files use. Fix is in the hybrasyl/xml
 // repo, not creidhne. Skipped with a one-line explanation; unskip once upstream
 // catches up. Any time the pin in `scripts/xsdRef.cjs` moves, clear this list
 // and re-run; anything that still fails is new drift. Last checked at xml
@@ -73,14 +74,6 @@ async function roundtripValid(parseFn, serializeFn, xml) {
 // multipliers: the file the content migration (HS-1239) starts from. The
 // world and ceridwen tables are still the old format, which this schema
 // refuses by design.
-const KNOWN_DRIFT = {
-  items: 'schema requires <Description> inside <Vendor>; real files omit it',
-  npcs: 'schema marks X/Y required on <Npc>; real files omit them',
-  localizations: 'schema orders NpcSpeak before MonsterSpeak; real files use different ordering',
-  castables: 'schema omits <Descriptions> from expected Castable children',
-  spawngroups: 'schema SpawnFlags maxLength=3; real files have 4+ flags',
-  serverconfigs: 'child element ordering mismatch (details in test output when unskipped)'
-}
 
 describe('XSD validation: real-world fixtures are schema-valid', () => {
   const types = [

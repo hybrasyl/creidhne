@@ -1,17 +1,37 @@
-// XSD validation helper for Vitest. Wraps xmllint-wasm with a test-time
-// master schema that pulls in every individual XSD and fills in a root
+// Validate world XML against the Hybrasyl XSD collection. Wraps xmllint-wasm
+// with a master schema that pulls in every individual XSD and fills in a root
 // element declaration for SpawnGroup (defined as a complexType but never
 // declared as a top-level element in the upstream schema).
+//
+// Used by the XSD tests, `scripts/validate-xml.mjs` and the world agent's
+// `validate` command (WP8). It is not called on save: WP7 owns that, and its
+// blockers (KNOWN_DRIFT below, the XSDs not shipped) still stand. xmllint-wasm
+// is a devDependency, so nothing in the packaged app may import this module.
 
 import { promises as fs } from 'fs'
-import { createRequire } from 'module'
 import { join } from 'path'
 import { validateXML } from 'xmllint-wasm'
+// A static import, so a bundle (scripts/world.mjs) carries it.
+import xsdRef from '../../scripts/xsdRef.cjs'
 
-const { xsdRefProblem } = createRequire(import.meta.url)('../../../scripts/xsdRef.cjs')
+/**
+ * The types whose real files fail the pinned XSDs for a known reason: the
+ * schema and the world disagree, and the world is what the server loads. A
+ * failure for one of these is drift, not a fault in the file.
+ */
+export const KNOWN_DRIFT = Object.freeze({
+  items: 'schema requires <Description> inside <Vendor>; real files omit it',
+  npcs: 'schema marks X/Y required on <Npc>; real files omit them',
+  localizations: 'schema orders NpcSpeak before MonsterSpeak; real files use different ordering',
+  castables: 'schema omits <Descriptions> from expected Castable children',
+  spawngroups: 'schema SpawnFlags maxLength=3; real files have 4+ flags',
+  serverconfigs: 'child element ordering mismatch (details in test output when unskipped)'
+})
 
-const XSD_ROOT = join(process.cwd(), 'xsd')
-const XSD_DIR = join(XSD_ROOT, 'src', 'XSD')
+/** `<repo>/xsd`: the checkout's own, wherever the process was started. */
+export function defaultXsdRoot() {
+  return join(process.env.CREIDHNE_REPO || process.cwd(), 'xsd')
+}
 
 // Real XSDs present in the repo. Hybrasyl.xsd is excluded because it includes
 // Formulas.xsd, which isn't shipped with the XML repo package.
@@ -57,37 +77,38 @@ ${XSD_FILES.map((f) => `  <xs:include schemaLocation="${f}" />`).join('\n')}
  *   `type="CreatureCookies "` / `type="CreatureImmunities "`).
  */
 function sanitizeXsd(contents) {
-  return contents.replace(/type="([^"]*?)\s+"/g, 'type="$1"')
+  return contents.replace(/type="([^"]*?)\s+"/g, (_, type) => `type="${type}"`)
 }
 
-let cachedPreload = null
+const preloads = new Map()
 
-async function loadPreload() {
-  if (cachedPreload) return cachedPreload
+async function loadPreload(xsdRoot) {
+  if (preloads.has(xsdRoot)) return preloads.get(xsdRoot)
   // xsd/ is gitignored and fetched, so a fresh clone has none, and an old
   // clone can hold another xml commit's schemas. Say what to run, or the tests
   // fail on a bare ENOENT, or pass against schemas that are not the pin
   // (HTOO-615).
-  const problem = xsdRefProblem(XSD_ROOT)
+  const problem = xsdRef.xsdRefProblem(xsdRoot)
   if (problem) throw new Error(problem)
   const preload = []
   for (const name of XSD_FILES) {
-    const raw = await fs.readFile(join(XSD_DIR, name), 'utf-8')
+    const raw = await fs.readFile(join(xsdRoot, 'src', 'XSD', name), 'utf-8')
     preload.push({ fileName: name, contents: sanitizeXsd(raw) })
   }
-  cachedPreload = preload
+  preloads.set(xsdRoot, preload)
   return preload
 }
 
 /**
  * Validate an XML string against the Hybrasyl schema collection.
- * Returns { valid, errors } per xmllint-wasm's contract.
+ * Returns { valid, errors, rawOutput } per xmllint-wasm's contract.
  *
  * @param {string} xml - XML document to validate
  * @param {string} [fileName='test.xml'] - file name reported in error messages
+ * @param {{ xsdRoot?: string }} [options] - the `xsd/` folder; the checkout's by default
  */
-export async function validateHybrasylXml(xml, fileName = 'test.xml') {
-  const preload = await loadPreload()
+export async function validateHybrasylXml(xml, fileName = 'test.xml', options = {}) {
+  const preload = await loadPreload(options.xsdRoot ?? defaultXsdRoot())
   const result = await validateXML({
     xml: [{ fileName, contents: xml }],
     schema: [MASTER_XSD],

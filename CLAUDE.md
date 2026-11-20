@@ -34,6 +34,7 @@ npm run build        # electron-vite build (main + preload + renderer)
 npm run build:win    # packaged Windows build — NSIS installer + portable exe (build:mac, build:linux too)
 npm run e2e          # build, then Playwright-drives the built app (local-only, needs a GUI)
 npm run e2e:only     # E2E against the existing out/ build
+npm run -s world -- <command>   # the world agent CLI (WP8); `--help` lists the commands
 ```
 
 E2E windows open on the first NON-primary display, so a run does not steal focus from the monitor
@@ -77,6 +78,9 @@ src/
                (de)serializers: itemXml.js, castableXml.js, creatureXml.js, npcXml.js, …
                lootTableXml.js maps <Table> and <Loot> for the three parsers that hold loot
                statModifiersXml.js is the shared <StatModifiers> parse/build (traitXml uses it)
+               worldAgent/ (the WP8 agent CLI and MCP server; never imported by index.js),
+               agentMcp/ (the agent-mcp v1 house module), xsdValidator.js (dev only: tests,
+               validate-xml, the agent's validate)
   shared/      electron-free code BOTH processes import, via the `@shared` alias:
                castableRecord.js (the canonical castable record + its 70-field column
                catalogue), reportRules.js (the report filter vocabulary), castableExportPresets.js,
@@ -239,6 +243,7 @@ e2e/           Playwright specs against the built app
   `app.setPath('userData', …)`, `requestSingleInstanceLock()`, and
   `disableHardwareAcceleration()`. After `ready` each is a no-op rather than an error, so
   `remoteSession.test.js` reads the file and asserts the positions (comments stripped first).
+- **The world agent (WP8, HTOO-705)** gives an agent Creidhne's own world rules from a shell or as MCP tools: `npm --prefix <creidhne> run -s world -- <command>` from a world checkout, or `node <creidhne>/scripts/world.mjs mcp --root <world>`. The code is `src/main/worldAgent/`, and `scripts/world.mjs` bundles it with esbuild on each run. It runs under plain Node, so nothing below it may import `electron` (the bundle test reads the bundle). Each command calls the function the GUI calls (`scanReferences`, `applyRename`, `releaseClashes`, `duplicateKeyGroups`, `runReport`'s parts, the validators); a difference between the GUI and the CLI is a bug. A write is a dry run without `--write`, and with it lists the changed paths and never commits. `rename` edits the entity's own name as one line (`entityName.js`, pinned to hybindex by `entityName.test.js`), never through a re-save. The MCP front is `src/main/agentMcp/agentMcp.js`, the agent-mcp v1 house module, copied verbatim from the template's `house-js/`: do not edit it here. A new world feature an agent needs gets a command there, not a script in the world repo.
 - **Icons are generated, never hand-edited** — `scripts/make-icons.mjs` writes `build/icons/`
   (8 Linux sizes), `resources/icon.png`, `resources/icon-linux.png` and `build/icon.icns` from
   the two masters in `build/`. The star is Windows only; macOS **and Linux** take the

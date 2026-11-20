@@ -10,7 +10,7 @@
 
 import { readFile, readdir } from 'fs/promises'
 import { basename, join } from 'path'
-import { validateHybrasylXml } from '../src/main/__tests__/xsdValidator.js'
+import { validateHybrasylXml } from '../src/main/xsdValidator.js'
 
 const FIXTURE_DIR = join(process.cwd(), 'src', 'main', '__tests__', 'fixtures', 'xml')
 
