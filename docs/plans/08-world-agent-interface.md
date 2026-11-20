@@ -1,6 +1,6 @@
 # WP8 — An agent interface for world data
 
-**Card:** HTOO-705. **Size:** L. **Depends on:** —. **Status:** Planned (draft for review, 2026-11-19). **Prompted by:** Mabon's WP107 (`mabon-map`), which gave the lore map a headless CLI and an MCP server.
+**Card:** HTOO-705. **Size:** L. **Depends on:** —. **Status:** Planned (scoped 2026-11-19). **Prompted by:** Mabon's WP107 (`mabon-map`), which gave the lore map a headless CLI and an MCP server.
 
 ## Why
 
@@ -83,20 +83,19 @@ A write to a file that is open in Creidhne is a change on disk. The page reloads
 
 ## Non-goals
 
-- **Lua.** `scripts/` is not in the reference table. A Lua call such as `Teleport("<map name>")` is not an anchored reference (see Open questions).
+- **Repointing Lua.** `scripts/` is not in the reference table. A Lua call such as `Teleport("<map name>")` is not an anchored reference, so `--scripts` reports it and does not change it (decision 5).
 - **Edits other than names.** The interface does not set fields on an entity. An agent edits the XML, then runs `validate` and `check`. A field-level write needs each page's parse and build, and each of those is a separate design.
 - **The packaged app.** `Creidhne.exe --world <command>` is not in this WP. The CLI runs from a checkout, as Mabon's does.
 - **Maps.** Taliesin owns map files. `check` reports a reference to a missing map, and it does not change maps.
 
-## Decisions (for Sabrael)
+## Decisions (Fintan, 2026-11-19)
 
-1. **Commits.** Mabon's interface makes one scoped commit for each `--write`. Creidhne's GUI does not commit, and in the world repo the agent commits on a feature branch. Recommended: **no commit**. `--write` prints the paths it changed, and the agent commits those paths. One world session staged a person's in-progress rename into the agent's commit, so a CLI that commits by itself adds that risk.
-2. **How `rename` writes the entity's own `<Name>`.** (a) Through the page's parse and build, as a GUI save does. This is the parity rule, but it rewrites a hand-written file into Creidhne's format, so the first rename of a file gives a large diff. (b) A text edit of the root `<Name>` element only, as `rewriteReferences` does for referrers. Recommended: **(b)**. The referrers already use a text rewrite in the GUI, and (b) keeps the diff to one line.
-3. **A shared MCP front.** Mabon has `mcp.ts`, this WP adds `mcp.js`, and the dalib-ts plan (the document repo, `plans/dalib-ts/cli-and-mcp-plan.md`) adds a third. Recommended: **make it a house module** in the template (`house-js/` and the TS edition), copied verbatim with its GENERATED header, as the title bar and the editor shell are. The alternative is three copies.
-4. **The command name.** `npm run world` and MCP server `creidhne-world`. The alternative is `creidhne`.
+Made at scoping, from the evidence. Sabrael can overrule any of them before the build.
 
-## Open questions
-
-- **Lua referrers.** A `--scripts` option on `refs` and `rename` could search `scripts/` as plain text and report the hits as unanchored, for a person or an agent to check. It would have found fault 3. It cannot repoint safely, so it would report only.
-- **Ceridwen.** Ceridwen is a world folder, and the same commands work on it. Confirm that the agent rules for ceridwen allow the write commands.
-- **Report types.** `report` covers castables and items, the two types WP3 built. Creatures, NPCs, statuses and spawngroups stay unbuilt until a report needs them.
+1. **`--write` does not commit.** It prints the paths it changed, and the agent commits those paths under the repo's own rules. Creidhne's GUI does not commit, and one world session swept a person's in-progress rename into the agent's commit. Mabon commits because its GUI does; Creidhne's does not.
+2. **`rename` changes the entity's own `<Name>` with a text edit of the root element**, anchored as `rewriteReferences` is for referrers. A re-save through the page's parse and build rewrites a hand-written file into Creidhne's format, so a one-word rename would give a whole-file diff. The referrers already take a text rewrite in the GUI, so the rename stays in one family.
+3. **The MCP front becomes a house module** in the template, in a TS and a JS edition, copied verbatim with a GENERATED header, as the title bar and the editor shell are. It starts from Mabon's `mcp.ts`, the one that exists. The first of WP8 and the dalib-ts CLI to be built extracts it, and Mabon adopts the copy. Three hand copies of a JSON-RPC loop and an argument check (HTOO-702) would drift.
+4. **The names are `npm run world` and MCP server `creidhne-world`**, to match `mabon-map`.
+5. **`refs` and `rename` take `--scripts`.** It searches `scripts/` as plain text and reports the hits as unanchored. It never repoints a Lua file. It would have found fault 3.
+6. **Ceridwen needs nothing extra.** The commands take any world folder, and the repo's own agent rules govern the commits and the PRs.
+7. **`report` covers castables and items**, the two types WP3 built. A further type is a registry row when a report needs it.
